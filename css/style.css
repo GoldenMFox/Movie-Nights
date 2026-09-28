@@ -3311,3 +3311,13 @@ a.stat-tile:hover {
     flex: 1 1 100%;
   }
 }
+/* the page's own search button is on screen: the navbar one goes neutral (like the moon button) */
+.site-nav.page-search-visible .search-toggle {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.site-nav.page-search-visible .search-toggle:hover {
+  background: rgba(255, 255, 255, 0.14);
+}

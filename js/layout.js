@@ -122,6 +122,27 @@
   // text widths change once the font has loaded
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => moveIndicator(activeLink, true));
 
+  /* ---------------- only one red search button at a time ---------------- */
+
+  // When a page has its own search pill (e.g. Discover) and its red button is
+  // on screen, the navbar search button goes neutral; once you scroll past it,
+  // the navbar one turns red again.
+  // wait until every page script has run (Discover builds its search bar after this file)
+  document.addEventListener("DOMContentLoaded", () => {
+    const pageSearch = [...document.querySelectorAll(".gs-btn")];
+    if (!pageSearch.length) return;
+    const check = () => {
+      const top = nav.getBoundingClientRect().bottom; // hidden under the sticky navbar = out of sight
+      const onScreen = pageSearch.some((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.bottom > top && r.top < window.innerHeight;
+      });
+      nav.classList.toggle("page-search-visible", onScreen);
+    };
+    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    check();
+  });
   /* ---------------- movie names language ---------------- */
 
   nav.addEventListener("click", (e) => {
