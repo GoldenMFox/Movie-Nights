@@ -6,7 +6,7 @@
  * Layout (same markup for phone and computer):
  *   big backdrop + title, IMDb rating / runtime / year, genres, where to stream,
  *   Trailer button, three action buttons, overview + director,
- *   tabs (Cast & Crew / Media / Reviews), then recommendations.
+ *   Cast & Crew, Media and Reviews (one under the other), then recommendations.
  */
 (function () {
   const { esc, toast } = UI;
@@ -16,7 +16,7 @@
   const heroEl = document.getElementById("title-hero");
   const mainEl = document.getElementById("title-main");
   let extra = null; // details fetched from TMDB
-  let tab = "cast";
+
   let overviewOpen = false;
 
   function message(icon, html) {
@@ -122,32 +122,23 @@
       </div>`;
   }
 
-  /* ---------------- tabs: Cast & Crew / Media / Reviews ---------------- */
+  /* ---------------- sections: Cast & Crew, Media, Reviews (one under the other) ---------------- */
 
-  function tabsHtml(d, loading) {
+  function sectionsHtml(d, loading) {
     const cast = d.cast || [];
     const videos = d.videos || [];
     const images = d.images || [];
     const reviews = d.reviews || [];
-    const tabs = [
-      ["cast", "Cast & Crew", cast.length],
-      ["media", "Media", videos.length + images.length],
-      ["reviews", "Reviews", reviews.length],
-    ].filter(([key, , n]) => n || loading || key === "cast");
-    if (!tabs.some(([k]) => k === tab)) tab = tabs[0][0];
+    const block = (title, count, body) =>
+      `<section class="t-section"><h2 class="t-section-title">${title}${count ? ` <small>${count}</small>` : ""}</h2>${body}</section>`;
 
-    let panel;
-    if (loading && !(tab === "cast" && cast.length)) panel = '<p class="muted t-empty">Loading…</p>';
-    else if (tab === "cast") panel = castPanel(cast);
-    else if (tab === "media") panel = mediaPanel(videos, images);
-    else panel = reviewsPanel(reviews, d.tmdbUrl);
-
-    return `<div class="t-tabs" role="tablist">${tabs
-      .map(([key, label, n]) => `<button role="tab" data-tab="${key}" aria-selected="${key === tab}" class="${key === tab ? "active" : ""}">${label}${key === "reviews" && n ? ` <small>${n}</small>` : ""}</button>`)
-      .join("")}</div>
-      <div class="t-panel" role="tabpanel">${panel}</div>`;
+    let html = "";
+    if (cast.length) html += block("Cast &amp; Crew", 0, castPanel(cast));
+    if (loading) return html + '<p class="muted t-empty">Loading more details…</p>';
+    if (videos.length || images.length) html += block("Media", 0, mediaPanel(videos, images));
+    if (reviews.length) html += block("Reviews", reviews.length, reviewsPanel(reviews, d.tmdbUrl));
+    return html;
   }
-
   function castPanel(cast) {
     if (!cast.length) return '<p class="muted t-empty">No cast information yet.</p>';
     return `<div class="t-cast">${cast
@@ -198,7 +189,7 @@
   const TMDB_NOTE =
     "Details from TMDB, ratings from IMDb and Rotten Tomatoes via OMDb, streaming data by JustWatch. This product uses the TMDB API but is not endorsed or certified by TMDB.";
 
-  /* ---------------- page-level buttons (back, share, menu, tabs...) ---------------- */
+  /* ---------------- page-level buttons (back, share, menu, read more, videos) ---------------- */
 
   document.addEventListener("click", async (e) => {
     const menu = heroEl.querySelector(".t-menu");
@@ -219,12 +210,7 @@
       }
       return;
     }
-    const tabBtn = e.target.closest("[data-tab]");
-    if (tabBtn) {
-      tab = tabBtn.dataset.tab;
-      renderTabs();
-      return;
-    }
+
     if (e.target.closest(".t-read-more")) {
       overviewOpen = !overviewOpen;
       const p = heroEl.querySelector(".t-overview");
@@ -243,7 +229,7 @@
     if (video) Cards.showTrailer({ title: video.dataset.name, trailer: video.dataset.video }, () => null);
   });
 
-  let renderTabs = () => {};
+
 
   /* ---------------- a title in your library ---------------- */
 
@@ -279,7 +265,7 @@
 
     const loading = TMDB.enabled() && !extra;
     mainEl.innerHTML = `
-      <section class="t-tabs-wrap">${tabsHtml(d, loading)}</section>
+      <div class="t-sections">${sectionsHtml(d, loading)}</div>
       ${recommendationsHtml(extra)}
       ${similar.length ? `<h2 class="section-title">More like this in your library</h2><div class="movie-row">${similar.map(Cards.card).join("")}</div>` : ""}
       <p class="tmdb-note">${
@@ -287,7 +273,6 @@
       }</p>
       <p><button class="btn btn-danger remove-title" type="button"><i class="fa-solid fa-trash"></i> Remove from library</button></p>`;
 
-    renderTabs = () => (mainEl.querySelector(".t-tabs-wrap").innerHTML = tabsHtml(d, loading));
   }
 
   function initLibrary() {
@@ -357,8 +342,7 @@
     mainEl.dataset.tmdb = tmdbRef;
     Ratings.seed(tmdbRef, d.tmdbScore, d.imdbId);
     renderExternal(d);
-    mainEl.innerHTML = `<section class="t-tabs-wrap">${tabsHtml(d, false)}</section>${recommendationsHtml(d)}<p class="tmdb-note">${TMDB_NOTE}</p>`;
-    renderTabs = () => (mainEl.querySelector(".t-tabs-wrap").innerHTML = tabsHtml(d, false));
+    mainEl.innerHTML = `<div class="t-sections">${sectionsHtml(d, false)}</div>${recommendationsHtml(d)}<p class="tmdb-note">${TMDB_NOTE}</p>`;
 
     // IMDb rating (one OMDb lookup the first time you open this title)
     Ratings.forRef(tmdbRef).then(() => heroEl.dataset.tmdb === tmdbRef && renderExternal(d));

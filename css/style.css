@@ -1771,37 +1771,26 @@ a.stat-tile:hover {
   font-size: 24px;
 }
 
-/* tabs: Cast & Crew / Media / Reviews */
-.t-tabs {
+/* Cast & Crew, Media, Reviews: one section under the other */
+.t-section {
+  margin-top: 30px;
+}
+
+.t-section-title {
   display: flex;
-  gap: 24px;
-  margin: 28px 0 16px;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
-  overflow-x: auto;
+  font-size: 20px;
 }
 
-.t-tabs button {
-  padding: 10px 0;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: none;
+.t-section-title small {
   color: var(--text-muted);
-  font-size: 16px;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.t-tabs button.active {
-  color: var(--text);
-  border-bottom-color: var(--accent-hover);
-}
-
-.t-tabs small {
+  font-size: 14px;
   font-weight: 400;
-  opacity: 0.7;
 }
-
 .t-empty {
   padding: 8px 0 16px;
 }
@@ -2051,9 +2040,8 @@ a.stat-tile:hover {
     font-size: 14px;
   }
 
-  .t-tabs {
-    gap: 20px;
-    margin-top: 18px;
+  .t-section {
+    margin-top: 24px;
   }
 
   .t-cast {
