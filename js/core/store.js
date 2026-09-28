@@ -65,6 +65,8 @@
     const byId = new Map();
     base.concat(custom).forEach((item, index) => {
       const merged = Object.assign({ order: index }, item, pubOverrides[item.id] || {}, overrides[item.id] || {});
+      // rated = watched, so it's not on the Watchlist (unless you put it back on to watch again)
+      if (merged.watchlist && typeof merged.rating === "number" && !merged.rewatch) merged.watchlist = false;
       if (!merged.removed) byId.set(item.id, merged);
     });
     return byId;
@@ -90,6 +92,15 @@
   }
 
   function update(id, patch) {
+    // rating a title means you've watched it: it leaves the Watchlist
+    const before = get(id);
+    if (typeof patch.rating === "number" && !("watchlist" in patch)) {
+      patch = Object.assign({}, patch, { watchlist: false, rewatch: undefined });
+      if (before && before.watchlist) setTimeout(() => window.UI && UI.toast(`Rated, so "${before.title}" left your Watchlist`), 0);
+    }
+    // putting a title you already rated back on the Watchlist (to watch it again) is allowed
+    if (patch.watchlist === true && before && typeof before.rating === "number") patch = Object.assign({}, patch, { rewatch: true });
+    if (patch.watchlist === false) patch = Object.assign({}, patch, { rewatch: undefined });
     const current = Object.assign({}, overrides[id] || {}, patch);
     Object.keys(current).forEach((k) => current[k] === undefined && delete current[k]);
     overrides[id] = current;
@@ -126,6 +137,7 @@
   function add(item) {
     const id = idFor(item.title, item.year);
     const entry = Object.assign({ id, isNew: true }, item);
+    if (typeof entry.rating === "number") entry.watchlist = false; // rated = watched
     custom.push(entry);
     write(KEYS.custom, custom);
     changed(id);
@@ -198,7 +210,7 @@
   // Produces a new data/library.js with every change baked in.
   function exportLibraryFile() {
     const fields = [
-      "id", "title", "titleRu", "year", "type", "rating", "poster", "genres", "isNew", "favorite", "watchlist",
+      "id", "title", "titleRu", "year", "type", "rating", "poster", "genres", "isNew", "favorite", "watchlist", "rewatch",
       "tmdbId", "tmdbMedia", "backdrop", "trailer", "runtime", "certification", "director", "overview", "cast",
     ];
     const lines = all()

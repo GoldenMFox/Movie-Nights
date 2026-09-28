@@ -284,6 +284,7 @@
     const index = {};
     items.forEach((it) => {
       const m = Object.assign({}, it, ov[it.id] || {});
+      if (m.watchlist && typeof m.rating === "number" && !m.rewatch) m.watchlist = false; // rated = watched
       if (m.removed || (m.rating == null && !m.watchlist && !m.favorite)) return;
       const v = { r: m.rating == null ? null : m.rating, w: !!m.watchlist, f: !!m.favorite };
       if (m.tmdbId && m.tmdbMedia) index[`${m.tmdbMedia}-${m.tmdbId}`] = v;
