@@ -1,4 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+/* Inter: the closest free match to Netflix Sans (Netflix's own font can't be used elsewhere) */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 
 /* ============================== Theme ============================== */
 
@@ -51,10 +52,30 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  font-family: "Poppins", Arial, sans-serif;
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* buttons, fields and menus use the same font as everything else */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Netflix-style type: bold, slightly tight headings */
+h1,
+h2,
+h3,
+.page-title,
+.section-title {
+  letter-spacing: -0.02em;
 }
 
 main {
@@ -104,10 +125,10 @@ h3 {
 }
 
 .page-title {
-  font-size: 30px;
-  font-weight: 700;
+  font-size: 32px;
+  font-weight: 800;
   margin: 12px 0 20px;
-  letter-spacing: 1px;
+  letter-spacing: -0.02em;
 }
 
 /* ============================== Buttons & inputs ============================== */
@@ -5143,4 +5164,71 @@ html.custom-scrollbars .grabbing * {
 
 html.custom-scrollbars .grabbing .movie-item {
   pointer-events: none; /* no hover effects / previews while dragging */
+}
+
+/* app Search panel: "Search in" drop-down under the search bar */
+.sheet-type {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 46px;
+  margin-top: 10px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+.sheet-type span {
+  flex-shrink: 0;
+}
+
+.sheet-type select {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding-right: 22px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font-weight: 600;
+  text-align: right;
+  text-align-last: right;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.sheet-type select option {
+  background: #1c1c20;
+  color: #fff;
+}
+
+.sheet-type-arrow {
+  position: absolute;
+  right: 16px;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+/* where-to-watch logos: clickable, lift a little on hover */
+.t-provider-list a {
+  display: block;
+  border-radius: 10px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.t-provider-list a:hover {
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+
+/* app Search panel: the results scroll with the panel (no second scrollbar inside) */
+.sheet-results {
+  max-height: none;
+  overflow: visible;
 }

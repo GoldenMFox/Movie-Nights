@@ -157,7 +157,8 @@
 
     preview.addEventListener("mouseleave", (e) => {
       // back onto the same poster: keep it open
-      if (e.relatedTarget && card.isConnected && card.contains(e.relatedTarget)) return;
+      const posterEl = card.isConnected && card.querySelector(".poster-link");
+      if (e.relatedTarget && posterEl && posterEl.contains(e.relatedTarget)) return;
       close();
     });
 
@@ -333,8 +334,12 @@
     hoverCard = null;
   }
 
+  // only the poster picture starts a preview (not the title, ratings and buttons under it)
+  const POSTER = ".movie-item .poster-link";
+
   document.addEventListener("mouseover", (e) => {
-    const card = e.target.closest && e.target.closest(".movie-item");
+    const poster = e.target.closest && e.target.closest(POSTER);
+    const card = poster && poster.closest(".movie-item");
     if (!card || card === hoverCard) return;
     cancel();
     if (preview && preview.contains(e.target)) return;
@@ -355,9 +360,10 @@
   });
 
   document.addEventListener("mouseout", (e) => {
-    const card = e.target.closest && e.target.closest(".movie-item");
+    const poster = e.target.closest && e.target.closest(POSTER);
+    const card = poster && poster.closest(".movie-item");
     if (!card || card !== hoverCard) return;
-    if (e.relatedTarget && card.contains(e.relatedTarget)) return;
+    if (e.relatedTarget && poster.contains(e.relatedTarget)) return; // still on the poster
     cancel();
     // left the poster, but not onto the preview: close it
     if (preview && !(e.relatedTarget && preview.contains(e.relatedTarget))) close();

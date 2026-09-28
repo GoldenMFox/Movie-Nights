@@ -259,10 +259,12 @@
   }
 
   // library search results (navbar search, and the app's Library panel)
-  function resultsHtml(raw) {
+  // (type: "movie" / "tv" / "anime" to search only those; anything else = everything)
+  function resultsHtml(raw, type) {
     const q = String(raw || "").trim().toLowerCase();
     if (!q) return "";
     const hits = Store.all()
+      .filter((item) => !["movie", "tv", "anime"].includes(type) || item.type === type)
       .map((item) => {
         // match the English and the Russian name
         const names = [item.title, item.titleRu].filter(Boolean).map((n) => n.toLowerCase());
@@ -474,6 +476,17 @@
          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
          <input type="search" name="q" placeholder="Movies, TV shows, anime…" aria-label="Search" autocomplete="off" enterkeyhint="search" />
        </form>
+       <label class="sheet-type">
+         <i class="fa-solid fa-filter" aria-hidden="true"></i>
+         <span>Search in</span>
+         <select name="in" aria-label="Search in">
+           <option value="all">Everything</option>
+           <option value="movie">Movies</option>
+           <option value="tv">TV Shows</option>
+           <option value="anime">Anime</option>
+         </select>
+         <i class="fa-solid fa-chevron-down sheet-type-arrow" aria-hidden="true"></i>
+       </label>
        <a class="sheet-more" href="discover.html" hidden></a>
        <ul class="search-results sheet-results"></ul>`
     );
@@ -481,17 +494,23 @@
     const searchInput2 = searchForm.elements.q;
     const more = search.el.querySelector(".sheet-more");
     const searchResults = search.el.querySelector(".sheet-results");
-    searchInput2.addEventListener("input", () => {
+    const typeSel = search.el.querySelector('.sheet-type select');
+    const TYPE_WORDS = { all: "everything", movie: "movies", tv: "TV shows", anime: "anime" };
+    // Discover link for the current search and type
+    const discoverUrl = (q) => `discover.html?q=${encodeURIComponent(q)}${typeSel.value !== "all" ? `&in=${typeSel.value}` : ""}`;
+    const refresh = () => {
       const q = searchInput2.value.trim();
-      searchResults.innerHTML = resultsHtml(q);
+      searchResults.innerHTML = resultsHtml(q, typeSel.value);
       more.hidden = !q;
-      more.href = `discover.html?q=${encodeURIComponent(q)}`;
-      more.innerHTML = `<i class="fa-solid fa-compass"></i><span>Search everything for "${esc(q)}"</span><i class="fa-solid fa-chevron-right"></i>`;
-    });
+      more.href = discoverUrl(q);
+      more.innerHTML = `<i class="fa-solid fa-compass"></i><span>Search ${TYPE_WORDS[typeSel.value]} for "${esc(q)}"</span><i class="fa-solid fa-chevron-right"></i>`;
+    };
+    searchInput2.addEventListener("input", refresh);
+    typeSel.addEventListener("change", refresh);
     searchForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const q = searchInput2.value.trim();
-      if (q) location.href = `discover.html?q=${encodeURIComponent(q)}`;
+      if (q) location.href = discoverUrl(q);
     });
     // focus straight from the tap, so the phone keyboard opens
     // (the last search is selected, so typing replaces it)

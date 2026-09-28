@@ -77,13 +77,55 @@
       .join("")}</div>`;
   }
 
-  function providersHtml(p) {
+  // Each streaming / rental service's own search for this title (TMDB only tells us which
+  // services have it, not the exact page). Unknown services: the JustWatch page, which
+  // lists the direct links.
+  // (specific services first, so "Paramount+ Amazon Channel" goes to Paramount+, not Amazon)
+  const PROVIDER_SEARCH = [
+    [/netflix/, (q) => `https://www.netflix.com/search?q=${q}`],
+    [/disney/, (q) => `https://www.disneyplus.com/search?q=${q}`],
+    [/\bmax\b|hbo/, (q) => `https://play.max.com/search?q=${q}`],
+    [/hulu/, (q) => `https://www.hulu.com/search?q=${q}`],
+    [/paramount/, (q) => `https://www.paramountplus.com/search/?q=${q}`],
+    [/peacock/, (q) => `https://www.peacocktv.com/search?q=${q}`],
+    [/crunchyroll/, (q) => `https://www.crunchyroll.com/search?q=${q}`],
+    [/skyshowtime/, (q) => `https://www.skyshowtime.com/search?q=${q}`],
+    [/starz/, (q) => `https://www.starz.com/us/en/search?q=${q}`],
+    [/showtime/, (q) => `https://www.sho.com/search?q=${q}`],
+    [/amc\+|amc plus/, (q) => `https://www.amcplus.com/search?q=${q}`],
+    [/mgm/, (q) => `https://www.mgmplus.com/search?q=${q}`],
+    [/mubi/, (q) => `https://mubi.com/en/search/films?query=${q}`],
+    [/rakuten/, (q) => `https://www.rakuten.tv/search?q=${q}`],
+    [/fubo/, (q) => `https://www.fubo.tv/welcome/search?q=${q}`],
+    [/philo/, (q) => `https://www.philo.com/player/search?query=${q}`],
+    [/tubi/, (q) => `https://tubitv.com/search/${q}`],
+    [/pluto/, (q) => `https://pluto.tv/search/details?query=${q}`],
+    [/plex/, (q) => `https://watch.plex.tv/search?q=${q}`],
+    [/prime video|amazon prime/, (q) => `https://www.primevideo.com/search/ref=atv_nb_sr?phrase=${q}`],
+    [/amazon/, (q) => `https://www.amazon.com/s?k=${q}&i=instant-video`],
+    [/apple tv|itunes/, (q) => `https://tv.apple.com/search?term=${q}`],
+    [/youtube/, (q) => `https://www.youtube.com/results?search_query=${q}`],
+    [/google play/, (q) => `https://play.google.com/store/search?q=${q}&c=movies`],
+    [/microsoft/, (q) => `https://www.microsoft.com/en-us/search/shop/movies?q=${q}`],
+    [/fandango|vudu/, (q) => `https://athome.fandango.com/content/browse/search?searchString=${q}`],
+  ];
+  function providerUrl(name, title, fallback) {
+    const n = String(name || "").toLowerCase();
+    const found = PROVIDER_SEARCH.find(([re]) => re.test(n));
+    return found ? found[1](encodeURIComponent(title)) : fallback;
+  }
+
+  function providersHtml(p, t) {
     if (!p || !p.list || !p.list.length) return "";
     const label = p.kind === "stream" ? "Available on:" : "Rent or buy on:";
+    const title = t ? t.title : "";
     return `<div class="t-providers">
       <span>${label}</span>
       <div class="t-provider-list">${p.list
-        .map((x) => `<a href="${esc(p.link)}" target="_blank" rel="noopener" title="${esc(x.name)}"><img src="${Store.img(x.logo, "w92")}" alt="${esc(x.name)}" /></a>`)
+        .map(
+          (x) => `<a href="${esc(providerUrl(x.name, title, p.link))}" target="_blank" rel="noopener" title="Watch on ${esc(x.name)}" aria-label="Watch on ${esc(x.name)}">
+            <img src="${Store.img(x.logo, "w92")}" alt="${esc(x.name)}" /></a>`
+        )
         .join("")}</div>
       <small title="Streaming data by JustWatch">${esc(p.country)} · JustWatch</small>
     </div>`;
@@ -134,7 +176,7 @@
           <div class="t-meta">${metaHtml(t, d, e)}</div>
           <div class="t-genres">${genresHtml(t, d)}</div>
           ${partnerHtml(t)}
-          ${providersHtml(d.providers)}
+          ${providersHtml(d.providers, t)}
           <div class="t-cta">${buttons}</div>
           ${aboutHtml(d)}
         </div>
