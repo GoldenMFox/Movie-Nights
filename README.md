@@ -73,10 +73,10 @@ You can also do it from the site:
 - **Add a title** from the profile menu (top right).
 - **Remove a title** from its title page.
 
-Those changes are saved **in your browser** (localStorage). To make them permanent,
+Those changes are saved in your browser straight away and, when you're signed in, synced
+to your account (see **Sign in and sync** below). To bake them into the site's own list,
 go to **Profile → Backup → Export library.js** and replace `data/library.js` with the
-downloaded file. Use **Download backup / Restore backup** to move your changes to
-another browser.
+downloaded file. **Download backup / Restore backup** makes a file copy of everything.
 
 ## TMDB and IMDb ratings
 
@@ -109,32 +109,69 @@ outside ratings.
 
 > Anything in `config.js` is visible to people who open the site (for example on GitHub
 > Pages). These keys can only read public movie data, so that's low risk.
+
+## Sign in and sync (Firebase)
+
+Profile menu → **Sign in to sync** (Google). Your ratings, favorites, watchlist, added
+titles, tiers and profile are then saved to your account and follow you to every device.
+
+- The first account that ever signed in is the **owner**: it keeps `data/library.js` as
+  its library, and a copy of it (`public/owner`) is what visitors who aren't signed in see.
+- Every other allowed person (wife, friends) gets their own **empty** library.
+- The owner sees everyone's ratings on title pages and gets "Watch with …" filters on the
+  Watchlist. Everyone else sees only the owner's.
+- Several people can stay signed in on one device: **Who's watching?** in the profile menu.
+- Who may sign in is set by the Firestore security rules. A copy is in
+  [`docs/firestore.rules`](docs/firestore.rules). To add someone, add their Gmail there
+  in the Firebase console and click **Publish**.
+
+Firebase project: `movie-nights-71380` (free Spark plan). The config is in `js/config.js`
+and is meant to be public; the security rules protect the data.
+
 ## Project structure
 
 ```
-index.html  discover.html  movies.html  tv-shows.html  anime.html
-favorites.html  watchlist.html  title.html  tier-list.html  profile.html
-css/style.css        all styles (dark + light theme)
-data/library.js      the list of titles
-js/config.js         TMDB + OMDb keys
-js/store.js          loads the library + saves your changes
-js/lang.js           EN / RU movie names
-js/layout.js         navbar, footer, search, dark mode
-js/cards.js          movie cards, rating pop-up, trailer pop-up
-js/add-title.js      "Add a title" form
-js/tmdb.js           TMDB integration
-js/ratings.js        IMDb / TMDB ratings, OMDb daily budget
-js/discover.js       Discover page
-js/browse.js         list pages (filters, sorting)
-js/home.js  js/title.js  js/tier-list.js  js/profile.js
-images/              logo, favicon, avatar, placeholders, app icons (images/icons)
-manifest.webmanifest app name, icons and colours for the installed app
-sw.js                offline support for the installed app
-tools/serve.ps1      tiny local web server used by Start Movie Nights.bat
-tools/publish.ps1    used by Publish to GitHub.bat
-Start Movie Nights.bat   double-click to open the site
-Publish to GitHub.bat    double-click to upload your changes
+Movie-Nights-NEW/
+├── index.html, discover.html, movies.html, tv-shows.html, anime.html,
+│   favorites.html, watchlist.html, title.html, tier-list.html, profile.html
+│                              the pages (kept at the top so the links and the app work)
+├── manifest.webmanifest       installed-app name, icons and colours
+├── sw.js                      service worker: offline support + app updates
+├── css/
+│   └── style.css              all styles (dark + light theme)
+├── data/
+│   └── library.js             the list of titles
+├── js/
+│   ├── config.js              TMDB, OMDb and Firebase keys / settings
+│   ├── core/                  loaded on every page
+│   │   ├── store.js           the library + your changes (saved in the browser)
+│   │   ├── cloud.js           Google sign-in, sync, profiles, friends' ratings
+│   │   ├── lang.js            EN / RU movie names
+│   │   └── layout.js          navbar, footer, search, profile menu, dark mode
+│   ├── services/              talking to outside services
+│   │   ├── tmdb.js            TMDB (details, trailers, cast, Discover)
+│   │   └── ratings.js         IMDb via OMDb (daily budget) with TMDB fallback
+│   ├── components/            pieces used by several pages
+│   │   ├── cards.js           poster cards, rating pop-up, trailer pop-up
+│   │   └── add-title.js       "Add a title" form
+│   └── pages/                 one script per page
+│       ├── home.js, discover.js, browse.js (movies / TV / anime / favorites / watchlist)
+│       └── title.js, tier-list.js, profile.js
+├── images/
+│   ├── brand/                 logo, favicon, profile picture
+│   ├── icons/                 installed-app icons
+│   └── placeholders/          shown when a poster or photo is missing
+├── docs/
+│   └── firestore.rules        copy of the database security rules
+├── tools/
+│   ├── serve.ps1              tiny local web server (used by Start Movie Nights.bat)
+│   └── publish.ps1            commit + push to GitHub (used by Publish to GitHub.bat)
+├── Start Movie Nights.bat     double-click to open the site locally
+└── Publish to GitHub.bat      double-click to publish your changes
 ```
+
+Every page loads the scripts in this order: `data/library.js`, `js/config.js`, `js/core/*`
+(store, cloud, lang, layout), `js/services/*`, `js/components/*`, then its own `js/pages/*.js`.
 
 ---
 

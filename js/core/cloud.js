@@ -306,7 +306,7 @@
           .map((d) => ({ uid: d.id, name: first(d.name), photo: d.photo, index: indexOf(dataOf(d), d.base) }));
       } else {
         const owner = fromDoc(await api("public/owner"));
-        list = owner ? [{ uid: "owner", name: first(owner.name), photo: "images/avatar.jpg", index: indexOf(dataOf(owner), "library") }] : [];
+        list = owner ? [{ uid: "owner", name: first(owner.name), photo: "images/brand/avatar.jpg", index: indexOf(dataOf(owner), "library") }] : [];
       }
       list.sort((a, b) => a.name.localeCompare(b.name));
       write(K.friends, { at: Date.now(), list });

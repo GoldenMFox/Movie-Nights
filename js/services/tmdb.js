@@ -296,7 +296,7 @@
     return null;
   }
 
-  // Just the TMDB score and IMDb id of a movie / show (used by js/ratings.js)
+  // Just the TMDB score and IMDb id of a movie / show (used by js/services/ratings.js)
   async function basic(media, id) {
     const d = await request(`/${media}/${id}`, { append_to_response: "external_ids" });
     return {
@@ -448,7 +448,7 @@
 
   // Details for an item in your library (finds it on TMDB first)
   async function details(item) {
-    // reuse the TMDB match js/ratings.js already found, if any
+    // reuse the TMDB match js/services/ratings.js already found, if any
     let ref = window.Ratings ? Ratings.refOf(item) : null;
     if (!ref) {
       const match = await findMatch(item);

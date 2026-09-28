@@ -163,7 +163,7 @@
     return `<div class="t-cast">${cast
       .map(
         (c) => `<div class="t-person">
-          <img src="${c.photo ? Store.img(c.photo, "w185") : "images/avatar-placeholder.svg"}" alt="" loading="lazy" />
+          <img src="${c.photo ? Store.img(c.photo, "w185") : "images/placeholders/avatar-placeholder.svg"}" alt="" loading="lazy" />
           <strong>${esc(c.name)}</strong><span>${esc(c.character || "")}</span>
         </div>`
       )

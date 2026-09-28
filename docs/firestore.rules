@@ -1,0 +1,98 @@
+// Firestore security rules for Movie Nights (project movie-nights-71380).
+//
+// This file is a reference copy: the rules that actually apply are the ones in
+// Firebase console -> Firestore -> Rules. To change them, edit them there and
+// click Publish (and update this copy).
+//
+// Who can do what:
+//   - Only Google sign-in with a verified email, and only allowlisted emails.
+//   - Each person reads and saves only their own library (users/{uid}).
+//   - The owner (you) can read everyone's library.
+//   - public/owner is the owner's library for visitors: anyone reads it,
+//     only the owner saves it. Friends see the owner's ratings through it.
+//   - Documents must have exactly the fields the site sends, with size limits.
+//   - Nothing can be deleted from the site, and everything else is denied.
+//
+// To add a person: put their Gmail address in member() below.
+// Replace WIFE_EMAIL / FRIEND_EMAIL with real addresses before publishing.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- who is who ----------
+
+    function signedInWithGoogle() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    function owner() {
+      return signedInWithGoogle()
+        && request.auth.token.email == 'niku.mirzak1@gmail.com';
+    }
+
+    function member() {
+      return signedInWithGoogle()
+        && request.auth.token.email in [
+          'niku.mirzak1@gmail.com',
+          'WIFE_EMAIL',
+          'FRIEND_EMAIL'
+        ];
+    }
+
+    function isMe(uid) {
+      return request.auth.uid == uid;
+    }
+
+    // ---------- what a saved document may look like ----------
+
+    // saved time: a whole number, not in the future (5 min allowance for phone clocks)
+    function validTime(d) {
+      return d.updatedAt is int
+        && d.updatedAt > 1700000000000
+        && d.updatedAt <= request.time.toMillis() + 300000;
+    }
+
+    function validUserDoc(d) {
+      return d.keys().hasOnly(['data', 'name', 'photo', 'base', 'updatedAt'])
+        && d.keys().hasAll(['data', 'name', 'base', 'updatedAt'])
+        && d.data is string && d.data.size() < 900000
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 100
+        && (!('photo' in d) || (d.photo is string && d.photo.size() <= 1000
+             && (d.photo == '' || d.photo.matches('https://.*'))))
+        && validTime(d)
+        // only the owner can have the full library; everyone else starts empty
+        && (d.base == 'empty' || (d.base == 'library' && owner()));
+    }
+
+    function validPublicDoc(d) {
+      return d.keys().hasOnly(['data', 'name', 'updatedAt'])
+        && d.keys().hasAll(['data', 'name', 'updatedAt'])
+        && d.data is string && d.data.size() < 900000
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 100
+        && validTime(d);
+    }
+
+    // ---------- people's libraries ----------
+
+    match /users/{uid} {
+      allow get: if member() && (isMe(uid) || owner());
+      allow list: if owner();
+      allow create, update: if member() && isMe(uid) && validUserDoc(request.resource.data);
+      allow delete: if false;
+    }
+
+    // ---------- the owner's public library ----------
+
+    match /public/owner {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if owner() && validPublicDoc(request.resource.data);
+      allow delete: if false;
+    }
+
+    // anything else: denied (default)
+  }
+}

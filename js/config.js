@@ -10,7 +10,7 @@
  *           uses at most 900, remembers every answer, and shows the TMDB score
  *           until the rest are looked up on a later day.
  *
- * FIREBASE  Sign in with Google + sync your library across devices (js/cloud.js).
+ * FIREBASE  Sign in with Google + sync your library across devices (js/core/cloud.js).
  *           Copied from Firebase console -> Project settings -> Your apps. This
  *           config is meant to be public: the Firestore security rules decide
  *           which Google accounts may read or save anything.

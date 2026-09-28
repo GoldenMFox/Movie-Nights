@@ -44,7 +44,7 @@
     }
   }
 
-  // what's synced to your account (js/cloud.js)
+  // what's synced to your account (js/core/cloud.js)
   const SYNCED = [KEYS.overrides, KEYS.custom, KEYS.tiers, KEYS.profile];
 
   // signed in: your own library ("library" = starts from data/library.js, "empty" = starts empty).
@@ -254,7 +254,7 @@
     changed(null);
   }
 
-  /* ---------- account sync (used by js/cloud.js) ---------- */
+  /* ---------- account sync (used by js/core/cloud.js) ---------- */
 
   // everything that belongs to you, as one object
   function snapshot() {
@@ -293,7 +293,7 @@
   }
 
   function poster(path, size) {
-    return img(path, size) || "images/poster-placeholder.svg";
+    return img(path, size) || "images/placeholders/poster-placeholder.svg";
   }
 
   const TYPE_LABEL = { movie: "Movie", tv: "TV Show", anime: "Anime" };

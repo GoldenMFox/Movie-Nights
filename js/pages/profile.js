@@ -10,7 +10,7 @@
     <div class="profile-grid">
       <div>
         <div class="panel profile-card">
-          <img src="images/avatar.jpg" alt="Profile picture" />
+          <img src="images/brand/avatar.jpg" alt="Profile picture" />
           <h1 class="p-name"></h1>
           <p class="muted p-joined"></p>
           <form class="name-form">

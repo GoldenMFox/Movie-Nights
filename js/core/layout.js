@@ -30,8 +30,8 @@
 
   // signed in: your Google photo (the owner keeps the site's own picture)
   const acct = window.Cloud && Cloud.account();
-  const avatar = acct && acct.base === "empty" && acct.photo ? acct.photo : "images/avatar.jpg";
-  const pic = (a) => (a.base === "empty" && a.photo ? a.photo : "images/avatar.jpg");
+  const avatar = acct && acct.base === "empty" && acct.photo ? acct.photo : "images/brand/avatar.jpg";
+  const pic = (a) => (a.base === "empty" && a.photo ? a.photo : "images/brand/avatar.jpg");
 
   // sign in / "Who's watching?" / sign out
   function accountMenu() {
@@ -60,10 +60,10 @@
     <div class="nav-bar">
       <button class="icon-btn nav-back" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button>
       <button class="nav-toggle" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
-      <a class="nav-logo" href="index.html"><img src="images/logo.png" alt="Movie Nights" /></a>
+      <a class="nav-logo" href="index.html"><img src="images/brand/logo.png" alt="Movie Nights" /></a>
       <div class="nav-menu">
         <div class="nav-menu-head">
-          <a class="nav-logo" href="index.html"><img src="images/logo.png" alt="Movie Nights" /></a>
+          <a class="nav-logo" href="index.html"><img src="images/brand/logo.png" alt="Movie Nights" /></a>
           <button class="nav-close" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <ul class="nav-links">
@@ -322,7 +322,7 @@
   footer.innerHTML = `
     <div class="footer-inner">
       <div>
-        <a href="index.html"><img src="images/logo.png" alt="Movie Nights" /></a>
+        <a href="index.html"><img src="images/brand/logo.png" alt="Movie Nights" /></a>
         <p>Movie Nights: a personal list of the movies, TV shows and anime we've watched,
         rated and ranked, plus everything still waiting on the watchlist.</p>
       </div>

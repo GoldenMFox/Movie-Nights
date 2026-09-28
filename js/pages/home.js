@@ -67,7 +67,7 @@
     return text.slice(0, text.lastIndexOf(" ", max)) + "…";
   }
 
-  // one trending title as a slide (buttons work through js/cards.js)
+  // one trending title as a slide (buttons work through js/components/cards.js)
   function trendingSlide(hit, rank) {
     const lib = Cards.inLibrary(hit);
     const tmdbKey = `${hit.mediaType}-${hit.tmdbId}`;

@@ -12,7 +12,7 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v3";
+const VERSION = "v4";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [
@@ -31,25 +31,25 @@ const APP_FILES = [
   "css/style.css",
   "data/library.js",
   "js/config.js",
-  "js/store.js",
-  "js/cloud.js",
-  "js/lang.js",
-  "js/layout.js",
-  "js/tmdb.js",
-  "js/ratings.js",
-  "js/cards.js",
-  "js/add-title.js",
-  "js/browse.js",
-  "js/home.js",
-  "js/discover.js",
-  "js/title.js",
-  "js/tier-list.js",
-  "js/profile.js",
-  "images/logo.png",
-  "images/avatar.jpg",
-  "images/favicon.png",
-  "images/avatar-placeholder.svg",
-  "images/poster-placeholder.svg",
+  "js/core/store.js",
+  "js/core/cloud.js",
+  "js/core/lang.js",
+  "js/core/layout.js",
+  "js/services/tmdb.js",
+  "js/services/ratings.js",
+  "js/components/cards.js",
+  "js/components/add-title.js",
+  "js/pages/browse.js",
+  "js/pages/home.js",
+  "js/pages/discover.js",
+  "js/pages/title.js",
+  "js/pages/tier-list.js",
+  "js/pages/profile.js",
+  "images/brand/logo.png",
+  "images/brand/avatar.jpg",
+  "images/brand/favicon.png",
+  "images/placeholders/avatar-placeholder.svg",
+  "images/placeholders/poster-placeholder.svg",
   "images/icons/icon-192.png",
   "images/icons/icon-512.png",
   "images/icons/apple-touch-icon.png",

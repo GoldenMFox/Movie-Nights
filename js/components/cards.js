@@ -203,7 +203,7 @@
   /* ---------------- IMDb / TMDB ratings on library cards ---------------- */
 
   // Cards whose rating isn't known yet ask for it once they scroll into view,
-  // a few at a time (see js/ratings.js). Answers are cached, so it's once per title.
+  // a few at a time (see js/services/ratings.js). Answers are cached, so it's once per title.
   const scoreWatcher =
     "IntersectionObserver" in window
       ? new IntersectionObserver(
