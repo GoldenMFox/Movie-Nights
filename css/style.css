@@ -4618,3 +4618,15 @@ a.stat-tile:hover {
 html.standalone .app-sheet.open {
   pointer-events: auto;
 }
+
+@media (max-width: 900px) {
+  /* Tier List "Move to…" bar: sit above the tab bar, not behind it */
+  html.standalone .tier-selected-bar {
+    bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+
+  /* when the page scrolls to something (e.g. a focused field), keep it clear of the tab bar */
+  html.standalone {
+    scroll-padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  }
+}

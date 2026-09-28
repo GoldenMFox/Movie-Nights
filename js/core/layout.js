@@ -494,7 +494,12 @@
       if (q) location.href = `discover.html?q=${encodeURIComponent(q)}`;
     });
     // focus straight from the tap, so the phone keyboard opens
-    bar.querySelector('[data-tab="search"]').addEventListener("click", () => search.isOpen() && searchInput2.focus());
+    // (the last search is selected, so typing replaces it)
+    bar.querySelector('[data-tab="search"]').addEventListener("click", () => {
+      if (!search.isOpen()) return;
+      searchInput2.focus();
+      searchInput2.select();
+    });
 
     // Library: the list pages
     const count = (test) => Store.all().filter(test).length;
