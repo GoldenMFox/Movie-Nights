@@ -16,7 +16,7 @@
   const { esc } = UI;
   const DELAY = 800; // ms of resting on a poster before the preview opens
   const PRELOAD = 250; // start looking up the trailer a bit earlier, so it's ready
-  const REVEAL = 700; // after it starts playing, let YouTube's own title / buttons fade first
+  const REVEAL = 900; // after it starts playing, let YouTube's own title / buttons fade first
 
   // connect to YouTube ahead of time, so the first video starts faster
   ["https://www.youtube.com", "https://i.ytimg.com", "https://www.google.com"].forEach((href) => {
@@ -121,14 +121,19 @@
     close();
     previewRef = ref;
 
-    const r = card.getBoundingClientRect();
-    const width = Math.round(Math.min(Math.max(r.width * 1.75, 340), 480));
+    // the card's normal size (it grows a little while hovered), centred where it is
+    const box = card.getBoundingClientRect();
+    const cw = card.offsetWidth;
+    const ch = card.offsetHeight;
+    const r = { left: box.left + box.width / 2 - cw / 2, top: box.top + box.height / 2 - ch / 2, width: cw, height: ch };
     const backdrop = b.backdrop ? Store.img(b.backdrop, "w780") : Store.poster(b.poster, "w500");
 
     preview = document.createElement("div");
     preview.className = "hover-preview";
     preview.dataset[ref.kind === "id" ? "id" : "tmdb"] = ref.value;
-    preview.style.width = `${width}px`;
+    // exactly as tall as the poster card; the video fills what the text leaves
+    preview.style.height = `${Math.round(r.height)}px`;
+    preview.style.width = `${Math.round(r.width)}px`; // temporary, to measure the text
     preview.innerHTML = `
       <div class="hp-video">
         <img class="hp-backdrop" src="${backdrop}" alt="" />
@@ -137,14 +142,16 @@
       <div class="hp-info">${infoHtml(ref, null)}</div>`;
     document.body.append(preview);
 
-    // place it over the poster, inside the window and below the navbar
-    const navBottom = (document.querySelector(".site-nav") || { getBoundingClientRect: () => ({ bottom: 0 }) }).getBoundingClientRect().bottom;
-    const h = preview.offsetHeight;
+    // width: whatever keeps the video 16:9 at that height (never narrower than the
+    // card, never wider than the window); centred on the card, same top and bottom
+    const infoH = preview.querySelector(".hp-info").offsetHeight + 24; // + room for genres / details arriving later
+    const videoH = Math.max(r.height - infoH, 120);
+    const width = Math.round(Math.min(Math.max((videoH * 16) / 9, r.width), window.innerWidth - 24));
+    preview.style.width = `${width}px`;
     const left = Math.min(Math.max(r.left + r.width / 2 - width / 2, 12), window.innerWidth - width - 12);
-    const top = Math.min(Math.max(r.top + r.height / 2 - h / 2, navBottom + 8), window.innerHeight - h - 12);
     preview.style.left = `${left}px`;
-    preview.style.top = `${Math.max(top, 8)}px`;
-    preview.style.transformOrigin = `${r.left + r.width / 2 - left}px ${r.top + r.height / 2 - top}px`;
+    preview.style.top = `${Math.round(r.top)}px`;
+    preview.style.transformOrigin = `${r.left + r.width / 2 - left}px 50%`;
     requestAnimationFrame(() => preview && preview.classList.add("show"));
 
     preview.addEventListener("mouseleave", (e) => {
@@ -187,8 +194,15 @@
         send("command", "playVideo");
         setTimeout(nudge, 400);
       };
-      nudge();
+      // only if it hasn't started by itself (a nudge makes YouTube flash its buttons)
+      setTimeout(nudge, 1000);
     });
+    // cover the video area like a picture would (the player itself is always 16:9)
+    const bw = box.clientWidth;
+    const bh = box.clientHeight;
+    const fw = Math.max(bw, (bh * 16) / 9);
+    iframe.style.width = `${Math.ceil(fw)}px`;
+    iframe.style.height = `${Math.ceil((fw * 9) / 16)}px`;
     box.insertBefore(iframe, box.querySelector(".hp-sound"));
     muted = true;
   }

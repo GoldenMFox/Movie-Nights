@@ -4576,3 +4576,28 @@ a.stat-tile:hover {
 .hp-more {
   margin-left: auto;
 }
+
+/* hover preview: as tall as the poster card; the video takes the space above the text */
+.hover-preview {
+  display: flex;
+  flex-direction: column;
+}
+
+.hp-video {
+  flex: 1 1 auto;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+
+.hp-info {
+  flex-shrink: 0;
+}
+
+.hp-frame {
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%) scale(1.4);
+}
