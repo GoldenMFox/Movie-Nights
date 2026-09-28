@@ -3437,7 +3437,7 @@ a.stat-tile:hover {
 .page-tools {
   display: flex;
   gap: 10px;
-  margin-left: auto;
+  margin-left: 8px;
 }
 
 .tool-btn {
