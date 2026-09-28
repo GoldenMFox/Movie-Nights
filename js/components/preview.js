@@ -192,10 +192,10 @@
     btn.setAttribute("aria-label", muted ? "Turn sound on" : "Turn sound off");
   }
 
+  // always try: browsers that allow sound (site allowed to autoplay, or you've clicked on
+  // the page) play it; the others pause or keep it muted, and then it carries on muted
   function trySound() {
     if (!preview || !preview.classList.contains("show") || !preview.dataset.started || !muted || !wantSound) return;
-    const clicked = navigator.userActivation ? navigator.userActivation.hasBeenActive : true;
-    if (!clicked) return; // the browser would stop the video; stay muted
     muted = false;
     preview.dataset.soundAt = Date.now();
     send("command", "unMute");
@@ -267,6 +267,12 @@
         el.querySelector(".hp-sound").hidden = false;
         trySound();
       }, REVEAL);
+    }
+    // the player reports it's still muted (sound refused): show that on the button
+    const info = data.event === "infoDelivery" && data.info;
+    if (info && info.muted === true && !muted && preview.dataset.soundAt && Date.now() - Number(preview.dataset.soundAt) < 3000) {
+      muted = true;
+      paintSound();
     }
     // the browser refused the sound and paused it: carry on muted
     if (state === 2 && preview.dataset.soundAt && Date.now() - Number(preview.dataset.soundAt) < 2500) {
