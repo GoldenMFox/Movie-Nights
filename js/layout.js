@@ -1,0 +1,246 @@
+/*
+ * Layout: builds the navbar and footer on every page (so they only exist in
+ * one place), and handles dark/light mode, search and the profile menu.
+ */
+(function () {
+  const esc = (s) =>
+    String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+  const PAGES = [
+    { id: "home", href: "index.html", label: "Home", icon: "fa-solid fa-house" },
+    { id: "discover", href: "discover.html", label: "Discover", icon: "fa-solid fa-compass" },
+    { id: "movie", href: "movies.html", label: "Movies", icon: "fa-solid fa-film" },
+    { id: "tv", href: "tv-shows.html", label: "TV Shows", icon: "fa-solid fa-tv" },
+    { id: "anime", href: "anime.html", label: "Anime", icon: "fa-solid fa-clapperboard" },
+    { id: "favorites", href: "favorites.html", label: "Favorites", icon: "fa-solid fa-heart" },
+    { id: "watchlist", href: "watchlist.html", label: "Watchlist", icon: "fa-solid fa-bookmark" },
+    { id: "tiers", href: "tier-list.html", label: "Tier List", icon: "fa-solid fa-ranking-star" },
+  ];
+
+  const current = document.body.dataset.page;
+  const profile = Store.getProfile();
+
+  /* ---------------- navbar ---------------- */
+
+  const nav = document.createElement("nav");
+  nav.className = "site-nav";
+  nav.innerHTML = `
+    <div class="nav-bar">
+      <button class="nav-toggle" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
+      <a class="nav-logo" href="index.html"><img src="images/logo.png" alt="Movie Nights" /></a>
+      <div class="nav-menu">
+        <div class="nav-menu-head">
+          <a class="nav-logo" href="index.html"><img src="images/logo.png" alt="Movie Nights" /></a>
+          <button class="nav-close" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <ul class="nav-links">
+          ${PAGES.map(
+            (p) =>
+              `<li><a href="${p.href}" class="${p.id === current ? "active" : ""}"${p.id === current ? ' aria-current="page"' : ""}><i class="${p.icon}"></i>${p.label}</a></li>`
+          ).join("")}
+        </ul>
+      </div>
+      <div class="nav-tools">
+        <button class="icon-btn theme-toggle" aria-label="Toggle dark mode">
+          <i class="fa-solid fa-moon"></i><i class="fa-solid fa-sun"></i>
+        </button>
+        <div class="search">
+          <button class="icon-btn search-toggle" aria-label="Search (press /)"><i class="fa-solid fa-magnifying-glass"></i></button>
+          <div class="search-panel">
+            <input type="search" placeholder="Search your library..." aria-label="Search your library" autocomplete="off" />
+            <ul class="search-results"></ul>
+          </div>
+        </div>
+        <div class="profile">
+          <button class="user-pic-btn" aria-label="Profile menu">
+            <img src="images/avatar.jpg" class="user-pic" alt="" />
+          </button>
+          <div class="profile-menu">
+            <div class="user-info">
+              <img src="images/avatar.jpg" alt="" />
+              <h2>${esc(profile.name)}</h2>
+            </div>
+            <hr />
+            <a href="profile.html"><i class="fa-solid fa-user"></i><span>Profile &amp; stats</span><i class="fa-solid fa-chevron-right"></i></a>
+            <a href="#" data-action="add-title"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
+            <a href="profile.html#settings"><i class="fa-solid fa-gear"></i><span>Settings &amp; backup</span><i class="fa-solid fa-chevron-right"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.body.prepend(nav);
+
+  const menu = nav.querySelector(".nav-menu");
+  const profileBox = nav.querySelector(".profile");
+  const searchBox = nav.querySelector(".search");
+  const searchInput = searchBox.querySelector("input");
+  const resultsList = searchBox.querySelector(".search-results");
+
+  nav.querySelector(".nav-toggle").addEventListener("click", (e) => {
+    e.stopPropagation();
+    menu.classList.add("open");
+  });
+  nav.querySelector(".nav-close").addEventListener("click", () => menu.classList.remove("open"));
+
+  /* ---------------- theme ---------------- */
+
+  nav.querySelector(".theme-toggle").addEventListener("click", () => {
+    const light = document.documentElement.dataset.theme !== "light";
+    if (light) document.documentElement.dataset.theme = "light";
+    else delete document.documentElement.dataset.theme;
+    try {
+      localStorage.setItem("mn:theme", light ? "light" : "dark");
+    } catch (e) {}
+  });
+
+  /* ---------------- profile menu ---------------- */
+
+  profileBox.querySelector(".user-pic-btn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    searchBox.classList.remove("open");
+    profileBox.classList.toggle("open");
+  });
+
+  /* ---------------- search ---------------- */
+
+  let focused = -1;
+
+  function openSearch() {
+    profileBox.classList.remove("open");
+    searchBox.classList.add("open");
+    setTimeout(() => searchInput.focus(), 50);
+  }
+
+  function closeSearch() {
+    searchBox.classList.remove("open");
+  }
+
+  searchBox.querySelector(".search-toggle").addEventListener("click", (e) => {
+    e.stopPropagation();
+    searchBox.classList.contains("open") ? closeSearch() : openSearch();
+  });
+
+  function renderResults() {
+    const q = searchInput.value.trim().toLowerCase();
+    focused = -1;
+    if (!q) {
+      resultsList.innerHTML = "";
+      return;
+    }
+    const hits = Store.all()
+      .map((item) => {
+        const t = item.title.toLowerCase();
+        const score = t === q ? 0 : t.startsWith(q) ? 1 : t.includes(q) ? 2 : String(item.year) === q ? 3 : -1;
+        return { item, score };
+      })
+      .filter((h) => h.score >= 0)
+      .sort((a, b) => a.score - b.score || a.item.title.localeCompare(b.item.title))
+      .slice(0, 8);
+
+    resultsList.innerHTML = hits.length
+      ? hits
+          .map(
+            ({ item }) => `<li><a href="title.html?id=${encodeURIComponent(item.id)}">
+              <img src="${Store.poster(item.poster, "w92")}" alt="" loading="lazy" />
+              <span>${esc(item.title)}<small>${item.year} · ${Store.TYPE_LABEL[item.type] || ""}${
+              item.rating != null ? " · ★ " + item.rating : ""
+            }</small></span></a></li>`
+          )
+          .join("")
+      : `<li class="search-empty">No titles match "${esc(searchInput.value)}"</li>`;
+  }
+
+  searchInput.addEventListener("input", renderResults);
+  searchInput.addEventListener("keydown", (e) => {
+    const links = resultsList.querySelectorAll("a");
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!links.length) return;
+      focused = (focused + (e.key === "ArrowDown" ? 1 : -1) + links.length) % links.length;
+      links.forEach((l, i) => l.classList.toggle("focused", i === focused));
+      links[focused].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter") {
+      const target = links[focused] || links[0];
+      if (target) location.href = target.href;
+    } else if (e.key === "Escape") {
+      closeSearch();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if (e.key === "/" && !typing) {
+      e.preventDefault();
+      openSearch();
+    }
+    if (e.key === "Escape") {
+      profileBox.classList.remove("open");
+      menu.classList.remove("open");
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!searchBox.contains(e.target)) closeSearch();
+    if (!profileBox.contains(e.target)) profileBox.classList.remove("open");
+    if (!menu.contains(e.target)) menu.classList.remove("open");
+  });
+
+  /* ---------------- footer ---------------- */
+
+  const footer = document.createElement("footer");
+  footer.className = "site-footer";
+  const year = new Date().getFullYear();
+  footer.innerHTML = `
+    <div class="footer-inner">
+      <div>
+        <a href="index.html"><img src="images/logo.png" alt="Movie Nights" /></a>
+        <p>Movie Nights: a personal list of the movies, TV shows and anime we've watched,
+        rated and ranked, plus everything still waiting on the watchlist.</p>
+      </div>
+      <div>
+        <h3>Browse</h3>
+        <ul>${PAGES.slice(0, 5).map((p) => `<li><a href="${p.href}">${p.label}</a></li>`).join("")}</ul>
+      </div>
+      <div>
+        <h3>My lists</h3>
+        <ul>
+          ${PAGES.slice(5).map((p) => `<li><a href="${p.href}">${p.label}</a></li>`).join("")}
+          <li><a href="profile.html">Profile &amp; stats</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="copyright">&copy; 2023&ndash;${year} Movie Nights by Mirzac Nicolae &amp; Alexandru Donoaga</div>`;
+  document.body.append(footer);
+
+  /* ---------------- shared helpers ---------------- */
+
+  let toastTimer;
+  function toast(message) {
+    let el = document.querySelector(".toast");
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "toast";
+      el.setAttribute("role", "status");
+      document.body.append(el);
+    }
+    el.textContent = message;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
+  }
+
+  function download(filename, text, type) {
+    const blob = new Blob([text], { type: type || "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.append(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 0);
+  }
+
+  window.UI = { esc, toast, download, PAGES };
+})();

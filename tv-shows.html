@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TV Shows &middot; Movie Nights</title>
+    <meta name="description" content="Every TV show in the Movie Nights library." />
+    <link rel="icon" href="images/favicon.png" type="image/png" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <script>
+      try {
+        if (localStorage.getItem("mn:theme") === "light") document.documentElement.dataset.theme = "light";
+      } catch (e) {}
+    </script>
+  </head>
+  <body data-page="tv">
+    <main class="container">
+      <h1 class="page-title">TV Shows</h1>
+      <div id="browse"></div>
+    </main>
+    <script src="data/library.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/store.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/tmdb.js"></script>
+    <script src="js/ratings.js"></script>
+    <script src="js/cards.js"></script>
+    <script src="js/add-title.js"></script>
+    <script src="js/browse.js"></script>
+  </body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Movie Nights</title>
+    <meta name="description" content="Title details." />
+    <link rel="icon" href="images/favicon.png" type="image/png" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <script>
+      try {
+        if (localStorage.getItem("mn:theme") === "light") document.documentElement.dataset.theme = "light";
+      } catch (e) {}
+    </script>
+  </head>
+  <body data-page="title">
+    <section id="title-hero" class="title-hero"></section>
+    <main id="title-main" class="container"></main>
+    <script src="data/library.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/store.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/tmdb.js"></script>
+    <script src="js/ratings.js"></script>
+    <script src="js/cards.js"></script>
+    <script src="js/add-title.js"></script>
+    <script src="js/title.js"></script>
+  </body>
+</html>
