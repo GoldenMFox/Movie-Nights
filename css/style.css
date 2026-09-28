@@ -4630,3 +4630,231 @@ html.standalone .app-sheet.open {
     scroll-padding-bottom: calc(100px + env(safe-area-inset-bottom));
   }
 }
+
+/* ============================== Title page: glass redesign (matches the home slideshow) ============================== */
+
+.t-backdrop img {
+  opacity: 0.62;
+}
+
+.t-backdrop::after {
+  background: linear-gradient(90deg, rgba(11, 11, 12, 0.96) 20%, rgba(11, 11, 12, 0.55) 55%, rgba(11, 11, 12, 0.25)),
+    linear-gradient(to top, #0b0b0c 0%, rgba(11, 11, 12, 0.6) 22%, transparent 55%);
+}
+
+.t-head h1 {
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.05;
+}
+
+.t-head h1 .year {
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.t-meta {
+  gap: 6px 10px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+}
+
+.t-meta .dot {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.t-genres {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.t-cert {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.t-provider-list img {
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+/* buttons: white Trailer, glass pills for the rest */
+.btn.t-trailer {
+  height: 50px;
+  padding: 0 28px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  color: #111;
+  font-size: 15.5px;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.btn.t-trailer:hover {
+  filter: none;
+  background: #f1f1f1;
+  transform: translateY(-1px) scale(1.02);
+}
+
+.t-actions .btn {
+  height: 50px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+  font-weight: 600;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.t-actions .btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+}
+
+.t-actions .btn.is-on {
+  border-color: transparent;
+  background: var(--accent);
+}
+
+.t-actions .btn.is-on:hover {
+  background: var(--accent-hover);
+}
+
+.t-actions .btn.is-rated {
+  border-color: rgba(245, 197, 24, 0.45);
+  background: rgba(245, 197, 24, 0.12);
+}
+
+.t-overview {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.t-director {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.t-director span {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* computers: poster + text side by side, buttons in one row */
+@media (min-width: 701px) {
+  .t-hero-inner {
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 48px;
+    align-items: center;
+    padding-top: 56px;
+    padding-bottom: 64px;
+  }
+
+  .t-poster {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+  }
+
+  .t-head h1 {
+    margin-bottom: 14px;
+    font-size: clamp(34px, 4.4vw, 58px);
+  }
+
+  .t-cta {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    max-width: none;
+    margin-top: 26px;
+  }
+
+  .btn.t-trailer {
+    width: auto;
+  }
+
+  .t-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .t-about {
+    max-width: 680px;
+    margin-top: 22px;
+  }
+}
+
+/* phones: same look, stacked */
+@media (max-width: 700px) {
+  .btn.t-trailer {
+    width: 100%;
+  }
+
+  .t-actions .btn {
+    height: 46px;
+    padding: 0 6px;
+  }
+}
+
+/* sections below: glass cards, cleaner headings */
+.t-section {
+  margin-top: 40px;
+}
+
+.t-section-title {
+  padding-bottom: 0;
+  border-bottom: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.t-person {
+  padding: 18px 10px 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  background: var(--glass-bg);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.t-person:hover {
+  background: var(--glass-bg-hover);
+  transform: translateY(-2px);
+}
+
+.t-person img {
+  width: 78px;
+  height: 78px;
+  box-shadow: 0 0 0 2px var(--glass-border), 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.t-thumb,
+.t-still img {
+  border-radius: 14px;
+}
+
+.t-thumb i {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.t-review {
+  padding: 18px 20px;
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  background: var(--glass-bg);
+}
+
+/* long links / words in reviews wrap instead of stretching the page on phones */
+.t-reviews {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.t-review p,
+.t-review header strong {
+  overflow-wrap: anywhere;
+}

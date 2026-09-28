@@ -262,7 +262,7 @@
     const e = TMDB.enabled() ? Ratings.entry(Ratings.refOf(item)) : null;
 
     const buttons = `
-      <button class="btn t-trailer" data-action="trailer"><i class="fa-solid fa-clapperboard"></i> Trailer</button>
+      <button class="btn t-trailer" data-action="trailer"><i class="fa-solid fa-play"></i> Trailer</button>
       <div class="t-actions">
         <button class="btn${item.watchlist ? " is-on" : ""}" data-action="watch" aria-pressed="${!!item.watchlist}">
           <i class="fa-${item.watchlist ? "solid" : "regular"} fa-bookmark"></i> ${item.watchlist ? "On my list" : "My List"}</button>
@@ -377,7 +377,7 @@
 
   function renderExternal(d) {
     const buttons = `
-      <button class="btn t-trailer" data-action="t-trailer"><i class="fa-solid fa-clapperboard"></i> Trailer</button>
+      <button class="btn t-trailer" data-action="t-trailer"><i class="fa-solid fa-play"></i> Trailer</button>
       <div class="t-actions">
         <button class="btn" data-action="t-watch"><i class="fa-solid fa-plus"></i> My List</button>
         <button class="btn" data-action="t-add"><i class="fa-regular fa-circle-check"></i> Watched</button>
