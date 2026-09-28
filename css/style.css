@@ -193,8 +193,9 @@ label.field {
 }
 
 .nav-bar {
+  position: relative;
   height: 64px;
-  max-width: 1570px;
+  max-width: 1550px; /* same width as the page content, so the navbar lines up with it */
   margin: 0 auto;
   padding: 0 30px;
   display: flex;
@@ -2799,4 +2800,15 @@ a.stat-tile:hover {
   margin: -4px 0 10px;
   color: #aaa;
   font-size: 15px;
+}
+/* Wide screens: the profile picture ends exactly where the page content ends,
+   and the EN | RU switch sits outside that edge, in the empty margin. */
+@media (min-width: 1700px) {
+  .lang-toggle.in-bar {
+    position: absolute;
+    top: 50%;
+    left: calc(100% - 30px + 18px); /* 18px past the content edge */
+    margin-left: 0;
+    transform: translateY(-50%);
+  }
 }
