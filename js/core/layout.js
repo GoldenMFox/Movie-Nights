@@ -28,10 +28,11 @@
     </div>`;
   const profile = Store.getProfile();
 
-  // signed in: your Google photo (the owner keeps the site's own picture)
+  // signed in: your Google photo; signed out: a plain user icon
+  const USER_ICON = "images/placeholders/user.svg";
   const acct = window.Cloud && Cloud.account();
-  const avatar = acct && acct.base === "empty" && acct.photo ? acct.photo : "images/brand/avatar.jpg";
-  const pic = (a) => (a.base === "empty" && a.photo ? a.photo : "images/brand/avatar.jpg");
+  const pic = (a) => (a && a.photo) || USER_ICON;
+  const avatar = pic(acct);
 
   // sign in / "Who's watching?" / sign out
   function accountMenu() {

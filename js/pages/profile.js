@@ -10,7 +10,7 @@
     <div class="profile-grid">
       <div>
         <div class="panel profile-card">
-          <img src="images/brand/avatar.jpg" alt="Profile picture" />
+          <img src="${esc((window.Cloud && Cloud.account() && Cloud.account().photo) || "images/placeholders/user.svg")}" alt="Profile picture" referrerpolicy="no-referrer" />
           <h1 class="p-name"></h1>
           <p class="muted p-joined"></p>
           <form class="name-form">

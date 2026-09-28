@@ -12,7 +12,7 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v4";
+const VERSION = "v5";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [
@@ -46,9 +46,9 @@ const APP_FILES = [
   "js/pages/tier-list.js",
   "js/pages/profile.js",
   "images/brand/logo.png",
-  "images/brand/avatar.jpg",
   "images/brand/favicon.png",
   "images/placeholders/avatar-placeholder.svg",
+  "images/placeholders/user.svg",
   "images/placeholders/poster-placeholder.svg",
   "images/icons/icon-192.png",
   "images/icons/icon-512.png",

@@ -158,9 +158,9 @@ Movie-Nights-NEW/
 │       ├── home.js, discover.js, browse.js (movies / TV / anime / favorites / watchlist)
 │       └── title.js, tier-list.js, profile.js
 ├── images/
-│   ├── brand/                 logo, favicon, profile picture
+│   ├── brand/                 logo, favicon
 │   ├── icons/                 installed-app icons
-│   └── placeholders/          shown when a poster or photo is missing
+│   └── placeholders/          user icon (signed out), missing poster / photo
 ├── docs/
 │   └── firestore.rules        copy of the database security rules
 ├── tools/
