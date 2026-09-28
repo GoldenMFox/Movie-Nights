@@ -2889,13 +2889,25 @@ a.stat-tile:hover {
 
 /* ============================== Navbar: glass + pill (Apple-style) ============================== */
 
-/* frosted glass: the page blurs softly behind the bar as you scroll */
+/* frosted glass: the page blurs softly behind the bar as you scroll.
+   The glass sits on a layer behind the bar (::before), not on the bar itself: a
+   backdrop-filter on the bar would trap the phone side menu and the profile menu
+   inside it (squashed to the bar's height, and unable to blur the page themselves). */
 .site-nav {
+  background: transparent;
+  border-bottom: 0;
+  box-shadow: none;
+}
+
+.site-nav::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: rgba(14, 14, 16, 0.72);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 0;
-  box-shadow: none;
+  pointer-events: none;
 }
 
 .nav-bar {
@@ -3042,14 +3054,15 @@ a.stat-tile:hover {
     height: 40px;
   }
 
-  /* the glass navbar (backdrop-filter) becomes the menu's frame, which would squash it
-     to the navbar's height: give it the full screen height explicitly */
+  /* side menu: frosted glass like the navbar, a little darker so the links stay readable */
   .nav-menu {
-    bottom: auto;
     height: 100vh;
     height: 100dvh;
     overflow-y: auto;
-    background: #121215;
+    background: rgba(14, 14, 16, 0.78);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    backdrop-filter: saturate(180%) blur(24px);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .nav-links a {
