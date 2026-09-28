@@ -4310,3 +4310,66 @@ a.stat-tile:hover {
     -webkit-line-clamp: 2;
   }
 }
+
+/* ============================== TMDB label: glass pill with a glowing red dot ============================== */
+
+.tmdb-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 5px;
+  padding: 1px 7px 1px 5px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg-hover);
+  color: var(--glass-text);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  line-height: 1.5;
+  vertical-align: 1px;
+}
+
+.tmdb-tag::before {
+  content: "";
+  flex-shrink: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff8a70, #e0271a);
+  box-shadow: 0 0 6px rgba(255, 70, 45, 0.85);
+}
+
+/* on top of pictures (slideshow, title page) it's always light-on-dark glass */
+.hero .tmdb-tag,
+.t-meta .tmdb-tag {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #fff;
+}
+
+.t-score .tmdb-tag {
+  padding: 2px 8px 2px 6px;
+  font-size: 11px;
+}
+
+.hero-score .tmdb-tag {
+  padding: 2px 8px 2px 6px;
+  font-size: 10.5px;
+}
+
+@media (max-width: 480px) {
+  .movie-item .tmdb-tag {
+    gap: 3px;
+    margin-right: 3px;
+    padding: 0 5px 0 4px;
+    font-size: 8px;
+  }
+
+  .movie-item .tmdb-tag::before {
+    width: 4px;
+    height: 4px;
+  }
+}
