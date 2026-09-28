@@ -4031,3 +4031,282 @@ a.stat-tile:hover {
 .segmented button {
   white-space: nowrap;
 }
+
+/* ============================== Home slideshow: glass redesign ============================== */
+
+.hero-slide::after {
+  background: linear-gradient(to top, rgba(8, 8, 10, 0.92) 0%, rgba(8, 8, 10, 0.55) 35%, transparent 70%),
+    linear-gradient(to right, rgba(8, 8, 10, 0.75) 0%, rgba(8, 8, 10, 0.25) 45%, transparent 70%);
+}
+
+.hero-caption {
+  max-width: min(600px, 80%);
+}
+
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+/* "#1 Trending": a glass pill like the navbar's, with a red flame */
+.hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+.hero-kicker i {
+  color: #ff4d3a;
+}
+
+.hero-owned {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid rgba(92, 204, 120, 0.35);
+  border-radius: 999px;
+  background: rgba(92, 204, 120, 0.12);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  color: #8fe3a4;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.hero-caption h2 {
+  margin: 0 0 12px;
+  font-size: clamp(26px, 4vw, 54px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* rating · year · type · genres, like the title page */
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14.5px;
+  font-weight: 500;
+}
+
+.hero-meta .dot {
+  opacity: 0.45;
+}
+
+.hero-score {
+  font-weight: 600;
+  color: #fff;
+}
+
+.hero-caption p.hero-overview {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0 0 20px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.hero-buttons {
+  gap: 12px;
+}
+
+/* white main button, glass second button, round glass Watchlist button */
+.hero-play,
+.hero-glass {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.hero-play {
+  border: 0;
+  background: #fff;
+  color: #111;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.hero-play:hover {
+  transform: translateY(-1px) scale(1.02);
+  background: #f1f1f1;
+}
+
+.hero-glass {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+  color: #fff;
+}
+
+.hero-glass:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.hero-round {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+  color: #fff;
+  font-size: 17px;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.hero-round:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.06);
+}
+
+.hero-round.on {
+  border-color: transparent;
+  background: var(--accent);
+}
+
+/* arrows: round glass buttons; dots: pills, the current one longer */
+.hero-arrow {
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+  font-size: 16px;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.hero-arrow:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateY(-50%) scale(1.06);
+}
+
+.hero-dots {
+  gap: 6px;
+  align-items: center;
+}
+
+.hero-dots button {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+  transition: width 0.35s cubic-bezier(0.32, 0.72, 0, 1), background 0.35s;
+}
+
+.hero-dots button.active {
+  width: 28px;
+  background: #fff;
+}
+
+@media (max-width: 700px) {
+  .hero-caption {
+    left: 18px;
+    right: 18px;
+    bottom: 20px;
+    max-width: none;
+  }
+
+  .hero-tags {
+    margin-bottom: 10px;
+  }
+
+  .hero-caption h2 {
+    margin-bottom: 8px;
+    font-size: 28px;
+  }
+
+  .hero-meta {
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+
+  .hero-caption p.hero-overview {
+    -webkit-line-clamp: 2;
+    margin-bottom: 14px;
+    font-size: 13.5px;
+  }
+
+  .hero-buttons {
+    gap: 8px;
+  }
+
+  .hero-play,
+  .hero-glass {
+    height: 44px;
+    padding: 0 18px;
+    font-size: 14px;
+  }
+
+  .hero-round {
+    width: 44px;
+    height: 44px;
+  }
+
+  .hero-arrow {
+    display: none; /* phones swipe instead */
+  }
+}
+
+.hero-meta {
+  margin-bottom: 6px;
+}
+
+.hero-genres {
+  margin-bottom: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 14px;
+}
+
+@media (max-width: 700px) {
+  .hero-genres {
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+}
+
+/* tablets / small laptops: a taller slideshow so the text always fits */
+@media (min-width: 701px) and (max-width: 1100px) {
+  .hero {
+    aspect-ratio: 16 / 9;
+  }
+
+  .hero-caption p.hero-overview {
+    -webkit-line-clamp: 2;
+  }
+}

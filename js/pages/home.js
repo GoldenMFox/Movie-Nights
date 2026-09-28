@@ -59,6 +59,15 @@
     dots.forEach((d, n) => (d.onclick = () => go(n)));
     hero.onmouseenter = () => clearInterval(timer);
     hero.onmouseleave = restart;
+    // swipe left / right on phones (the arrows are hidden there)
+    let startX = null;
+    hero.ontouchstart = (e) => (startX = e.touches[0].clientX);
+    hero.ontouchend = (e) => {
+      if (startX == null) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      startX = null;
+      if (Math.abs(dx) > 40) go(index + (dx < 0 ? 1 : -1));
+    };
     restart();
   }
 
@@ -73,33 +82,64 @@
     const tmdbKey = `${hit.mediaType}-${hit.tmdbId}`;
     Cards.tmdbCard(hit); // registers it so the buttons below work
     const url = lib ? `title.html?id=${encodeURIComponent(lib.id)}` : `title.html?tmdb=${tmdbKey}`;
-    const kicker = [`#${rank} trending`, Store.TYPE_LABEL[hit.type], hit.year].filter(Boolean).join(" · ");
-    const scores = [
+    // "★ 9 you · TMDB 7.0 · 2026 · Movie · Drama • Thriller" (same style as the title page)
+    const meta = [
       lib && lib.rating != null ? `<span class="hero-score mine"><i class="fa-solid fa-star"></i> ${Cards.formatRating(lib.rating)} <small>you</small></span>` : "",
       hit.score ? `<span class="hero-score"><span class="tmdb-tag">TMDB</span> ${hit.score.toFixed(1)}</span>` : "",
-    ].join("");
-    const buttons = lib
-      ? `<button class="btn" data-action="trailer"><i class="fa-solid fa-play"></i> Trailer</button>
-         <span class="hero-owned"><i class="fa-solid fa-check"></i> In your library</span>`
-      : `<button class="btn" data-action="t-trailer"><i class="fa-solid fa-play"></i> Trailer</button>
-         <button class="btn" data-action="t-watch"><i class="fa-regular fa-bookmark"></i> Watchlist</button>`;
+      hit.year ? `<span>${hit.year}</span>` : "",
+      Store.TYPE_LABEL[hit.type] ? `<span>${esc(Store.TYPE_LABEL[hit.type])}</span>` : "",
+    ].filter(Boolean);
+    const genres = (hit.genres || []).slice(0, 3);
+    const onList = lib && lib.watchlist;
+    const watchBtn = lib
+      ? `<button class="hero-round hero-watch${onList ? " on" : ""}" data-action="watch" aria-label="Watchlist" title="${onList ? "On your Watchlist" : "Add to Watchlist"}">
+           <i class="fa-${onList ? "solid" : "regular"} fa-bookmark"></i></button>`
+      : `<button class="hero-round hero-watch" data-action="t-watch" aria-label="Add to Watchlist" title="Add to Watchlist"><i class="fa-regular fa-bookmark"></i></button>`;
     return {
       img: Store.img(hit.backdrop, "w1280"),
       attrs: lib ? ` data-id="${esc(lib.id)}"` : ` data-tmdb="${tmdbKey}"`,
-      caption: `<span class="hero-kicker">${esc(kicker)}</span>
+      caption: `<div class="hero-tags">
+          <span class="hero-kicker"><i class="fa-solid fa-fire"></i> #${rank} Trending</span>
+          ${lib ? '<span class="hero-owned"><i class="fa-solid fa-check"></i> In your library</span>' : ""}
+        </div>
         <h2>${esc(Lang.title(hit))}</h2>
-        ${scores ? `<div class="hero-scores">${scores}</div>` : ""}
+        ${meta.length ? `<div class="hero-meta">${meta.join('<span class="dot">·</span>')}</div>` : ""}
+        ${genres.length ? `<div class="hero-genres">${esc(genres.join(" • "))}</div>` : ""}
         <p class="hero-overview">${esc(shorten(hit.overview, 190))}</p>
-        <div class="hero-buttons"><a class="btn btn-primary" href="${url}"><i class="fa-solid fa-circle-info"></i> More info</a>${buttons}</div>`,
+        <div class="hero-buttons">
+          <button class="hero-play" data-action="${lib ? "trailer" : "t-trailer"}"><i class="fa-solid fa-play"></i> Trailer</button>
+          <a class="hero-glass" href="${url}"><i class="fa-solid fa-circle-info"></i> More info</a>
+          ${watchBtn}
+        </div>`,
     };
   }
+
+  // the round Watchlist button on a slide shows whether the title is on your Watchlist
+  function paintWatch(btn, on) {
+    btn.classList.toggle("on", on);
+    btn.title = on ? "On your Watchlist" : "Add to Watchlist";
+    btn.innerHTML = `<i class="fa-${on ? "solid" : "regular"} fa-bookmark"></i>`;
+  }
+  Store.onChange((id) => {
+    hero.querySelectorAll(".hero-slide[data-id]").forEach((slide) => {
+      if (id && slide.dataset.id !== id) return;
+      const item = Store.get(slide.dataset.id);
+      const btn = slide.querySelector(".hero-watch");
+      if (item && btn) paintWatch(btn, !!item.watchlist);
+    });
+  });
+  hero.addEventListener("click", (e) => {
+    const btn = e.target.closest('.hero-watch[data-action="t-watch"]');
+    if (btn) setTimeout(() => paintWatch(btn, true), 0); // just added from TMDB
+  });
 
   function personalSlides() {
     const all = Store.all();
     const rated = all.filter((i) => i.rating != null).length;
-    const caption = `<h2>Movie Nights: Your Cinematic Escape</h2>
+    const caption = `<div class="hero-tags"><span class="hero-kicker"><i class="fa-solid fa-film"></i> Your library</span></div>
+      <h2>Movie Nights: Your Cinematic Escape</h2>
       <p class="hero-overview">${all.length} titles, ${rated} rated, ${all.filter((i) => i.watchlist).length} waiting on the watchlist.</p>
-      <div class="hero-buttons"><button class="btn btn-primary random-pick" type="button"><i class="fa-solid fa-shuffle"></i> What should I watch?</button></div>`;
+      <div class="hero-buttons"><button class="hero-play random-pick" type="button"><i class="fa-solid fa-shuffle"></i> What should I watch?</button></div>`;
     return ["/iDl0ZvK003PvOlcW4jEspntZ8hQ.jpg", "/6qiMjnqT3CFSOCwiBTHwnMwkR6I.jpg", "/wuI6zBnLI5EuqdKEMBMQrhIbvOA.jpg", "/8ykii0BhFxktfbS62fs7iFZxkCL.jpg"].map(
       (p) => ({ img: Store.img(p, "w1280"), caption })
     );
