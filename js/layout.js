@@ -26,6 +26,7 @@
   nav.className = "site-nav";
   nav.innerHTML = `
     <div class="nav-bar">
+      <button class="icon-btn nav-back" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button>
       <button class="nav-toggle" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
       <a class="nav-logo" href="index.html"><img src="images/logo.png" alt="Movie Nights" /></a>
       <div class="nav-menu">
@@ -64,6 +65,7 @@
             <a href="profile.html"><i class="fa-solid fa-user"></i><span>Profile &amp; stats</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="#" data-action="add-title"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="profile.html#settings"><i class="fa-solid fa-gear"></i><span>Settings &amp; backup</span><i class="fa-solid fa-chevron-right"></i></a>
+            <a href="#" class="install-app" hidden><i class="fa-solid fa-mobile-screen"></i><span>Install the app</span><i class="fa-solid fa-chevron-right"></i></a>
           </div>
         </div>
       </div>
@@ -211,6 +213,48 @@
     </div>
     <div class="copyright">&copy; 2023&ndash;${year} Movie Nights by Mirzac Nicolae &amp; Alexandru Donoaga</div>`;
   document.body.append(footer);
+
+  /* ---------------- installed app (PWA) ---------------- */
+
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  if (standalone) document.documentElement.classList.add("standalone");
+
+  // the installed app has no browser back button, so the navbar gets one
+  const backBtn = nav.querySelector(".nav-back");
+  if (standalone && current !== "home") backBtn.classList.add("show");
+  backBtn.addEventListener("click", () => (history.length > 1 ? history.back() : (location.href = "index.html")));
+
+  // offline support + installable app (not available when opened as a file)
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+    navigator.serviceWorker.register("sw.js").catch((e) => console.warn("Service worker:", e.message));
+  }
+
+  // "Install the app" in the profile menu
+  const installLink = nav.querySelector(".install-app");
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  let installPrompt = null;
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault(); // show it from our menu instead of the browser's banner
+    installPrompt = e;
+    installLink.hidden = false;
+  });
+  if (isIos && !standalone) installLink.hidden = false;
+  window.addEventListener("appinstalled", () => {
+    installLink.hidden = true;
+    installPrompt = null;
+  });
+  installLink.addEventListener("click", async (e) => {
+    e.preventDefault();
+    profileBox.classList.remove("open");
+    if (installPrompt) {
+      installPrompt.prompt();
+      await installPrompt.userChoice;
+      installPrompt = null;
+      installLink.hidden = true;
+    } else if (isIos) {
+      toast("In Safari: tap the Share button, then \"Add to Home Screen\"");
+    }
+  });
 
   /* ---------------- shared helpers ---------------- */
 

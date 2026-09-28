@@ -2342,3 +2342,11 @@ a.stat-tile:hover {
 .select:disabled {
   opacity: 0.5;
 }
+/* back button: only inside the installed app (no browser back button there) */
+.nav-back {
+  display: none;
+}
+
+.nav-back.show {
+  display: grid;
+}

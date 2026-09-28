@@ -1,0 +1,114 @@
+/*
+ * Service worker: makes Movie Nights work as an installed app and offline.
+ *
+ *  - Pages, styles, scripts and data/library.js: always fetched fresh when
+ *    online (so published changes show up straight away), with the saved copy
+ *    used when there is no connection.
+ *  - Icons and fonts from other sites: saved the first time they load.
+ *  - Posters, TMDB / OMDb / YouTube: left to the browser. (Browsers count every
+ *    saved image from another site as several MB, so saving posters here would
+ *    quickly fill the phone's storage allowance; the normal browser cache
+ *    already keeps them.)
+ *
+ * Bump VERSION when the list of app files below changes.
+ */
+const VERSION = "v1";
+const APP_CACHE = `mn-app-${VERSION}`;
+
+const APP_FILES = [
+  "./",
+  "index.html",
+  "discover.html",
+  "movies.html",
+  "tv-shows.html",
+  "anime.html",
+  "favorites.html",
+  "watchlist.html",
+  "tier-list.html",
+  "title.html",
+  "profile.html",
+  "manifest.webmanifest",
+  "css/style.css",
+  "data/library.js",
+  "js/config.js",
+  "js/store.js",
+  "js/layout.js",
+  "js/tmdb.js",
+  "js/ratings.js",
+  "js/cards.js",
+  "js/add-title.js",
+  "js/browse.js",
+  "js/home.js",
+  "js/discover.js",
+  "js/title.js",
+  "js/tier-list.js",
+  "js/profile.js",
+  "images/logo.png",
+  "images/avatar.jpg",
+  "images/favicon.png",
+  "images/avatar-placeholder.svg",
+  "images/poster-placeholder.svg",
+  "images/icons/icon-192.png",
+  "images/icons/icon-512.png",
+  "images/icons/apple-touch-icon.png",
+];
+
+// hosts whose files never change once published: cache-first
+const STATIC_HOSTS = ["cdnjs.cloudflare.com", "fonts.googleapis.com", "fonts.gstatic.com"];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(APP_CACHE)
+      .then((cache) => cache.addAll(APP_FILES))
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith("mn-app-") && k !== APP_CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  const req = event.request;
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
+
+  if (url.origin === self.location.origin) {
+    event.respondWith(networkFirst(req));
+  } else if (STATIC_HOSTS.includes(url.hostname)) {
+    event.respondWith(cacheFirst(req));
+  }
+  // everything else (TMDB API, OMDb, YouTube...) goes straight to the network
+});
+
+// fresh from the network, saved copy when offline
+async function networkFirst(req) {
+  const cache = await caches.open(APP_CACHE);
+  try {
+    const res = await fetch(req);
+    if (res.ok) cache.put(req, res.clone());
+    return res;
+  } catch (e) {
+    // title.html?id=... etc: any saved copy of the page will do
+    const saved = (await cache.match(req)) || (await cache.match(req, { ignoreSearch: true }));
+    if (saved) return saved;
+    if (req.mode === "navigate") return cache.match("index.html");
+    throw e;
+  }
+}
+
+// saved copy if we have one, otherwise fetch and save it
+async function cacheFirst(req) {
+  const cache = await caches.open(APP_CACHE);
+  const saved = await cache.match(req);
+  if (saved) return saved;
+  const res = await fetch(req);
+  if (res.ok) cache.put(req, res.clone());
+  return res;
+}
