@@ -4959,3 +4959,98 @@ html.standalone .app-sheet.open {
     grid-auto-columns: calc((100% - 24px) / 3);
   }
 }
+
+/* ============================== Thin, modern scrollbars ============================== */
+/* poster rows, cast, media, tier pool, search results, pop-ups: a slim rounded bar with no
+   arrow buttons, faint until you point at the row */
+
+.movie-row,
+.t-cast,
+.t-media-row,
+.tier-pool,
+.search-results,
+.modal,
+.sheet-panel {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
+}
+
+.movie-row:hover,
+.t-cast:hover,
+.t-media-row:hover,
+.tier-pool:hover {
+  scrollbar-color: rgba(128, 128, 128, 0.6) transparent;
+}
+
+/* Chrome / Edge / Brave / Safari */
+@supports selector(::-webkit-scrollbar) {
+  .movie-row,
+  .t-cast,
+  .t-media-row,
+  .tier-pool,
+  .search-results,
+  .modal,
+  .sheet-panel {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+
+  .movie-row::-webkit-scrollbar,
+  .t-cast::-webkit-scrollbar,
+  .t-media-row::-webkit-scrollbar,
+  .tier-pool::-webkit-scrollbar,
+  .search-results::-webkit-scrollbar,
+  .modal::-webkit-scrollbar,
+  .sheet-panel::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .movie-row::-webkit-scrollbar-button,
+  .t-cast::-webkit-scrollbar-button,
+  .t-media-row::-webkit-scrollbar-button,
+  .tier-pool::-webkit-scrollbar-button,
+  .search-results::-webkit-scrollbar-button,
+  .modal::-webkit-scrollbar-button,
+  .sheet-panel::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .movie-row::-webkit-scrollbar-track,
+  .t-cast::-webkit-scrollbar-track,
+  .t-media-row::-webkit-scrollbar-track,
+  .tier-pool::-webkit-scrollbar-track,
+  .search-results::-webkit-scrollbar-track,
+  .modal::-webkit-scrollbar-track,
+  .sheet-panel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .movie-row::-webkit-scrollbar-thumb,
+  .t-cast::-webkit-scrollbar-thumb,
+  .t-media-row::-webkit-scrollbar-thumb,
+  .tier-pool::-webkit-scrollbar-thumb,
+  .search-results::-webkit-scrollbar-thumb,
+  .modal::-webkit-scrollbar-thumb,
+  .sheet-panel::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(128, 128, 128, 0.28);
+    transition: background 0.2s;
+  }
+
+  .movie-row:hover::-webkit-scrollbar-thumb,
+  .t-cast:hover::-webkit-scrollbar-thumb,
+  .t-media-row:hover::-webkit-scrollbar-thumb,
+  .tier-pool:hover::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.55);
+  }
+
+  .movie-row::-webkit-scrollbar-thumb:hover,
+  .t-cast::-webkit-scrollbar-thumb:hover,
+  .t-media-row::-webkit-scrollbar-thumb:hover,
+  .tier-pool::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
+  }
+}
