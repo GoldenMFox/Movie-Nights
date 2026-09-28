@@ -52,7 +52,7 @@ It updates by itself whenever the site is published.
 
 Press `/` on any page to search the whole library.
 
-**EN | RU** (next to your profile picture, or in the side menu on phones) switches movie, show and anime names between English and Russian. Search finds titles by either name.
+**EN | RU** (in the profile menu, or in the side menu on phones) switches movie, show and anime names between English and Russian. Search finds titles by either name.
 
 ## Adding and editing titles
 

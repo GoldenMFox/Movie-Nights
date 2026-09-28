@@ -19,9 +19,10 @@
 
   const current = document.body.dataset.page;
 
-  // EN | RU switch for movie names (after the profile picture; in the sidebar on phones)
+  // EN | RU switch for movie names (in the profile menu on computers; in the side menu on phones)
   const langToggle = (where) => `<div class="lang-toggle ${where}" role="group" aria-label="Movie names language">
       ${where === "in-menu" ? "<span>Movie names</span>" : ""}
+      ${where === "in-profile" ? `<i class="fa-solid fa-language"></i><span>Movie names</span>` : ""}
       <button type="button" data-lang="en" aria-pressed="${!Lang.isRu()}" class="${Lang.isRu() ? "" : "active"}">EN</button>
       <button type="button" data-lang="ru" aria-pressed="${Lang.isRu()}" class="${Lang.isRu() ? "active" : ""}">RU</button>
     </div>`;
@@ -75,9 +76,9 @@
             <a href="#" data-action="add-title"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="profile.html#settings"><i class="fa-solid fa-gear"></i><span>Settings &amp; backup</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="#" class="install-app" hidden><i class="fa-solid fa-mobile-screen"></i><span>Install the app</span><i class="fa-solid fa-chevron-right"></i></a>
+            ${langToggle("in-profile")}
           </div>
         </div>
-        ${langToggle("in-bar")}
       </div>
     </div>`;
   document.body.prepend(nav);
