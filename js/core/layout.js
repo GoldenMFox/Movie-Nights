@@ -176,7 +176,8 @@
   });
   /* ---------------- movie names language ---------------- */
 
-  nav.addEventListener("click", (e) => {
+  // (listens on the whole page: the switch is also on the app's Profile page)
+  document.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-lang]");
     if (!btn || btn.dataset.lang === Lang.get()) return;
     Lang.set(btn.dataset.lang);
@@ -204,7 +205,8 @@
     if (profileBox.classList.contains("open") && window.Cloud && Cloud.enabled) Cloud.prepare();
   });
 
-  profileBox.addEventListener("click", (e) => {
+  // sign in / switch / sign out (profile menu, and the app's Profile page)
+  document.addEventListener("click", (e) => {
     const sw = e.target.closest("[data-cloud-switch]");
     const act = e.target.closest("[data-cloud]");
     if (!sw && !act) return;
@@ -252,12 +254,14 @@
   });
 
   function renderResults() {
-    const q = searchInput.value.trim().toLowerCase();
     focused = -1;
-    if (!q) {
-      resultsList.innerHTML = "";
-      return;
-    }
+    resultsList.innerHTML = resultsHtml(searchInput.value);
+  }
+
+  // library search results (navbar search, and the app's Library panel)
+  function resultsHtml(raw) {
+    const q = String(raw || "").trim().toLowerCase();
+    if (!q) return "";
     const hits = Store.all()
       .map((item) => {
         // match the English and the Russian name
@@ -269,7 +273,7 @@
       .sort((a, b) => a.score - b.score || Lang.title(a.item).localeCompare(Lang.title(b.item)))
       .slice(0, 8);
 
-    resultsList.innerHTML = hits.length
+    return hits.length
       ? hits
           .map(
             ({ item }) => `<li><a href="title.html?id=${encodeURIComponent(item.id)}">
@@ -279,7 +283,7 @@
             }</small></span></a></li>`
           )
           .join("")
-      : `<li class="search-empty">No titles match "${esc(searchInput.value)}"</li>`;
+      : `<li class="search-empty">No titles match "${esc(String(raw).trim())}"</li>`;
   }
 
   searchInput.addEventListener("input", renderResults);
@@ -346,7 +350,20 @@
 
   /* ---------------- installed app (PWA) ---------------- */
 
-  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  // (add ?app=1 to a link to preview the app layout in a normal browser tab; ?app=0 turns it off)
+  try {
+    const force = new URLSearchParams(location.search).get("app");
+    if (force === "1") sessionStorage.setItem("mn:previewApp", "1");
+    if (force === "0") sessionStorage.removeItem("mn:previewApp");
+  } catch (e) {}
+  const previewApp = (() => {
+    try {
+      return sessionStorage.getItem("mn:previewApp") === "1";
+    } catch (e) {
+      return false;
+    }
+  })();
+  const standalone = previewApp || window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   if (standalone) document.documentElement.classList.add("standalone");
 
   // the installed app has no browser back button, so the navbar gets one
@@ -385,6 +402,114 @@
       toast("In Safari: tap the Share button, then \"Add to Home Screen\"");
     }
   });
+
+  /* ---------------- installed app on a phone: tab bar at the bottom ---------------- */
+
+  // Only in the installed app (Home Screen), and only at phone / small tablet width (CSS):
+  // the top navbar is hidden and these five tabs sit at the bottom, like a native app.
+  // Library opens a panel with the library search and the list pages; everything from the
+  // profile menu (sign in, Who's watching?, EN / RU…) moves onto the Profile page.
+  if (standalone) {
+    const LIBRARY_PAGES = ["movie", "tv", "anime", "favorites", "tiers"];
+    const TABS = [
+      { id: "home", href: "index.html", label: "Home", icon: "fa-house", on: ["home"] },
+      { id: "discover", href: "discover.html", label: "Discover", icon: "fa-compass", on: ["discover"] },
+      { id: "library", label: "Library", icon: "fa-clapperboard", on: LIBRARY_PAGES },
+      { id: "list", href: "watchlist.html", label: "My List", icon: "fa-bookmark", on: ["watchlist"] },
+      { id: "profile", href: "profile.html", label: "Profile", icon: "fa-user", on: ["profile"] },
+    ];
+    const tabIcon = (t) =>
+      t.id === "profile" && acct && acct.photo
+        ? `<img class="tab-pic" src="${esc(acct.photo)}" alt="" referrerpolicy="no-referrer" />`
+        : `<i class="fa-solid ${t.icon}"></i>`;
+
+    const bar = document.createElement("nav");
+    bar.className = "tab-bar";
+    bar.setAttribute("aria-label", "Main");
+    bar.innerHTML = TABS.map((t) => {
+      const on = t.on.includes(current);
+      const attrs = `class="tab${on ? " on" : ""}"${on ? ' aria-current="page"' : ""}`;
+      return t.href
+        ? `<a href="${t.href}" ${attrs}>${tabIcon(t)}<span>${t.label}</span></a>`
+        : `<button type="button" data-tab="${t.id}" ${attrs}>${tabIcon(t)}<span>${t.label}</span></button>`;
+    }).join("");
+    document.body.append(bar);
+
+    // Library panel: search your library + the list pages
+    const count = (test) => Store.all().filter(test).length;
+    const LINKS = [
+      { href: "movies.html", label: "Movies", icon: "fa-film", n: count((i) => i.type === "movie") },
+      { href: "tv-shows.html", label: "TV Shows", icon: "fa-tv", n: count((i) => i.type === "tv") },
+      { href: "anime.html", label: "Anime", icon: "fa-clapperboard", n: count((i) => i.type === "anime") },
+      { href: "favorites.html", label: "Favorites", icon: "fa-heart", n: count((i) => i.favorite) },
+      { href: "tier-list.html", label: "Tier List", icon: "fa-ranking-star", n: null },
+    ];
+    const sheet = document.createElement("div");
+    sheet.className = "app-sheet";
+    sheet.innerHTML = `
+      <div class="sheet-backdrop"></div>
+      <div class="sheet-panel" role="dialog" aria-modal="true" aria-label="Library">
+        <div class="sheet-grip" aria-hidden="true"></div>
+        <h2 class="sheet-title">Library</h2>
+        <label class="sheet-search">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+          <input type="search" placeholder="Search your library…" aria-label="Search your library" autocomplete="off" />
+        </label>
+        <ul class="search-results sheet-results"></ul>
+        <div class="sheet-links">${LINKS.map(
+          (l) => `<a href="${l.href}"${PAGES.find((p) => p.href === l.href && p.id === current) ? ' class="on"' : ""}>
+            <i class="fa-solid ${l.icon}"></i><span>${l.label}</span>${l.n != null ? `<small>${l.n}</small>` : ""}</a>`
+        ).join("")}</div>
+      </div>`;
+    document.body.append(sheet);
+    const sheetInput = sheet.querySelector("input");
+    const sheetResults = sheet.querySelector(".sheet-results");
+    const libTab = bar.querySelector('[data-tab="library"]');
+
+    const openSheet = () => {
+      sheet.classList.add("open");
+      libTab.classList.add("open");
+    };
+    const closeSheet = () => {
+      sheet.classList.remove("open");
+      libTab.classList.remove("open");
+      sheetInput.blur();
+    };
+    libTab.addEventListener("click", () => (sheet.classList.contains("open") ? closeSheet() : openSheet()));
+    sheet.querySelector(".sheet-backdrop").addEventListener("click", closeSheet);
+    document.addEventListener("keydown", (e) => e.key === "Escape" && closeSheet());
+    sheetInput.addEventListener("input", () => (sheetResults.innerHTML = resultsHtml(sheetInput.value)));
+
+    // Profile page: what the profile menu has (sign in, profiles, add a title, EN / RU)
+    if (current === "profile") {
+      document.addEventListener("DOMContentLoaded", () => {
+        const col = document.querySelector(".profile-grid > div");
+        if (!col) return;
+        const box = document.createElement("div");
+        box.className = "panel app-account";
+        box.innerHTML = `
+          <h2><i class="fa-solid fa-user-gear"></i> Account</h2>
+          ${acct ? '<p class="sync-status app-sync"></p>' : ""}
+          ${langToggle("in-profile")}
+          <a href="#" data-action="add-title"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
+          ${accountMenu()}`;
+        col.children[0].after(box);
+        // signed out: the big "Sign in to sync" button above already covers it
+        if (!acct) {
+          const dup = box.querySelector('[data-cloud="add"]');
+          if (dup) dup.remove();
+          if (box.lastElementChild && box.lastElementChild.tagName === "HR") box.lastElementChild.remove();
+        }
+        const syncP = box.querySelector(".app-sync");
+        if (syncP) {
+          const show = () => (syncP.innerHTML = nav.querySelector(".sync-status").innerHTML);
+          Cloud.onStatus(() => setTimeout(show));
+          show();
+        }
+        if (!acct && window.Cloud && Cloud.enabled) Cloud.prepare();
+      });
+    }
+  }
 
   /* ---------------- shared helpers ---------------- */
 
