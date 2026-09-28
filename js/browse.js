@@ -71,28 +71,37 @@
   let shown = BATCH;
 
   root.innerHTML = `
-    <div class="toolbar">
-      <label class="field grow">Search this list
-        <input class="input" type="search" name="q" placeholder="Title..." value="${esc(state.q)}" />
-      </label>
-      <label class="field">Genre
-        <select class="select" name="genre"></select>
-      </label>
-      <label class="field">Sort by
-        <select class="select" name="sort">
+    <form class="glass-search list-search" role="search">
+      <i class="fa-solid fa-magnifying-glass gs-icon" aria-hidden="true"></i>
+      <input type="search" name="q" placeholder="Search this list…" aria-label="Search this list" value="${esc(state.q)}" autocomplete="off" />
+      <button class="gs-btn" type="submit" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
+    </form>
+    <div class="glass-filters list-filters">
+      <span class="glass-select grow">
+        <i class="fa-solid fa-masks-theater" aria-hidden="true"></i>
+        <select name="genre" aria-label="Genre"></select>
+      </span>
+      <span class="glass-select">
+        <i class="fa-solid fa-arrow-down-wide-short" aria-hidden="true"></i>
+        <select name="sort" aria-label="Sort by">
           ${Object.entries(SORTS).map(([k, s]) => `<option value="${k}"${k === state.sort ? " selected" : ""}>${s.label}</option>`).join("")}
         </select>
-      </label>
-      <label class="field">My rating
-        <select class="select" name="min">
-          ${[["", "Any"], ["5", "5+"], ["7", "7+"], ["8", "8+"], ["9", "9+"], ["10", "10 only"]]
+      </span>
+      <span class="glass-select">
+        <i class="fa-solid fa-star" aria-hidden="true"></i>
+        <select name="min" aria-label="My rating">
+          ${[["", "Any rating"], ["5", "Rated 5+"], ["7", "Rated 7+"], ["8", "Rated 8+"], ["9", "Rated 9+"], ["10", "Rated 10"]]
             .map(([v, l]) => `<option value="${v}"${v === state.min ? " selected" : ""}>${l}</option>`)
             .join("")}
         </select>
-      </label>
-      <label class="field small">Year from <input class="input" type="number" name="from" placeholder="1900" value="${esc(state.from)}" /></label>
-      <label class="field small">Year to <input class="input" type="number" name="to" placeholder="${new Date().getFullYear()}" value="${esc(state.to)}" /></label>
-      <button class="btn reset" type="button"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+      </span>
+      <span class="glass-years" title="Years">
+        <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+        <input type="number" name="from" placeholder="1900" aria-label="Year from" value="${esc(state.from)}" />
+        <span aria-hidden="true">–</span>
+        <input type="number" name="to" placeholder="${new Date().getFullYear()}" aria-label="Year to" value="${esc(state.to)}" />
+      </span>
+      <button class="glass-round reset" type="button" aria-label="Reset filters" title="Reset filters"><i class="fa-solid fa-rotate-left"></i></button>
     </div>
     <div class="chips" role="group" aria-label="Show"></div>
     <p class="result-count" aria-live="polite"></p>
@@ -189,6 +198,12 @@
   }
 
   let typing;
+  // the round button applies the search straight away (typing already filters live)
+  root.querySelector(".list-search").addEventListener("submit", (e) => {
+    e.preventDefault();
+    clearTimeout(typing);
+    set({ q: e.target.elements.q.value });
+  });
   root.querySelector('[name="q"]').addEventListener("input", (e) => {
     clearTimeout(typing);
     typing = setTimeout(() => set({ q: e.target.value }), 150);
@@ -198,7 +213,7 @@
   );
 
   function reset() {
-    root.querySelectorAll(".toolbar input").forEach((i) => (i.value = ""));
+    root.querySelectorAll(".list-search input, .list-filters input").forEach((i) => (i.value = ""));
     root.querySelector('[name="sort"]').value = "default";
     root.querySelector('[name="min"]').value = "";
     set({ q: "", chip: "all", sort: "default", from: "", to: "", min: "", genre: "" });

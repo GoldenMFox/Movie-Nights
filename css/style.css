@@ -3321,3 +3321,116 @@ a.stat-tile:hover {
 .site-nav.page-search-visible .search-toggle:hover {
   background: rgba(255, 255, 255, 0.14);
 }
+
+/* ============================== Glass filters on list pages + tier list ============================== */
+
+/* "1900 – 2026" in one capsule */
+.glass-years {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 14px 0 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  color: var(--glass-muted);
+  transition: background 0.25s;
+}
+
+.glass-years:hover,
+.glass-years:focus-within {
+  background: var(--glass-bg-hover);
+}
+
+.glass-years i {
+  margin-right: 4px;
+  font-size: 14px;
+}
+
+.glass-years input {
+  width: 54px;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--glass-text);
+  font-size: 14.5px;
+  font-weight: 500;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.glass-years input::-webkit-outer-spin-button,
+.glass-years input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.glass-years input::placeholder {
+  color: var(--glass-muted);
+}
+
+/* round glass button (reset) */
+.glass-round {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  background: var(--glass-bg);
+  color: var(--glass-text);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.25s, transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.glass-round:hover {
+  background: var(--glass-bg-hover);
+  transform: rotate(-90deg);
+}
+
+/* glass pill button with text (Clear tiers) */
+.glass-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  color: var(--glass-text);
+  font-size: 14.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.25s;
+}
+
+.glass-pill-btn:hover {
+  background: var(--glass-bg-hover);
+}
+
+.tier-pool-wrap .glass-search {
+  margin-top: 4px;
+}
+
+@media (max-width: 700px) {
+  .list-filters .glass-select {
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .list-filters .glass-select.grow {
+    flex-basis: 100%;
+  }
+
+  .list-filters .glass-years {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .glass-years input {
+    width: 48px;
+  }
+}

@@ -28,19 +28,24 @@
       ).join("")}
     </div>
     <div class="tier-pool-wrap">
-      <div class="toolbar">
-        <label class="field grow">Find a title <input class="input" type="search" name="q" placeholder="Title..." /></label>
-        <label class="field">Show
-          <select class="select" name="type">
+      <form class="glass-search tier-search" role="search">
+        <i class="fa-solid fa-magnifying-glass gs-icon" aria-hidden="true"></i>
+        <input type="search" name="q" placeholder="Find a title to rank…" aria-label="Find a title" autocomplete="off" />
+        <span class="glass-select small">
+          <select name="type" aria-label="Show">
             <option value="">Everything</option><option value="movie">Movies</option><option value="tv">TV Shows</option><option value="anime">Anime</option>
           </select>
-        </label>
-        <label class="field">Order
-          <select class="select" name="order">
+        </span>
+        <button class="gs-btn" type="submit" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
+      </form>
+      <div class="glass-filters">
+        <span class="glass-select">
+          <i class="fa-solid fa-arrow-down-wide-short" aria-hidden="true"></i>
+          <select name="order" aria-label="Order">
             <option value="rating">My rating</option><option value="title">Title A-Z</option><option value="year">Newest</option>
           </select>
-        </label>
-        <button class="btn clear-all" type="button"><i class="fa-solid fa-rotate-left"></i> Clear tiers</button>
+        </span>
+        <button class="glass-pill-btn clear-all" type="button"><i class="fa-solid fa-rotate-left"></i> Clear tiers</button>
       </div>
       <p class="result-count pool-count"></p>
       <div class="tier-pool" data-tier="pool"></div>
@@ -172,6 +177,11 @@
   root.addEventListener("dblclick", (e) => {
     const itemEl = e.target.closest(".tier-item");
     if (itemEl) location.href = `title.html?id=${encodeURIComponent(itemEl.dataset.id)}`;
+  });
+
+  root.querySelector(".tier-search").addEventListener("submit", (e) => {
+    e.preventDefault();
+    render();
   });
 
   let typing;
