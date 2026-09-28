@@ -23,10 +23,20 @@
   }
 
   function write(key, value) {
+    const text = JSON.stringify(value);
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      localStorage.setItem(key, text);
       return true;
     } catch (e) {
+      // storage full: the TMDB page cache can always be rebuilt, your changes can't
+      if (key !== KEYS.tmdbCache) {
+        try {
+          localStorage.removeItem(KEYS.tmdbCache);
+          localStorage.setItem(key, text);
+          return true;
+        } catch (e2) {}
+        if (window.UI) UI.toast("Couldn't save your change: this browser's storage is full or blocked");
+      }
       console.warn("Could not save to localStorage", e);
       return false;
     }
