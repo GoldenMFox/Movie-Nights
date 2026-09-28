@@ -2719,3 +2719,84 @@ a.stat-tile:hover {
 .nav-back.show {
   display: grid;
 }
+
+/* ============================== EN | RU movie names ============================== */
+
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.lang-toggle button {
+  padding: 5px 10px;
+  border: 0;
+  background: none;
+  color: var(--nav-text);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+
+.lang-toggle button:hover {
+  color: #fff;
+}
+
+.lang-toggle button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* the copy in the sidebar is only for phones / small screens */
+.lang-toggle.in-menu {
+  display: none;
+}
+
+@media (max-width: 1150px) {
+  .lang-toggle.in-bar {
+    display: none;
+  }
+
+  .lang-toggle.in-menu {
+    display: flex;
+    gap: 0;
+    width: max-content;
+    margin: 26px 12px 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .lang-toggle.in-menu span {
+    margin-right: 12px;
+    color: var(--nav-text);
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+
+  .lang-toggle.in-menu button {
+    padding: 7px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    font-size: 13px;
+  }
+
+  .lang-toggle.in-menu button:first-of-type {
+    border-radius: 999px 0 0 999px;
+  }
+
+  .lang-toggle.in-menu button:last-of-type {
+    border-left: 0;
+    border-radius: 0 999px 999px 0;
+  }
+}
+
+/* English name under the Russian one on title pages */
+.t-alt-title {
+  margin: -4px 0 10px;
+  color: #aaa;
+  font-size: 15px;
+}

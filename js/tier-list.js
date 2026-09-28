@@ -61,8 +61,8 @@
 
   function tile(item) {
     return `<button class="tier-item${selected === item.id ? " selected" : ""}" draggable="true" data-id="${esc(item.id)}"
-      title="${esc(item.title)} (${item.year})${item.rating != null ? " · ★ " + item.rating : ""}">
-      <img src="${Store.poster(item.poster, "w154")}" alt="${esc(item.title)}" loading="lazy" /></button>`;
+      title="${esc(Lang.title(item))} (${item.year})${item.rating != null ? " · ★ " + item.rating : ""}">
+      <img src="${Store.poster(item.poster, "w154")}" alt="${esc(Lang.title(item))}" loading="lazy" /></button>`;
   }
 
   function render() {
@@ -74,13 +74,13 @@
     const term = q.value.trim().toLowerCase();
     const sorters = {
       rating: (a, b) => (b.rating ?? -1) - (a.rating ?? -1) || a.order - b.order,
-      title: (a, b) => a.title.localeCompare(b.title),
+      title: (a, b) => Lang.title(a).localeCompare(Lang.title(b)),
       year: (a, b) => b.year - a.year,
     };
     const list = Store.all()
       .filter((i) => !inTier.has(i.id))
       .filter((i) => !typeSel.value || i.type === typeSel.value)
-      .filter((i) => !term || i.title.toLowerCase().includes(term))
+      .filter((i) => !term || Lang.matches(i, term))
       .sort(sorters[orderSel.value]);
     pool.innerHTML = list.slice(0, POOL_LIMIT).map(tile).join("");
     root.querySelector(".pool-count").textContent =

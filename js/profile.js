@@ -167,7 +167,7 @@
       .sort((a, b) => b.rating - a.rating || a.order - b.order)
       .slice(0, 10)
       .map(
-        (i) => `<li><a href="title.html?id=${encodeURIComponent(i.id)}">${esc(i.title)} <span class="muted">(${i.year})</span></a>
+        (i) => `<li><a href="title.html?id=${encodeURIComponent(i.id)}">${esc(Lang.title(i))} <span class="muted">(${i.year})</span></a>
           <span>★ ${Cards.formatRating(i.rating)}</span></li>`
       )
       .join("");

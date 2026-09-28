@@ -18,6 +18,13 @@
   ];
 
   const current = document.body.dataset.page;
+
+  // EN | RU switch for movie names (after the profile picture; in the sidebar on phones)
+  const langToggle = (where) => `<div class="lang-toggle ${where}" role="group" aria-label="Movie names language">
+      ${where === "in-menu" ? "<span>Movie names</span>" : ""}
+      <button type="button" data-lang="en" aria-pressed="${!Lang.isRu()}" class="${Lang.isRu() ? "" : "active"}">EN</button>
+      <button type="button" data-lang="ru" aria-pressed="${Lang.isRu()}" class="${Lang.isRu() ? "active" : ""}">RU</button>
+    </div>`;
   const profile = Store.getProfile();
 
   /* ---------------- navbar ---------------- */
@@ -40,6 +47,7 @@
               `<li><a href="${p.href}" class="${p.id === current ? "active" : ""}"${p.id === current ? ' aria-current="page"' : ""}><i class="${p.icon}"></i>${p.label}</a></li>`
           ).join("")}
         </ul>
+        ${langToggle("in-menu")}
       </div>
       <div class="nav-tools">
         <button class="icon-btn theme-toggle" aria-label="Toggle dark mode">
@@ -68,6 +76,7 @@
             <a href="#" class="install-app" hidden><i class="fa-solid fa-mobile-screen"></i><span>Install the app</span><i class="fa-solid fa-chevron-right"></i></a>
           </div>
         </div>
+        ${langToggle("in-bar")}
       </div>
     </div>`;
   document.body.prepend(nav);
@@ -83,6 +92,15 @@
     menu.classList.add("open");
   });
   nav.querySelector(".nav-close").addEventListener("click", () => menu.classList.remove("open"));
+
+  /* ---------------- movie names language ---------------- */
+
+  nav.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-lang]");
+    if (!btn || btn.dataset.lang === Lang.get()) return;
+    Lang.set(btn.dataset.lang);
+    location.reload(); // every list, card and title picks up the new names
+  });
 
   /* ---------------- theme ---------------- */
 
@@ -131,12 +149,13 @@
     }
     const hits = Store.all()
       .map((item) => {
-        const t = item.title.toLowerCase();
-        const score = t === q ? 0 : t.startsWith(q) ? 1 : t.includes(q) ? 2 : String(item.year) === q ? 3 : -1;
+        // match the English and the Russian name
+        const names = [item.title, item.titleRu].filter(Boolean).map((n) => n.toLowerCase());
+        const score = names.includes(q) ? 0 : names.some((n) => n.startsWith(q)) ? 1 : names.some((n) => n.includes(q)) ? 2 : String(item.year) === q ? 3 : -1;
         return { item, score };
       })
       .filter((h) => h.score >= 0)
-      .sort((a, b) => a.score - b.score || a.item.title.localeCompare(b.item.title))
+      .sort((a, b) => a.score - b.score || Lang.title(a.item).localeCompare(Lang.title(b.item)))
       .slice(0, 8);
 
     resultsList.innerHTML = hits.length
@@ -144,7 +163,7 @@
           .map(
             ({ item }) => `<li><a href="title.html?id=${encodeURIComponent(item.id)}">
               <img src="${Store.poster(item.poster, "w92")}" alt="" loading="lazy" />
-              <span>${esc(item.title)}<small>${item.year} · ${Store.TYPE_LABEL[item.type] || ""}${
+              <span>${esc(Lang.title(item))}<small>${item.year} · ${Store.TYPE_LABEL[item.type] || ""}${
               item.rating != null ? " · ★ " + item.rating : ""
             }</small></span></a></li>`
           )

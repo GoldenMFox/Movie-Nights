@@ -52,6 +52,8 @@ It updates by itself whenever the site is published.
 
 Press `/` on any page to search the whole library.
 
+**EN | RU** (next to your profile picture, or in the side menu on phones) switches movie, show and anime names between English and Russian. Search finds titles by either name.
+
 ## Adding and editing titles
 
 All titles live in **`data/library.js`**, one line per title:
@@ -116,6 +118,7 @@ css/style.css        all styles (dark + light theme)
 data/library.js      the list of titles
 js/config.js         TMDB + OMDb keys
 js/store.js          loads the library + saves your changes
+js/lang.js           EN / RU movie names
 js/layout.js         navbar, footer, search, dark mode
 js/cards.js          movie cards, rating pop-up, trailer pop-up
 js/add-title.js      "Add a title" form

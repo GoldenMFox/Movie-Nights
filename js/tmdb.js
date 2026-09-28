@@ -152,6 +152,35 @@
 
   const isTitle = (r) => r.media_type === "movie" || r.media_type === "tv";
 
+  const wantRu = () => !!(window.Lang && Lang.isRu());
+
+  // Same request twice at once: as normal, and (when movie names are set to RU)
+  // in Russian, to pick up the Russian names. Returns [data, ruData | null].
+  function requestWithRu(path, params) {
+    return Promise.all([
+      request(path, params),
+      wantRu() ? request(path, Object.assign({}, params, { language: "ru-RU" })).catch(() => null) : null,
+    ]);
+  }
+
+  // put the Russian names onto simplified results ("titleRu")
+  function applyRu(results, ruData, media) {
+    if (!ruData || !ruData.results) return results;
+    const names = {};
+    ruData.results.forEach((r) => (names[`${r.media_type || media}-${r.id}`] = r.title || r.name));
+    results.forEach((h) => {
+      const n = names[`${h.mediaType}-${h.tmdbId}`];
+      if (n) h.titleRu = n;
+    });
+    return results;
+  }
+
+  // Russian name of one title (for library titles added later)
+  async function ruTitle(media, id) {
+    const d = await request(`/${media}/${id}`, { language: "ru-RU" });
+    return d.title || d.name || "";
+  }
+
   function isAnime(r) {
     const genres = r.genre_ids || (r.genres || []).map((g) => g.id);
     return genres.includes(ANIMATION) && (r.original_language === "ja" || (r.origin_country || []).includes("JP"));
@@ -160,23 +189,25 @@
   // Search with a type filter, for the Discover page: "all" | "movie" | "tv" | "anime"
   async function searchIn(query, type, page) {
     if (type === "movie" || type === "tv") {
-      const data = await request(`/search/${type}`, { query, page });
-      return { results: data.results.map((r) => simplify(r, type)), totalPages: data.total_pages || 1 };
+      const [data, ru] = await requestWithRu(`/search/${type}`, { query, page });
+      return { results: applyRu(data.results.map((r) => simplify(r, type)), ru, type), totalPages: data.total_pages || 1 };
     }
     if (type === "anime") {
       // anime can be a series or a film: search both, keep Japanese animation,
       // most popular first
-      const [tv, movie] = await Promise.all([request("/search/tv", { query, page }), request("/search/movie", { query, page })]);
+      const [[tv, tvRu], [movie, movieRu]] = await Promise.all([requestWithRu("/search/tv", { query, page }), requestWithRu("/search/movie", { query, page })]);
       const results = tv.results
         .map((r) => [r, "tv"])
         .concat(movie.results.map((r) => [r, "movie"]))
         .filter(([r]) => isAnime(r))
         .sort(([a], [b]) => (b.popularity || 0) - (a.popularity || 0))
         .map(([r, media]) => simplify(r, media));
+      applyRu(results, tvRu, "tv");
+      applyRu(results, movieRu, "movie");
       return { results, totalPages: Math.max(tv.total_pages || 1, movie.total_pages || 1) };
     }
-    const data = await request("/search/multi", { query, page });
-    return { results: data.results.filter(isTitle).map((r) => simplify(r)), totalPages: data.total_pages || 1 };
+    const [data, ru] = await requestWithRu("/search/multi", { query, page });
+    return { results: applyRu(data.results.filter(isTitle).map((r) => simplify(r)), ru), totalPages: data.total_pages || 1 };
   }
 
   // Free-text search (Add a title form + Discover page)
@@ -196,9 +227,9 @@
   // One page of a Discover category
   async function list(category, page) {
     const c = CATEGORIES[category];
-    const data = await request(c.path, Object.assign({ page: page || 1 }, c.params || {}));
+    const [data, ru] = await requestWithRu(c.path, Object.assign({ page: page || 1 }, c.params || {}));
     return {
-      results: data.results.filter((r) => c.media || isTitle(r)).map((r) => simplify(r, c.media)),
+      results: applyRu(data.results.filter((r) => c.media || isTitle(r)).map((r) => simplify(r, c.media)), ru, c.media),
       totalPages: Math.min(data.total_pages || 1, 500),
     };
   }
@@ -224,8 +255,8 @@
       params.sort_by = "popularity.desc";
       params["vote_count.gte"] = type === "anime" ? 50 : 100;
     }
-    const data = await request(`/discover/${media}`, params);
-    return { results: data.results.map((r) => simplify(r, media)), totalPages: Math.min(data.total_pages || 1, 500) };
+    const [data, ru] = await requestWithRu(`/discover/${media}`, params);
+    return { results: applyRu(data.results.map((r) => simplify(r, media)), ru, media), totalPages: Math.min(data.total_pages || 1, 500) };
   }
 
   async function findMatch(item) {
@@ -346,7 +377,7 @@
   async function detailsById(media, id) {
     const cacheKey = `v2:${media}-${id}`;
     const cache = readCache();
-    if (cache[cacheKey] && Date.now() - cache[cacheKey].savedAt < DETAILS_MAX_AGE) return cache[cacheKey];
+    if (cache[cacheKey] && Date.now() - cache[cacheKey].savedAt < DETAILS_MAX_AGE) return withRuNames(cache[cacheKey], media, id);
 
     const country = region();
     const d = await request(`/${media}/${id}`, {
@@ -397,6 +428,21 @@
     });
     cache[cacheKey] = result;
     writeCache(cache);
+    return withRuNames(result, media, id);
+  }
+
+  // RU mode: add the Russian name of the title and of its recommendations (saved with the details)
+  async function withRuNames(result, media, id) {
+    if (!wantRu() || result.ruDone) return result;
+    try {
+      const ru = await request(`/${media}/${id}`, { language: "ru-RU", append_to_response: "recommendations" });
+      result.titleRu = ru.title || ru.name || "";
+      applyRu(result.recommendations || [], ru.recommendations, media);
+      result.ruDone = true;
+      const cache = readCache();
+      cache[`v2:${media}-${id}`] = result;
+      writeCache(cache);
+    } catch (e) {}
     return result;
   }
 
@@ -421,5 +467,5 @@
     return true;
   }
 
-  window.TMDB = { enabled, keySource, search, searchIn, list, byGenre, details, detailsById, basic, findMatch, test, CATEGORIES, genreNames, genresFor };
+  window.TMDB = { enabled, keySource, search, searchIn, ruTitle, list, byGenre, details, detailsById, basic, findMatch, test, CATEGORIES, genreNames, genresFor };
 })();

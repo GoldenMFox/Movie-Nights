@@ -62,7 +62,7 @@
       item.favorite ? '<span title="Favorite"><i class="fa-solid fa-heart"></i></span>' : "",
       item.watchlist ? '<span title="On watchlist"><i class="fa-solid fa-bookmark"></i></span>' : "",
     ].join("");
-    const needScore = window.Ratings && Ratings.needsWork(item);
+    const needScore = (window.Ratings && Ratings.needsWork(item)) || needsRuName(item);
     return `<article class="movie-item" data-id="${esc(item.id)}"${needScore ? " data-need-score" : ""}>
       <a class="poster-link" href="${url}" tabindex="-1" aria-hidden="true">
         <img class="movie-poster" src="${Store.poster(item.poster)}" alt="" loading="lazy" decoding="async" />
@@ -70,7 +70,7 @@
         ${badges ? `<span class="badges">${badges}</span>` : ""}
       </a>
       <div class="movie-info">
-        <h3 class="movie-title"><a href="${url}" title="${esc(item.title)}">${esc(item.title)}</a></h3>
+        <h3 class="movie-title"><a href="${url}" title="${esc(Lang.title(item))}">${esc(Lang.title(item))}</a></h3>
         <div class="movie-meta">
           ${ratingsHtml(item)}
           <span class="year">${item.year || ""}</span>
@@ -120,7 +120,7 @@
         <span class="badges"><span title="${Store.TYPE_LABEL[hit.type]}" class="type-badge">${hit.type === "movie" ? "Film" : hit.type === "anime" ? "Anime" : "TV"}</span></span>
       </a>
       <div class="movie-info">
-        <h3 class="movie-title"><a href="${url}" title="${esc(hit.title)}">${esc(hit.title)}</a></h3>
+        <h3 class="movie-title"><a href="${url}" title="${esc(Lang.title(hit))}">${esc(Lang.title(hit))}</a></h3>
         <div class="movie-meta">
           <span class="ratings">${tmdbBadge(hit.score)}</span>
           <span class="year">${hit.year || ""}</span>
@@ -154,6 +154,7 @@
     if (hit.backdrop) item.backdrop = hit.backdrop;
     if (hit.overview) item.overview = hit.overview;
     if (hit.genres && hit.genres.length) item.genres = hit.genres;
+    if (hit.titleRu) item.titleRu = hit.titleRu;
     Object.assign(item, extra || {});
     // remember its TMDB score, so the new card shows a second rating straight away
     Ratings.seed(`${hit.mediaType}-${hit.tmdbId}`, hit.score);
@@ -165,14 +166,37 @@
     if (!hit) return;
     if (action === "t-add") {
       addHit(hit);
-      toast(`${hit.title} added to your library`);
+      toast(`${Lang.title(hit)} added to your library`);
     } else if (action === "t-watch") {
       addHit(hit, { watchlist: true });
-      toast(`${hit.title} added to Watchlist`);
+      toast(`${Lang.title(hit)} added to Watchlist`);
     } else if (action === "t-rate") {
       openRating(addHit(hit).id);
     } else if (action === "t-trailer") {
       showTrailer(hit, () => TMDB.detailsById(hit.mediaType, hit.tmdbId).then((d) => d && d.trailer));
+    }
+  }
+
+  /* ---------------- Russian names for titles added later ---------------- */
+
+  // library titles from data/library.js already have "titleRu"; newer ones get it
+  // from TMDB the first time they're on screen while RU is on
+  function needsRuName(item) {
+    return !!(window.Lang && Lang.isRu() && !item.titleRu && window.TMDB && TMDB.enabled());
+  }
+
+  const ruPending = new Set();
+  async function fillRuName(item) {
+    if (!needsRuName(item) || ruPending.has(item.id)) return;
+    const ref = item.tmdbId && item.tmdbMedia ? `${item.tmdbMedia}-${item.tmdbId}` : Ratings.refOf(item);
+    if (!ref || ref === "none") return;
+    ruPending.add(item.id);
+    try {
+      const [media, tmdbId] = ref.split("-");
+      const name = await TMDB.ruTitle(media, Number(tmdbId));
+      if (name) Store.update(item.id, { titleRu: name });
+    } catch (e) {
+      console.warn("Russian name:", item.title, e.message);
     }
   }
 
@@ -188,7 +212,10 @@
               if (!en.isIntersecting) return;
               scoreWatcher.unobserve(en.target);
               const item = Store.get(en.target.dataset.id);
-              if (item) Ratings.request(item);
+              if (item) {
+                Ratings.request(item);
+                fillRuName(item);
+              }
             }),
           { rootMargin: "400px" }
         )
@@ -232,10 +259,10 @@
     if (!item) return;
     if (action === "fav") {
       const on = Store.toggle(id, "favorite");
-      toast(on ? `❤ ${item.title} added to Favorites` : `${item.title} removed from Favorites`);
+      toast(on ? `❤ ${Lang.title(item)} added to Favorites` : `${Lang.title(item)} removed from Favorites`);
     } else if (action === "watch") {
       const on = Store.toggle(id, "watchlist");
-      toast(on ? `${item.title} added to Watchlist` : `${item.title} removed from Watchlist`);
+      toast(on ? `${Lang.title(item)} added to Watchlist` : `${Lang.title(item)} removed from Watchlist`);
     } else if (action === "rate") {
       openRating(id);
     } else if (action === "trailer") {
@@ -299,7 +326,7 @@
       img.style.visibility = "hidden";
       const fb = document.createElement("span");
       fb.className = "poster-fallback";
-      fb.textContent = item ? item.title : "No poster";
+      fb.textContent = item ? Lang.title(item) : "No poster";
       img.after(fb);
     },
     true
@@ -371,7 +398,7 @@
       if (picked == null) return;
       const item = Store.get(ratingId);
       Store.update(ratingId, { rating: picked });
-      toast(`Rated ${item.title}: ${picked}/10`);
+      toast(`Rated ${Lang.title(item)}: ${picked}/10`);
       close(ratingOverlay);
     });
 
@@ -396,7 +423,7 @@
     const item = Store.get(id);
     ratingId = id;
     picked = item.rating;
-    ratingOverlay.querySelector(".rating-for").textContent = `${item.title} (${item.year})`;
+    ratingOverlay.querySelector(".rating-for").textContent = `${Lang.title(item)} (${item.year})`;
     ratingOverlay.showPicked();
     open(ratingOverlay);
   }
@@ -451,7 +478,7 @@
       trailerOverlay = makeOverlay("trailer-modal", `<div class="trailer-head"></div><div class="trailer-body"></div>`);
       trailerOverlay.onclose = () => (trailerOverlay.querySelector(".trailer-body").innerHTML = "");
     }
-    trailerOverlay.querySelector(".trailer-head").textContent = `${item.title}${item.year ? ` (${item.year})` : ""} · Trailer`;
+    trailerOverlay.querySelector(".trailer-head").textContent = `${Lang.title(item)}${item.year ? ` (${item.year})` : ""} · Trailer`;
     const body = trailerOverlay.querySelector(".trailer-body");
     body.innerHTML = trailerMessage("fa-solid fa-spinner fa-spin", "Looking for the trailer…");
     open(trailerOverlay);
@@ -478,6 +505,7 @@
     card,
     tmdbCard,
     inLibrary,
+    fillRuName,
     addHit,
     formatRating,
     openRating,

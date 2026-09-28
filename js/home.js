@@ -87,7 +87,7 @@
       img: Store.img(hit.backdrop, "w1280"),
       attrs: lib ? ` data-id="${esc(lib.id)}"` : ` data-tmdb="${tmdbKey}"`,
       caption: `<span class="hero-kicker">${esc(kicker)}</span>
-        <h2>${esc(hit.title)}</h2>
+        <h2>${esc(Lang.title(hit))}</h2>
         ${scores ? `<div class="hero-scores">${scores}</div>` : ""}
         <p class="hero-overview">${esc(shorten(hit.overview, 190))}</p>
         <div class="hero-buttons"><a class="btn btn-primary" href="${url}"><i class="fa-solid fa-circle-info"></i> More info</a>${buttons}</div>`,
@@ -111,7 +111,7 @@
 
   // lists are kept for 30 minutes, so going back to Home is instant
   async function cachedList(cat) {
-    const key = `mn:home:${cat}`;
+    const key = `mn:home:${cat}:${Lang.get()}`;
     try {
       const c = JSON.parse(sessionStorage.getItem(key) || "null");
       if (c && Date.now() - c.at < CACHE_MINUTES * 60000) return c.results;

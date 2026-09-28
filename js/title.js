@@ -110,9 +110,10 @@
       }</div>
       ${topbarHtml(menuItems)}
       <div class="container t-hero-inner">
-        <img class="t-poster" src="${Store.poster(t.poster, "w500")}" alt="${esc(t.title)} poster" />
+        <img class="t-poster" src="${Store.poster(t.poster, "w500")}" alt="${esc(Lang.title(t))} poster" />
         <div class="t-head">
-          <h1>${esc(t.title)}${t.year ? ` <span class="year">(${t.year})</span>` : ""}</h1>
+          <h1>${esc(Lang.title(t))}${t.year ? ` <span class="year">(${t.year})</span>` : ""}</h1>
+          ${Lang.altTitle(t) ? `<div class="t-alt-title">${esc(Lang.altTitle(t))}</div>` : ""}
           <div class="t-meta">${metaHtml(t, d, e)}</div>
           <div class="t-genres">${genresHtml(t, d)}</div>
           ${providersHtml(d.providers)}
@@ -237,7 +238,7 @@
     const item = Store.get(id);
     if (!item) return message("fa-regular fa-face-frown", "This title isn't in your library (maybe it was removed).");
     const d = Object.assign({}, extra || {}, pick(item));
-    document.title = `${item.title} (${item.year}) · Movie Nights`;
+    document.title = `${Lang.title(item)} (${item.year}) · Movie Nights`;
     heroEl.dataset.id = item.id;
     mainEl.dataset.id = item.id;
     const e = TMDB.enabled() ? Ratings.entry(Ratings.refOf(item)) : null;
@@ -279,9 +280,9 @@
     document.addEventListener("click", (e) => {
       if (!e.target.closest(".remove-title")) return;
       const item = Store.get(id);
-      if (!confirm(`Remove "${item.title}" from your library?\n\nYou can bring it back with Profile -> Reset all my changes, or by restoring a backup.`)) return;
+      if (!confirm(`Remove "${Lang.title(item)}" from your library?\n\nYou can bring it back with Profile -> Reset all my changes, or by restoring a backup.`)) return;
       Store.remove(id);
-      toast(`${item.title} removed`);
+      toast(`${Lang.title(item)} removed`);
       setTimeout(() => (location.href = "index.html"), 700);
     });
 
@@ -300,6 +301,7 @@
       TMDB.details(item)
         .then((details) => {
           extra = details || {};
+          if (details && details.titleRu && !Store.get(id).titleRu) Store.update(id, { titleRu: details.titleRu });
           Ratings.request(Store.get(id)); // now that the IMDb id is known
           // remember the trailer so it also works on cards and in the exported library
           if (details && !item.trailer && details.trailer) Store.update(id, { trailer: details.trailer });
@@ -337,7 +339,7 @@
     if (goToLibrary()) return;
 
     Cards.tmdbCard(d); // registers it so the buttons below work
-    document.title = `${d.title}${d.year ? ` (${d.year})` : ""} · Movie Nights`;
+    document.title = `${Lang.title(d)}${d.year ? ` (${d.year})` : ""} · Movie Nights`;
     heroEl.dataset.tmdb = tmdbRef;
     mainEl.dataset.tmdb = tmdbRef;
     Ratings.seed(tmdbRef, d.tmdbScore, d.imdbId);

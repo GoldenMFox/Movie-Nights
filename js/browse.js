@@ -54,7 +54,7 @@
     "outside-desc": { label: "IMDb rating: high to low", fn: (a, b) => outside(b) - outside(a) || a.order - b.order },
     "year-desc": { label: "Newest first", fn: (a, b) => b.year - a.year || a.order - b.order },
     "year-asc": { label: "Oldest first", fn: (a, b) => a.year - b.year || a.order - b.order },
-    title: { label: "Title A-Z", fn: (a, b) => a.title.localeCompare(b.title) },
+    title: { label: "Title A-Z", fn: (a, b) => Lang.title(a).localeCompare(Lang.title(b)) },
   };
 
   // state lives in the URL, so refresh / back button keep your filters
@@ -119,7 +119,7 @@
     const min = parseFloat(state.min);
     return baseList()
       .filter(chip.test)
-      .filter((i) => !q || i.title.toLowerCase().includes(q))
+      .filter((i) => !q || Lang.matches(i, q))
       .filter((i) => !from || i.year >= from)
       .filter((i) => !to || i.year <= to)
       .filter((i) => isNaN(min) || (i.rating != null && i.rating >= min))

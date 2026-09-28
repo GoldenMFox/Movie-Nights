@@ -152,6 +152,7 @@
  *   type      "movie" | "tv" | "anime"
  *   rating    your score 0-10, or null if not rated yet
  *   poster    TMDB image path (the part after /t/p/original)
+ *   titleRu   Russian name (shown when movie names are switched to RU)
  *   genres    e.g. ["Action", "Drama"] (used by the Genre filter)
  *   tmdbId / tmdbMedia   which TMDB entry it is (e.g. 157336 / "movie")
  *   optional: isNew, favorite, watchlist, backdrop, trailer (YouTube id),
@@ -165,7 +166,7 @@
   // Produces a new data/library.js with every change baked in.
   function exportLibraryFile() {
     const fields = [
-      "id", "title", "year", "type", "rating", "poster", "genres", "isNew", "favorite", "watchlist",
+      "id", "title", "titleRu", "year", "type", "rating", "poster", "genres", "isNew", "favorite", "watchlist",
       "tmdbId", "tmdbMedia", "backdrop", "trailer", "runtime", "certification", "director", "overview", "cast",
     ];
     const lines = all()
