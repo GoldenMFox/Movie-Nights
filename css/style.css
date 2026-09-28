@@ -4392,3 +4392,187 @@ a.stat-tile:hover {
     max-height: 76vh;
   }
 }
+
+/* ============================== Hover preview (Netflix style, computers only) ============================== */
+
+.hover-preview {
+  position: fixed;
+  z-index: 95; /* above the cards, below the navbar */
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(22, 22, 26, 0.94);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  backdrop-filter: saturate(180%) blur(24px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.3);
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.22s ease, transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.hover-preview.show {
+  opacity: 1;
+  transform: none;
+}
+
+.hp-video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #000;
+  cursor: pointer;
+}
+
+.hp-backdrop,
+.hp-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  object-fit: cover;
+}
+
+/* the video fades in over the picture once it's actually playing; slightly zoomed so
+   YouTube's black edges and corner labels stay out of view */
+.hp-frame {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(1.4);
+  transition: opacity 0.5s ease;
+}
+
+.hover-preview.playing .hp-frame {
+  opacity: 1;
+}
+
+.hp-video::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 40%;
+  background: linear-gradient(to top, rgba(22, 22, 26, 0.95), transparent);
+  pointer-events: none;
+}
+
+.hp-sound {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.hp-sound:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.hp-info {
+  padding: 4px 18px 18px;
+}
+
+.hp-title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.hp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.hp-meta .dot {
+  opacity: 0.45;
+}
+
+.hp-mine i {
+  color: var(--gold);
+}
+
+.hp-cert {
+  padding: 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.hover-preview .tmdb-tag {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.hp-genres {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12.5px;
+}
+
+.hp-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.hp-btn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s, border-color 0.2s;
+}
+
+.hp-btn:hover {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.07);
+}
+
+.hp-btn.on {
+  border-color: transparent;
+  background: var(--accent);
+}
+
+.hp-btn.on .fa-star {
+  color: var(--gold);
+}
+
+.hp-play {
+  border-color: transparent;
+  background: #fff;
+  color: #111;
+}
+
+.hp-play:hover {
+  background: #e8e8e8;
+}
+
+.hp-more {
+  margin-left: auto;
+}

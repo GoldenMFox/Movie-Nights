@@ -153,7 +153,8 @@ Movie-Nights-NEW/
 │   │   └── ratings.js         IMDb via OMDb (daily budget) with TMDB fallback
 │   ├── components/            pieces used by several pages
 │   │   ├── cards.js           poster cards, rating pop-up, trailer pop-up
-│   │   └── add-title.js       "Add a title" form
+│   │   ├── add-title.js       "Add a title" form
+│   │   └── preview.js         hover a poster 1.5 s: Netflix-style trailer preview (computers)
 │   └── pages/                 one script per page
 │       ├── home.js, discover.js, browse.js (movies / TV / anime / favorites / watchlist)
 │       └── title.js, tier-list.js, profile.js

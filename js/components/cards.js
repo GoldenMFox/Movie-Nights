@@ -505,6 +505,7 @@
     card,
     tmdbCard,
     inLibrary,
+    hitOf: (key) => hits.get(key), // the TMDB result behind a card (hover preview)
     fillRuName,
     addHit,
     formatRating,
