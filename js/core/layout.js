@@ -267,12 +267,19 @@
       .filter((item) => !["movie", "tv", "anime"].includes(type) || item.type === type)
       .map((item) => {
         // match the English and the Russian name
-        const names = [item.title, item.titleRu].filter(Boolean).map((n) => n.toLowerCase());
-        const score = names.includes(q) ? 0 : names.some((n) => n.startsWith(q)) ? 1 : names.some((n) => n.includes(q)) ? 2 : String(item.year) === q ? 3 : -1;
-        return { item, score };
+        const raw = [item.title, item.titleRu].filter(Boolean);
+        const names = raw.map((n) => n.toLowerCase());
+        let score = names.includes(q) ? 0 : names.some((n) => n.startsWith(q)) ? 1 : names.some((n) => n.includes(q)) ? 2 : String(item.year) === q ? 3 : -1;
+        // allow small typos ("the notebok" finds The Notebook); closest names first
+        let close = 0;
+        if (score < 0 && raw.some((n) => Lang.fuzzyName(n, q))) {
+          score = 4;
+          close = Math.max(...raw.map((n) => Lang.similarity(n, q)));
+        }
+        return { item, score, close };
       })
       .filter((h) => h.score >= 0)
-      .sort((a, b) => a.score - b.score || Lang.title(a.item).localeCompare(Lang.title(b.item)))
+      .sort((a, b) => a.score - b.score || b.close - a.close || Lang.title(a.item).localeCompare(Lang.title(b.item)))
       .slice(0, 8);
 
     return hits.length
@@ -513,7 +520,7 @@
           .join(" · ")}</small></span></a></li>`;
     async function searchTmdb(q, type, token) {
       try {
-        const data = await TMDB.searchIn(q, type, 1);
+        const data = await TMDB.searchSmart(q, type, 1);
         if (token !== run) return;
         const hits = data.results.filter((h) => !(window.Cards && Cards.inLibrary(h))).slice(0, 15);
         tmdbBox.innerHTML = hits.length

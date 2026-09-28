@@ -210,6 +210,42 @@
     return { results: applyRu(data.results.filter(isTitle).map((r) => simplify(r)), ru), totalPages: data.total_pages || 1 };
   }
 
+  // Typo-tolerant search: TMDB only finds exact words, so when nothing it returns is close
+  // to what was typed, also try shorter versions of the words ("the notebok" -> "the noteb",
+  // "notebo") and put the titles closest to what was typed first.
+  async function searchSmart(query, type, page) {
+    page = page || 1;
+    const first = await searchIn(query, type, page);
+    if (page > 1 || !window.Lang || !Lang.words) return first;
+
+    const typed = Lang.words(query);
+    const phrase = typed.join(" ");
+    const hasExact = first.results.some((r) => [r.title, r.titleRu].some((n) => n && Lang.words(n).join(" ").includes(phrase)));
+    // (few results also get a second try: "interstelar" exactly matches an obscure film,
+    // but you most likely meant Interstellar)
+    if ((hasExact && first.results.length >= 5) || !typed.some((w) => w.length >= 5)) return first;
+
+    // shorter versions: long words cut by 2 letters; then just the longest word, cut
+    const cut = (w) => (w.length >= 5 ? w.slice(0, Math.max(4, w.length - 2)) : w);
+    const longest = typed.slice().sort((a, b) => b.length - a.length)[0];
+    const variants = [...new Set([typed.map(cut).join(" "), cut(longest)])].filter((v) => v && v !== phrase);
+    const extra = await Promise.all(variants.map((v) => searchIn(v, type, 1).catch(() => ({ results: [] }))));
+
+    const seen = new Set();
+    const merged = [];
+    [first].concat(extra).forEach((res, n) =>
+      res.results.forEach((r, i) => {
+        const key = `${r.mediaType}-${r.tmdbId}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        const close = Math.max(Lang.similarity(r.title, query), r.titleRu ? Lang.similarity(r.titleRu, query) : 0);
+        merged.push({ r, close, order: n * 100 + i });
+      })
+    );
+    merged.sort((a, b) => b.close - a.close || a.order - b.order);
+    return { results: merged.map((m) => m.r).slice(0, 20), totalPages: 1, corrected: true };
+  }
+
   // Free-text search (Add a title form + Discover page)
   async function search(query, type, page) {
     if (type === "movie") {
@@ -467,5 +503,5 @@
     return true;
   }
 
-  window.TMDB = { enabled, keySource, search, searchIn, ruTitle, list, byGenre, details, detailsById, basic, findMatch, test, CATEGORIES, genreNames, genresFor };
+  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, list, byGenre, details, detailsById, basic, findMatch, test, CATEGORIES, genreNames, genresFor };
 })();

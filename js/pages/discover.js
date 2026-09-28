@@ -167,7 +167,7 @@
       for (let tries = 0; tries < 3 && !results.length && state.page < state.totalPages; tries++) {
         const page = state.page + 1;
         const data = state.q
-          ? await TMDB.searchIn(state.q, state.sin, page)
+          ? await TMDB.searchSmart(state.q, state.sin, page)
           : state.genre
           ? await TMDB.byGenre(state.gtype, state.genre, state.gsort, page)
           : await TMDB.list(state.cat, page);
