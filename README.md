@@ -17,6 +17,15 @@ the pop-up.
 It also works on GitHub Pages (trailers included): push the folder, then in the repo go to
 **Settings → Pages → Deploy from branch**.
 
+## Publishing
+
+The site lives at **https://goldenmfox.github.io/Movie-Nights/** (GitHub Pages, from
+`github.com/GoldenMFox/Movie-Nights`, branch `main`).
+
+To publish changes, double-click **`Publish to GitHub.bat`**. It saves every change in this
+folder and uploads it, and the live site updates a minute or two later. For example, after
+replacing `data/library.js` with an export from Profile → Backup.
+
 ## Pages
 
 | Page | What it does |
@@ -105,7 +114,9 @@ js/browse.js         list pages (filters, sorting)
 js/home.js  js/title.js  js/tier-list.js  js/profile.js
 images/              logo, favicon, avatar, placeholders
 tools/serve.ps1      tiny local web server used by Start Movie Nights.bat
+tools/publish.ps1    used by Publish to GitHub.bat
 Start Movie Nights.bat   double-click to open the site
+Publish to GitHub.bat    double-click to upload your changes
 ```
 
 ---
