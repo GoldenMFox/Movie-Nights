@@ -542,7 +542,7 @@
         return;
       }
       tmdbBox.innerHTML = `<p class="sheet-note"><i class="fa-solid fa-spinner fa-spin"></i> Searching…</p>`;
-      typing = setTimeout(() => searchTmdb(q, type, token), 350);
+      typing = setTimeout(() => searchTmdb(q, type, token), 250);
     };
     searchInput2.addEventListener("input", refresh);
     typeSel.addEventListener("change", refresh);

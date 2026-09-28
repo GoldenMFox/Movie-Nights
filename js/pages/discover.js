@@ -203,6 +203,7 @@
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+    clearTimeout(typing);
     state.q = form.elements.q.value.trim();
     if (state.q) {
       state.genre = "";
@@ -212,12 +213,22 @@
     load(true);
   });
 
+  // results update as you type (a short pause after the last letter, so TMDB isn't asked
+  // for every keystroke); clearing the box goes back to the list you were on
+  let typing;
   form.elements.q.addEventListener("input", () => {
-    if (form.elements.q.value === "" && state.q) {
-      state.q = "";
+    clearTimeout(typing);
+    typing = setTimeout(() => {
+      const q = form.elements.q.value.trim();
+      if (q === state.q) return;
+      state.q = q;
+      if (q) {
+        state.genre = "";
+        fillGenres();
+      }
       syncUi();
       load(true);
-    }
+    }, 300);
   });
 
   // changing "Search in" re-runs the current search straight away
