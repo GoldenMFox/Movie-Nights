@@ -23,20 +23,24 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
 
 git add -A
 $changes = git status --porcelain
-if (-not $changes) {
+if ($changes) {
+  Write-Host "Changes to publish:" -ForegroundColor Cyan
+  git status --short
+  if (-not $Message) { $Message = "Update " + (Get-Date -Format "yyyy-MM-dd HH:mm") }
+  git commit -q -m $Message
+  if ($LASTEXITCODE -ne 0) { Write-Host "Could not save the changes (git commit failed)." -ForegroundColor Red; Done 1 }
+}
+
+# anything saved locally that GitHub doesn't have yet? (also true before the very first upload)
+git fetch -q origin 2>$null
+$ahead = git rev-list --count "origin/main..HEAD" 2>$null
+if (-not $changes -and $LASTEXITCODE -eq 0 -and $ahead -eq "0") {
   Write-Host "Nothing new to publish - GitHub is already up to date." -ForegroundColor Green
   Done 0
 }
 
-Write-Host "Changes to publish:" -ForegroundColor Cyan
-git status --short
-
-if (-not $Message) { $Message = "Update " + (Get-Date -Format "yyyy-MM-dd HH:mm") }
-git commit -q -m $Message
-if ($LASTEXITCODE -ne 0) { Write-Host "Could not save the changes (git commit failed)." -ForegroundColor Red; Done 1 }
-
 Write-Host "Uploading to GitHub..." -ForegroundColor Cyan
-git push -q
+git push -q -u origin main
 if ($LASTEXITCODE -ne 0) {
   Write-Host "Upload failed. Check your internet connection or GitHub sign-in, then run this again." -ForegroundColor Red
   Write-Host "(Your changes are saved locally and will be uploaded next time.)"
