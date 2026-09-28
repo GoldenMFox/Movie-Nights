@@ -154,7 +154,7 @@ Movie-Nights-NEW/
 │   ├── components/            pieces used by several pages
 │   │   ├── cards.js           poster cards, rating pop-up, trailer pop-up
 │   │   ├── add-title.js       "Add a title" form
-│   │   └── preview.js         hover a poster 1.5 s: Netflix-style trailer preview (computers)
+│   │   └── preview.js         hover a poster: Netflix-style trailer preview (computers)
 │   └── pages/                 one script per page
 │       ├── home.js, discover.js, browse.js (movies / TV / anime / favorites / watchlist)
 │       └── title.js, tier-list.js, profile.js

@@ -1,6 +1,6 @@
 /*
  * Hover preview (Netflix style), computers only:
- * rest the mouse on a poster for 1.5 s and a bigger card floats over it and plays
+ * rest the mouse on a poster for a moment and a bigger card floats over it and plays
  * the trailer, muted (🔊 to turn the sound on), with the title, ratings, genres and
  * the usual buttons. Moving the mouse away closes it and stops the video.
  *
@@ -14,8 +14,18 @@
   if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
 
   const { esc } = UI;
-  const DELAY = 1500; // ms of resting on a poster before the preview opens
-  const PRELOAD = 500; // start looking up the trailer a bit earlier, so it's ready
+  const DELAY = 800; // ms of resting on a poster before the preview opens
+  const PRELOAD = 250; // start looking up the trailer a bit earlier, so it's ready
+  const REVEAL = 700; // after it starts playing, let YouTube's own title / buttons fade first
+
+  // connect to YouTube ahead of time, so the first video starts faster
+  ["https://www.youtube.com", "https://i.ytimg.com", "https://www.google.com"].forEach((href) => {
+    const link = document.createElement("link");
+    link.rel = "preconnect";
+    link.href = href;
+    link.crossOrigin = "";
+    document.head.append(link);
+  });
   const trailerCache = new Map(); // "id:…" / "tmdb:…" -> { key, backdrop, genres, runtime, certification, score }
 
   let hoverCard = null; // the poster the mouse is resting on
@@ -166,8 +176,19 @@
     iframe.src =
       `https://www.youtube.com/embed/${encodeURIComponent(key)}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0` +
       `&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&loop=1&playlist=${encodeURIComponent(key)}&enablejsapi=1${origin}`;
-    // ask the player to tell us when it's playing (or can't play)
-    iframe.addEventListener("load", () => send("listening"));
+    // ask the player to tell us when it's playing (or can't play), and nudge it to start:
+    // some trailers ignore autoplay until they're told to play
+    iframe.addEventListener("load", () => {
+      send("listening");
+      let tries = 0;
+      const nudge = () => {
+        if (!preview || !iframe.isConnected || preview.dataset.started || tries++ > 8) return;
+        send("command", "mute");
+        send("command", "playVideo");
+        setTimeout(nudge, 400);
+      };
+      nudge();
+    });
     box.insertBefore(iframe, box.querySelector(".hp-sound"));
     muted = true;
   }
@@ -200,7 +221,7 @@
         if (el !== preview || !el.querySelector(".hp-frame")) return;
         el.classList.add("playing");
         el.querySelector(".hp-sound").hidden = false;
-      }, 1800);
+      }, REVEAL);
     }
     // YouTube won't play it here (embedding off, removed…): keep the picture
     if (data.event === "onError") {
