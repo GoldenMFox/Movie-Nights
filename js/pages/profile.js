@@ -96,6 +96,8 @@
   }
 
   $(".p-signin").addEventListener("click", () => Cloud.signIn());
+  // signed out: get Google sign-in ready so the button opens its window instantly (Safari needs that)
+  if (Store.getProfile().guest && window.Cloud && Cloud.enabled) Cloud.prepare();
 
   $(".name-form").addEventListener("submit", (e) => {
     e.preventDefault();

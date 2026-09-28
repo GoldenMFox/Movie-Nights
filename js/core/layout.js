@@ -200,6 +200,8 @@
     e.stopPropagation();
     searchBox.classList.remove("open");
     profileBox.classList.toggle("open");
+    // get Google sign-in ready now, so tapping "Sign in" can open its window instantly (Safari needs that)
+    if (profileBox.classList.contains("open") && window.Cloud && Cloud.enabled) Cloud.prepare();
   });
 
   profileBox.addEventListener("click", (e) => {

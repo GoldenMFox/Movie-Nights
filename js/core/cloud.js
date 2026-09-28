@@ -379,17 +379,45 @@
     return pub && pub.name ? first(pub.name) : "the owner";
   }
 
+  // Safari (iPhone / iPad) only allows a pop-up that opens straight from the tap, with no
+  // waiting in between. So the sign-in code is loaded ahead of time (when the profile menu
+  // opens), and the tap then opens Google's window immediately.
+  let readyApp = null;
+  let preparing = null;
+  function prepare() {
+    if (!enabled || readyApp || preparing) return preparing;
+    preparing = appFor(`acct-${Date.now().toString(36)}`)
+      .then((app) => (readyApp = app))
+      .catch((e) => console.warn("Sign in:", e.message))
+      .finally(() => (preparing = null));
+    return preparing;
+  }
+
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+
   async function signIn() {
     if (!enabled) return;
     let app;
     let email = "";
     try {
-      await flush();
-      app = await appFor(`acct-${Date.now().toString(36)}`);
-      const provider = new firebase.auth.GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" });
-      const { user } = await app.auth().signInWithPopup(provider);
+      let popup;
+      if (readyApp) {
+        // no "await" before this line: keeps Safari's pop-up permission from the tap
+        app = readyApp;
+        readyApp = null;
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+        popup = app.auth().signInWithPopup(provider);
+      } else {
+        app = await appFor(`acct-${Date.now().toString(36)}`);
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+        popup = app.auth().signInWithPopup(provider);
+      }
+      const { user } = await popup;
       email = user.email || "";
+      await flush(); // finish uploading the current profile's changes before switching
 
       const known = accounts().find((a) => a.uid === user.uid);
       if (known) {
@@ -439,8 +467,25 @@
           await app.delete();
         } catch (e) {}
       }
-      if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") return;
       console.warn("Sign in:", err);
+      if (err.code === "auth/cancelled-popup-request") return;
+      if (err.code === "auth/popup-closed-by-user") {
+        // on a computer that just means "closed the window"; on iPhone / iPad it's often
+        // iOS losing the Google window, so explain what to try
+        if (isIos || standalone) {
+          notice(
+            "fa-solid fa-mobile-screen",
+            "Sign-in didn't finish",
+            standalone
+              ? `The Google window closed before signing in finished. Apps added to the Home Screen on iPhone / iPad
+                 sometimes lose that window.<br><br>Try again, and if it still doesn't work, open the site in <strong>Safari</strong>,
+                 sign in there, then use it from Safari.`
+              : `The Google window closed before signing in finished.<br><br>Try again. If it keeps happening, check
+                 <strong>Settings → Safari → Block Pop-ups</strong> is off for a moment, or that Private Browsing is off.`
+          );
+        }
+        return;
+      }
       const esc = UI.esc;
       if (err.status === 403 && /has not been used|disabled/i.test(err.message)) {
         notice("fa-solid fa-database", "Sign-in isn't ready yet", "The database hasn't been set up yet (Firebase console → Firestore → Create database).");
@@ -516,6 +561,7 @@
     accounts,
     first,
     signIn,
+    prepare,
     signOut,
     notice,
     switchTo,
