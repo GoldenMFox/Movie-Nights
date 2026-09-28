@@ -134,6 +134,7 @@
     const check = () => {
       const top = nav.getBoundingClientRect().bottom; // hidden under the sticky navbar = out of sight
       const onScreen = pageSearch.some((el) => {
+        if (el.closest(".fold:not(.open)")) return false; // folded away
         const r = el.getBoundingClientRect();
         return r.width > 0 && r.bottom > top && r.top < window.innerHeight;
       });
@@ -141,6 +142,7 @@
     };
     window.addEventListener("scroll", check, { passive: true });
     window.addEventListener("resize", check);
+    window.addEventListener("mn:layout", check);
     check();
   });
   /* ---------------- movie names language ---------------- */
@@ -355,5 +357,67 @@
     }, 0);
   }
 
-  window.UI = { esc, toast, download, PAGES };
+  /*
+   * Folding search / filters: puts a search icon and a filter icon next to
+   * `head` (usually the page title); each one opens its panel below.
+   * Panels start closed unless something in them is already in use.
+   * Returns { mark(searchInUse, filtersInUse) } to show a dot on an icon
+   * whose panel is closed but still filtering.
+   */
+  function foldTools(head, { search, filters, openSearch = false, openFilters = false }) {
+    let row = head.parentElement;
+    if (!row.classList.contains("page-head")) {
+      row = document.createElement("div");
+      row.className = "page-head";
+      head.before(row);
+      row.append(head);
+    }
+    const tools = document.createElement("div");
+    tools.className = "page-tools";
+    row.append(tools);
+
+    function fold(panel, icon, label, open) {
+      const box = document.createElement("div");
+      box.className = "fold";
+      const inner = document.createElement("div");
+      panel.before(box);
+      box.append(inner);
+      inner.append(panel);
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "tool-btn";
+      btn.setAttribute("aria-label", label);
+      btn.title = label;
+      btn.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+      tools.append(btn);
+
+      const set = (on) => {
+        box.classList.toggle("open", on);
+        btn.classList.toggle("on", on);
+        btn.setAttribute("aria-expanded", on);
+      };
+      set(open);
+      btn.addEventListener("click", () => {
+        const on = !box.classList.contains("open");
+        set(on);
+        const input = panel.querySelector('input[type="search"]');
+        if (on && input) input.focus({ preventScroll: true });
+      });
+      // tell the navbar (red search button) once the panel has finished moving
+      box.addEventListener("transitionend", () => window.dispatchEvent(new Event("mn:layout")));
+      return btn;
+    }
+
+    const searchBtn = search && fold(search, "fa-magnifying-glass", "Search", openSearch);
+    const filterBtn = filters && fold(filters, "fa-sliders", "Filters", openFilters);
+    return {
+      mark(searchInUse, filtersInUse) {
+        if (searchBtn) searchBtn.classList.toggle("dot", !!searchInUse);
+        if (filterBtn) filterBtn.classList.toggle("dot", !!filtersInUse);
+      },
+    };
+  }
+
+  window.UI = { esc, toast, download, PAGES, foldTools };
 })();

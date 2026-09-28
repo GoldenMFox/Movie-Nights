@@ -116,6 +116,14 @@
   const emptyEl = root.querySelector(".empty-state");
   const genreSel = root.querySelector('[name="genre"]');
 
+  const filtersInUse = () => !!(state.sort !== "default" || state.min || state.from || state.to || state.genre);
+  const tools = UI.foldTools(document.querySelector(".page-title"), {
+    search: root.querySelector(".list-search"),
+    filters: root.querySelector(".list-filters"),
+    openSearch: !!state.q,
+    openFilters: filtersInUse(),
+  });
+
   function baseList() {
     return Store.all().filter(PAGE.base);
   }
@@ -163,6 +171,7 @@
     const total = baseList().length;
     renderChips();
     renderGenres();
+    tools.mark(state.q.trim(), filtersInUse());
     countEl.textContent = items.length === total ? `${total} titles` : `Showing ${items.length} of ${total} titles`;
 
     emptyEl.hidden = items.length > 0;

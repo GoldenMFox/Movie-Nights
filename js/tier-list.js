@@ -28,6 +28,7 @@
       ).join("")}
     </div>
     <div class="tier-pool-wrap">
+      <div class="page-head"><h2 class="pool-title">Unranked titles</h2></div>
       <form class="glass-search tier-search" role="search">
         <i class="fa-solid fa-magnifying-glass gs-icon" aria-hidden="true"></i>
         <input type="search" name="q" placeholder="Find a title to rank…" aria-label="Find a title" autocomplete="off" />
@@ -64,6 +65,11 @@
   const typeSel = root.querySelector('[name="type"]');
   const orderSel = root.querySelector('[name="order"]');
 
+  const tools = UI.foldTools(root.querySelector(".pool-title"), {
+    search: root.querySelector(".tier-search"),
+    filters: root.querySelector(".tier-pool-wrap .glass-filters"),
+  });
+
   function tile(item) {
     return `<button class="tier-item${selected === item.id ? " selected" : ""}" draggable="true" data-id="${esc(item.id)}"
       title="${esc(Lang.title(item))} (${item.year})${item.rating != null ? " · ★ " + item.rating : ""}">
@@ -88,6 +94,7 @@
       .filter((i) => !term || Lang.matches(i, term))
       .sort(sorters[orderSel.value]);
     pool.innerHTML = list.slice(0, POOL_LIMIT).map(tile).join("");
+    tools.mark(term || typeSel.value, orderSel.value !== "rating");
     root.querySelector(".pool-count").textContent =
       list.length > POOL_LIMIT ? `Unranked: showing ${POOL_LIMIT} of ${list.length}. Use the search to find the rest.` : `Unranked: ${list.length}`;
 

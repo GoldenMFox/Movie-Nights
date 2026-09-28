@@ -3416,6 +3416,125 @@ a.stat-tile:hover {
   margin-top: 4px;
 }
 
+/* ---------- folding search / filters (title + two icons) ---------- */
+
+.page-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 12px 0 20px;
+}
+
+.page-head > :first-child {
+  margin: 0;
+}
+
+.pool-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.page-tools {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.tool-btn {
+  position: relative;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  color: var(--glass-text);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.25s, color 0.25s, border-color 0.25s, transform 0.2s;
+}
+
+.tool-btn:hover {
+  background: var(--glass-bg-hover);
+}
+
+.tool-btn:active {
+  transform: scale(0.92);
+}
+
+/* open: light pill (red stays reserved for the actual search button) */
+.tool-btn.on {
+  border-color: transparent;
+  background: var(--glass-text);
+  color: var(--bg);
+}
+
+/* the panel is closed but still filtering the list */
+.tool-btn.dot::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  background: var(--accent-hover);
+}
+
+.tool-btn.on.dot::after {
+  display: none;
+}
+
+.fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s;
+}
+
+.fold > div {
+  min-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s 0.35s;
+}
+
+.fold.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.fold.open > div {
+  visibility: visible;
+  transition: none;
+  /* let focus glows and dropdown shadows show once it has opened */
+  animation: fold-unclip 0s 0.35s forwards;
+}
+
+@keyframes fold-unclip {
+  to {
+    overflow: visible;
+  }
+}
+
+/* keep focus rings from being clipped while it slides open */
+.fold > div > :first-child {
+  margin-top: 2px;
+}
+
+@media (max-width: 700px) {
+  .tool-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 15px;
+  }
+}
+
 @media (max-width: 700px) {
   .list-filters .glass-select {
     flex: 1 1 calc(50% - 6px);

@@ -91,6 +91,13 @@
   const genreSel = root.querySelector('[name="genre"]');
   const gsortSel = root.querySelector('[name="gsort"]');
 
+  const tools = UI.foldTools(document.querySelector(".page-title"), {
+    search: form,
+    filters: root.querySelector(".genre-bar"),
+    openSearch: !!state.q,
+    openFilters: !!state.genre,
+  });
+
   function fillGenres() {
     const list = TMDB.genresFor(state.gtype);
     genreSel.innerHTML =
@@ -123,6 +130,7 @@
     gsortSel.value = state.gsort;
     gsortSel.disabled = !state.genre;
     moveSegment();
+    tools.mark(state.q, state.genre);
     let p = {};
     if (state.q) p = state.sin === "all" ? { q: state.q } : { q: state.q, in: state.sin };
     else if (state.genre) p = { genre: state.genre, type: state.gtype, sort: state.gsort };
