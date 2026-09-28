@@ -542,13 +542,19 @@ label.field {
   object-fit: cover;
 }
 
-/* the other person's rating on a title page */
+/* friends' ratings on a title page */
+.t-partners {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 2px;
+}
+
 .t-partner {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin: 10px 0 2px;
   padding: 5px 14px 5px 5px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;

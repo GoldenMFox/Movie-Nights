@@ -40,10 +40,12 @@
     { id: "anime", label: "Anime", test: (i) => i.type === "anime" },
   ];
   const CHIPS = PAGE.chips === "type" ? TYPE_CHIPS.slice() : STATUS_CHIPS;
-  // on both your watchlists and neither of you has rated it (signed in, with a second profile)
-  if (page === "watchlist" && window.Cloud && Cloud.partner()) {
-    CHIPS.push({ id: "together", label: "Watch together", test: (i) => Cloud.together(i) });
-    Cloud.onPartner(() => render());
+  // "Watch with Ana": on both watchlists and neither of you has rated it (signed in, with friends)
+  if (page === "watchlist" && window.Cloud && Cloud.friends().length) {
+    const list = Cloud.friends();
+    list.forEach((f) => CHIPS.push({ id: `with-${f.uid}`, label: `Watch with ${f.name}`, test: (i) => Cloud.together(i, f.uid) }));
+    if (list.length > 1) CHIPS.push({ id: "with-all", label: "Watch with everyone", test: (i) => Cloud.together(i, "all") });
+    Cloud.onFriends(() => render());
   }
 
   // IMDb rating (or TMDB when IMDb isn't known yet); titles not looked up yet go last

@@ -60,17 +60,21 @@
     return `${d.certification ? `<span class="t-cert">${esc(d.certification)}</span>` : ""}${esc(genres.length ? genres.join(" • ") : label)}`;
   }
 
-  // the other profile's rating / list for this title ("Ana ★ 7 · on their list")
+  // what your friends did with this title, one pill each ("Ana ★ 7 · on their list")
   function partnerHtml(t) {
-    const p = window.Cloud && Cloud.partnerFor(t);
-    if (!p) return "";
-    const bits = [];
-    if (p.r != null) bits.push(`<span><i class="fa-solid fa-star"></i> ${Cards.formatRating(p.r)}</span>`);
-    if (p.w) bits.push('<span><i class="fa-solid fa-bookmark"></i> on their list</span>');
-    if (p.f) bits.push('<span><i class="fa-solid fa-heart"></i> favorite</span>');
-    return `<div class="t-partner" title="${esc(p.name)}'s library">
-      ${p.photo ? `<img src="${esc(p.photo)}" alt="" referrerpolicy="no-referrer" />` : ""}<strong>${esc(p.name)}</strong>
-      ${bits.join('<span class="dot">·</span>')}</div>`;
+    const list = window.Cloud ? Cloud.friendsFor(t) : [];
+    if (!list.length) return "";
+    return `<div class="t-partners">${list
+      .map((p) => {
+        const bits = [];
+        if (p.r != null) bits.push(`<span><i class="fa-solid fa-star"></i> ${Cards.formatRating(p.r)}</span>`);
+        if (p.w) bits.push('<span><i class="fa-solid fa-bookmark"></i> on their list</span>');
+        if (p.f) bits.push('<span><i class="fa-solid fa-heart"></i> favorite</span>');
+        return `<div class="t-partner" title="${esc(p.name)}'s library">
+          ${p.photo ? `<img src="${esc(p.photo)}" alt="" referrerpolicy="no-referrer" />` : ""}<strong>${esc(p.name)}</strong>
+          ${bits.join('<span class="dot">·</span>')}</div>`;
+      })
+      .join("")}</div>`;
   }
 
   function providersHtml(p) {
@@ -305,7 +309,7 @@
     });
 
     renderLibrary();
-    if (window.Cloud) Cloud.onPartner(renderLibrary);
+    if (window.Cloud) Cloud.onFriends(renderLibrary);
 
     const item = Store.get(id);
     if (item && TMDB.enabled()) {
@@ -359,7 +363,7 @@
     mainEl.dataset.tmdb = tmdbRef;
     Ratings.seed(tmdbRef, d.tmdbScore, d.imdbId);
     renderExternal(d);
-    if (window.Cloud) Cloud.onPartner(() => heroEl.dataset.tmdb === tmdbRef && renderExternal(d));
+    if (window.Cloud) Cloud.onFriends(() => heroEl.dataset.tmdb === tmdbRef && renderExternal(d));
     mainEl.innerHTML = `<div class="t-sections">${sectionsHtml(d, false)}</div>${recommendationsHtml(d)}<p class="tmdb-note">${TMDB_NOTE}</p>`;
 
     // IMDb rating (one OMDb lookup the first time you open this title)

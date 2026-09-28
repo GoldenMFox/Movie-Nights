@@ -10,8 +10,10 @@
  *    and is mirrored to "public/owner", which is what visitors who aren't
  *    signed in see. Every later account starts with an empty library.
  *  - Several accounts can stay signed in on one device ("Who's watching?").
- *  - The other person's ratings / watchlist are shown on title pages, and
- *    the Watchlist gets a "Watch together" filter.
+ *  - Friends' ratings / watchlists are shown on title pages, and the
+ *    Watchlist gets "Watch with …" filters. The owner sees everyone; everyone
+ *    else sees only the owner (read from public/owner), never each other
+ *    (enforced by the Firestore rules).
  *
  * This browser's localStorage stays the working copy: pages read it straight
  * away, and changes are uploaded a moment later. Nothing here runs unless
@@ -28,10 +30,13 @@
     syncAt: "mn:syncAt", // time of the account version this browser has
     dirty: "mn:dirty", // changes not uploaded yet
     pub: "mn:public", // the owner's library, for visitors
-    partner: "mn:partner", // the other person's ratings / watchlist
+    friends: "mn:friends", // the other people's ratings / watchlists you can see
     backup: "mn:localBackup", // what this browser had before signing in
   };
-  const PARTNER_MAX_AGE = 60 * 1000;
+  const FRIENDS_MAX_AGE = 60 * 1000;
+  try {
+    localStorage.removeItem("mn:partner"); // older single-partner version
+  } catch (e) {}
 
   const read = Store.read;
   const write = (k, v) => {
@@ -237,7 +242,7 @@
       } else {
         setStatus("synced");
       }
-      loadPartner(tok);
+      loadFriends(tok);
     } catch (err) {
       console.warn("Sync:", err.message);
       if (err.signedOut) {
@@ -267,9 +272,9 @@
     }
   }
 
-  /* ---------------- the other person ---------------- */
+  /* ---------------- friends (the other profiles you can see) ---------------- */
 
-  const partnerListeners = [];
+  const friendListeners = [];
   const nameKey = (title, year) => `n:${String(title || "").toLowerCase().replace(/[^a-z0-9]+/g, "")}|${year || ""}`;
 
   // their ratings / watchlist / favorites, looked up by TMDB id or by title + year
@@ -287,37 +292,53 @@
     return index;
   }
 
-  async function loadPartner(tok) {
-    const cached = read(K.partner, null);
-    if (cached && Date.now() - cached.at < PARTNER_MAX_AGE) return;
+  // the owner sees every profile; everyone else sees only the owner's (public) library
+  async function loadFriends(tok) {
+    const cached = read(K.friends, null);
+    if (cached && Date.now() - cached.at < FRIENDS_MAX_AGE) return;
     try {
-      const res = await api("users", { tok });
-      const other = ((res && res.documents) || []).map(fromDoc).find((d) => d.id !== account.uid);
-      if (!other) return drop(K.partner);
-      write(K.partner, { at: Date.now(), uid: other.id, name: other.name, photo: other.photo, index: indexOf(dataOf(other), other.base) });
-      partnerListeners.forEach((fn) => fn());
+      let list;
+      if (account.base === "library") {
+        const res = await api("users", { tok });
+        list = ((res && res.documents) || [])
+          .map(fromDoc)
+          .filter((d) => d.id !== account.uid)
+          .map((d) => ({ uid: d.id, name: first(d.name), photo: d.photo, index: indexOf(dataOf(d), d.base) }));
+      } else {
+        const owner = fromDoc(await api("public/owner"));
+        list = owner ? [{ uid: "owner", name: first(owner.name), photo: "images/avatar.jpg", index: indexOf(dataOf(owner), "library") }] : [];
+      }
+      list.sort((a, b) => a.name.localeCompare(b.name));
+      write(K.friends, { at: Date.now(), list });
+      friendListeners.forEach((fn) => fn());
     } catch (err) {
-      console.warn("Partner:", err.message);
+      console.warn("Friends:", err.message);
     }
   }
 
-  function partner() {
-    return account ? read(K.partner, null) : null;
+  function friends() {
+    return account ? (read(K.friends, null) || {}).list || [] : [];
   }
 
-  // works for library items and for TMDB results (mediaType instead of tmdbMedia)
-  function partnerFor(item) {
-    const p = partner();
-    if (!p || !item) return null;
+  // what each friend did with this title: [{uid, name, photo, r, w, f}]
+  // (works for library items and for TMDB results, which have mediaType instead of tmdbMedia)
+  function friendsFor(item) {
+    if (!item) return [];
     const media = item.tmdbMedia || item.mediaType;
-    const v = (item.tmdbId && media && p.index[`${media}-${item.tmdbId}`]) || p.index[nameKey(item.title, item.year)];
-    return v ? Object.assign({ name: first(p.name), photo: p.photo }, v) : null;
+    return friends()
+      .map((p) => {
+        const v = (item.tmdbId && media && p.index[`${media}-${item.tmdbId}`]) || p.index[nameKey(item.title, item.year)];
+        return v ? Object.assign({ uid: p.uid, name: p.name, photo: p.photo }, v) : null;
+      })
+      .filter(Boolean);
   }
 
-  // on both watchlists and neither of you has rated it yet
-  function together(item) {
-    const p = partnerFor(item);
-    return !!(item.watchlist && item.rating == null && p && p.w && p.r == null);
+  // on your watchlist and theirs (everyone's, for "all"), and nobody has rated it yet
+  function together(item, uid) {
+    if (!item.watchlist || item.rating != null) return false;
+    const mine = friendsFor(item);
+    const want = uid === "all" ? friends().map((f) => f.uid) : [uid];
+    return want.length > 0 && want.every((id) => mine.some((f) => f.uid === id && f.w && f.r == null));
   }
 
   /* ---------------- sign in / switch / sign out ---------------- */
@@ -335,7 +356,7 @@
   function remember(acct) {
     write(K.accounts, accounts().filter((a) => a.uid !== acct.uid).concat(acct));
     write(K.account, acct);
-    drop(K.partner, K.dirty);
+    drop(K.friends, K.dirty);
   }
 
   async function signIn() {
@@ -441,7 +462,7 @@
     } catch (e) {}
     write(K.accounts, accounts().filter((a) => a.uid !== account.uid));
     // this device goes back to the public library; your data stays in your account
-    drop(K.account, K.syncAt, K.dirty, K.partner, ...Store.SYNCED);
+    drop(K.account, K.syncAt, K.dirty, K.friends, ...Store.SYNCED);
     location.reload();
   }
 
@@ -462,9 +483,9 @@
     switchTo,
     status: () => status,
     onStatus: (fn) => statusListeners.push(fn),
-    partner,
-    partnerFor,
+    friends,
+    friendsFor,
     together,
-    onPartner: (fn) => partnerListeners.push(fn),
+    onFriends: (fn) => friendListeners.push(fn),
   };
 })();
