@@ -488,6 +488,7 @@
          <i class="fa-solid fa-chevron-down sheet-type-arrow" aria-hidden="true"></i>
        </label>
        <a class="sheet-more" href="discover.html" hidden></a>
+       <h3 class="sheet-group" hidden>In your library</h3>
        <ul class="search-results sheet-results"></ul>`
     );
     const searchForm = search.el.querySelector("form");
@@ -498,12 +499,50 @@
     const TYPE_WORDS = { all: "everything", movie: "movies", tv: "TV shows", anime: "anime" };
     // Discover link for the current search and type
     const discoverUrl = (q) => `discover.html?q=${encodeURIComponent(q)}${typeSel.value !== "all" ? `&in=${typeSel.value}` : ""}`;
+    // results: your library straight away, then everything else on TMDB (the same search
+    // as the Discover page), in the chosen type
+    const tmdbBox = document.createElement("div");
+    tmdbBox.className = "sheet-tmdb";
+    searchResults.after(tmdbBox);
+    let typing;
+    let run = 0;
+    const tmdbRow = (hit) => `<li><a href="title.html?tmdb=${hit.mediaType}-${hit.tmdbId}">
+        <img src="${Store.poster(hit.poster, "w92")}" alt="" loading="lazy" />
+        <span>${esc(Lang.title(hit))}<small>${[hit.year, Store.TYPE_LABEL[hit.type], hit.score ? `TMDB ${hit.score.toFixed(1)}` : ""]
+          .filter(Boolean)
+          .join(" · ")}</small></span></a></li>`;
+    async function searchTmdb(q, type, token) {
+      try {
+        const data = await TMDB.searchIn(q, type, 1);
+        if (token !== run) return;
+        const hits = data.results.filter((h) => !(window.Cards && Cards.inLibrary(h))).slice(0, 15);
+        tmdbBox.innerHTML = hits.length
+          ? `<h3 class="sheet-group">More from TMDB</h3><ul class="search-results sheet-results">${hits.map(tmdbRow).join("")}</ul>`
+          : searchResults.innerHTML
+          ? ""
+          : `<p class="sheet-note">Nothing found for "${esc(q)}".</p>`;
+      } catch (err) {
+        if (token === run) tmdbBox.innerHTML = `<p class="sheet-note">Couldn't search TMDB: ${esc(err.message)}</p>`;
+      }
+    }
     const refresh = () => {
       const q = searchInput2.value.trim();
-      searchResults.innerHTML = resultsHtml(q, typeSel.value);
+      const type = typeSel.value;
+      const mine = resultsHtml(q, type);
+      const hasMine = mine && !mine.includes("search-empty");
+      searchResults.innerHTML = hasMine ? mine : "";
+      searchResults.previousElementSibling.hidden = !hasMine; // "In your library" heading
       more.hidden = !q;
       more.href = discoverUrl(q);
-      more.innerHTML = `<i class="fa-solid fa-compass"></i><span>Search ${TYPE_WORDS[typeSel.value]} for "${esc(q)}"</span><i class="fa-solid fa-chevron-right"></i>`;
+      more.innerHTML = `<i class="fa-solid fa-compass"></i><span>Open all results for "${esc(q)}"</span><i class="fa-solid fa-chevron-right"></i>`;
+      clearTimeout(typing);
+      const token = ++run;
+      if (!q || !(window.TMDB && TMDB.enabled())) {
+        tmdbBox.innerHTML = q && !hasMine ? `<p class="sheet-note">No titles in your library match "${esc(q)}".</p>` : "";
+        return;
+      }
+      tmdbBox.innerHTML = `<p class="sheet-note"><i class="fa-solid fa-spinner fa-spin"></i> Searching…</p>`;
+      typing = setTimeout(() => searchTmdb(q, type, token), 350);
     };
     searchInput2.addEventListener("input", refresh);
     typeSel.addEventListener("change", refresh);

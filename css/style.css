@@ -5232,3 +5232,92 @@ html.custom-scrollbars .grabbing .movie-item {
   max-height: none;
   overflow: visible;
 }
+
+/* rating stars in half steps: a grey star with a gold one on top, cut to half or shown whole */
+.star {
+  position: relative;
+  color: #555;
+}
+
+.star .star-fill {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: gold;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.star.selected,
+.star.hover {
+  color: #555; /* the old whole-star colouring is replaced by the gold layer */
+}
+
+.star.selected-full .star-fill,
+.star.selected-half .star-fill,
+.star.hover-full .star-fill,
+.star.hover-half .star-fill {
+  opacity: 1;
+}
+
+.star.selected-half .star-fill,
+.star.hover-half .star-fill {
+  clip-path: inset(0 50% 0 0);
+}
+
+/* while pointing, the hover picture wins over the saved rating */
+.stars:hover .star.selected-full:not(.hover-full):not(.hover-half) .star-fill,
+.stars:hover .star.selected-half:not(.hover-full):not(.hover-half) .star-fill {
+  opacity: 0;
+}
+
+.stars:hover .star.hover-full .star-fill {
+  clip-path: none;
+}
+
+.star.hover-full,
+.star.hover-half,
+.star.selected-full,
+.star.selected-half {
+  transform: scale(1.1);
+}
+
+.half-hint {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* rating stars stay on one line on narrow phones */
+@media (max-width: 480px) {
+  .stars {
+    flex-wrap: nowrap;
+  }
+
+  .star {
+    padding: 0 2px;
+    font-size: 22px;
+  }
+}
+
+/* app Search panel: "In your library" / "More from TMDB" groups */
+.sheet-group {
+  margin: 18px 4px 4px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sheet-group[hidden] {
+  display: none;
+}
+
+.sheet-note {
+  margin: 16px 4px 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}

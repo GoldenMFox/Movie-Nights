@@ -375,7 +375,12 @@
       `<div class="big-star"><i class="fa-solid fa-star"></i><p class="selected-rating"></p></div>
        <h3>Rate it</h3>
        <p class="rating-for"></p>
-       <div class="stars">${Array.from({ length: 10 }, (_, i) => `<button class="star" data-value="${i + 1}" aria-label="${i + 1} out of 10"><i class="fa-solid fa-star"></i></button>`).join("")}</div>
+       <div class="stars">${Array.from(
+         { length: 10 },
+         (_, i) => `<button class="star" data-value="${i + 1}" aria-label="${i + 1} out of 10 (left half: ${i + 0.5})">
+           <i class="fa-solid fa-star star-base"></i><i class="fa-solid fa-star star-fill" aria-hidden="true"></i></button>`
+       ).join("")}</div>
+       <p class="half-hint">Tip: the left half of a star gives a half point (e.g. 7.5)</p>
        <p class="feedback-message" aria-live="polite"></p>
        <div class="rating-actions">
          <button class="btn save" disabled>Save rating</button>
@@ -383,22 +388,36 @@
        </div>`
     );
     const stars = ratingOverlay.querySelectorAll(".star");
-    const paint = (value, cls) => stars.forEach((s, i) => s.classList.toggle(cls, i < value));
+    // paint up to a value in half steps: whole stars full, a .5 as a half star
+    // (kind: "selected" for your rating, "hover" while pointing)
+    const paint = (value, kind) =>
+      stars.forEach((s, i) => {
+        s.classList.toggle(`${kind}-full`, value >= i + 1);
+        s.classList.toggle(`${kind}-half`, value >= i + 0.5 && value < i + 1);
+      });
+    // left half of a star = x.5, right half = the whole number
+    const valueAt = (star, e) => {
+      const r = star.getBoundingClientRect();
+      const n = +star.dataset.value;
+      return e.clientX - r.left < r.width / 2 ? n - 0.5 : n;
+    };
 
     stars.forEach((star) => {
-      star.addEventListener("mouseenter", () => paint(+star.dataset.value, "hover"));
-      star.addEventListener("mouseleave", () => paint(0, "hover"));
-      star.addEventListener("click", () => {
-        picked = +star.dataset.value;
+      star.addEventListener("pointermove", (e) => paint(valueAt(star, e), "hover"));
+      star.addEventListener("pointerleave", () => paint(0, "hover"));
+      star.addEventListener("click", (e) => {
+        // keyboard (Enter / Space) has no position: whole star
+        picked = e.detail === 0 ? +star.dataset.value : valueAt(star, e);
         showPicked();
       });
     });
+    ratingOverlay.querySelector(".stars").addEventListener("pointerleave", () => paint(0, "hover"));
 
     ratingOverlay.querySelector(".save").addEventListener("click", () => {
       if (picked == null) return;
       const item = Store.get(ratingId);
       Store.update(ratingId, { rating: picked });
-      toast(`Rated ${Lang.title(item)}: ${picked}/10`);
+      toast(`Rated ${Lang.title(item)}: ${formatRating(picked)}/10`);
       close(ratingOverlay);
     });
 
@@ -409,10 +428,10 @@
     });
 
     function showPicked() {
-      paint(picked == null ? 0 : Math.round(picked), "selected");
+      paint(picked == null ? 0 : picked, "selected");
       ratingOverlay.querySelector(".selected-rating").textContent = picked == null ? "" : formatRating(picked);
       ratingOverlay.querySelector(".big-star i").style.transform = `scale(${picked == null ? 1 : 0.8 + picked * 0.04})`;
-      ratingOverlay.querySelector(".feedback-message").textContent = picked == null ? "" : FEEDBACK[Math.round(picked)] || "";
+      ratingOverlay.querySelector(".feedback-message").textContent = picked == null ? "" : FEEDBACK[Math.floor(picked)] || "";
       ratingOverlay.querySelector(".save").disabled = picked == null;
     }
     ratingOverlay.showPicked = showPicked;
