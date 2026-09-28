@@ -4373,3 +4373,22 @@ a.stat-tile:hover {
     height: 4px;
   }
 }
+
+/* taller slideshow */
+.hero {
+  aspect-ratio: 2 / 1;
+  max-height: min(760px, 78vh);
+}
+
+@media (min-width: 701px) and (max-width: 1100px) {
+  .hero {
+    aspect-ratio: 16 / 10;
+  }
+}
+
+@media (max-width: 700px) {
+  .hero {
+    aspect-ratio: 3 / 4;
+    max-height: 76vh;
+  }
+}
