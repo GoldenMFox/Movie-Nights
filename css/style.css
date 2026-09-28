@@ -3629,7 +3629,12 @@ a.stat-tile:hover {
   transition: grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s;
 }
 
+.fold {
+  grid-template-columns: minmax(0, 1fr); /* never wider than the page (search bars stay on screen) */
+}
+
 .fold > div {
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
   visibility: hidden;
@@ -4037,4 +4042,18 @@ a.stat-tile:hover {
     font-weight: 500;
     background: none;
   }
+}
+
+/* iPhone zooms the whole page in when you tap a field with text under 16px (and the page
+   then looks too wide). On touch screens every field uses at least 16px. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+.segmented button {
+  white-space: nowrap;
 }
