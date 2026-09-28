@@ -415,7 +415,7 @@
       { id: "home", href: "index.html", label: "Home", icon: "fa-house", on: ["home"] },
       { id: "discover", href: "discover.html", label: "Discover", icon: "fa-compass", on: ["discover"] },
       { id: "library", label: "Library", icon: "fa-clapperboard", on: LIBRARY_PAGES },
-      { id: "list", href: "watchlist.html", label: "My List", icon: "fa-bookmark", on: ["watchlist"] },
+      { id: "list", href: "watchlist.html", label: "Watchlist", icon: "fa-bookmark", on: ["watchlist"] },
       { id: "profile", href: "profile.html", label: "Profile", icon: "fa-user", on: ["profile"] },
     ];
     const tabIcon = (t) =>
