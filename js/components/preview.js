@@ -1,7 +1,7 @@
 /*
  * Hover preview (Netflix style), computers only:
  * rest the mouse on a poster for a moment and a bigger card floats over it and plays
- * the trailer, muted (🔊 to turn the sound on), with the title, ratings, genres and
+ * the trailer with sound (🔊 to mute; remembered), with the title, ratings, genres and
  * the usual buttons. Moving the mouse away closes it and stops the video.
  *
  * The buttons reuse the card actions in js/components/cards.js (data-action on an
@@ -153,7 +153,7 @@
     preview.style.left = `${left}px`;
     preview.style.top = `${Math.round(r.top)}px`;
     preview.style.transformOrigin = `${r.left + r.width / 2 - left}px 50%`;
-    if (!hidden) requestAnimationFrame(() => preview && preview.classList.add("show"));
+    if (!hidden) requestAnimationFrame(() => preview && (preview.classList.add("show"), trySound()));
 
     preview.addEventListener("mouseleave", (e) => {
       // back onto the same poster: keep it open
@@ -169,9 +169,38 @@
     });
   }
 
-  /* ---------------- the trailer (YouTube, muted) ---------------- */
+  /* ---------------- the trailer (YouTube) ---------------- */
 
   let muted = true;
+
+  // Sound is on by default (remembered if you mute it). Browsers only allow sound once
+  // you've clicked / tapped somewhere on the page, so the video always starts muted
+  // (that always works) and the sound is switched on once it's playing and on screen.
+  const SOUND_KEY = "mn:previewSound";
+  let wantSound = (() => {
+    try {
+      return localStorage.getItem(SOUND_KEY) !== "off";
+    } catch (e) {
+      return true;
+    }
+  })();
+
+  function paintSound() {
+    const btn = preview && preview.querySelector(".hp-sound");
+    if (!btn) return;
+    btn.innerHTML = `<i class="fa-solid fa-volume-${muted ? "xmark" : "high"}"></i>`;
+    btn.setAttribute("aria-label", muted ? "Turn sound on" : "Turn sound off");
+  }
+
+  function trySound() {
+    if (!preview || !preview.classList.contains("show") || !preview.dataset.started || !muted || !wantSound) return;
+    const clicked = navigator.userActivation ? navigator.userActivation.hasBeenActive : true;
+    if (!clicked) return; // the browser would stop the video; stay muted
+    muted = false;
+    preview.dataset.soundAt = Date.now();
+    send("command", "unMute");
+    paintSound();
+  }
 
   function playVideo(key) {
     const box = preview.querySelector(".hp-video");
@@ -236,7 +265,16 @@
         if (el !== preview || !el.querySelector(".hp-frame")) return;
         el.classList.add("playing");
         el.querySelector(".hp-sound").hidden = false;
+        trySound();
       }, REVEAL);
+    }
+    // the browser refused the sound and paused it: carry on muted
+    if (state === 2 && preview.dataset.soundAt && Date.now() - Number(preview.dataset.soundAt) < 2500) {
+      delete preview.dataset.soundAt;
+      muted = true;
+      send("command", "mute");
+      send("command", "playVideo");
+      paintSound();
     }
     // YouTube won't play it here (embedding off, removed…): keep the picture
     if (data.event === "onError") {
@@ -250,8 +288,12 @@
     if (sound) {
       muted = !muted;
       send("command", muted ? "mute" : "unMute");
-      sound.innerHTML = `<i class="fa-solid fa-volume-${muted ? "xmark" : "high"}"></i>`;
-      sound.setAttribute("aria-label", muted ? "Turn sound on" : "Turn sound off");
+      paintSound();
+      // remember the choice for the next previews
+      wantSound = !muted;
+      try {
+        localStorage.setItem(SOUND_KEY, wantSound ? "on" : "off");
+      } catch (err) {}
       return;
     }
     // clicking the video opens the title page
@@ -299,8 +341,10 @@
     preloadTimer = setTimeout(() => allowed() && open(card, true), PRELOAD);
     timer = setTimeout(() => {
       if (!allowed()) return;
-      if (preview && previewRef && cacheKey(previewRef) === cacheKey(ref)) preview.classList.add("show");
-      else open(card);
+      if (preview && previewRef && cacheKey(previewRef) === cacheKey(ref)) {
+        preview.classList.add("show");
+        trySound(); // already playing in the background: sound on now that you can see it
+      } else open(card);
     }, DELAY);
   });
 
