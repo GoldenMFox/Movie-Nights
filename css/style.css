@@ -4606,3 +4606,10 @@ a.stat-tile:hover {
 .hover-preview:not(.show) {
   pointer-events: none;
 }
+
+/* phone app tab bar: a touch darker */
+@media (max-width: 900px) {
+  html.standalone .tab-bar {
+    background: rgba(24, 24, 28, 0.8);
+  }
+}
