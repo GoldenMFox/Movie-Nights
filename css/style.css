@@ -4894,3 +4894,22 @@ html.standalone .app-sheet.open {
     border-radius: 10px;
   }
 }
+
+/* cast photos a bit smaller */
+.t-cast {
+  grid-auto-columns: 130px;
+}
+
+@media (max-width: 700px) {
+  .t-cast {
+    grid-auto-columns: calc((100% - 36px) / 4);
+  }
+
+  .t-person strong {
+    font-size: 12.5px;
+  }
+
+  .t-person span {
+    font-size: 11px;
+  }
+}
