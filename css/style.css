@@ -5054,3 +5054,31 @@ html.standalone .app-sheet.open {
     background: var(--accent-hover);
   }
 }
+
+/* scrollbars stay exactly the same when you point at them (no brighter / red / bigger on hover) */
+.movie-row:hover,
+.t-cast:hover,
+.t-media-row:hover,
+.tier-pool:hover {
+  scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
+}
+
+@supports selector(::-webkit-scrollbar) {
+  .movie-row:hover,
+  .t-cast:hover,
+  .t-media-row:hover,
+  .tier-pool:hover {
+    scrollbar-color: auto;
+  }
+
+  .movie-row:hover::-webkit-scrollbar-thumb,
+  .t-cast:hover::-webkit-scrollbar-thumb,
+  .t-media-row:hover::-webkit-scrollbar-thumb,
+  .tier-pool:hover::-webkit-scrollbar-thumb,
+  .movie-row::-webkit-scrollbar-thumb:hover,
+  .t-cast::-webkit-scrollbar-thumb:hover,
+  .t-media-row::-webkit-scrollbar-thumb:hover,
+  .tier-pool::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.28);
+  }
+}
