@@ -4613,3 +4613,8 @@ a.stat-tile:hover {
     background: rgba(24, 24, 28, 0.8);
   }
 }
+
+/* an open panel (Library / Search) takes taps; a closed one lets them through */
+html.standalone .app-sheet.open {
+  pointer-events: auto;
+}
