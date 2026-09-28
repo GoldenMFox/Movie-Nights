@@ -1305,6 +1305,44 @@ a.stat-tile:hover {
   text-align: center;
 }
 
+/* sign-in messages (e.g. "This account can't sign in") */
+.notice-modal {
+  max-width: 420px;
+  text-align: center;
+}
+
+.notice-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 4px auto 14px;
+  border-radius: 50%;
+  background: rgba(144, 13, 9, 0.18);
+  color: var(--accent-hover);
+  font-size: 26px;
+}
+
+.notice-modal h2 {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+
+.notice-modal p {
+  margin: 0 0 22px;
+  color: #ccc;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.notice-modal p strong {
+  color: #fff;
+}
+
+.notice-modal .notice-ok {
+  min-width: 120px;
+}
+
 .big-star {
   position: relative;
   width: 120px;

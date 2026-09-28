@@ -359,15 +359,37 @@
     drop(K.friends, K.dirty);
   }
 
+  // a message that stays until it's closed (a toast is easy to miss after the Google pop-up)
+  function notice(icon, title, html) {
+    if (!window.Cards || !Cards.makeOverlay) return alert(`${title}\n\n${html.replace(/<[^>]+>/g, "")}`);
+    const overlay = Cards.makeOverlay(
+      "notice-modal",
+      `<div class="notice-icon"><i class="${icon}"></i></div>
+       <h2>${UI.esc(title)}</h2>
+       <p>${html}</p>
+       <button class="btn btn-primary notice-ok" type="button">OK</button>`
+    );
+    overlay.querySelector(".notice-ok").addEventListener("click", () => Cards.closeModal(overlay));
+    overlay.onclose = () => setTimeout(() => overlay.remove(), 300);
+    Cards.openModal(overlay);
+  }
+
+  function ownerName() {
+    const pub = read(K.pub, null);
+    return pub && pub.name ? first(pub.name) : "the owner";
+  }
+
   async function signIn() {
     if (!enabled) return;
     let app;
+    let email = "";
     try {
       await flush();
       app = await appFor(`acct-${Date.now().toString(36)}`);
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
       const { user } = await app.auth().signInWithPopup(provider);
+      email = user.email || "";
 
       const known = accounts().find((a) => a.uid === user.uid);
       if (known) {
@@ -419,11 +441,26 @@
       }
       if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") return;
       console.warn("Sign in:", err);
-      if (err.status === 403 && /has not been used|disabled/i.test(err.message)) toast("The Firestore database isn't set up yet (Firebase console → Firestore → Create database).");
-      else if (err.status === 403) toast("This Google account isn't allowed on this Movie Nights. Ask the owner to add it.");
-      else if (err.code === "auth/popup-blocked") toast("Your browser blocked the sign-in window. Allow pop-ups and try again.");
-      else if (err.code === "auth/unauthorized-domain") toast("This address isn't allowed yet: add it under Firebase → Authentication → Settings → Authorized domains.");
-      else toast(`Couldn't sign in: ${err.message}`);
+      const esc = UI.esc;
+      if (err.status === 403 && /has not been used|disabled/i.test(err.message)) {
+        notice("fa-solid fa-database", "Sign-in isn't ready yet", "The database hasn't been set up yet (Firebase console → Firestore → Create database).");
+      } else if (err.status === 403) {
+        notice(
+          "fa-solid fa-user-lock",
+          "This account can't sign in",
+          `${email ? `<strong>${esc(email)}</strong> isn't` : "This Google account isn't"} on the Movie Nights guest list.
+           Only people added by ${esc(ownerName())} can sign in.<br><br>
+           Ask ${esc(ownerName())} to add your Gmail address, then try again. You can still browse the site without signing in.`
+        );
+      } else if (err.code === "auth/popup-blocked") {
+        notice("fa-solid fa-window-restore", "Sign-in window blocked", "Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again.");
+      } else if (err.code === "auth/unauthorized-domain") {
+        notice("fa-solid fa-globe", "Sign-in isn't allowed here", "This web address isn't allowed to use sign-in yet (Firebase → Authentication → Settings → Authorized domains).");
+      } else if (err.code === "auth/network-request-failed" || err instanceof TypeError) {
+        notice("fa-solid fa-wifi", "No connection", "Couldn't reach Google. Check your internet connection and try again.");
+      } else {
+        notice("fa-solid fa-triangle-exclamation", "Couldn't sign in", esc(err.message || "Something went wrong. Please try again."));
+      }
     }
   }
 
@@ -480,6 +517,7 @@
     first,
     signIn,
     signOut,
+    notice,
     switchTo,
     status: () => status,
     onStatus: (fn) => statusListeners.push(fn),
