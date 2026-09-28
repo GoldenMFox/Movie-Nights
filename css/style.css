@@ -204,8 +204,13 @@ label.field {
   gap: 16px;
 }
 
+.nav-logo {
+  flex-shrink: 0; /* never squash the logo */
+}
+
 .nav-logo img {
-  height: 30px;
+  height: 24px;
+  width: auto;
   display: block;
 }
 
@@ -505,7 +510,7 @@ label.field {
 
 /* ---------- mobile nav ---------- */
 
-@media (max-width: 1250px) {
+@media (max-width: 1330px) {
   .nav-bar {
     padding: 0 15px;
   }
@@ -2757,7 +2762,7 @@ a.stat-tile:hover {
   display: none;
 }
 
-@media (max-width: 1250px) {
+@media (max-width: 1330px) {
   .lang-toggle.in-bar {
     display: none;
   }
@@ -2819,7 +2824,7 @@ a.stat-tile:hover {
   background: rgba(14, 14, 16, 0.72);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 0;
   box-shadow: none;
 }
 
@@ -2896,7 +2901,7 @@ a.stat-tile:hover {
 }
 
 /* the links live in one rounded capsule, with a pill that slides to the page you hover */
-@media (min-width: 1251px) {
+@media (min-width: 1331px) {
   .nav-links {
     position: relative;
     gap: 2px;
@@ -2952,7 +2957,7 @@ a.stat-tile:hover {
 }
 
 /* phones / small screens: same glass look, round menu button */
-@media (max-width: 1250px) {
+@media (max-width: 1330px) {
   .nav-bar {
     height: 64px;
   }
@@ -2988,5 +2993,10 @@ a.stat-tile:hover {
 
   .nav-links a.active {
     background: rgba(255, 255, 255, 0.08);
+  }
+}
+@media (max-width: 480px) {
+  .nav-logo img {
+    height: 17px;
   }
 }

@@ -101,7 +101,7 @@
   const activeLink = linksEl.querySelector("a.active");
 
   function moveIndicator(link, instant) {
-    if (!link || window.innerWidth <= 1250) return indicator.classList.remove("show");
+    if (!link || window.innerWidth <= 1330) return indicator.classList.remove("show");
     const r = link.getBoundingClientRect();
     const box = linksEl.getBoundingClientRect();
     if (instant) indicator.style.transition = "none";
