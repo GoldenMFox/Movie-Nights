@@ -42,6 +42,7 @@
           <button class="nav-close" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <ul class="nav-links">
+          <li class="nav-indicator" aria-hidden="true"></li>
           ${PAGES.map(
             (p) =>
               `<li><a href="${p.href}" class="${p.id === current ? "active" : ""}"${p.id === current ? ' aria-current="page"' : ""}><i class="${p.icon}"></i>${p.label}</a></li>`
@@ -92,6 +93,33 @@
     menu.classList.add("open");
   });
   nav.querySelector(".nav-close").addEventListener("click", () => menu.classList.remove("open"));
+
+  /* ---------------- sliding pill behind the nav links ---------------- */
+
+  const linksEl = nav.querySelector(".nav-links");
+  const indicator = linksEl.querySelector(".nav-indicator");
+  const activeLink = linksEl.querySelector("a.active");
+
+  function moveIndicator(link, instant) {
+    if (!link || window.innerWidth <= 1250) return indicator.classList.remove("show");
+    const r = link.getBoundingClientRect();
+    const box = linksEl.getBoundingClientRect();
+    if (instant) indicator.style.transition = "none";
+    indicator.style.left = `${r.left - box.left}px`;
+    indicator.style.width = `${r.width}px`;
+    indicator.classList.add("show");
+    if (instant) requestAnimationFrame(() => (indicator.style.transition = ""));
+  }
+
+  linksEl.addEventListener("mouseover", (e) => {
+    const link = e.target.closest("a");
+    if (link) moveIndicator(link);
+  });
+  linksEl.addEventListener("mouseleave", () => moveIndicator(activeLink));
+  window.addEventListener("resize", () => moveIndicator(activeLink, true));
+  moveIndicator(activeLink, true);
+  // text widths change once the font has loaded
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => moveIndicator(activeLink, true));
 
   /* ---------------- movie names language ---------------- */
 
