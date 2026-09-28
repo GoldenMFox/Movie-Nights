@@ -12,6 +12,26 @@
   const ROWS = ".movie-row, .t-cast, .t-media-row";
   document.documentElement.classList.add("custom-scrollbars");
 
+  // glide a row towards a position (eases in over a few frames instead of jumping)
+  function glideTo(row, x) {
+    const max = row.scrollWidth - row.clientWidth;
+    row._target = Math.min(Math.max(x, 0), max);
+    if (row._gliding) return;
+    row._gliding = true;
+    const step = () => {
+      const diff = row._target - row.scrollLeft;
+      if (Math.abs(diff) < 0.5) {
+        row.scrollLeft = row._target;
+        row._gliding = false;
+        return;
+      }
+      row.scrollLeft += diff * 0.2;
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  const targetOf = (row) => (row._gliding ? row._target : row.scrollLeft);
+
   function attach(row) {
     if (row._bar && row._bar.isConnected) return row._update();
 
@@ -42,11 +62,11 @@
       e.stopPropagation();
       thumb.setPointerCapture(e.pointerId);
       const startX = e.clientX;
-      const start = row.scrollLeft;
+      const start = targetOf(row);
       const max = row.scrollWidth - row.clientWidth;
       const room = bar.clientWidth - thumb.offsetWidth || 1;
       bar.classList.add("dragging");
-      const move = (ev) => (row.scrollLeft = start + ((ev.clientX - startX) * max) / room);
+      const move = (ev) => glideTo(row, start + ((ev.clientX - startX) * max) / room);
       const up = () => {
         thumb.removeEventListener("pointermove", move);
         bar.classList.remove("dragging");
@@ -62,8 +82,22 @@
       const r = bar.getBoundingClientRect();
       const tw = thumb.offsetWidth;
       const ratio = Math.min(Math.max((e.clientX - r.left - tw / 2) / (r.width - tw), 0), 1);
-      row.scrollTo({ left: ratio * (row.scrollWidth - row.clientWidth), behavior: "smooth" });
+      glideTo(row, ratio * (row.scrollWidth - row.clientWidth));
     });
+
+    // sideways scrolling (touchpad swipe, or Shift + mouse wheel): glide instead of stepping.
+    // Plain up / down wheel still scrolls the page.
+    row.addEventListener(
+      "wheel",
+      (e) => {
+        const dx = e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX;
+        if (!dx || Math.abs(dx) < Math.abs(e.shiftKey ? 0 : e.deltaY)) return;
+        e.preventDefault();
+        const px = e.deltaMode === 1 ? dx * 40 : e.deltaMode === 2 ? dx * row.clientWidth : dx;
+        glideTo(row, targetOf(row) + px * (Math.abs(px) < 40 ? 1 : 1.6));
+      },
+      { passive: false }
+    );
 
     update();
   }

@@ -5126,3 +5126,8 @@ html.custom-scrollbars .t-media-row::-webkit-scrollbar {
 .x-scrollbar.dragging .x-thumb {
   cursor: pointer;
 }
+
+/* computers: no snapping to poster edges (it made scrolling jump); the rows glide instead */
+html.custom-scrollbars .movie-row {
+  scroll-snap-type: none;
+}
