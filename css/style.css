@@ -3042,8 +3042,14 @@ a.stat-tile:hover {
     height: 40px;
   }
 
+  /* the glass navbar (backdrop-filter) becomes the menu's frame, which would squash it
+     to the navbar's height: give it the full screen height explicitly */
   .nav-menu {
-    background: rgba(18, 18, 21, 0.97);
+    bottom: auto;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    background: #121215;
   }
 
   .nav-links a {
