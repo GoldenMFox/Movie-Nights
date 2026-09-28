@@ -14,9 +14,9 @@
   if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
 
   const { esc } = UI;
-  const DELAY = 800; // ms of resting on a poster before the preview opens
-  const PRELOAD = 250; // start looking up the trailer a bit earlier, so it's ready
-  const REVEAL = 900; // after it starts playing, let YouTube's own title / buttons fade first
+  const DELAY = 800; // ms of resting on a poster before the preview appears
+  const PRELOAD = 300; // the preview is built (invisible) and the trailer starts loading this early
+  const REVEAL = 250; // after it starts playing, a moment for YouTube's own title to fade
 
   // connect to YouTube ahead of time, so the first video starts faster
   ["https://www.youtube.com", "https://i.ytimg.com", "https://www.google.com"].forEach((href) => {
@@ -114,7 +114,8 @@
       <div class="hp-actions">${buttons}<a class="hp-btn hp-more" href="${url}" aria-label="More info" title="More info"><i class="fa-solid fa-chevron-down"></i></a></div>`;
   }
 
-  function open(card) {
+  // hidden: build it (and start loading the trailer) without showing it yet
+  function open(card, hidden) {
     const ref = refOf(card);
     const b = ref && basics(ref);
     if (!b) return;
@@ -152,7 +153,7 @@
     preview.style.left = `${left}px`;
     preview.style.top = `${Math.round(r.top)}px`;
     preview.style.transformOrigin = `${r.left + r.width / 2 - left}px 50%`;
-    requestAnimationFrame(() => preview && preview.classList.add("show"));
+    if (!hidden) requestAnimationFrame(() => preview && preview.classList.add("show"));
 
     preview.addEventListener("mouseleave", (e) => {
       // back onto the same poster: keep it open
@@ -294,10 +295,12 @@
     if (!ref) return;
     // back on the poster whose preview is already open: nothing to do
     if (preview && previewRef && cacheKey(previewRef) === cacheKey(ref)) return;
-    preloadTimer = setTimeout(() => details(ref), PRELOAD);
+    const allowed = () => hoverCard === card && card.isConnected && !document.querySelector(".overlay.active"); // not while a pop-up is open
+    preloadTimer = setTimeout(() => allowed() && open(card, true), PRELOAD);
     timer = setTimeout(() => {
-      // not while a pop-up (rating, trailer…) is open
-      if (hoverCard === card && card.isConnected && !document.querySelector(".overlay.active")) open(card);
+      if (!allowed()) return;
+      if (preview && previewRef && cacheKey(previewRef) === cacheKey(ref)) preview.classList.add("show");
+      else open(card);
     }, DELAY);
   });
 

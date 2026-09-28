@@ -4601,3 +4601,8 @@ a.stat-tile:hover {
   height: auto;
   transform: translate(-50%, -50%) scale(1.4);
 }
+
+/* built early (while the trailer loads) but not shown yet: invisible and click-through */
+.hover-preview:not(.show) {
+  pointer-events: none;
+}
