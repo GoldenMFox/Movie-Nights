@@ -5131,3 +5131,16 @@ html.custom-scrollbars .t-media-row::-webkit-scrollbar {
 html.custom-scrollbars .movie-row {
   scroll-snap-type: none;
 }
+
+/* dragging a row with the mouse */
+html.custom-scrollbars .movie-row.grabbing,
+html.custom-scrollbars .t-cast.grabbing,
+html.custom-scrollbars .t-media-row.grabbing,
+html.custom-scrollbars .grabbing * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+html.custom-scrollbars .grabbing .movie-item {
+  pointer-events: none; /* no hover effects / previews while dragging */
+}

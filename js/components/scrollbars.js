@@ -85,6 +85,56 @@
       glideTo(row, ratio * (row.scrollWidth - row.clientWidth));
     });
 
+    // grab the row with the mouse and drag it sideways (like swiping on a phone); it keeps
+    // gliding a little after you let go. A drag never counts as a click on a poster.
+    row.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "mouse" || e.button !== 0) return;
+      const startX = e.clientX;
+      const start = targetOf(row);
+      let moved = false;
+      let lastX = startX;
+      let lastT = performance.now();
+      let speed = 0; // px per ms
+
+      const move = (ev) => {
+        const dx = ev.clientX - startX;
+        if (!moved) {
+          if (Math.abs(dx) < 6) return;
+          moved = true;
+          row.classList.add("grabbing");
+          row._gliding = false;
+        }
+        const now = performance.now();
+        speed = (ev.clientX - lastX) / Math.max(now - lastT, 1);
+        lastX = ev.clientX;
+        lastT = now;
+        row._target = start - dx;
+        row.scrollLeft = start - dx;
+      };
+      const up = () => {
+        document.removeEventListener("pointermove", move);
+        document.removeEventListener("pointerup", up);
+        if (!moved) return;
+        row.classList.remove("grabbing");
+        // the click that ends a drag shouldn't open the poster
+        const block = (ce) => {
+          ce.preventDefault();
+          ce.stopPropagation();
+        };
+        row.addEventListener("click", block, { capture: true, once: true });
+        setTimeout(() => row.removeEventListener("click", block, { capture: true }), 50);
+        // a flick keeps it moving for a moment
+        if (performance.now() - lastT < 80 && Math.abs(speed) > 0.1) {
+          const extra = Math.max(Math.min(speed * 250, 500), -500); // at most ~2 posters
+          glideTo(row, row.scrollLeft - extra);
+        }
+      };
+      document.addEventListener("pointermove", move);
+      document.addEventListener("pointerup", up);
+    });
+    // stop the browser dragging the poster picture / link instead
+    row.addEventListener("dragstart", (e) => e.preventDefault());
+
     // sideways scrolling (touchpad swipe, or Shift + mouse wheel): glide instead of stepping.
     // Plain up / down wheel still scrolls the page.
     row.addEventListener(
