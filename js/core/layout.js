@@ -406,22 +406,18 @@
   /* ---------------- installed app on a phone: tab bar at the bottom ---------------- */
 
   // Only in the installed app (Home Screen), and only at phone / small tablet width (CSS):
-  // the top navbar is hidden and these five tabs sit at the bottom, like a native app.
-  // Library opens a panel with the library search and the list pages; everything from the
-  // profile menu (sign in, Who's watching?, EN / RU…) moves onto the Profile page.
+  // the top bar keeps just the logo and your profile picture (with the full profile menu),
+  // and these five tabs sit at the bottom in a floating pill, like a native app.
+  // Search and Library open panels that slide up from the bottom.
   if (standalone) {
     const LIBRARY_PAGES = ["movie", "tv", "anime", "favorites", "tiers"];
     const TABS = [
       { id: "home", href: "index.html", label: "Home", icon: "fa-house", on: ["home"] },
       { id: "discover", href: "discover.html", label: "Discover", icon: "fa-compass", on: ["discover"] },
+      { id: "search", label: "Search", icon: "fa-magnifying-glass", on: [] },
       { id: "library", label: "Library", icon: "fa-clapperboard", on: LIBRARY_PAGES },
       { id: "list", href: "watchlist.html", label: "Watchlist", icon: "fa-bookmark", on: ["watchlist"] },
-      { id: "profile", href: "profile.html", label: "Profile", icon: "fa-user", on: ["profile"] },
     ];
-    const tabIcon = (t) =>
-      t.id === "profile" && acct && acct.photo
-        ? `<img class="tab-pic" src="${esc(acct.photo)}" alt="" referrerpolicy="no-referrer" />`
-        : `<i class="fa-solid ${t.icon}"></i>`;
 
     const bar = document.createElement("nav");
     bar.className = "tab-bar";
@@ -429,13 +425,78 @@
     bar.innerHTML = TABS.map((t) => {
       const on = t.on.includes(current);
       const attrs = `class="tab${on ? " on" : ""}"${on ? ' aria-current="page"' : ""}`;
-      return t.href
-        ? `<a href="${t.href}" ${attrs}>${tabIcon(t)}<span>${t.label}</span></a>`
-        : `<button type="button" data-tab="${t.id}" ${attrs}>${tabIcon(t)}<span>${t.label}</span></button>`;
+      const inner = `<i class="fa-solid ${t.icon}"></i><span>${t.label}</span>`;
+      return t.href ? `<a href="${t.href}" ${attrs}>${inner}</a>` : `<button type="button" data-tab="${t.id}" ${attrs}>${inner}</button>`;
     }).join("");
     document.body.append(bar);
 
-    // Library panel: search your library + the list pages
+    // a panel that slides up from the bottom; only one is open at a time
+    const sheets = [];
+    function makeSheet(tabId, title, html) {
+      const el = document.createElement("div");
+      el.className = "app-sheet";
+      el.innerHTML = `
+        <div class="sheet-backdrop"></div>
+        <div class="sheet-panel" role="dialog" aria-modal="true" aria-label="${title}">
+          <div class="sheet-grip" aria-hidden="true"></div>
+          <h2 class="sheet-title">${title}</h2>
+          ${html}
+        </div>`;
+      document.body.append(el);
+      const tab = bar.querySelector(`[data-tab="${tabId}"]`);
+      const sheet = {
+        el,
+        open() {
+          sheets.forEach((s) => s !== sheet && s.close());
+          el.classList.add("open");
+          tab.classList.add("open");
+        },
+        close() {
+          el.classList.remove("open");
+          tab.classList.remove("open");
+          const input = el.querySelector("input");
+          if (input) input.blur();
+        },
+        isOpen: () => el.classList.contains("open"),
+      };
+      tab.addEventListener("click", () => (sheet.isOpen() ? sheet.close() : sheet.open()));
+      el.querySelector(".sheet-backdrop").addEventListener("click", sheet.close);
+      sheets.push(sheet);
+      return sheet;
+    }
+    document.addEventListener("keydown", (e) => e.key === "Escape" && sheets.forEach((s) => s.close()));
+
+    // Search: your library as you type, and "search everything" on Discover
+    const search = makeSheet(
+      "search",
+      "Search",
+      `<form class="sheet-search" role="search">
+         <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+         <input type="search" name="q" placeholder="Movies, TV shows, anime…" aria-label="Search" autocomplete="off" enterkeyhint="search" />
+       </form>
+       <a class="sheet-more" href="discover.html" hidden></a>
+       <ul class="search-results sheet-results"></ul>`
+    );
+    const searchForm = search.el.querySelector("form");
+    const searchInput2 = searchForm.elements.q;
+    const more = search.el.querySelector(".sheet-more");
+    const searchResults = search.el.querySelector(".sheet-results");
+    searchInput2.addEventListener("input", () => {
+      const q = searchInput2.value.trim();
+      searchResults.innerHTML = resultsHtml(q);
+      more.hidden = !q;
+      more.href = `discover.html?q=${encodeURIComponent(q)}`;
+      more.innerHTML = `<i class="fa-solid fa-compass"></i><span>Search everything for "${esc(q)}"</span><i class="fa-solid fa-chevron-right"></i>`;
+    });
+    searchForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const q = searchInput2.value.trim();
+      if (q) location.href = `discover.html?q=${encodeURIComponent(q)}`;
+    });
+    // focus straight from the tap, so the phone keyboard opens
+    bar.querySelector('[data-tab="search"]').addEventListener("click", () => search.isOpen() && searchInput2.focus());
+
+    // Library: the list pages
     const count = (test) => Store.all().filter(test).length;
     const LINKS = [
       { href: "movies.html", label: "Movies", icon: "fa-film", n: count((i) => i.type === "movie") },
@@ -444,71 +505,14 @@
       { href: "favorites.html", label: "Favorites", icon: "fa-heart", n: count((i) => i.favorite) },
       { href: "tier-list.html", label: "Tier List", icon: "fa-ranking-star", n: null },
     ];
-    const sheet = document.createElement("div");
-    sheet.className = "app-sheet";
-    sheet.innerHTML = `
-      <div class="sheet-backdrop"></div>
-      <div class="sheet-panel" role="dialog" aria-modal="true" aria-label="Library">
-        <div class="sheet-grip" aria-hidden="true"></div>
-        <h2 class="sheet-title">Library</h2>
-        <label class="sheet-search">
-          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-          <input type="search" placeholder="Search your library…" aria-label="Search your library" autocomplete="off" />
-        </label>
-        <ul class="search-results sheet-results"></ul>
-        <div class="sheet-links">${LINKS.map(
-          (l) => `<a href="${l.href}"${PAGES.find((p) => p.href === l.href && p.id === current) ? ' class="on"' : ""}>
-            <i class="fa-solid ${l.icon}"></i><span>${l.label}</span>${l.n != null ? `<small>${l.n}</small>` : ""}</a>`
-        ).join("")}</div>
-      </div>`;
-    document.body.append(sheet);
-    const sheetInput = sheet.querySelector("input");
-    const sheetResults = sheet.querySelector(".sheet-results");
-    const libTab = bar.querySelector('[data-tab="library"]');
-
-    const openSheet = () => {
-      sheet.classList.add("open");
-      libTab.classList.add("open");
-    };
-    const closeSheet = () => {
-      sheet.classList.remove("open");
-      libTab.classList.remove("open");
-      sheetInput.blur();
-    };
-    libTab.addEventListener("click", () => (sheet.classList.contains("open") ? closeSheet() : openSheet()));
-    sheet.querySelector(".sheet-backdrop").addEventListener("click", closeSheet);
-    document.addEventListener("keydown", (e) => e.key === "Escape" && closeSheet());
-    sheetInput.addEventListener("input", () => (sheetResults.innerHTML = resultsHtml(sheetInput.value)));
-
-    // Profile page: what the profile menu has (sign in, profiles, add a title, EN / RU)
-    if (current === "profile") {
-      document.addEventListener("DOMContentLoaded", () => {
-        const col = document.querySelector(".profile-grid > div");
-        if (!col) return;
-        const box = document.createElement("div");
-        box.className = "panel app-account";
-        box.innerHTML = `
-          <h2><i class="fa-solid fa-user-gear"></i> Account</h2>
-          ${acct ? '<p class="sync-status app-sync"></p>' : ""}
-          ${langToggle("in-profile")}
-          <a href="#" data-action="add-title"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
-          ${accountMenu()}`;
-        col.children[0].after(box);
-        // signed out: the big "Sign in to sync" button above already covers it
-        if (!acct) {
-          const dup = box.querySelector('[data-cloud="add"]');
-          if (dup) dup.remove();
-          if (box.lastElementChild && box.lastElementChild.tagName === "HR") box.lastElementChild.remove();
-        }
-        const syncP = box.querySelector(".app-sync");
-        if (syncP) {
-          const show = () => (syncP.innerHTML = nav.querySelector(".sync-status").innerHTML);
-          Cloud.onStatus(() => setTimeout(show));
-          show();
-        }
-        if (!acct && window.Cloud && Cloud.enabled) Cloud.prepare();
-      });
-    }
+    makeSheet(
+      "library",
+      "Library",
+      `<div class="sheet-links">${LINKS.map(
+        (l) => `<a href="${l.href}"${PAGES.find((p) => p.href === l.href && p.id === current) ? ' class="on"' : ""}>
+          <i class="fa-solid ${l.icon}"></i><span>${l.label}</span>${l.n != null ? `<small>${l.n}</small>` : ""}</a>`
+      ).join("")}</div>`
+    );
   }
 
   /* ---------------- shared helpers ---------------- */

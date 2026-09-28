@@ -3699,9 +3699,25 @@ a.stat-tile:hover {
 }
 
 @media (max-width: 900px) {
-  /* top: only the logo, top left (like Netflix); everything else lives in the tab bar */
-  html.standalone .nav-bar > :not(.nav-logo) {
+  /* top: the logo on the left and your profile picture on the right; search and the
+     page links live in the tab bar */
+  html.standalone .nav-bar > :not(.nav-logo):not(.nav-tools),
+  html.standalone .nav-tools > :not(.profile) {
     display: none;
+  }
+
+  html.standalone .nav-tools {
+    margin-left: auto;
+  }
+
+  /* EN / RU is in the profile menu here (there's no side menu in the app) */
+  html.standalone .lang-toggle.in-profile {
+    display: flex;
+  }
+
+  /* the page's own search / filter icons go to the other end of the title row */
+  html.standalone .page-tools {
+    margin-left: auto;
   }
 
   html.standalone .site-nav {
@@ -3880,6 +3896,37 @@ a.stat-tile:hover {
     font-size: 16px; /* 16px+ stops iPhone from zooming in */
   }
 
+  /* "Search everything for …" (opens Discover) */
+  .sheet-more {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .sheet-more[hidden] {
+    display: none;
+  }
+
+  .sheet-more span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sheet-more .fa-chevron-right {
+    font-size: 12px;
+    opacity: 0.6;
+  }
+
   .sheet-results {
     margin: 8px 0 0;
     padding: 0;
@@ -3960,79 +4007,6 @@ a.stat-tile:hover {
   .sheet-links a small {
     color: rgba(255, 255, 255, 0.5);
   }
-}
-
-/* Account section on the Profile page (installed app only) */
-.app-account a {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 4px;
-  color: var(--text);
-  text-decoration: none;
-  font-size: 15px;
-}
-
-.app-account a > i:first-child {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--glass-bg-hover);
-}
-
-.app-account a span {
-  flex: 1;
-}
-
-.app-account a .fa-chevron-right {
-  font-size: 12px;
-  opacity: 0.6;
-}
-
-.app-account .acct-pic {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.app-account hr {
-  border: 0;
-  height: 1px;
-  background: var(--glass-border);
-  margin: 8px 0;
-}
-
-.app-account .menu-label {
-  padding: 6px 4px 2px;
-  color: var(--glass-muted);
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.app-account .app-sync {
-  margin: -6px 0 6px;
-  color: var(--glass-muted);
-  font-size: 13px;
-}
-
-.app-account .lang-toggle.in-profile {
-  display: flex;
-  color: var(--text);
-  font-size: 15px;
-}
-
-.app-account .lang-toggle.in-profile > i {
-  background: var(--glass-bg-hover);
-  color: var(--text);
-}
-
-.app-account .lang-toggle.in-profile button {
-  border-color: var(--glass-border);
-  color: var(--text);
 }
 
 @media (max-width: 900px) {
