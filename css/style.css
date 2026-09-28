@@ -4913,3 +4913,9 @@ html.standalone .app-sheet.open {
     font-size: 11px;
   }
 }
+
+/* cast photos: square (face kept in view: the crop sits near the top of the photo) */
+.t-person img {
+  aspect-ratio: 1 / 1;
+  object-position: center 18%;
+}
