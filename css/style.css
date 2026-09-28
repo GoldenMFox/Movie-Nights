@@ -1636,7 +1636,8 @@ a.stat-tile:hover {
   margin-top: 20px;
 }
 
-.t-trailer {
+/* title page's big red Trailer button only (Discover cards reuse the class name) */
+.btn.t-trailer {
   width: 100%;
   padding: 13px;
   border: 0;
@@ -1648,7 +1649,7 @@ a.stat-tile:hover {
   font-weight: 600;
 }
 
-.t-trailer:hover {
+.btn.t-trailer:hover {
   filter: brightness(1.1);
 }
 
