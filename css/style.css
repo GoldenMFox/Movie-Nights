@@ -2685,35 +2685,6 @@ a.stat-tile:hover {
 
 /* ============================== Genre browsing ============================== */
 
-.genre-bar {
-  align-items: flex-end;
-}
-
-.segmented {
-  display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.segmented button {
-  padding: 10px 14px;
-  border: 0;
-  background: var(--surface-2);
-  color: var(--text);
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.segmented button + button {
-  border-left: 1px solid var(--border);
-}
-
-.segmented button.active {
-  background: var(--accent);
-  color: #fff;
-}
-
 .select:disabled {
   opacity: 0.5;
 }
@@ -2971,9 +2942,37 @@ a.stat-tile:hover {
   }
 }
 @media (max-width: 480px) {
-  .nav-logo img {
-    height: 17px;
+  .nav-bar {
+    gap: 8px;
   }
+
+  .nav-logo img {
+    height: 15px;
+  }
+
+  .nav-tools {
+    gap: 6px;
+  }
+
+  .nav-tools .icon-btn,
+  .user-pic {
+    width: 36px;
+    height: 36px;
+    font-size: 15px;
+  }
+
+  .nav-toggle {
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* round buttons stay round: never squeeze them */
+.nav-tools > *,
+.nav-tools .icon-btn,
+.user-pic-btn {
+  flex-shrink: 0;
 }
 
 /* EN | RU inside the profile menu (computers); phones use the side menu */
@@ -3029,5 +3028,286 @@ a.stat-tile:hover {
 @media (max-width: 1330px) {
   .lang-toggle.in-profile {
     display: none;
+  }
+}
+/* ============================== Glass controls (search + filters, same feel as the navbar) ============================== */
+
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-hover: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-pill: #0a0a0b;
+  --glass-text: #fff;
+  --glass-muted: rgba(255, 255, 255, 0.55);
+}
+
+:root[data-theme="light"] {
+  --glass-bg: rgba(0, 0, 0, 0.045);
+  --glass-bg-hover: rgba(0, 0, 0, 0.08);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-pill: #ffffff;
+  --glass-text: #17181c;
+  --glass-muted: rgba(0, 0, 0, 0.5);
+}
+
+/* one big rounded search pill */
+.glass-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 58px;
+  margin-bottom: 14px;
+  padding: 0 7px 0 22px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+}
+
+.glass-search:focus-within {
+  border-color: rgba(229, 9, 20, 0.55);
+  box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.12);
+}
+
+.glass-search .gs-icon {
+  color: var(--glass-muted);
+  font-size: 17px;
+}
+
+.glass-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--glass-text);
+  font-size: 16px;
+}
+
+.glass-search input::placeholder {
+  color: var(--glass-muted);
+}
+
+.gs-btn {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.25s, transform 0.25s;
+}
+
+.gs-btn:hover {
+  background: var(--accent-hover);
+  transform: scale(1.06);
+}
+
+/* pill-shaped dropdowns */
+.glass-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  color: var(--glass-text);
+  transition: background 0.25s;
+}
+
+.glass-select:hover {
+  background: var(--glass-bg-hover);
+}
+
+.glass-select > i {
+  position: absolute;
+  left: 16px;
+  color: var(--glass-muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.glass-select::after {
+  content: "";
+  position: absolute;
+  right: 16px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--glass-muted);
+  border-bottom: 2px solid var(--glass-muted);
+  transform: translateY(-2px) rotate(45deg);
+  pointer-events: none;
+}
+
+.glass-select select {
+  height: 100%;
+  width: 100%;
+  padding: 0 40px 0 18px;
+  border: 0;
+  border-radius: 999px;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font-size: 14.5px;
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.glass-select > i + select {
+  padding-left: 40px;
+}
+
+.glass-select select:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.glass-select select option {
+  background: #1c1c20;
+  color: #fff;
+}
+
+:root[data-theme="light"] .glass-select select option {
+  background: #fff;
+  color: #17181c;
+}
+
+.glass-select.small {
+  height: 40px;
+  flex-shrink: 0;
+  border-color: transparent;
+}
+
+.glass-select.small select {
+  font-size: 14px;
+}
+
+.glass-select.grow {
+  flex: 1 1 220px;
+}
+
+/* filter row: label, segmented type switch, genre, sort */
+.glass-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  margin-bottom: 18px;
+}
+
+.gf-label {
+  margin-right: 2px;
+  color: var(--glass-muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Movies | TV shows | Anime: a capsule with a sliding pill */
+.segmented {
+  position: relative;
+  display: inline-flex;
+  padding: 4px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+}
+
+.segmented button {
+  position: relative;
+  z-index: 1;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--glass-muted);
+  font-size: 14.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.25s;
+}
+
+.segmented button:hover,
+.segmented button.active {
+  color: var(--glass-text);
+}
+
+.seg-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: 0;
+  border-radius: 999px;
+  background: var(--glass-pill);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  transition: left 0.35s cubic-bezier(0.32, 0.72, 0, 1), width 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* category chips get the same glass look */
+.chip {
+  border-color: var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--glass-muted);
+  font-weight: 500;
+  transition: background 0.25s, color 0.25s;
+}
+
+.chip:hover {
+  border-color: var(--glass-border);
+  background: var(--glass-bg-hover);
+  color: var(--glass-text);
+}
+
+.chip.active {
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+}
+
+@media (max-width: 700px) {
+  .glass-search {
+    height: 52px;
+    padding-left: 16px;
+  }
+
+  .glass-search {
+    gap: 4px;
+    padding-right: 5px;
+  }
+
+  .glass-search .glass-select.small select {
+    padding: 0 28px 0 10px;
+    font-size: 13px;
+  }
+
+  .glass-search .glass-select.small::after {
+    right: 12px;
+  }
+
+  .glass-filters .gf-label {
+    width: 100%;
+  }
+
+  .glass-filters .segmented {
+    width: 100%;
+  }
+
+  .glass-filters .segmented button {
+    flex: 1;
+  }
+
+  .glass-filters .glass-select {
+    flex: 1 1 100%;
   }
 }

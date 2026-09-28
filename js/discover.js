@@ -44,29 +44,32 @@
   if (state.genre && !TMDB.genresFor(state.gtype).includes(state.genre)) state.genre = "";
 
   root.innerHTML = `
-    <form class="toolbar discover-search">
-      <label class="field grow">Search all movies, TV shows and anime
-        <input class="input" type="search" name="q" placeholder="e.g. Dune, Breaking Bad, Frieren..." value="${esc(state.q)}" />
-      </label>
-      <label class="field">Search in
-        <select class="select" name="sin">
+    <form class="glass-search discover-search" role="search">
+      <i class="fa-solid fa-magnifying-glass gs-icon" aria-hidden="true"></i>
+      <input type="search" name="q" placeholder="Search movies, TV shows and anime…" aria-label="Search all movies, TV shows and anime" value="${esc(state.q)}" autocomplete="off" />
+      <span class="glass-select small">
+        <select name="sin" aria-label="Search in">
           ${Object.entries(SEARCH_IN).map(([k, l]) => `<option value="${k}"${k === state.sin ? " selected" : ""}>${l}</option>`).join("")}
         </select>
-      </label>
-      <button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+      </span>
+      <button class="gs-btn" type="submit" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
     </form>
-    <div class="toolbar genre-bar">
-      <div class="field">Browse by genre
-        <div class="segmented" role="group" aria-label="Type">
-          ${Object.entries(TYPES).map(([k, l]) => `<button type="button" data-gtype="${k}">${l}</button>`).join("")}
-        </div>
+    <div class="glass-filters genre-bar">
+      <span class="gf-label">Browse by genre</span>
+      <div class="segmented" role="group" aria-label="Type">
+        <span class="seg-indicator" aria-hidden="true"></span>
+        ${Object.entries(TYPES).map(([k, l]) => `<button type="button" data-gtype="${k}">${l}</button>`).join("")}
       </div>
-      <label class="field grow">Genre <select class="select" name="genre"></select></label>
-      <label class="field">Sort by
-        <select class="select" name="gsort">
+      <span class="glass-select grow">
+        <i class="fa-solid fa-masks-theater" aria-hidden="true"></i>
+        <select name="genre" aria-label="Genre"></select>
+      </span>
+      <span class="glass-select">
+        <i class="fa-solid fa-arrow-down-wide-short" aria-hidden="true"></i>
+        <select name="gsort" aria-label="Sort by">
           ${Object.entries(GSORTS).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}
         </select>
-      </label>
+      </span>
     </div>
     <div class="chips" role="group" aria-label="Category">
       ${Object.entries(TMDB.CATEGORIES)
@@ -94,6 +97,18 @@
       `<option value="">Pick a genre…</option>` + list.map((g) => `<option value="${esc(g)}"${g === state.genre ? " selected" : ""}>${esc(g)}</option>`).join("");
   }
 
+  // the dark pill slides to the selected type, like the navbar
+  function moveSegment() {
+    const seg = root.querySelector(".segmented");
+    const on = seg.querySelector("button.active");
+    const ind = seg.querySelector(".seg-indicator");
+    if (!on) return;
+    ind.style.left = `${on.offsetLeft}px`;
+    ind.style.width = `${on.offsetWidth}px`;
+  }
+  window.addEventListener("resize", moveSegment);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveSegment);
+
   function syncUi() {
     root.querySelectorAll("[data-cat]").forEach((c) => {
       const on = !state.q && !state.genre && c.dataset.cat === state.cat;
@@ -107,6 +122,7 @@
     });
     gsortSel.value = state.gsort;
     gsortSel.disabled = !state.genre;
+    moveSegment();
     let p = {};
     if (state.q) p = state.sin === "all" ? { q: state.q } : { q: state.q, in: state.sin };
     else if (state.genre) p = { genre: state.genre, type: state.gtype, sort: state.gsort };
