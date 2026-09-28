@@ -96,7 +96,7 @@
               <img src="${esc(avatar)}" alt="" referrerpolicy="no-referrer" />
               <div>
                 <h2>${esc(profile.name)}</h2>
-                ${acct ? '<small class="sync-status"></small>' : ""}
+                ${acct ? '<small class="sync-status"></small>' : '<small class="sync-status">Not signed in</small>'}
               </div>
             </div>
             <hr />
@@ -215,7 +215,7 @@
 
   // "Synced" / "Syncing…" under your name
   const syncEl = nav.querySelector(".sync-status");
-  if (syncEl) {
+  if (syncEl && acct) {
     const LABELS = {
       syncing: '<i class="fa-solid fa-rotate"></i> Syncing…',
       synced: '<i class="fa-solid fa-cloud"></i> Synced',

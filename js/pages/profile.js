@@ -17,6 +17,7 @@
             <input class="input" name="displayName" aria-label="Display name" maxlength="40" />
             <button class="btn" type="submit">Save</button>
           </form>
+          <button class="btn btn-primary p-signin" type="button" hidden><i class="fa-brands fa-google"></i> Sign in to sync</button>
         </div>
 
         <div class="panel" id="settings">
@@ -86,10 +87,15 @@
   function renderProfile() {
     const p = Store.getProfile();
     $(".p-name").textContent = p.name;
-    $(".p-joined").textContent = `Joined: ${p.joined}`;
+    // signed out: no name to edit, just a way to sign in
+    $(".p-joined").textContent = p.guest ? "Not signed in. Sign in to keep your own ratings and lists." : p.joined ? `Joined: ${p.joined}` : "";
+    $(".name-form").hidden = !!p.guest;
+    $(".p-signin").hidden = !(p.guest && window.Cloud && Cloud.enabled);
     $(".name-form").elements.displayName.value = p.name;
     document.querySelectorAll(".profile-menu .user-info h2").forEach((h) => (h.textContent = p.name));
   }
+
+  $(".p-signin").addEventListener("click", () => Cloud.signIn());
 
   $(".name-form").addEventListener("submit", (e) => {
     e.preventDefault();

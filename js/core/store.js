@@ -161,12 +161,12 @@
     write(KEYS.tiers, tiers);
   }
 
+  // signed in: your own name (the owner's defaults to the site's; others get their Google name).
+  // signed out: "Guest", never the owner's name
   function getProfile() {
-    const owner = { name: "Mirzac Nicolae", joined: "July 2023" };
+    if (!account) return { name: "Guest", joined: "", guest: true };
     const defaults =
-      account && account.base === "empty"
-        ? { name: account.name || "Me", joined: "" }
-        : Object.assign(owner, account ? {} : pubData.profile || {});
+      account.base === "empty" ? { name: account.name || "Me", joined: "" } : { name: "Mirzac Nicolae", joined: "July 2023" };
     return Object.assign(defaults, read(KEYS.profile, {}));
   }
 
