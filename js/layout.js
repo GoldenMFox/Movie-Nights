@@ -28,6 +28,30 @@
     </div>`;
   const profile = Store.getProfile();
 
+  // signed in: your Google photo (the owner keeps the site's own picture)
+  const acct = window.Cloud && Cloud.account();
+  const avatar = acct && acct.base === "empty" && acct.photo ? acct.photo : "images/avatar.jpg";
+  const pic = (a) => (a.base === "empty" && a.photo ? a.photo : "images/avatar.jpg");
+
+  // sign in / "Who's watching?" / sign out
+  function accountMenu() {
+    if (!window.Cloud || !Cloud.enabled) return "";
+    const others = Cloud.accounts().filter((a) => !acct || a.uid !== acct.uid);
+    const row = (attrs, icon, label) => `<a href="#" ${attrs}>${icon}<span>${label}</span><i class="fa-solid fa-chevron-right"></i></a>`;
+    const who = others.length
+      ? `<div class="menu-label">Who's watching?</div>${others
+          .map((a) => row(`data-cloud-switch="${esc(a.uid)}"`, `<img class="acct-pic" src="${esc(pic(a))}" alt="" referrerpolicy="no-referrer" />`, esc(a.name)))
+          .join("")}`
+      : "";
+    return acct
+      ? `<hr />${who}${row('data-cloud="add"', '<i class="fa-solid fa-user-plus"></i>', "Add a profile")}${row(
+          'data-cloud="sign-out"',
+          '<i class="fa-solid fa-right-from-bracket"></i>',
+          "Sign out"
+        )}`
+      : `<hr />${who}${row('data-cloud="add"', '<i class="fa-brands fa-google"></i>', "Sign in to sync")}`;
+  }
+
   /* ---------------- navbar ---------------- */
 
   const nav = document.createElement("nav");
@@ -64,12 +88,15 @@
         </div>
         <div class="profile">
           <button class="user-pic-btn" aria-label="Profile menu">
-            <img src="images/avatar.jpg" class="user-pic" alt="" />
+            <img src="${esc(avatar)}" class="user-pic" alt="" referrerpolicy="no-referrer" />
           </button>
           <div class="profile-menu">
             <div class="user-info">
-              <img src="images/avatar.jpg" alt="" />
-              <h2>${esc(profile.name)}</h2>
+              <img src="${esc(avatar)}" alt="" referrerpolicy="no-referrer" />
+              <div>
+                <h2>${esc(profile.name)}</h2>
+                ${acct ? '<small class="sync-status"></small>' : ""}
+              </div>
             </div>
             <hr />
             <a href="profile.html"><i class="fa-solid fa-user"></i><span>Profile &amp; stats</span><i class="fa-solid fa-chevron-right"></i></a>
@@ -77,6 +104,7 @@
             <a href="profile.html#settings"><i class="fa-solid fa-gear"></i><span>Settings &amp; backup</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="#" class="install-app" hidden><i class="fa-solid fa-mobile-screen"></i><span>Install the app</span><i class="fa-solid fa-chevron-right"></i></a>
             ${langToggle("in-profile")}
+            ${accountMenu()}
           </div>
         </div>
       </div>
@@ -172,6 +200,34 @@
     searchBox.classList.remove("open");
     profileBox.classList.toggle("open");
   });
+
+  profileBox.addEventListener("click", (e) => {
+    const sw = e.target.closest("[data-cloud-switch]");
+    const act = e.target.closest("[data-cloud]");
+    if (!sw && !act) return;
+    e.preventDefault();
+    profileBox.classList.remove("open");
+    if (sw) Cloud.switchTo(sw.dataset.cloudSwitch);
+    else if (act.dataset.cloud === "add") Cloud.signIn();
+    else if (act.dataset.cloud === "sign-out" && confirm("Sign out on this device? Your library stays saved in your account.")) Cloud.signOut();
+  });
+
+  // "Synced" / "Syncing…" under your name
+  const syncEl = nav.querySelector(".sync-status");
+  if (syncEl) {
+    const LABELS = {
+      syncing: '<i class="fa-solid fa-rotate"></i> Syncing…',
+      synced: '<i class="fa-solid fa-cloud"></i> Synced',
+      offline: '<i class="fa-solid fa-cloud-arrow-up"></i> Offline: will sync later',
+      "signed-out": '<i class="fa-solid fa-triangle-exclamation"></i> Sign in again to sync',
+    };
+    const show = (s) => {
+      syncEl.innerHTML = LABELS[s] || "";
+      syncEl.dataset.status = s;
+    };
+    Cloud.onStatus(show);
+    show(Cloud.status());
+  }
 
   /* ---------------- search ---------------- */
 

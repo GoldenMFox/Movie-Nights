@@ -1,0 +1,470 @@
+/*
+ * Cloud sync: sign in with Google and your library (ratings, favorites,
+ * watchlist, tiers, profile) follows you to every device.
+ *
+ *  - Sign-in: Firebase Auth (its script is only loaded for signed-in people).
+ *  - Storage: Firestore, one document per person in "users/{uid}", read and
+ *    written through Firestore's REST API. Who may use it is decided by the
+ *    security rules in the Firebase console (only the listed Google accounts).
+ *  - The first account ever to sign in keeps data/library.js as its library
+ *    and is mirrored to "public/owner", which is what visitors who aren't
+ *    signed in see. Every later account starts with an empty library.
+ *  - Several accounts can stay signed in on one device ("Who's watching?").
+ *  - The other person's ratings / watchlist are shown on title pages, and
+ *    the Watchlist gets a "Watch together" filter.
+ *
+ * This browser's localStorage stays the working copy: pages read it straight
+ * away, and changes are uploaded a moment later. Nothing here runs unless
+ * MN_CONFIG.FIREBASE is filled in (js/config.js).
+ */
+(function () {
+  const cfg = (window.MN_CONFIG || {}).FIREBASE;
+  const enabled = !!(cfg && cfg.apiKey && cfg.projectId);
+  const SDK = "https://www.gstatic.com/firebasejs/10.12.2/";
+  const DB = enabled ? `https://firestore.googleapis.com/v1/projects/${cfg.projectId}/databases/(default)/documents` : "";
+  const K = {
+    accounts: "mn:accounts", // everyone signed in on this device
+    account: "mn:account", // who's watching right now
+    syncAt: "mn:syncAt", // time of the account version this browser has
+    dirty: "mn:dirty", // changes not uploaded yet
+    pub: "mn:public", // the owner's library, for visitors
+    partner: "mn:partner", // the other person's ratings / watchlist
+    backup: "mn:localBackup", // what this browser had before signing in
+  };
+  const PARTNER_MAX_AGE = 60 * 1000;
+
+  const read = Store.read;
+  const write = (k, v) => {
+    try {
+      localStorage.setItem(k, JSON.stringify(v));
+    } catch (e) {}
+  };
+  const drop = (...keys) =>
+    keys.forEach((k) => {
+      try {
+        localStorage.removeItem(k);
+      } catch (e) {}
+    });
+  const first = (name) => String(name || "").trim().split(/\s+/)[0] || "Someone";
+  const toast = (msg) => window.UI && UI.toast(msg);
+
+  const account = Store.account; // fixed for this page; switching reloads
+  const accounts = () => read(K.accounts, []);
+
+  /* ---------------- status (shown in the profile menu) ---------------- */
+
+  let status = account ? "syncing" : "off";
+  const statusListeners = [];
+  function setStatus(s) {
+    status = s;
+    statusListeners.forEach((fn) => fn(s));
+  }
+
+  /* ---------------- Firebase sign-in ---------------- */
+
+  let sdkPromise;
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("Couldn't load Google sign-in. Check your connection."));
+      document.head.append(s);
+    });
+  }
+  function sdk() {
+    if (!sdkPromise) {
+      sdkPromise = loadScript(SDK + "firebase-app-compat.js")
+        .then(() => loadScript(SDK + "firebase-auth-compat.js"))
+        .then(() => window.firebase)
+        .catch((e) => {
+          sdkPromise = null;
+          throw e;
+        });
+    }
+    return sdkPromise;
+  }
+
+  // one Firebase "app" per account, so several can stay signed in at once
+  async function appFor(name) {
+    const fb = await sdk();
+    return fb.apps.find((a) => a.name === name) || fb.initializeApp(cfg, name);
+  }
+
+  async function userOf(acct) {
+    const auth = (await appFor(acct.app)).auth();
+    return new Promise((resolve) => {
+      const off = auth.onAuthStateChanged((u) => {
+        off();
+        resolve(u);
+      });
+    });
+  }
+
+  async function token(acct) {
+    const user = await userOf(acct);
+    if (!user) throw Object.assign(new Error("Signed out"), { signedOut: true });
+    return user.getIdToken();
+  }
+
+  /* ---------------- Firestore (REST) ---------------- */
+
+  async function api(path, { method = "GET", tok, body } = {}) {
+    const headers = {};
+    if (tok) headers.Authorization = `Bearer ${tok}`;
+    if (body) headers["Content-Type"] = "application/json";
+    const res = await fetch(`${DB}/${path}${tok ? "" : `?key=${encodeURIComponent(cfg.apiKey)}`}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) {
+      let msg = res.statusText;
+      try {
+        msg = (await res.json()).error.message;
+      } catch (e) {}
+      throw Object.assign(new Error(msg), { status: res.status });
+    }
+    return res.json();
+  }
+
+  // {a: "text", n: 5} <-> Firestore's typed fields
+  const toDoc = (o) => ({
+    fields: Object.fromEntries(
+      Object.entries(o).map(([k, v]) => [k, typeof v === "number" ? { integerValue: String(v) } : { stringValue: String(v == null ? "" : v) }])
+    ),
+  });
+  function fromDoc(d) {
+    if (!d) return null;
+    const o = { id: d.name.split("/").pop() };
+    Object.entries(d.fields || {}).forEach(([k, v]) => (o[k] = "integerValue" in v ? Number(v.integerValue) : v.stringValue));
+    return o;
+  }
+  const dataOf = (doc) => {
+    try {
+      return JSON.parse((doc && doc.data) || "{}");
+    } catch (e) {
+      return {};
+    }
+  };
+
+  /* ---------------- upload ---------------- */
+
+  let pushTimer;
+  let pushing = Promise.resolve();
+  let caughtUp = false; // never upload before this browser has your latest version
+
+  function schedulePush() {
+    if (!account) return;
+    write(K.dirty, true);
+    setStatus("syncing");
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(push, 1200);
+  }
+
+  async function upload(acct, tok, data) {
+    const at = Date.now();
+    const text = JSON.stringify(data);
+    await api(`users/${acct.uid}`, {
+      method: "PATCH",
+      tok,
+      body: toDoc({ data: text, name: acct.name, photo: acct.photo || "", base: acct.base, updatedAt: at }),
+    });
+    if (acct.base === "library") {
+      await api("public/owner", { method: "PATCH", tok, body: toDoc({ data: text, name: acct.name, updatedAt: at }) });
+    }
+    return at;
+  }
+
+  function push() {
+    clearTimeout(pushTimer);
+    if (!account || !caughtUp) return pushing;
+    pushing = pushing
+      .then(async () => {
+        if (!read(K.dirty, false)) return setStatus("synced");
+        const at = await upload(account, await token(account), Store.snapshot());
+        write(K.syncAt, at);
+        drop(K.dirty);
+        setStatus("synced");
+      })
+      .catch((err) => {
+        console.warn("Sync:", err.message);
+        setStatus(err.signedOut ? "signed-out" : "offline");
+      });
+    return pushing;
+  }
+
+  // leaving the page: try to send what's left (anything missed goes up on the next page)
+  document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && read(K.dirty, false) && push());
+
+  /* ---------------- download ---------------- */
+
+  function reloadOnce() {
+    try {
+      const last = Number(sessionStorage.getItem("mn:syncReload") || 0);
+      if (Date.now() - last < 10000) return;
+      sessionStorage.setItem("mn:syncReload", Date.now());
+    } catch (e) {}
+    location.reload();
+  }
+
+  // put your account's version in this browser; reload if anything changed
+  function apply(data, at) {
+    const before = JSON.stringify(Store.snapshot());
+    Store.replaceData(data);
+    write(K.syncAt, at);
+    drop(K.dirty);
+    if (JSON.stringify(Store.snapshot()) !== before) reloadOnce();
+  }
+
+  // signed in, on every page: catch up with your account, then upload anything left over
+  async function start() {
+    try {
+      const tok = await token(account);
+      const remote = fromDoc(await api(`users/${account.uid}`, { tok }));
+      caughtUp = true;
+      if (!remote) {
+        write(K.dirty, true);
+        await push();
+      } else if (remote.updatedAt > read(K.syncAt, 0)) {
+        // a newer version from another device wins; keep a copy of this browser's in case
+        if (read(K.dirty, false)) write(K.backup, Store.snapshot());
+        apply(dataOf(remote), remote.updatedAt);
+        setStatus("synced");
+      } else if (read(K.dirty, false)) {
+        await push();
+      } else {
+        setStatus("synced");
+      }
+      loadPartner(tok);
+    } catch (err) {
+      console.warn("Sync:", err.message);
+      if (err.signedOut) {
+        setStatus("signed-out");
+        toast(`${first(account.name)}, please sign in again to keep syncing`);
+      } else setStatus("offline");
+    }
+  }
+
+  // signed out: show the owner's latest library
+  async function refreshPublic() {
+    try {
+      const doc = fromDoc(await api("public/owner"));
+      const cached = read(K.pub, null);
+      if (!doc) {
+        if (cached) {
+          drop(K.pub);
+          reloadOnce();
+        }
+        return;
+      }
+      if (cached && cached.updatedAt === doc.updatedAt) return;
+      write(K.pub, { updatedAt: doc.updatedAt, name: doc.name, data: dataOf(doc) });
+      reloadOnce();
+    } catch (err) {
+      console.warn("Public library:", err.message);
+    }
+  }
+
+  /* ---------------- the other person ---------------- */
+
+  const partnerListeners = [];
+  const nameKey = (title, year) => `n:${String(title || "").toLowerCase().replace(/[^a-z0-9]+/g, "")}|${year || ""}`;
+
+  // their ratings / watchlist / favorites, looked up by TMDB id or by title + year
+  function indexOf(data, base) {
+    const ov = data.overrides || {};
+    const items = (base === "library" ? window.LIBRARY || [] : []).concat(data.custom || []);
+    const index = {};
+    items.forEach((it) => {
+      const m = Object.assign({}, it, ov[it.id] || {});
+      if (m.removed || (m.rating == null && !m.watchlist && !m.favorite)) return;
+      const v = { r: m.rating == null ? null : m.rating, w: !!m.watchlist, f: !!m.favorite };
+      if (m.tmdbId && m.tmdbMedia) index[`${m.tmdbMedia}-${m.tmdbId}`] = v;
+      index[nameKey(m.title, m.year)] = v;
+    });
+    return index;
+  }
+
+  async function loadPartner(tok) {
+    const cached = read(K.partner, null);
+    if (cached && Date.now() - cached.at < PARTNER_MAX_AGE) return;
+    try {
+      const res = await api("users", { tok });
+      const other = ((res && res.documents) || []).map(fromDoc).find((d) => d.id !== account.uid);
+      if (!other) return drop(K.partner);
+      write(K.partner, { at: Date.now(), uid: other.id, name: other.name, photo: other.photo, index: indexOf(dataOf(other), other.base) });
+      partnerListeners.forEach((fn) => fn());
+    } catch (err) {
+      console.warn("Partner:", err.message);
+    }
+  }
+
+  function partner() {
+    return account ? read(K.partner, null) : null;
+  }
+
+  // works for library items and for TMDB results (mediaType instead of tmdbMedia)
+  function partnerFor(item) {
+    const p = partner();
+    if (!p || !item) return null;
+    const media = item.tmdbMedia || item.mediaType;
+    const v = (item.tmdbId && media && p.index[`${media}-${item.tmdbId}`]) || p.index[nameKey(item.title, item.year)];
+    return v ? Object.assign({ name: first(p.name), photo: p.photo }, v) : null;
+  }
+
+  // on both watchlists and neither of you has rated it yet
+  function together(item) {
+    const p = partnerFor(item);
+    return !!(item.watchlist && item.rating == null && p && p.w && p.r == null);
+  }
+
+  /* ---------------- sign in / switch / sign out ---------------- */
+
+  // this browser's changes from before signing in, added on top of the account's
+  function mergeLocal(remote) {
+    const local = Store.snapshot();
+    const overrides = Object.assign({}, remote.overrides);
+    Object.entries(local.overrides || {}).forEach(([id, o]) => (overrides[id] = Object.assign({}, overrides[id], o)));
+    const ids = new Set((remote.custom || []).map((c) => c.id));
+    const custom = (remote.custom || []).concat((local.custom || []).filter((c) => !ids.has(c.id)));
+    return { overrides, custom, tiers: remote.tiers || local.tiers, profile: Object.assign({}, local.profile, remote.profile) };
+  }
+
+  function remember(acct) {
+    write(K.accounts, accounts().filter((a) => a.uid !== acct.uid).concat(acct));
+    write(K.account, acct);
+    drop(K.partner, K.dirty);
+  }
+
+  async function signIn() {
+    if (!enabled) return;
+    let app;
+    try {
+      await flush();
+      app = await appFor(`acct-${Date.now().toString(36)}`);
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      const { user } = await app.auth().signInWithPopup(provider);
+
+      const known = accounts().find((a) => a.uid === user.uid);
+      if (known) {
+        await app.delete();
+        return known.uid === (account && account.uid) ? null : switchTo(known.uid);
+      }
+
+      const acct = { uid: user.uid, name: user.displayName || user.email, email: user.email, photo: user.photoURL || "", app: app.name };
+      const tok = await user.getIdToken();
+      const remote = fromDoc(await api(`users/${acct.uid}`, { tok })); // refused if this account isn't allowed
+      write(K.backup, Store.snapshot());
+
+      if (remote) {
+        // signed in before on another device
+        acct.base = remote.base || "empty";
+        let data = dataOf(remote);
+        let at = remote.updatedAt;
+        if (acct.base === "library" && !account) {
+          const merged = mergeLocal(data);
+          if (JSON.stringify(merged) !== JSON.stringify(data)) {
+            data = merged;
+            at = await upload(acct, tok, data);
+          }
+        }
+        remember(acct);
+        Store.replaceData(data);
+        write(K.syncAt, at);
+      } else {
+        // first time ever: the first account keeps the site's library, everyone after starts empty
+        const owner = await api("public/owner");
+        acct.base = owner ? "empty" : "library";
+        const joined = new Date().toLocaleString("en", { month: "long", year: "numeric" });
+        const data =
+          acct.base === "library" && !account
+            ? Store.snapshot()
+            : { overrides: {}, custom: [], tiers: null, profile: acct.base === "empty" ? { joined } : {} };
+        const at = await upload(acct, tok, data);
+        remember(acct);
+        Store.replaceData(data);
+        write(K.syncAt, at);
+      }
+      location.reload();
+    } catch (err) {
+      if (app) {
+        try {
+          await app.auth().signOut();
+          await app.delete();
+        } catch (e) {}
+      }
+      if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") return;
+      console.warn("Sign in:", err);
+      if (err.status === 403 && /has not been used|disabled/i.test(err.message)) toast("The Firestore database isn't set up yet (Firebase console → Firestore → Create database).");
+      else if (err.status === 403) toast("This Google account isn't allowed on this Movie Nights. Ask the owner to add it.");
+      else if (err.code === "auth/popup-blocked") toast("Your browser blocked the sign-in window. Allow pop-ups and try again.");
+      else if (err.code === "auth/unauthorized-domain") toast("This address isn't allowed yet: add it under Firebase → Authentication → Settings → Authorized domains.");
+      else toast(`Couldn't sign in: ${err.message}`);
+    }
+  }
+
+  // finish uploading before switching away
+  async function flush() {
+    if (account && read(K.dirty, false)) await push();
+    else await pushing;
+  }
+
+  async function switchTo(uid) {
+    const acct = accounts().find((a) => a.uid === uid);
+    if (!acct || (account && account.uid === uid)) return;
+    toast(`Switching to ${first(acct.name)}…`);
+    try {
+      await flush();
+      const remote = fromDoc(await api(`users/${acct.uid}`, { tok: await token(acct) }));
+      remember(acct);
+      Store.replaceData(remote ? dataOf(remote) : {});
+      write(K.syncAt, remote ? remote.updatedAt : 0);
+      location.reload();
+    } catch (err) {
+      if (err.signedOut) {
+        write(K.accounts, accounts().filter((a) => a.uid !== uid));
+        toast(`${first(acct.name)} was signed out. Choose "Add a profile" to sign in again.`);
+      } else toast(`Couldn't switch profiles: ${err.message}`);
+    }
+  }
+
+  async function signOut() {
+    if (!account) return;
+    await flush();
+    try {
+      const app = await appFor(account.app);
+      await app.auth().signOut();
+      await app.delete();
+    } catch (e) {}
+    write(K.accounts, accounts().filter((a) => a.uid !== account.uid));
+    // this device goes back to the public library; your data stays in your account
+    drop(K.account, K.syncAt, K.dirty, K.partner, ...Store.SYNCED);
+    location.reload();
+  }
+
+  /* ---------------- start ---------------- */
+
+  if (enabled) {
+    if (account) Store.onSave(schedulePush);
+    document.addEventListener("DOMContentLoaded", () => (account ? start() : refreshPublic()));
+  }
+
+  window.Cloud = {
+    enabled,
+    account: () => account,
+    accounts,
+    first,
+    signIn,
+    signOut,
+    switchTo,
+    status: () => status,
+    onStatus: (fn) => statusListeners.push(fn),
+    partner,
+    partnerFor,
+    together,
+    onPartner: (fn) => partnerListeners.push(fn),
+  };
+})();

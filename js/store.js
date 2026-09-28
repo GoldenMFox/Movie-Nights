@@ -26,6 +26,7 @@
     const text = JSON.stringify(value);
     try {
       localStorage.setItem(key, text);
+      if (SYNCED.includes(key)) saved();
       return true;
     } catch (e) {
       // storage full: the TMDB page cache can always be rebuilt, your changes can't
@@ -33,6 +34,7 @@
         try {
           localStorage.removeItem(KEYS.tmdbCache);
           localStorage.setItem(key, text);
+          if (SYNCED.includes(key)) saved();
           return true;
         } catch (e2) {}
         if (window.UI) UI.toast("Couldn't save your change: this browser's storage is full or blocked");
@@ -42,19 +44,34 @@
     }
   }
 
-  const base = Array.isArray(window.LIBRARY) ? window.LIBRARY : [];
+  // what's synced to your account (js/cloud.js)
+  const SYNCED = [KEYS.overrides, KEYS.custom, KEYS.tiers, KEYS.profile];
+
+  // signed in: your own library ("library" = starts from data/library.js, "empty" = starts empty).
+  // signed out: data/library.js plus the owner's published changes (mn:public), then this browser's own.
+  const account = read("mn:account", null);
+  const pub = account ? null : read("mn:public", null);
+  const pubData = (pub && pub.data) || {};
+  const pubOverrides = pubData.overrides || {};
+
+  const base = account && account.base === "empty" ? [] : (Array.isArray(window.LIBRARY) ? window.LIBRARY : []).concat(pubData.custom || []);
   let overrides = read(KEYS.overrides, {});
   let custom = read(KEYS.custom, []);
   let cache = null;
   const listeners = [];
+  const saveListeners = [];
 
   function build() {
     const byId = new Map();
     base.concat(custom).forEach((item, index) => {
-      const merged = Object.assign({ order: index }, item, overrides[item.id] || {});
+      const merged = Object.assign({ order: index }, item, pubOverrides[item.id] || {}, overrides[item.id] || {});
       if (!merged.removed) byId.set(item.id, merged);
     });
     return byId;
+  }
+
+  function saved() {
+    saveListeners.forEach((fn) => fn());
   }
 
   function all() {
@@ -137,7 +154,7 @@
   }
 
   function getTiers() {
-    return read(KEYS.tiers, { S: [], A: [], B: [], C: [], D: [] });
+    return read(KEYS.tiers, null) || pubData.tiers || { S: [], A: [], B: [], C: [], D: [] };
   }
 
   function setTiers(tiers) {
@@ -145,7 +162,12 @@
   }
 
   function getProfile() {
-    return Object.assign({ name: "Mirzac Nicolae", joined: "July 2023" }, read(KEYS.profile, {}));
+    const owner = { name: "Mirzac Nicolae", joined: "July 2023" };
+    const defaults =
+      account && account.base === "empty"
+        ? { name: account.name || "Me", joined: "" }
+        : Object.assign(owner, account ? {} : pubData.profile || {});
+    return Object.assign(defaults, read(KEYS.profile, {}));
   }
 
   function setProfile(patch) {
@@ -228,7 +250,36 @@
     });
     overrides = {};
     custom = [];
+    saved();
     changed(null);
+  }
+
+  /* ---------- account sync (used by js/cloud.js) ---------- */
+
+  // everything that belongs to you, as one object
+  function snapshot() {
+    return { overrides, custom, tiers: read(KEYS.tiers, null), profile: read(KEYS.profile, {}) };
+  }
+
+  // replace what's in this browser with data from your account (doesn't upload it again)
+  function replaceData(data) {
+    data = data || {};
+    overrides = data.overrides || {};
+    custom = data.custom || [];
+    try {
+      localStorage.setItem(KEYS.overrides, JSON.stringify(overrides));
+      localStorage.setItem(KEYS.custom, JSON.stringify(custom));
+      if (data.tiers) localStorage.setItem(KEYS.tiers, JSON.stringify(data.tiers));
+      else localStorage.removeItem(KEYS.tiers);
+      localStorage.setItem(KEYS.profile, JSON.stringify(data.profile || {}));
+    } catch (e) {
+      console.warn("Could not save to localStorage", e);
+    }
+    changed(null);
+  }
+
+  function onSave(fn) {
+    saveListeners.push(fn);
   }
 
   /* ---------- helpers used by several pages ---------- */
@@ -267,6 +318,11 @@
     exportBackup,
     importBackup,
     resetAll,
+    snapshot,
+    replaceData,
+    onSave,
+    SYNCED,
+    account,
     img,
     poster,
     TYPE_LABEL,

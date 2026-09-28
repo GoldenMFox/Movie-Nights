@@ -12,7 +12,7 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v2";
+const VERSION = "v3";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [
@@ -32,6 +32,7 @@ const APP_FILES = [
   "data/library.js",
   "js/config.js",
   "js/store.js",
+  "js/cloud.js",
   "js/lang.js",
   "js/layout.js",
   "js/tmdb.js",
@@ -55,7 +56,8 @@ const APP_FILES = [
 ];
 
 // hosts whose files never change once published: cache-first
-const STATIC_HOSTS = ["cdnjs.cloudflare.com", "fonts.googleapis.com", "fonts.gstatic.com"];
+// (www.gstatic.com: the Google sign-in library, a fixed version)
+const STATIC_HOSTS = ["cdnjs.cloudflare.com", "fonts.googleapis.com", "fonts.gstatic.com", "www.gstatic.com"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

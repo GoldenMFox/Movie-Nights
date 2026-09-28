@@ -39,7 +39,12 @@
     { id: "tv", label: "TV Shows", test: (i) => i.type === "tv" },
     { id: "anime", label: "Anime", test: (i) => i.type === "anime" },
   ];
-  const CHIPS = PAGE.chips === "type" ? TYPE_CHIPS : STATUS_CHIPS;
+  const CHIPS = PAGE.chips === "type" ? TYPE_CHIPS.slice() : STATUS_CHIPS;
+  // on both your watchlists and neither of you has rated it (signed in, with a second profile)
+  if (page === "watchlist" && window.Cloud && Cloud.partner()) {
+    CHIPS.push({ id: "together", label: "Watch together", test: (i) => Cloud.together(i) });
+    Cloud.onPartner(() => render());
+  }
 
   // IMDb rating (or TMDB when IMDb isn't known yet); titles not looked up yet go last
   const outside = (i) => {
