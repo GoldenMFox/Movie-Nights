@@ -26,6 +26,18 @@ To publish changes, double-click **`Publish to GitHub.bat`**. It saves every cha
 folder and uploads it, and the live site updates a minute or two later. For example, after
 replacing `data/library.js` with an export from Profile → Backup.
 
+## Install it as an app
+
+Open **https://goldenmfox.github.io/Movie-Nights/** on your phone, then:
+
+- **Android** (Chrome, Brave, Edge): profile menu (your picture, top right) → **Install the app**,
+  or the browser menu → **Install app** / **Add to Home screen**.
+- **iPhone / iPad** (Safari): the **Share** button → **Add to Home Screen**.
+
+It opens full screen with its own icon, has a back button in the top left, and your own
+list still opens without internet (Discover, trending and trailers need a connection).
+It updates by itself whenever the site is published.
+
 ## Pages
 
 | Page | What it does |
@@ -112,7 +124,9 @@ js/ratings.js        IMDb / TMDB ratings, OMDb daily budget
 js/discover.js       Discover page
 js/browse.js         list pages (filters, sorting)
 js/home.js  js/title.js  js/tier-list.js  js/profile.js
-images/              logo, favicon, avatar, placeholders
+images/              logo, favicon, avatar, placeholders, app icons (images/icons)
+manifest.webmanifest app name, icons and colours for the installed app
+sw.js                offline support for the installed app
 tools/serve.ps1      tiny local web server used by Start Movie Nights.bat
 tools/publish.ps1    used by Publish to GitHub.bat
 Start Movie Nights.bat   double-click to open the site
