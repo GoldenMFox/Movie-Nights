@@ -7,7 +7,8 @@
  */
 (function () {
   const API = "https://api.themoviedb.org/3";
-  const CACHE_LIMIT = 400;
+  const CACHE_LIMIT = 120; // title pages kept in this browser (details now include reviews, images...)
+  const DETAILS_MAX_AGE = 7 * 24 * 3600 * 1000; // streaming services change, so refresh weekly
   const ANIMATION = 16; // TMDB genre id
   const NOT_SHOWS = "10763|10764|10766|10767"; // News, Reality, Soap, Talk
 
@@ -302,13 +303,56 @@
     Store.write(Store.KEYS.tmdbCache, cache);
   }
 
-  // Full details for a TMDB movie / show (cached)
-  async function detailsById(media, id) {
-    const cacheKey = `${media}-${id}`;
-    const cache = readCache();
-    if (cache[cacheKey]) return cache[cacheKey];
+  // your country, for age ratings and streaming services (e.g. "en-GB" -> "GB")
+  function region() {
+    for (const lang of navigator.languages || [navigator.language || ""]) {
+      const m = /-([A-Z]{2})$/i.exec(lang);
+      if (m) return m[1].toUpperCase();
+    }
+    return "US";
+  }
 
-    const d = await request(`/${media}/${id}`, { append_to_response: "videos,credits,recommendations,external_ids" });
+  function certificationOf(d, media, country) {
+    if (media === "movie") {
+      const all = (d.release_dates && d.release_dates.results) || [];
+      for (const c of [country, "US"]) {
+        const entry = all.find((r) => r.iso_3166_1 === c);
+        const rel = entry && entry.release_dates.find((x) => x.certification);
+        if (rel) return rel.certification;
+      }
+      return "";
+    }
+    const all = (d.content_ratings && d.content_ratings.results) || [];
+    const entry = all.find((r) => r.iso_3166_1 === country) || all.find((r) => r.iso_3166_1 === "US");
+    return (entry && entry.rating) || "";
+  }
+
+  // where to watch it (data by JustWatch, via TMDB)
+  function providersOf(d, country) {
+    const all = (d["watch/providers"] && d["watch/providers"].results) || {};
+    const here = all[country] || all.US;
+    if (!here) return null;
+    const pack = (list) => (list || []).slice(0, 6).map((p) => ({ name: p.provider_name, logo: p.logo_path }));
+    const stream = pack(here.flatrate);
+    return {
+      country: all[country] ? country : "US",
+      link: here.link || "",
+      kind: stream.length ? "stream" : "rent",
+      list: stream.length ? stream : pack((here.rent || []).concat(here.buy || [])).filter((p, i, a) => a.findIndex((x) => x.name === p.name) === i),
+    };
+  }
+
+  // Full details for a TMDB movie / show (cached for a week)
+  async function detailsById(media, id) {
+    const cacheKey = `v2:${media}-${id}`;
+    const cache = readCache();
+    if (cache[cacheKey] && Date.now() - cache[cacheKey].savedAt < DETAILS_MAX_AGE) return cache[cacheKey];
+
+    const country = region();
+    const d = await request(`/${media}/${id}`, {
+      append_to_response: `videos,credits,recommendations,external_ids,images,reviews,watch/providers,${media === "movie" ? "release_dates" : "content_ratings"}`,
+      include_image_language: "en,null",
+    });
     const crew = (d.credits && d.credits.crew) || [];
     const base = simplify(d, media);
 
@@ -331,6 +375,24 @@
         .filter((r) => r.poster_path)
         .slice(0, 16)
         .map((r) => simplify(r, r.media_type || media)),
+      certification: certificationOf(d, media, country),
+      providers: providersOf(d, country),
+      videos: ((d.videos && d.videos.results) || [])
+        .filter((v) => v.site === "YouTube")
+        .sort((a, b) => (b.type === "Trailer") - (a.type === "Trailer") || (b.official === true) - (a.official === true))
+        .slice(0, 12)
+        .map((v) => ({ key: v.key, name: v.name, type: v.type })),
+      images: ((d.images && d.images.backdrops) || []).slice(0, 12).map((i) => i.file_path),
+      // poster art without the title printed on it: used as the tall header image on phones
+      artPoster: (((d.images && d.images.posters) || []).find((p) => p.iso_639_1 === null) || {}).file_path || "",
+      reviews: ((d.reviews && d.reviews.results) || []).slice(0, 6).map((r) => ({
+        author: r.author || (r.author_details && r.author_details.username) || "TMDB user",
+        rating: r.author_details && r.author_details.rating,
+        date: (r.created_at || "").slice(0, 10),
+        text: (r.content || "").length > 1200 ? r.content.slice(0, 1200) + "…" : r.content || "",
+        url: r.url || "",
+      })),
+      tmdbUrl: `https://www.themoviedb.org/${media}/${id}`,
       savedAt: Date.now(),
     });
     cache[cacheKey] = result;

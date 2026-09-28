@@ -2,6 +2,11 @@
  * Title page: details for one movie / show / anime.
  *   title.html?id=interstellar-2014   a title in your library
  *   title.html?tmdb=movie-157336      any title on TMDB (from Discover / recommendations)
+ *
+ * Layout (same markup for phone and computer):
+ *   big backdrop + title, IMDb rating / runtime / year, genres, where to stream,
+ *   Trailer button, three action buttons, overview + director,
+ *   tabs (Cast & Crew / Media / Reviews), then recommendations.
  */
 (function () {
   const { esc, toast } = UI;
@@ -11,6 +16,8 @@
   const heroEl = document.getElementById("title-hero");
   const mainEl = document.getElementById("title-main");
   let extra = null; // details fetched from TMDB
+  let tab = "cast";
+  let overviewOpen = false;
 
   function message(icon, html) {
     heroEl.hidden = true;
@@ -26,42 +33,161 @@
     return out;
   }
 
-  function factsHtml(type, d) {
-    return [
-      d.certification ? `<span class="cert">${esc(d.certification)}</span>` : "",
-      `<span>${Store.TYPE_LABEL[type] || ""}</span>`,
-      d.genres && d.genres.length ? `<span>${esc(d.genres.join(", "))}</span>` : "",
-      d.runtime ? `<span>${esc(d.runtime)}</span>` : "",
-    ].join("");
+  /* ---------------- pieces ---------------- */
+
+  // "IMDb 8.6 / 10 · 1h 48m · 2025 · 🍅 86%"
+  function metaHtml(t, d, e) {
+    const parts = [];
+    if (e && typeof e.imdb === "number") {
+      parts.push(`<span class="t-score" title="${e.votes ? `IMDb rating from ${esc(e.votes)} votes` : "IMDb rating"}"><span class="imdb-tag">IMDb</span>${Cards.formatRating(e.imdb)} / 10</span>`);
+    } else {
+      const tmdb = e && typeof e.tmdb === "number" ? e.tmdb : d.tmdbScore;
+      if (typeof tmdb === "number") parts.push(`<span class="t-score" title="TMDB rating"><span class="tmdb-tag">TMDB</span>${tmdb.toFixed(1)} / 10</span>`);
+    }
+    if (d.runtime) parts.push(esc(d.runtime));
+    if (t.year) parts.push(t.year);
+    if (e && e.rt) {
+      const rotten = parseInt(e.rt, 10) < 60;
+      parts.push(`<span class="t-rt${rotten ? " rotten" : ""}" title="Rotten Tomatoes Tomatometer (critics)"><span class="rt-icon">🍅</span>${esc(e.rt)}</span>`);
+    }
+    return parts.join('<span class="dot">·</span>');
   }
 
-  function heroHtml(t, d, actions) {
-    const backdrop = d.backdrop ? Store.img(d.backdrop, "w1280") : Store.img(t.poster, "w780");
-    heroEl.style.backgroundImage = backdrop ? `url("${backdrop}")` : "";
-    heroEl.hidden = false;
-    return `<div class="container">
-      <img class="title-poster" src="${Store.poster(t.poster, "w500")}" alt="${esc(t.title)} poster" />
-      <div>
-        <h1>${esc(t.title)} ${t.year ? `<span class="year">(${t.year})</span>` : ""}</h1>
-        <div class="title-facts">${factsHtml(t.type, d)}</div>
-        <div class="title-actions">${actions}</div>
-        <div class="overview">
-          ${d.overview ? `<h2>Overview</h2><p>${esc(d.overview)}</p>` : ""}
-          ${d.director ? `<div class="credit"><strong>${esc(d.director)}</strong><span>${esc(d.directorLabel || "Director")}</span></div>` : ""}
+  // "[14+] Animation • Comedy • Adventure"
+  function genresHtml(t, d) {
+    const genres = (d.genres && d.genres.length ? d.genres : []).slice(0, 4);
+    const label = Store.TYPE_LABEL[t.type] || "";
+    return `${d.certification ? `<span class="t-cert">${esc(d.certification)}</span>` : ""}${esc(genres.length ? genres.join(" • ") : label)}`;
+  }
+
+  function providersHtml(p) {
+    if (!p || !p.list || !p.list.length) return "";
+    const label = p.kind === "stream" ? "Available on:" : "Rent or buy on:";
+    return `<div class="t-providers">
+      <span>${label}</span>
+      <div class="t-provider-list">${p.list
+        .map((x) => `<a href="${esc(p.link)}" target="_blank" rel="noopener" title="${esc(x.name)}"><img src="${Store.img(x.logo, "w92")}" alt="${esc(x.name)}" /></a>`)
+        .join("")}</div>
+      <small title="Streaming data by JustWatch">${esc(p.country)} · JustWatch</small>
+    </div>`;
+  }
+
+  function aboutHtml(d) {
+    if (!d.overview && !d.director) return "";
+    const long = d.overview && d.overview.length > 180;
+    return `<div class="t-about">
+      ${d.overview ? `<p class="t-overview${long && !overviewOpen ? " clamp" : ""}">${esc(d.overview)}</p>` : ""}
+      ${long ? `<button class="t-link t-read-more" type="button">${overviewOpen ? "Show less" : "Read more"}</button>` : ""}
+      ${d.director ? `<p class="t-director"><span>${esc(d.directorLabel || "Director")}:</span> ${esc(d.director)}</p>` : ""}
+    </div>`;
+  }
+
+  function topbarHtml(menuItems) {
+    return `<div class="t-topbar">
+      <button class="t-round" data-t="back" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button>
+      <span class="t-spacer"></span>
+      <button class="t-round" data-t="share" aria-label="Share"><i class="fa-solid fa-arrow-up-from-bracket"></i></button>
+      <div class="t-more-wrap">
+        <button class="t-round" data-t="more" aria-label="More options"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+        <div class="t-menu" hidden>
+          <a href="index.html"><i class="fa-solid fa-house"></i> Home</a>
+          <a href="discover.html"><i class="fa-solid fa-compass"></i> Discover</a>
+          ${menuItems}
         </div>
       </div>
     </div>`;
   }
 
-  function castHtml(cast) {
-    if (!cast || !cast.length) return "";
-    return `<h2 class="section-title">Cast</h2>
-      <div class="cast-list">${cast
+  // the whole top block: backdrop, title, info, buttons, overview
+  function heroHtml(t, d, e, buttons, menuItems) {
+    const backdrop = d.backdrop ? Store.img(d.backdrop, "w1280") : Store.img(t.poster, "w780");
+    heroEl.hidden = false;
+    return `
+      <div class="t-backdrop">${
+        backdrop
+          ? `<picture>${d.artPoster ? `<source media="(max-width: 700px)" srcset="${Store.img(d.artPoster, "w780")}" />` : ""}<img src="${backdrop}" alt="" /></picture>`
+          : ""
+      }</div>
+      ${topbarHtml(menuItems)}
+      <div class="container t-hero-inner">
+        <img class="t-poster" src="${Store.poster(t.poster, "w500")}" alt="${esc(t.title)} poster" />
+        <div class="t-head">
+          <h1>${esc(t.title)}${t.year ? ` <span class="year">(${t.year})</span>` : ""}</h1>
+          <div class="t-meta">${metaHtml(t, d, e)}</div>
+          <div class="t-genres">${genresHtml(t, d)}</div>
+          ${providersHtml(d.providers)}
+          <div class="t-cta">${buttons}</div>
+          ${aboutHtml(d)}
+        </div>
+      </div>`;
+  }
+
+  /* ---------------- tabs: Cast & Crew / Media / Reviews ---------------- */
+
+  function tabsHtml(d, loading) {
+    const cast = d.cast || [];
+    const videos = d.videos || [];
+    const images = d.images || [];
+    const reviews = d.reviews || [];
+    const tabs = [
+      ["cast", "Cast & Crew", cast.length],
+      ["media", "Media", videos.length + images.length],
+      ["reviews", "Reviews", reviews.length],
+    ].filter(([key, , n]) => n || loading || key === "cast");
+    if (!tabs.some(([k]) => k === tab)) tab = tabs[0][0];
+
+    let panel;
+    if (loading && !(tab === "cast" && cast.length)) panel = '<p class="muted t-empty">Loading…</p>';
+    else if (tab === "cast") panel = castPanel(cast);
+    else if (tab === "media") panel = mediaPanel(videos, images);
+    else panel = reviewsPanel(reviews, d.tmdbUrl);
+
+    return `<div class="t-tabs" role="tablist">${tabs
+      .map(([key, label, n]) => `<button role="tab" data-tab="${key}" aria-selected="${key === tab}" class="${key === tab ? "active" : ""}">${label}${key === "reviews" && n ? ` <small>${n}</small>` : ""}</button>`)
+      .join("")}</div>
+      <div class="t-panel" role="tabpanel">${panel}</div>`;
+  }
+
+  function castPanel(cast) {
+    if (!cast.length) return '<p class="muted t-empty">No cast information yet.</p>';
+    return `<div class="t-cast">${cast
+      .map(
+        (c) => `<div class="t-person">
+          <img src="${c.photo ? Store.img(c.photo, "w185") : "images/avatar-placeholder.svg"}" alt="" loading="lazy" />
+          <strong>${esc(c.name)}</strong><span>${esc(c.character || "")}</span>
+        </div>`
+      )
+      .join("")}</div>`;
+  }
+
+  function mediaPanel(videos, images) {
+    if (!videos.length && !images.length) return '<p class="muted t-empty">No videos or images yet.</p>';
+    return `
+      ${videos.length ? `<h3 class="t-sub">Videos</h3><div class="t-media-row">${videos
         .map(
-          (c) => `<div class="cast-card"><img src="${c.photo ? Store.img(c.photo, "w185") : "images/avatar-placeholder.svg"}" alt="" loading="lazy" />
-            <div><strong>${esc(c.name)}</strong><span>${esc(c.character || "")}</span></div></div>`
+          (v) => `<button class="t-video" data-video="${esc(v.key)}" data-name="${esc(v.name)}" type="button">
+            <span class="t-thumb"><img src="https://i.ytimg.com/vi/${encodeURIComponent(v.key)}/mqdefault.jpg" alt="" loading="lazy" /><i class="fa-solid fa-play"></i></span>
+            <strong>${esc(v.name)}</strong><span>${esc(v.type)}</span>
+          </button>`
         )
-        .join("")}</div>`;
+        .join("")}</div>` : ""}
+      ${images.length ? `<h3 class="t-sub">Images</h3><div class="t-media-row">${images
+        .map((p) => `<a class="t-still" href="${Store.img(p, "original")}" target="_blank" rel="noopener"><img src="${Store.img(p, "w500")}" alt="" loading="lazy" /></a>`)
+        .join("")}</div>` : ""}`;
+  }
+
+  function reviewsPanel(reviews, tmdbUrl) {
+    if (!reviews.length) return '<p class="muted t-empty">No reviews yet.</p>';
+    return `<div class="t-reviews">${reviews
+      .map(
+        (r) => `<article class="t-review">
+          <header><strong>${esc(r.author)}</strong>${r.rating != null ? `<span class="t-review-score"><i class="fa-solid fa-star"></i> ${r.rating} / 10</span>` : ""}<small>${esc(r.date)}</small></header>
+          <p class="clamp">${esc(r.text)}</p>
+          <button class="t-link t-review-more" type="button">Read more</button>
+        </article>`
+      )
+      .join("")}</div>
+      ${tmdbUrl ? `<p><a class="t-link" href="${esc(tmdbUrl)}/reviews" target="_blank" rel="noopener">All reviews on TMDB <i class="fa-solid fa-arrow-up-right-from-square"></i></a></p>` : ""}`;
   }
 
   function recommendationsHtml(d) {
@@ -69,34 +195,55 @@
     return recs.length ? `<h2 class="section-title">Recommended on TMDB</h2><div class="movie-row">${recs.map(Cards.tmdbCard).join("")}</div>` : "";
   }
 
-  // round score badge; score is 0-10, null (none) or undefined (loading)
-  function scoreRing(score, label, cls, tip) {
-    const has = typeof score === "number";
-    const text = has ? Cards.formatRating(score) : score === undefined ? "…" : "–";
-    return `<div class="score-ring ${cls}" style="--value:${has ? score * 10 : 0}" title="${tip || label.replace("<br />", " ")}"><span>${text}</span></div>
-      <div class="score-label">${label}</div>`;
-  }
+  const TMDB_NOTE =
+    "Details from TMDB, ratings from IMDb and Rotten Tomatoes via OMDb, streaming data by JustWatch. This product uses the TMDB API but is not endorsed or certified by TMDB.";
 
-  // IMDb ring (TMDB when IMDb has no rating / isn't loaded yet) + Rotten Tomatoes when there is one
-  function outsideScores(e, tmdbFallback) {
-    let html;
-    if (e && typeof e.imdb === "number") {
-      html = scoreRing(e.imdb, "IMDb<br />score", "imdb", e.votes ? `IMDb rating from ${e.votes} votes` : "IMDb rating");
-    } else {
-      const tmdb = e && typeof e.tmdb === "number" ? e.tmdb : tmdbFallback;
-      if (typeof tmdb === "number") html = scoreRing(tmdb, "TMDB<br />score", "tmdb", "TMDB rating (IMDb rating not available yet)");
-      else html = scoreRing(e && e.tmdbAt ? null : undefined, Ratings.omdbEnabled() ? "IMDb<br />score" : "TMDB<br />score", Ratings.omdbEnabled() ? "imdb" : "tmdb");
-    }
-    if (e && e.rt) {
-      const pct = parseInt(e.rt, 10);
-      html += `<div class="rt-score${pct < 60 ? " rotten" : ""}" title="Rotten Tomatoes Tomatometer (critics)">
-          <span class="rt-icon" aria-hidden="true">🍅</span><strong>${esc(e.rt)}</strong></div>
-        <div class="score-label">Tomato-<br />meter</div>`;
-    }
-    return html;
-  }
+  /* ---------------- page-level buttons (back, share, menu, tabs...) ---------------- */
 
-  const TMDB_NOTE = "Extra details from TMDB, ratings from IMDb and Rotten Tomatoes via OMDb. This product uses the TMDB API but is not endorsed or certified by TMDB.";
+  document.addEventListener("click", async (e) => {
+    const menu = heroEl.querySelector(".t-menu");
+    const t = e.target.closest("[data-t]");
+    if (menu && !e.target.closest(".t-more-wrap")) menu.hidden = true;
+    if (t) {
+      if (t.dataset.t === "back") history.length > 1 ? history.back() : (location.href = "index.html");
+      if (t.dataset.t === "more" && menu) menu.hidden = !menu.hidden;
+      if (t.dataset.t === "share") {
+        const data = { title: document.title, url: location.href };
+        try {
+          if (navigator.share) await navigator.share(data);
+          else {
+            await navigator.clipboard.writeText(location.href);
+            toast("Link copied");
+          }
+        } catch (err) {} // share sheet closed
+      }
+      return;
+    }
+    const tabBtn = e.target.closest("[data-tab]");
+    if (tabBtn) {
+      tab = tabBtn.dataset.tab;
+      renderTabs();
+      return;
+    }
+    if (e.target.closest(".t-read-more")) {
+      overviewOpen = !overviewOpen;
+      const p = heroEl.querySelector(".t-overview");
+      p.classList.toggle("clamp", !overviewOpen);
+      e.target.closest(".t-read-more").textContent = overviewOpen ? "Show less" : "Read more";
+      return;
+    }
+    const reviewMore = e.target.closest(".t-review-more");
+    if (reviewMore) {
+      const p = reviewMore.previousElementSibling;
+      p.classList.toggle("clamp");
+      reviewMore.textContent = p.classList.contains("clamp") ? "Read more" : "Show less";
+      return;
+    }
+    const video = e.target.closest("[data-video]");
+    if (video) Cards.showTrailer({ title: video.dataset.name, trailer: video.dataset.video }, () => null);
+  });
+
+  let renderTabs = () => {};
 
   /* ---------------- a title in your library ---------------- */
 
@@ -106,20 +253,23 @@
     const d = Object.assign({}, extra || {}, pick(item));
     document.title = `${item.title} (${item.year}) · Movie Nights`;
     heroEl.dataset.id = item.id;
+    mainEl.dataset.id = item.id;
+    const e = TMDB.enabled() ? Ratings.entry(Ratings.refOf(item)) : null;
 
-    const outside = TMDB.enabled() ? outsideScores(Ratings.entry(Ratings.refOf(item)), extra ? extra.tmdbScore : undefined) : "";
-    heroEl.innerHTML = heroHtml(
-      item,
-      d,
-      `${scoreRing(item.rating, "My<br />score", "")}
-       ${outside}
-       <button class="btn${item.favorite ? " is-on" : ""}" data-action="fav" aria-pressed="${!!item.favorite}">
-         <i class="fa-solid fa-heart"></i> ${item.favorite ? "Favorite" : "Add to Favorites"}</button>
-       <button class="btn${item.watchlist ? " is-on" : ""}" data-action="watch" aria-pressed="${!!item.watchlist}">
-         <i class="fa-${item.watchlist ? "solid" : "regular"} fa-bookmark"></i> ${item.watchlist ? "On Watchlist" : "Add to Watchlist"}</button>
-       <button class="btn" data-action="rate"><i class="fa-solid fa-star"></i> ${item.rating == null ? "Rate it" : "Change rating"}</button>
-       <button class="btn btn-primary" data-action="trailer"><i class="fa-solid fa-play"></i> Play Trailer</button>`
-    );
+    const buttons = `
+      <button class="btn t-trailer" data-action="trailer"><i class="fa-solid fa-clapperboard"></i> Trailer</button>
+      <div class="t-actions">
+        <button class="btn${item.watchlist ? " is-on" : ""}" data-action="watch" aria-pressed="${!!item.watchlist}">
+          <i class="fa-${item.watchlist ? "solid" : "regular"} fa-bookmark"></i> ${item.watchlist ? "On my list" : "My List"}</button>
+        <button class="btn${item.favorite ? " is-on" : ""}" data-action="fav" aria-pressed="${!!item.favorite}">
+          <i class="fa-${item.favorite ? "solid" : "regular"} fa-heart"></i> Favorite</button>
+        <button class="btn${item.rating != null ? " is-rated" : ""}" data-action="rate">
+          ${item.rating != null ? `<i class="fa-solid fa-star"></i> ${Cards.formatRating(item.rating)}` : '<i class="fa-regular fa-thumbs-up"></i> Rate'}</button>
+      </div>`;
+    const menu = `
+      ${d.tmdbUrl ? `<a href="${esc(d.tmdbUrl)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open on TMDB</a>` : ""}
+      <button type="button" class="remove-title"><i class="fa-solid fa-trash"></i> Remove from library</button>`;
+    heroEl.innerHTML = heroHtml(item, d, e, buttons, menu);
 
     const near = (a) => Math.abs((a.rating ?? 5) - (item.rating ?? 5));
     const similar = Store.all()
@@ -127,18 +277,21 @@
       .sort((a, b) => near(a) - near(b) || Math.abs(a.year - item.year) - Math.abs(b.year - item.year))
       .slice(0, 16);
 
+    const loading = TMDB.enabled() && !extra;
     mainEl.innerHTML = `
-      ${castHtml(d.cast)}
+      <section class="t-tabs-wrap">${tabsHtml(d, loading)}</section>
       ${recommendationsHtml(extra)}
       ${similar.length ? `<h2 class="section-title">More like this in your library</h2><div class="movie-row">${similar.map(Cards.card).join("")}</div>` : ""}
       <p class="tmdb-note">${
         TMDB.enabled() ? TMDB_NOTE : 'Tip: add a free TMDB API key in <a href="profile.html#settings">Settings</a> to see the overview, cast, trailer and recommendations for every title.'
       }</p>
       <p><button class="btn btn-danger remove-title" type="button"><i class="fa-solid fa-trash"></i> Remove from library</button></p>`;
+
+    renderTabs = () => (mainEl.querySelector(".t-tabs-wrap").innerHTML = tabsHtml(d, loading));
   }
 
   function initLibrary() {
-    mainEl.addEventListener("click", (e) => {
+    document.addEventListener("click", (e) => {
       if (!e.target.closest(".remove-title")) return;
       const item = Store.get(id);
       if (!confirm(`Remove "${item.title}" from your library?\n\nYou can bring it back with Profile -> Reset all my changes, or by restoring a backup.`)) return;
@@ -161,14 +314,17 @@
 
       TMDB.details(item)
         .then((details) => {
-          if (!details) return;
-          extra = details;
+          extra = details || {};
           Ratings.request(Store.get(id)); // now that the IMDb id is known
           // remember the trailer so it also works on cards and in the exported library
-          if (!item.trailer && details.trailer) Store.update(id, { trailer: details.trailer });
+          if (details && !item.trailer && details.trailer) Store.update(id, { trailer: details.trailer });
           else renderLibrary();
         })
-        .catch((e) => console.warn("TMDB:", e.message));
+        .catch((err) => {
+          console.warn("TMDB:", err.message);
+          extra = {};
+          renderLibrary();
+        });
     }
   }
 
@@ -184,8 +340,8 @@
     let d;
     try {
       d = await TMDB.detailsById(media, Number(tmdbId));
-    } catch (e) {
-      return message("fa-solid fa-triangle-exclamation", esc(e.message));
+    } catch (err) {
+      return message("fa-solid fa-triangle-exclamation", esc(err.message));
     }
 
     const goToLibrary = () => {
@@ -198,9 +354,12 @@
     Cards.tmdbCard(d); // registers it so the buttons below work
     document.title = `${d.title}${d.year ? ` (${d.year})` : ""} · Movie Nights`;
     heroEl.dataset.tmdb = tmdbRef;
+    mainEl.dataset.tmdb = tmdbRef;
     Ratings.seed(tmdbRef, d.tmdbScore, d.imdbId);
     renderExternal(d);
-    mainEl.innerHTML = `${castHtml(d.cast)}${recommendationsHtml(d)}<p class="tmdb-note">${TMDB_NOTE}</p>`;
+    mainEl.innerHTML = `<section class="t-tabs-wrap">${tabsHtml(d, false)}</section>${recommendationsHtml(d)}<p class="tmdb-note">${TMDB_NOTE}</p>`;
+    renderTabs = () => (mainEl.querySelector(".t-tabs-wrap").innerHTML = tabsHtml(d, false));
+
     // IMDb rating (one OMDb lookup the first time you open this title)
     Ratings.forRef(tmdbRef).then(() => heroEl.dataset.tmdb === tmdbRef && renderExternal(d));
 
@@ -211,15 +370,15 @@
   }
 
   function renderExternal(d) {
-    heroEl.innerHTML = heroHtml(
-      d,
-      d,
-      `${outsideScores(Ratings.entry(tmdbRef), d.tmdbScore)}
-       <button class="btn btn-primary" data-action="t-add"><i class="fa-solid fa-plus"></i> Add to library</button>
-       <button class="btn" data-action="t-watch"><i class="fa-regular fa-bookmark"></i> Add to Watchlist</button>
-       <button class="btn" data-action="t-rate"><i class="fa-solid fa-star"></i> Rate it</button>
-       <button class="btn" data-action="t-trailer"><i class="fa-solid fa-play"></i> Play Trailer</button>`
-    );
+    const buttons = `
+      <button class="btn t-trailer" data-action="t-trailer"><i class="fa-solid fa-clapperboard"></i> Trailer</button>
+      <div class="t-actions">
+        <button class="btn" data-action="t-watch"><i class="fa-solid fa-plus"></i> My List</button>
+        <button class="btn" data-action="t-add"><i class="fa-regular fa-circle-check"></i> Watched</button>
+        <button class="btn" data-action="t-rate"><i class="fa-regular fa-thumbs-up"></i> Rate</button>
+      </div>`;
+    const menu = `<a href="${esc(d.tmdbUrl)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open on TMDB</a>`;
+    heroEl.innerHTML = heroHtml(d, d, Ratings.entry(tmdbRef), buttons, menu);
   }
 
   if (tmdbRef) initTmdb();
