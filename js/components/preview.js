@@ -144,11 +144,11 @@
     document.body.append(preview);
 
     // Normally exactly as tall as the card, the video 16:9 in what the text leaves. But the
-    // video is never smaller than 200px high (poster-only cards are short): then the preview
+    // video is never smaller than 248px high (poster-only cards are short): then the preview
     // is a bit taller than the card, centred on it. Never wider / taller than the window.
-    preview.style.width = "380px"; // to measure the text at a typical width
+    preview.style.width = "440px"; // to measure the text at a typical width
     const infoH = preview.querySelector(".hp-info").offsetHeight + 24; // + room for genres / details arriving later
-    const videoH = Math.max(r.height - infoH, 200);
+    const videoH = Math.max(r.height - infoH, 248); // at least ~440 × 248
     const width = Math.round(Math.min(Math.max((videoH * 16) / 9, r.width), window.innerWidth - 24));
     const height = Math.round(Math.max(r.height, videoH + infoH));
     preview.style.width = `${width}px`;
