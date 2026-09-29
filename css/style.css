@@ -6087,11 +6087,12 @@ button.p-lib-line:hover .p-lib-arrow {
 
 .new-label::before {
   content: "";
-  width: 6px;
-  height: 6px;
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: #e50914;
-  box-shadow: 0 0 8px rgba(229, 9, 20, 0.9);
+  background: #ff1a24;
+  box-shadow: 0 0 0 2px rgba(255, 26, 36, 0.25), 0 0 10px rgba(229, 9, 20, 0.95);
 }
 
 /* "Coming soon" sits in the top-right corner too (a title is never both new and coming soon) */
