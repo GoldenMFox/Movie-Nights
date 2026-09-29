@@ -296,13 +296,15 @@
       const status = x.status && !/^(Released|Ended|Returning Series)$/.test(x.status) ? ` · ${esc(x.status)}` : "";
       cards.push(`<div class="xr-card xr-date">
           ${label("fa-calendar-day", tv ? "First aired" : "Released")}
-          <div class="xr-big">${niceDay(x.released)}</div>
-          <small>${fromNow(x.released)}${status}</small>
-          ${
-            tv && (x.episodes || x.lastAir)
-              ? `<div class="xr-mini">${x.episodes ? `<span><b>${x.episodes}</b> episodes</span>` : ""}${x.lastAir ? `<span>Last aired <b>${niceDay(x.lastAir)}</b></span>` : ""}</div>`
-              : ""
-          }
+          <div class="xr-body">
+            <div class="xr-big">${niceDay(x.released)}</div>
+            <small>${fromNow(x.released)}${status}</small>
+            ${
+              tv && (x.episodes || x.lastAir)
+                ? `<div class="xr-mini">${x.episodes ? `<span><b>${x.episodes}</b> episodes</span>` : ""}${x.lastAir ? `<span>Last aired <b>${niceDay(x.lastAir)}</b></span>` : ""}</div>`
+                : ""
+            }
+          </div>
         </div>`);
     }
 
@@ -321,17 +323,21 @@
             : `<span class="xr-chip">${esc(c.name)}</span>`
         )
         .join("");
-    if (x.networks.length) cards.push(`<div class="xr-card xr-brands">${label("fa-tower-broadcast", "Network")}<div class="xr-logos">${brands(x.networks)}</div></div>`);
-    if (x.companies.length) cards.push(`<div class="xr-card xr-brands">${label("fa-clapperboard", "Made by")}<div class="xr-logos">${brands(x.companies)}</div></div>`);
+    // only the main one (TMDB lists it first), not every company that took part
+    if (x.networks.length) cards.push(`<div class="xr-card xr-brands">${label("fa-tower-broadcast", "Network")}<div class="xr-body">${brands(x.networks.slice(0, 1))}</div></div>`);
+    if (x.companies.length) cards.push(`<div class="xr-card xr-brands">${label("fa-clapperboard", "Made by")}<div class="xr-body">${brands(x.companies.slice(0, 1))}</div></div>`);
 
-    // where from: flags and the original language
+    // where from: flags, a thin line, the original language
     if (x.countries.length || x.language)
       cards.push(`<div class="xr-card xr-origin">
           ${label("fa-earth-europe", "Made in")}
-          <div class="xr-flags">${x.countries
-            .map((c) => `<span class="xr-chip"><img src="https://flagcdn.com/w40/${esc(c.code)}.png" alt="" loading="lazy" />${esc(c.name)}</span>`)
-            .join("")}</div>
-          ${x.language ? `<div class="xr-lang"><i class="fa-solid fa-language"></i> Original language: <b>${esc(langName(x.language))}</b></div>` : ""}
+          <div class="xr-body">
+            ${x.countries.length ? `<div class="xr-flags">${x.countries
+              .map((c) => `<span class="xr-chip"><img src="https://flagcdn.com/w40/${esc(c.code)}.png" alt="" loading="lazy" />${esc(c.name)}</span>`)
+              .join("")}</div>` : ""}
+            ${x.countries.length && x.language ? '<hr class="xr-line" />' : ""}
+            ${x.language ? `<div class="xr-lang"><i class="fa-solid fa-language"></i> Original language: <b>${esc(langName(x.language))}</b></div>` : ""}
+          </div>
         </div>`);
 
     const seen = seenBefore

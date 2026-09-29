@@ -9886,6 +9886,50 @@ html.no-match:not(.posters-only) .hover-preview .match + .dot {
   color: var(--text);
 }
 
+/* the card's content centred in the space under its label */
+.xr-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 0;
+  text-align: center;
+}
+
+.xr-date .xr-body small {
+  margin-top: 0;
+}
+
+.xr-date .xr-body .xr-mini {
+  justify-content: center;
+}
+
+.xr-body .xr-flags {
+  justify-content: center;
+}
+
+/* the main studio, a little bigger */
+.xr-brands .xr-logo {
+  height: 58px;
+  padding: 10px 20px;
+  border-radius: 14px;
+}
+
+.xr-brands .xr-logo img {
+  max-width: 160px;
+  max-height: 38px;
+}
+
+.xr-line {
+  width: 60%;
+  height: 1px;
+  margin: 4px 0;
+  border: 0;
+  background: var(--glass-border);
+}
+
 .xr-sub {
   margin: 24px 0 10px;
   font-size: 16px;
