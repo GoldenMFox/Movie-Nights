@@ -287,6 +287,11 @@
       return;
     }
     const all = Store.all();
+    // a brand-new library: how to get started, instead of a row of zeros
+    if (!all.length) {
+      mineEl.innerHTML = `<div class="mine-head"><h2 class="section-title">Your Movie Nights</h2></div>${UI.welcome()}`;
+      return;
+    }
     const rated = all.filter((i) => i.rating != null);
     const avg = rated.length ? rated.reduce((s, i) => s + i.rating, 0) / rated.length : 0;
     const count = (fn) => all.filter(fn).length;
@@ -325,16 +330,7 @@
     });
   }
 
-  // random pick: something from the watchlist, otherwise a highly rated title
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest(".random-pick")) return;
-    const all = Store.all();
-    let pool = all.filter((i) => i.watchlist);
-    if (!pool.length) pool = all.filter((i) => i.rating >= 9);
-    if (!pool.length) pool = all;
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    if (pick) location.href = `title.html?id=${encodeURIComponent(pick.id)}`;
-  });
+  // "What should I watch?" buttons open the picker (js/components/picker.js)
 
   Store.onChange(renderMine);
 

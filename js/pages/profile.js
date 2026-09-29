@@ -1,5 +1,6 @@
 /*
- * Profile page: your name, stats about your library, settings and backup.
+ * Profile page: your name, stats and watch diary, settings (theme, your streaming
+ * services), import from IMDb / Letterboxd, and backup.
  * The owner also gets the TMDB / OMDb settings and the Members panel.
  */
 (function () {
@@ -26,6 +27,12 @@
             <label class="field">Theme
               <select class="select" name="theme"><option value="dark">Dark</option><option value="light">Light</option></select>
             </label>
+            <div class="field services"${Store.guest ? " hidden" : ""} id="services">
+              <span>My streaming services</span>
+              <div class="svc-mine"></div>
+              <div class="svc-all" hidden></div>
+              <p class="help">Used by "On my services" on the Watchlist and by the picker. Availability in ${esc(TMDB.COUNTRY)}, from JustWatch.</p>
+            </div>
             <div class="stack owner-only">
             <label class="field">TMDB API key (optional)
               <input class="input" name="tmdb" type="password" autocomplete="off" placeholder="Paste your key or read access token" />
@@ -42,6 +49,8 @@
             </div>
           </div>
         </div>
+
+        <div class="panel import-panel" id="import"${Store.guest ? " hidden" : ""}></div>
 
         <div class="panel" id="backup"${Store.guest ? " hidden" : ""}>
           <h2><i class="fa-solid fa-floppy-disk"></i> Backup</h2>
@@ -66,6 +75,10 @@
             (Firestore → Rules), then ask them to sign in here.</p>
         </div>
         <div class="stat-strip stats-tiles" style="margin-top:0"></div>
+        <div class="panel diary" id="diary" style="margin-top:24px">
+          <h2><i class="fa-solid fa-book-open"></i> Watch diary</h2>
+          <div class="diary-body"></div>
+        </div>
         <div class="panel" style="margin-top:24px">
           <h2>My ratings</h2>
           <div class="bar-chart rating-chart"></div>
@@ -128,7 +141,72 @@
       .join("");
   }
 
+  /* ---------------- watch diary ---------------- */
+
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const niceDate = (d) => {
+    const x = new Date(`${d}T00:00:00`);
+    return `${x.getDate()} ${MONTHS[x.getMonth()]} ${x.getFullYear()}`;
+  };
+
+  function renderDiary() {
+    const dated = Store.all()
+      .filter((i) => /^\d{4}-\d{2}-\d{2}$/.test(i.watchedAt || ""))
+      .sort((a, b) => b.watchedAt.localeCompare(a.watchedAt));
+    const box = $(".diary-body");
+    if (!dated.length) {
+      box.innerHTML = `<p class="help">Every title you rate or mark <b>Watched</b> gets the day you watched it, and shows up here
+        (an import from IMDb or Letterboxd brings its dates too).</p>`;
+      return;
+    }
+    const now = new Date();
+    const year = String(now.getFullYear());
+    const thisYear = dated.filter((i) => i.watchedAt.startsWith(year)).length;
+    const month = dated.filter((i) => i.watchedAt.startsWith(Store.today().slice(0, 7))).length;
+
+    // the last 12 months, oldest first
+    const months = [];
+    for (let n = 11; n >= 0; n--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - n, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      months.push({ label: MONTHS[d.getMonth()], value: dated.filter((i) => i.watchedAt.startsWith(key)).length, key });
+    }
+    const max = Math.max(1, ...months.map((m) => m.value));
+
+    // "a year ago": watched within a week of this day, last year
+    const ago = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    const from = new Date(ago - 7 * 86400000).toISOString().slice(0, 10);
+    const to = new Date(+ago + 7 * 86400000).toISOString().slice(0, 10);
+    const memory = dated.filter((i) => i.watchedAt >= from && i.watchedAt <= to).slice(0, 3);
+
+    const line = (i) => `<li><a href="title.html?id=${encodeURIComponent(i.id)}">
+        <img src="${Store.poster(Cards.posterOf(i), "w92")}" alt="" loading="lazy" />
+        <span><strong>${esc(Lang.title(i))}</strong><small>${niceDate(i.watchedAt)}</small></span>
+        ${i.rating != null ? `<b class="diary-score">★ ${Cards.formatRating(i.rating)}</b>` : ""}</a></li>`;
+
+    box.innerHTML = `
+      <div class="diary-tiles">
+        <div><strong>${thisYear}</strong><span>watched in ${year}</span></div>
+        <div><strong>${month}</strong><span>this month</span></div>
+        <div><strong>${dated.length}</strong><span>in your diary</span></div>
+      </div>
+      <div class="diary-chart" role="img" aria-label="Titles watched per month, last 12 months"${months.some((m) => m.value) ? "" : " hidden"}>
+        ${months
+          .map(
+            (m) => `<div class="dc-col" title="${m.value} in ${m.label}">
+              <span class="dc-num">${m.value || ""}</span>
+              <span class="dc-bar" style="height:${(m.value / max) * 100}%"></span>
+              <small>${m.label}</small></div>`
+          )
+          .join("")}
+      </div>
+      ${memory.length ? `<h3 class="diary-sub"><i class="fa-solid fa-clock-rotate-left"></i> A year ago you watched</h3><ul class="diary-list">${memory.map(line).join("")}</ul>` : ""}
+      <h3 class="diary-sub">Recently watched</h3>
+      <ul class="diary-list">${dated.slice(0, 8).map(line).join("")}</ul>`;
+  }
+
   function renderStats() {
+    renderDiary();
     const all = Store.all();
     const rated = all.filter((i) => i.rating != null);
     const avg = (list) => (list.length ? list.reduce((s, i) => s + i.rating, 0) / list.length : 0);
@@ -282,6 +360,61 @@
     renderProfile();
     toast("Your library is empty now");
   });
+
+  /* ---------------- streaming services ---------------- */
+
+  const logo = (p) => (p.logo ? `https://image.tmdb.org/t/p/w92${p.logo}` : "");
+  function renderServices() {
+    const mine = Watch.mine();
+    $(".svc-mine").innerHTML =
+      mine
+        .map((s) => `<span class="svc-chip"><img src="${esc(logo(s))}" alt="" />${esc(s.name)}</span>`)
+        .join("") +
+      `<button class="btn svc-edit" type="button"><i class="fa-solid fa-${mine.length ? "pen" : "plus"}"></i> ${mine.length ? "Change" : "Choose your services"}</button>`;
+  }
+
+  let catalog = null;
+  async function openServices() {
+    const all = $(".svc-all");
+    all.hidden = !all.hidden;
+    if (all.hidden) return;
+    if (!catalog) {
+      all.innerHTML = '<p class="help">Loading…</p>';
+      try {
+        catalog = (await TMDB.providerCatalog()).slice(0, 24);
+      } catch (e) {
+        all.innerHTML = `<p class="help">Couldn't load the list: ${esc(e.message)}</p>`;
+        return;
+      }
+    }
+    const ids = Watch.mine().map((s) => s.id);
+    all.innerHTML = `<div class="svc-grid">${catalog
+      .map(
+        (p) => `<button type="button" class="svc-opt${ids.includes(p.id) ? " on" : ""}" data-svc="${p.id}" aria-pressed="${ids.includes(p.id)}" title="${esc(p.name)}">
+          <img src="${esc(logo(p))}" alt="" loading="lazy" /><span>${esc(p.name)}</span></button>`
+      )
+      .join("")}</div>`;
+  }
+
+  if (!Store.guest && window.Watch) {
+    renderServices();
+    $(".services").addEventListener("click", (e) => {
+      if (e.target.closest(".svc-edit")) return openServices();
+      const opt = e.target.closest("[data-svc]");
+      if (!opt) return;
+      const p = catalog.find((c) => c.id === Number(opt.dataset.svc));
+      const mine = Watch.mine();
+      const on = !mine.some((s) => s.id === p.id);
+      Watch.setMine(on ? mine.concat({ id: p.id, name: p.name, logo: p.logo }) : mine.filter((s) => s.id !== p.id));
+      opt.classList.toggle("on", on);
+      opt.setAttribute("aria-pressed", on);
+      renderServices();
+    });
+  }
+
+  /* ---------------- import (js/components/import.js) ---------------- */
+
+  if (!Store.guest && window.Importer) Importer.mount($("#import"));
 
   /* ---------------- members (owner only) ---------------- */
 

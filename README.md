@@ -45,13 +45,33 @@ It updates by itself whenever the site is published.
 | `discover.html` | Browse and search **all** movies, TV shows and anime on TMDB (trending, popular, in cinemas, coming soon, top rated, anime), or browse by genre. Search forgives typos ("forest gump" finds Forrest Gump) and hides shorts / posterless uploads. Unreleased titles get a "Coming soon · date" label (the cinema date in Romania). Add anything to your library or watchlist |
 | `index.html` | Home, live from TMDB: this week's trending titles in the slideshow, **Top 10 today** (movies / TV shows switch), then rows for in cinemas, coming soon, popular and top rated movies / TV / anime. At the bottom, "Your Movie Nights": your stats, watchlist, favorites and a "What should I watch?" button. (Without a TMDB key it shows your own list instead.) |
 | `movies.html`, `tv-shows.html`, `anime.html` | Full lists with search, genre, sort, rating and year filters |
-| `watchlist.html` | Two rows, **Plan to watch** and **Favorites**; "See all" opens the full list below them, with a switch between the two, search and filters. (`favorites.html` just forwards here.) |
-| `title.html?id=...` | Details for one title: your score, trailer, where to watch, overview, **Seasons** (TV: each season's trailer), cast, media, reviews, "more like this" |
+| `watchlist.html` | **Coming up** (release dates of movies you're waiting for, new seasons / episodes of your shows), then two rows, **Plan to watch** and **Favorites**; "See all" opens the full list below them, with a switch between the two, search, filters and **On my services**. (`favorites.html` just forwards here.) |
+| `title.html?id=...` | Details for one title: your score, **Watched on** (change the date), trailer, where to watch, overview, **Seasons** (TV: each season's trailer), cast, media, reviews, "more like this" |
 | `person.html?id=...` | An actor / crew member (tap a cast card or the director's name): photo, bio, facts, best known for, full filmography with a role filter |
 | `tier-list.html` | Drag posters into S / A / B / C / D tiers |
-| `profile.html` | Your stats, settings and backup. The owner also sees the TMDB / OMDb settings and **Members** |
+| `profile.html` | Your stats, **Watch diary** (watched this year / month, a chart of the last 12 months, "a year ago you watched…"), settings (theme, **your streaming services**), **Import** from IMDb / Letterboxd, backup. The owner also sees the TMDB / OMDb settings and **Members** |
 
 The navbar search (or `/` on any page) searches your library and all of TMDB.
+
+**What should I watch?** (Home and Watchlist): pick the mood (movie / series / anime, under
+1h45 / 2h30 / one episode, a genre, only your streaming services) and it picks one title from
+your Watchlist, or from your Favorites for a rewatch.
+
+**New library?** Home and Watchlist show a welcome card with the three ways to start
+(Discover, search, import).
+
+**Import** (Profile): the `.csv` exports of IMDb (Your ratings, Your watchlist; matched on TMDB
+by IMDb id) and Letterboxd (ratings / watched / diary / watchlist.csv; matched by name + year,
+stars × 2 = score). You see what was found before anything is added, and titles you already
+have keep your own score.
+
+**Watch diary**: the day you rate a title or press Watched is saved as the day you watched it
+(`watchedAt`); change it on the title page. Imports bring their dates.
+
+**Streaming services**: pick yours in Profile → Settings (saved with your profile, so they
+follow you). Availability comes from TMDB / JustWatch for `RELEASE_COUNTRY` (Romania) and is
+kept for a week in `mn:providers`; release dates / next episodes are kept for a day in `mn:nextUp`
+(`js/services/watch.js`).
 
 In the **profile menu**:
 
@@ -176,12 +196,15 @@ Movie-Nights-NEW/
 │   │   └── layout.js          navbar, footer, search, profile menu, dark mode
 │   ├── services/              talking to outside services
 │   │   ├── tmdb.js            TMDB (details, trailers, cast, Discover)
-│   │   └── ratings.js         IMDb via OMDb (daily budget) with TMDB fallback
+│   │   ├── ratings.js         IMDb via OMDb (daily budget) with TMDB fallback
+│   │   └── watch.js           your streaming services, what's coming (Watchlist, picker)
 │   ├── components/            pieces used by several pages
 │   │   ├── cards.js           poster cards, rating pop-up, trailer pop-up
 │   │   ├── add-title.js       "Add a title" form
 │   │   ├── preview.js         hover a poster: Netflix-style trailer preview (computers)
-│   │   └── scrollbars.js      slim scrollbars with a hand cursor under the rows (computers)
+│   │   ├── scrollbars.js      slim scrollbars with a hand cursor under the rows (computers)
+│   │   ├── picker.js          "What should I watch?" pop-up
+│   │   └── import.js          import from IMDb / Letterboxd (Profile)
 │   └── pages/                 one script per page
 │       ├── home.js, discover.js, browse.js (movies / TV / anime / favorites / watchlist)
 │       └── title.js, person.js, tier-list.js, profile.js

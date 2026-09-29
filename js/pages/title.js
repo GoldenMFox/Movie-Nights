@@ -362,6 +362,20 @@
 
   /* ---------------- a title in your library ---------------- */
 
+  // the watch diary: the day you watched it (change it, or add it to an older rating)
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function watchedOnHtml(item) {
+    const input = `<input type="date" class="twd-input" max="${Store.today()}" value="${esc(item.watchedAt || "")}" aria-label="The day you watched it" />`;
+    if (item.watchedAt) {
+      const d = new Date(`${item.watchedAt}T00:00:00`);
+      return `<div class="t-watched-on"><i class="fa-regular fa-calendar-check"></i> Watched on ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}
+        <button type="button" class="twd-edit">Change</button>${input}</div>`;
+    }
+    if (item.rating == null) return "";
+    return `<div class="t-watched-on"><i class="fa-regular fa-calendar"></i>
+      <button type="button" class="twd-edit">When did you watch it?</button>${input}</div>`;
+  }
+
   function renderLibrary() {
     const item = Store.get(id);
     if (!item) return message("fa-regular fa-face-frown", "This title isn't in your library (maybe it was removed).");
@@ -380,7 +394,8 @@
           <i class="fa-${item.favorite ? "solid" : "regular"} fa-heart"></i> Favorite</button>
         <button class="btn${item.rating != null ? " is-rated" : ""}" data-action="rate">
           ${item.rating != null ? `<i class="fa-solid fa-star"></i> ${Cards.formatRating(item.rating)}` : '<i class="fa-regular fa-thumbs-up"></i> Rate'}</button>
-      </div>`;
+      </div>
+      ${watchedOnHtml(item)}`;
     const menu = `
       ${d.tmdbUrl ? `<a href="${esc(d.tmdbUrl)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open on TMDB</a>` : ""}
       <button type="button" class="remove-title"><i class="fa-solid fa-trash"></i> Remove from library</button>`;
@@ -405,10 +420,28 @@
   }
 
   function initLibrary() {
+    // "Watched on …": the date picker opens from the Change button
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".twd-edit");
+      if (!btn) return;
+      const input = btn.parentElement.querySelector(".twd-input");
+      try {
+        input.showPicker();
+      } catch (err) {
+        input.classList.add("show"); // older browsers: show the date field itself
+        input.focus();
+      }
+    });
+    document.addEventListener("change", (e) => {
+      if (!e.target.classList.contains("twd-input") || !e.target.value) return;
+      Store.update(id, { watchedAt: e.target.value });
+      toast("Watch date saved");
+    });
+
     document.addEventListener("click", (e) => {
       if (!e.target.closest(".remove-title")) return;
       const item = Store.get(id);
-      if (!confirm(`Remove "${Lang.title(item)}" from your library?\n\nYou can bring it back with Profile -> Reset all my changes, or by restoring a backup.`)) return;
+      if (!confirm(`Remove "${Lang.title(item)}" from your library?\n\nYour score and dates for it go too. You can add it again any time from Discover or search.`)) return;
       Store.remove(id);
       toast(`${Lang.title(item)} removed`);
       setTimeout(() => (location.href = "index.html"), 700);

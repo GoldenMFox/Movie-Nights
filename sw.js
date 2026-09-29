@@ -12,7 +12,7 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v14";
+const VERSION = "v15";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [
@@ -38,10 +38,13 @@ const APP_FILES = [
   "js/core/layout.js",
   "js/services/tmdb.js",
   "js/services/ratings.js",
+  "js/services/watch.js",
   "js/components/cards.js",
   "js/components/add-title.js",
   "js/components/preview.js",
   "js/components/scrollbars.js",
+  "js/components/picker.js",
+  "js/components/import.js",
   "js/pages/browse.js",
   "js/pages/home.js",
   "js/pages/discover.js",

@@ -788,6 +788,33 @@
     </div>`;
   }
 
+  // signed in with an empty library: three ways to start (Home, Watchlist)
+  function welcome() {
+    const step = (n, icon, title, text, action) => `<div class="welcome-step">
+        <span class="ws-num">${n}</span><i class="fa-solid ${icon}"></i>
+        <h4>${title}</h4><p>${text}</p>${action}</div>`;
+    return `<div class="welcome">
+      <div class="welcome-head">
+        <h3>Welcome${profile.name && !profile.guest ? `, ${esc(String(profile.name).split(" ")[0])}` : ""}! Let's fill your library</h3>
+        <p>It's all yours and private: only you see what you add, rate and plan to watch.</p>
+      </div>
+      <div class="welcome-steps">
+        ${step(1, "fa-compass", "Find something", "Browse what's trending, in cinemas or coming soon, or search any title.",
+          '<a class="btn btn-primary" href="discover.html"><i class="fa-solid fa-compass"></i> Discover</a>')}
+        ${step(2, "fa-bookmark", "Save or rate it", "<b>Watchlist</b> to see it later, <b>Watched</b> or <b>Rate</b> if you've seen it, the heart for favorites.",
+          '<button class="btn" type="button" data-open-search><i class="fa-solid fa-magnifying-glass"></i> Search a title</button>')}
+        ${step(3, "fa-file-import", "Bring your history", "Rated films on IMDb or Letterboxd? Import them all at once.",
+          '<a class="btn" href="profile.html#import"><i class="fa-solid fa-file-import"></i> Import</a>')}
+      </div>
+    </div>`;
+  }
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("[data-open-search]")) return;
+    const btn = document.querySelector(".tab-bar [data-tab='search']") || document.querySelector(".search-toggle");
+    // after this click is done (a click elsewhere closes the search)
+    if (btn) setTimeout(() => btn.click(), 0);
+  });
+
   // a library action while signed out: explain and open the menu with the Sign in button
   function needSignIn() {
     toast("Sign in to start your own list");
@@ -798,5 +825,5 @@
     setTimeout(() => box.classList.add("open"), 0);
   }
 
-  window.UI = { esc, toast, download, PAGES, foldTools, signInPrompt, needSignIn };
+  window.UI = { esc, toast, download, PAGES, foldTools, signInPrompt, needSignIn, welcome };
 })();

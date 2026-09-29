@@ -59,6 +59,8 @@
     { id: "anime", label: "Anime", test: (i) => i.type === "anime" },
   ];
   const CHIPS = PAGE.chips === "type" ? TYPE_CHIPS.slice() : STATUS_CHIPS;
+  // Watchlist page: what you can watch tonight on the streaming services you picked in Profile
+  if (isLists && window.Watch) CHIPS.push({ id: "services", label: "On my services", test: (i) => (Watch.onMine(i) || []).length > 0 });
 
   // IMDb rating (or TMDB when IMDb isn't known yet); titles not looked up yet go last
   const outside = (i) => {
@@ -131,7 +133,12 @@
 
   // Watchlist page: a row per list, then the full list (opened by "See all")
   root.innerHTML = isLists
-    ? `${Object.keys(LISTS)
+    ? `<div class="wl-welcome"></div>
+      <section class="wl-coming" hidden>
+        <div class="row-head"><h2><i class="fa-regular fa-calendar"></i> Coming up</h2></div>
+        <div class="wl-coming-list"></div>
+      </section>
+      ${Object.keys(LISTS)
         .map(
           (k) => `<section class="row-section wl-row" data-list="${k}">
             <div class="row-head"><h2><i class="fa-solid ${LISTS[k].icon}"></i> ${LISTS[k].label}</h2>
@@ -153,6 +160,19 @@
       </section>`
     : listHtml;
   const panel = root.querySelector(".wl-panel");
+
+  // Watchlist page: "What should I watch?" next to the page title (js/components/picker.js)
+  if (isLists) {
+    const title = document.querySelector(".page-title");
+    const head = document.createElement("div");
+    head.className = "page-head wl-head";
+    title.before(head);
+    head.append(title);
+    head.insertAdjacentHTML(
+      "beforeend",
+      '<button class="btn btn-primary random-pick" type="button"><i class="fa-solid fa-shuffle"></i><span>What should I watch?</span></button>'
+    );
+  }
 
   const grid = root.querySelector(".movie-grid");
   const chipsBox = root.querySelector(".chips");
@@ -214,6 +234,8 @@
   // Watchlist page: the two rows (newest first) and the switch above the full list
   function renderRows() {
     const all = Store.all();
+    root.querySelector(".wl-welcome").innerHTML = all.length ? "" : UI.welcome();
+    renderComing(all);
     root.querySelectorAll(".wl-row").forEach((sec) => {
       const k = sec.dataset.list;
       const row = sec.querySelector(".movie-row");
@@ -233,6 +255,26 @@
       b.setAttribute("aria-pressed", LISTS[k] === PAGE);
       b.querySelector(".count").textContent = all.filter(LISTS[k].base).length;
     });
+  }
+
+  // "Coming up": movies you're waiting for and new seasons / episodes of your shows
+  function renderComing(all) {
+    const box = root.querySelector(".wl-coming");
+    if (!window.Watch) return;
+    const list = Watch.candidates(all)
+      .map((i) => ({ i, u: Watch.upcoming(i) }))
+      .filter((x) => x.u)
+      .sort((a, b) => a.u.date.localeCompare(b.u.date))
+      .slice(0, 12);
+    box.hidden = !list.length;
+    box.querySelector(".wl-coming-list").innerHTML = list
+      .map(
+        ({ i, u }) => `<a class="coming-item${u.soon ? " soon" : ""}" href="title.html?id=${encodeURIComponent(i.id)}">
+          <img src="${Store.poster(Cards.posterOf(i), "w154")}" alt="" loading="lazy" />
+          <span><strong>${esc(Lang.title(i))}</strong><small>${esc(u.label)}</small></span>
+        </a>`
+      )
+      .join("");
   }
 
   // open the full list (or switch it) and bring it into view
@@ -349,6 +391,12 @@
   Store.onChange(() => render());
 
   render();
+  // Watchlist page: look up streaming services and release dates (a few at a time, kept for days)
+  if (isLists && window.Watch) {
+    Watch.onChange(() => render());
+    const lists = () => Store.all().filter((i) => i.watchlist || i.favorite);
+    Watch.loadNext(Watch.candidates(Store.all())).then(() => Watch.loadProviders(lists()));
+  }
   // opened straight on a list (e.g. from Favorites in the menu): show it
   if (isLists && state.list) setTimeout(() => panel.scrollIntoView({ block: "start" }), 50);
 })();

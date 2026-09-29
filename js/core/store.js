@@ -104,6 +104,8 @@
       patch = Object.assign({}, patch, { watchlist: false, rewatch: undefined });
       if (before && before.watchlist) setTimeout(() => window.UI && UI.toast(`Rated, so "${before.title}" left your Watchlist`), 0);
     }
+    // the watch diary: the day you first rated it (or pressed Watched) is the day you watched it
+    if (typeof patch.rating === "number" && before && !before.watchedAt && !("watchedAt" in patch)) patch = Object.assign({}, patch, { watchedAt: today() });
     // putting a title you already rated back on the Watchlist (to watch it again) is allowed
     if (patch.watchlist === true && before && typeof before.rating === "number") patch = Object.assign({}, patch, { rewatch: true });
     if (patch.watchlist === false) patch = Object.assign({}, patch, { rewatch: undefined });
@@ -159,14 +161,53 @@
     return days >= 0 && days <= RECENT_DAYS;
   }
 
-  function add(item) {
+  // today as "2026-09-29" (local time)
+  function today() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+  function entryFor(item) {
     const id = idFor(item.title, item.year);
     const entry = Object.assign({ id, isNew: true }, item);
-    if (typeof entry.rating === "number") entry.watchlist = false; // rated = watched
+    if (typeof entry.rating === "number") {
+      entry.watchlist = false; // rated = watched
+      if (!entry.watchedAt) entry.watchedAt = today();
+    }
+    return entry;
+  }
+
+  function add(item) {
+    const entry = entryFor(item);
     custom.push(entry);
     write(KEYS.custom, custom);
-    changed(id);
+    changed(entry.id);
     return entry;
+  }
+
+  // many new titles at once (an import): saved and synced once, not once per title
+  function addMany(items) {
+    const added = [];
+    items.forEach((item) => {
+      const entry = entryFor(item);
+      custom.push(entry);
+      cache = null; // so the next id is unique too
+      added.push(entry);
+    });
+    write(KEYS.custom, custom);
+    changed(null);
+    return added;
+  }
+
+  // many changes at once (an import that updates titles you already have)
+  function updateMany(patches) {
+    Object.entries(patches).forEach(([id, patch]) => {
+      const current = Object.assign({}, overrides[id] || {}, patch);
+      Object.keys(current).forEach((k) => current[k] === undefined && delete current[k]);
+      overrides[id] = current;
+    });
+    write(KEYS.overrides, overrides);
+    changed(null);
   }
 
   function remove(id) {
@@ -203,7 +244,7 @@
   function flatten() {
     const fields = [
       "id", "title", "titleRu", "year", "type", "rating", "poster", "genres", "isNew", "favorite", "watchlist", "rewatch",
-      "tmdbId", "tmdbMedia", "backdrop", "trailer", "runtime", "certification", "director", "overview", "cast",
+      "tmdbId", "tmdbMedia", "backdrop", "trailer", "runtime", "certification", "director", "overview", "cast", "watchedAt",
     ];
     const list = all()
       .sort((a, b) => a.order - b.order)
@@ -325,6 +366,9 @@
     update,
     toggle,
     add,
+    addMany,
+    updateMany,
+    today,
     remove,
     onChange,
     getTiers,

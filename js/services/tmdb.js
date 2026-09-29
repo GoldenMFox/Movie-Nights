@@ -761,5 +761,68 @@
     return true;
   }
 
-  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos, seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
+  /* ---------------- import, streaming services, what's coming ---------------- */
+
+  // a title by its IMDb id ("tt0816692"), for importing an IMDb export
+  async function findByImdb(imdbId) {
+    const d = await request(`/find/${imdbId}`, { external_source: "imdb_id" });
+    const r = (d.movie_results || [])[0] ? { r: d.movie_results[0], media: "movie" } : (d.tv_results || [])[0] ? { r: d.tv_results[0], media: "tv" } : null;
+    return r ? simplify(r.r, r.media) : null;
+  }
+
+  // a film by its name and year (Letterboxd exports have no ids): exact name first
+  async function findFilm(title, year) {
+    const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    for (const params of [{ query: title, primary_release_year: year }, { query: title }]) {
+      if (!params.primary_release_year && !year) continue;
+      const d = await request("/search/movie", params);
+      const list = d.results || [];
+      const best = list.find((r) => norm(r.title) === norm(title) || norm(r.original_title) === norm(title)) || list[0];
+      if (best) return simplify(best, "movie");
+    }
+    return null;
+  }
+
+  // streaming services (subscription) a title is on in your country: [{ id, name, logo }]
+  async function providersFor(media, id) {
+    const d = await request(`/${media}/${id}/watch/providers`);
+    const here = (d.results || {})[COUNTRY];
+    return ((here && here.flatrate) || []).map((p) => ({ id: p.provider_id, name: p.provider_name, logo: p.logo_path }));
+  }
+
+  // every streaming service in your country, most popular first (to pick yours)
+  async function providerCatalog() {
+    const [m, t] = await Promise.all([
+      request("/watch/providers/movie", { watch_region: COUNTRY }),
+      request("/watch/providers/tv", { watch_region: COUNTRY }),
+    ]);
+    const seen = new Map();
+    (m.results || []).concat(t.results || []).forEach((p) => {
+      const prio = (p.display_priorities || {})[COUNTRY] ?? p.display_priority ?? 999;
+      const old = seen.get(p.provider_id);
+      if (!old || prio < old.prio) seen.set(p.provider_id, { id: p.provider_id, name: p.provider_name, logo: p.logo_path, prio });
+    });
+    // the big ones first (TMDB's own order puts niche services high), without the
+    // "… Amazon Channel" / "with Ads" copies of the same service
+    const BIG = /^(netflix|hbo max|max|amazon prime video|disney plus|apple tv\+?|apple tv plus|skyshowtime|voyo|paramount\+?|paramount plus|crunchyroll|mubi|antena play|youtube premium|google play movies|canal\+.*|orange tv.*|focus sat.*)$/i;
+    return [...seen.values()]
+      .filter((p) => !/channel|with ads|amazon video$/i.test(p.name))
+      .sort((a, b) => (BIG.test(b.name) ? 1 : 0) - (BIG.test(a.name) ? 1 : 0) || a.prio - b.prio);
+  }
+
+  // what's next for a title: a movie's release date (in your country), a show's next
+  // episode. { date: "2026-10-12", kind: "release" | "episode", season, episode } or null
+  async function nextUp(media, id) {
+    if (media === "movie") {
+      const date = await releaseDate("movie", id);
+      return date ? { date, kind: "release" } : null;
+    }
+    const d = await request(`/tv/${id}`);
+    const n = d.next_episode_to_air;
+    if (n && n.air_date) return { date: n.air_date, kind: "episode", season: n.season_number, episode: n.episode_number };
+    if (d.first_air_date && d.first_air_date > new Date().toISOString().slice(0, 10)) return { date: d.first_air_date, kind: "release" };
+    return null;
+  }
+
+  window.TMDB = { findByImdb, findFilm, providersFor, providerCatalog, nextUp, enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos, seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
 })();

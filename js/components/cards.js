@@ -172,7 +172,8 @@
       toast(`${Lang.title(hit)} added to Watchlist`);
     } else if (action === "t-watched") {
       // "Watched": into the library, then a gentle "rate it?" (Skip leaves it unrated)
-      openRating(addHit(hit).id, { watched: true });
+      const lib = inLibrary(hit);
+      openRating(addHit(hit, lib && lib.watchedAt ? {} : { watchedAt: Store.today() }).id, { watched: true });
     } else if (action === "t-rate") {
       openRating(addHit(hit).id);
     } else if (action === "t-trailer") {
@@ -750,6 +751,7 @@
     card,
     tmdbCard,
     inLibrary,
+    addHit,
     hitOf: (key) => hits.get(key), // the TMDB result behind a card (hover preview)
     posterOf,
     isBadTrailer,
