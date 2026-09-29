@@ -47,6 +47,7 @@ It updates by itself whenever the site is published.
 | `movies.html`, `tv-shows.html`, `anime.html` | Full lists with search, genre, sort, rating and year filters |
 | `favorites.html`, `watchlist.html` | Everything you've hearted or bookmarked |
 | `title.html?id=...` | Details for one title: your score, trailer, overview, cast, "more like this" |
+| `person.html?id=...` | An actor / crew member (tap a cast card): photo, bio, facts, best known for, full filmography |
 | `tier-list.html` | Drag posters into S / A / B / C / D tiers |
 | `profile.html` | Your stats, settings (theme, TMDB key) and backup / export |
 
@@ -133,7 +134,7 @@ and is meant to be public; the security rules protect the data.
 ```
 Movie-Nights-NEW/
 ├── index.html, discover.html, movies.html, tv-shows.html, anime.html,
-│   favorites.html, watchlist.html, title.html, tier-list.html, profile.html
+│   favorites.html, watchlist.html, title.html, person.html, tier-list.html, profile.html
 │                              the pages (kept at the top so the links and the app work)
 ├── manifest.webmanifest       installed-app name, icons and colours
 ├── sw.js                      service worker: offline support + app updates
@@ -158,7 +159,7 @@ Movie-Nights-NEW/
 │   │   └── scrollbars.js      slim scrollbars with a hand cursor under the rows (computers)
 │   └── pages/                 one script per page
 │       ├── home.js, discover.js, browse.js (movies / TV / anime / favorites / watchlist)
-│       └── title.js, tier-list.js, profile.js
+│       └── title.js, person.js, tier-list.js, profile.js
 ├── images/
 │   ├── brand/                 logo, favicon
 │   ├── icons/                 installed-app icons

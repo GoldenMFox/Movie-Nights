@@ -12,7 +12,7 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v8";
+const VERSION = "v9";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [
@@ -26,6 +26,7 @@ const APP_FILES = [
   "watchlist.html",
   "tier-list.html",
   "title.html",
+  "person.html",
   "profile.html",
   "manifest.webmanifest",
   "css/style.css",
@@ -45,6 +46,7 @@ const APP_FILES = [
   "js/pages/home.js",
   "js/pages/discover.js",
   "js/pages/title.js",
+  "js/pages/person.js",
   "js/pages/tier-list.js",
   "js/pages/profile.js",
   "images/brand/logo.png",

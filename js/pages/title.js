@@ -204,10 +204,11 @@
     if (!cast.length) return '<p class="muted t-empty">No cast information yet.</p>';
     return `<div class="t-cast">${cast
       .map(
-        (c) => `<div class="t-person">
+        // opens the person's page (library titles may store the cast without TMDB ids: found by name)
+        (c) => `<a class="t-person" href="person.html?${c.id ? `id=${encodeURIComponent(c.id)}` : `name=${encodeURIComponent(c.name)}`}">
           <img src="${c.photo ? Store.img(c.photo, "w185") : "images/placeholders/avatar-placeholder.svg"}" alt="" loading="lazy" />
           <strong>${esc(c.name)}</strong><span>${esc(c.character || "")}</span>
-        </div>`
+        </a>`
       )
       .join("")}</div>`;
   }

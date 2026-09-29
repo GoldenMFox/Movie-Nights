@@ -5333,3 +5333,618 @@ html.custom-scrollbars .grabbing .movie-item {
   color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
 }
+
+/* ============================== Cast cards open the person page ============================== */
+
+a.t-person {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ============================== Person page (actors / crew) ============================== */
+
+/* the top part is always dark, like the title page */
+.p-hero {
+  position: relative;
+  background: #0b0b0c;
+  color: #fff;
+  overflow: hidden;
+}
+
+.p-backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+.p-backdrop img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  opacity: 0.4;
+}
+
+.p-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(11, 11, 12, 0.35), rgba(11, 11, 12, 0.75) 45%, #0b0b0c 92%);
+}
+
+.p-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  padding-top: 32px;
+  padding-bottom: 40px;
+}
+
+.p-side,
+.p-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-content: start;
+  min-width: 0;
+}
+
+.p-card {
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 22px;
+  background: rgba(24, 24, 28, 0.55);
+  -webkit-backdrop-filter: saturate(160%) blur(24px);
+  backdrop-filter: saturate(160%) blur(24px);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.35);
+}
+
+/* photo card */
+.p-id {
+  padding: 0;
+  overflow: hidden;
+  text-align: center;
+}
+
+.p-badge {
+  padding: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.p-badge i {
+  margin-right: 4px;
+  color: #f5c518;
+}
+
+.p-photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 5 / 6;
+  object-fit: cover;
+  object-position: center 20%;
+  background: #1f2025;
+}
+
+.p-id-body {
+  padding: 18px 22px 22px;
+}
+
+.p-id h1 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.p-sub {
+  margin: 0 0 16px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+.p-sub .dot,
+.p-counts .dot {
+  margin: 0 8px;
+  opacity: 0.6;
+}
+
+.p-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.p-main-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #111;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.p-main-btn:hover {
+  background: rgba(255, 255, 255, 0.85);
+  color: #111;
+}
+
+.p-round {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.p-round:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.p-imdb {
+  padding: 2px 4px;
+  border-radius: 3px;
+  background: #f5c518;
+  color: #000;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.p-lib {
+  display: grid;
+  gap: 4px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.p-lib-line {
+  color: #ff6b61;
+  font-weight: 600;
+}
+
+.p-lib small {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+}
+
+.p-lib small i {
+  color: #f5c518;
+}
+
+/* top genres */
+.p-genres h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.p-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.p-chips a {
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 90, 79, 0.25);
+  border-radius: 999px;
+  background: rgba(144, 13, 9, 0.25);
+  color: #ffb3ad;
+  font-size: 13px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.p-chips a:hover {
+  background: rgba(144, 13, 9, 0.45);
+}
+
+/* overview card */
+.p-counts {
+  margin: 0 0 14px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 14px;
+}
+
+.p-media {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.p-media::-webkit-scrollbar {
+  display: none;
+}
+
+.p-media > a {
+  position: relative;
+  flex: 0 0 auto;
+  height: 230px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #1f2025;
+}
+
+.p-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s;
+}
+
+.p-media > a:hover img {
+  transform: scale(1.04);
+}
+
+.p-feature {
+  width: 400px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.p-feature::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent 60%);
+}
+
+.p-feature-text {
+  position: absolute;
+  left: 18px;
+  right: 70px;
+  bottom: 16px;
+  z-index: 1;
+  display: grid;
+  gap: 2px;
+}
+
+.p-feature-text small {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.p-feature-text strong {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.p-feature-text em {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.p-feature-play {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.p-shot {
+  width: 154px;
+}
+
+.p-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 44px;
+  margin: 24px 0;
+}
+
+.p-stats strong {
+  display: block;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.p-stats span {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+}
+
+.p-about {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 270px;
+  gap: 8px 36px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.p-bio {
+  grid-column: 1;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.p-bio p {
+  margin: 0 0 12px;
+}
+
+.p-bio.folded {
+  max-height: 10em;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent);
+}
+
+.p-bio-more {
+  grid-column: 1;
+  justify-self: start;
+}
+
+.p-facts {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: start;
+  gap: 18px 20px;
+  margin: 0;
+}
+
+.p-facts div {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 3px;
+}
+
+.p-facts .wide {
+  grid-column: 1 / -1;
+}
+
+.p-facts dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.p-facts dt {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+}
+
+/* best known for */
+.p-known .row-head h2 {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.p-known .movie-row {
+  margin-bottom: 0;
+}
+
+/* filmography (normal page colours, follows light / dark) */
+.p-filmography {
+  scroll-margin-top: 90px; /* clear of the sticky navbar */
+}
+
+.p-film-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.p-film-head .t-section-title {
+  margin: 0;
+}
+
+.p-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.p-credits {
+  display: grid;
+  gap: 4px;
+}
+
+.p-credit {
+  display: grid;
+  grid-template-columns: 56px 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.p-credit:hover {
+  background: var(--glass-bg-hover);
+}
+
+.p-year {
+  color: var(--text-muted);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.p-credit img {
+  width: 46px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.p-credit-text strong,
+.p-credit-text small {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.p-credit-text strong {
+  font-size: 15px;
+}
+
+.p-credit-text strong i {
+  margin-left: 4px;
+  color: #3fb950;
+  font-size: 12px;
+}
+
+.p-credit-text small {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.p-score {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.p-score.mine {
+  color: #f5c518;
+}
+
+.p-other {
+  margin-top: 12px;
+}
+
+@media (max-width: 900px) {
+  .p-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 20px;
+  }
+
+  /* photo on the left, details on the right */
+  .p-id {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    text-align: left;
+  }
+
+  .p-badge {
+    grid-column: 1 / -1;
+    text-align: left;
+    padding: 12px 18px;
+  }
+
+  .p-photo {
+    height: 100%;
+    aspect-ratio: 2 / 3;
+  }
+
+  .p-id-body {
+    padding: 16px 18px;
+  }
+
+  .p-buttons {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 700px) {
+  .p-card {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .p-id {
+    padding: 0;
+    grid-template-columns: 118px minmax(0, 1fr);
+  }
+
+  .p-id h1 {
+    font-size: 22px;
+  }
+
+  .p-main-btn {
+    padding: 9px 14px;
+    font-size: 14px;
+  }
+
+  .p-round {
+    width: 38px;
+    height: 38px;
+  }
+
+  .p-media > a {
+    height: 180px;
+  }
+
+  .p-feature {
+    width: min(78vw, 320px);
+  }
+
+  .p-shot {
+    width: 120px;
+  }
+
+  .p-stats {
+    gap: 12px 26px;
+  }
+
+  .p-stats strong {
+    font-size: 19px;
+  }
+
+  .p-about {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .p-facts {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 12px;
+  }
+
+  .p-credit {
+    grid-template-columns: 40px 40px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 8px 6px;
+  }
+
+  .p-credit img {
+    width: 40px;
+  }
+
+  .p-year {
+    font-size: 13px;
+  }
+}

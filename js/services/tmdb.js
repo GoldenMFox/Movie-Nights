@@ -360,6 +360,7 @@
   }
 
   function writeCache(cache) {
+    Object.keys(cache).forEach((k) => k.startsWith("v2:") && delete cache[k]); // older format
     const keys = Object.keys(cache);
     if (keys.length > CACHE_LIMIT) {
       keys
@@ -411,7 +412,7 @@
 
   // Full details for a TMDB movie / show (cached for a week)
   async function detailsById(media, id) {
-    const cacheKey = `v2:${media}-${id}`;
+    const cacheKey = `v3:${media}-${id}`; // v3: cast has TMDB person ids
     const cache = readCache();
     if (cache[cacheKey] && Date.now() - cache[cacheKey].savedAt < DETAILS_MAX_AGE) return withRuNames(cache[cacheKey], media, id);
 
@@ -435,7 +436,7 @@
       director: media === "movie" ? crew.filter((c) => c.job === "Director").map((c) => c.name).join(", ") : (d.created_by || []).map((c) => c.name).join(", "),
       directorLabel: media === "movie" ? "Director" : "Created by",
       trailer: pickTrailer(d.videos),
-      cast: ((d.credits && d.credits.cast) || []).slice(0, 12).map((c) => ({ name: c.name, character: c.character, photo: c.profile_path || "" })),
+      cast: ((d.credits && d.credits.cast) || []).slice(0, 12).map((c) => ({ id: c.id, name: c.name, character: c.character, photo: c.profile_path || "" })),
       tmdbScore: base.score,
       imdbId: d.imdb_id || (d.external_ids && d.external_ids.imdb_id) || null,
       recommendations: ((d.recommendations && d.recommendations.results) || [])
@@ -476,7 +477,7 @@
       applyRu(result.recommendations || [], ru.recommendations, media);
       result.ruDone = true;
       const cache = readCache();
-      cache[`v2:${media}-${id}`] = result;
+      cache[`v3:${media}-${id}`] = result;
       writeCache(cache);
     } catch (e) {}
     return result;
@@ -498,10 +499,86 @@
     return d;
   }
 
+  /* ---------------- people (cast pages) ---------------- */
+
+  const NOT_ACTING = /^(self|himself|herself|themselves|narrator|host|guest|various)\b/i;
+  const TALK_NEWS = [10763, 10764, 10767]; // news, reality, talk shows
+
+  // One person: bio, photos and everything they were in (kept for this visit)
+  async function person(id) {
+    const key = `mn:person:${id}:${Lang.get()}`;
+    try {
+      const c = JSON.parse(sessionStorage.getItem(key) || "null");
+      if (c) return c;
+    } catch (e) {}
+    const [d, ru] = await Promise.all([
+      request(`/person/${id}`, { append_to_response: "combined_credits,images,external_ids" }),
+      wantRu() ? request(`/person/${id}/combined_credits`, { language: "ru-RU" }).catch(() => null) : null,
+    ]);
+    const ruNames = {};
+    if (ru) (ru.cast || []).concat(ru.crew || []).forEach((r) => (ruNames[`${r.media_type}-${r.id}`] = r.title || r.name));
+
+    // the same title can appear several times (several roles / jobs): keep one, roles joined
+    const byTitle = new Map();
+    const add = (r, role, kind) => {
+      if (r.media_type !== "movie" && r.media_type !== "tv") return;
+      const k = `${r.media_type}-${r.id}`;
+      let t = byTitle.get(k);
+      if (!t) {
+        t = Object.assign(simplify(r, r.media_type), {
+          roles: [],
+          kind,
+          popularity: r.popularity || 0,
+          votes: r.vote_count || 0,
+          episodes: r.episode_count || 0,
+          talk: (r.genre_ids || []).some((g) => TALK_NEWS.includes(g)),
+        });
+        if (ruNames[k]) t.titleRu = ruNames[k];
+        byTitle.set(k, t);
+      }
+      if (role && !t.roles.includes(role)) t.roles.push(role);
+      if (kind === "cast") t.kind = "cast";
+      if (kind === "cast" && NOT_ACTING.test(role || "")) t.self = true;
+      else if (kind === "cast") t.self = false;
+    };
+    const credits = d.combined_credits || {};
+    (credits.cast || []).forEach((r) => add(r, r.character, "cast"));
+    (credits.crew || []).forEach((r) => add(r, r.job, "crew"));
+    const titles = [...byTitle.values()];
+
+    const out = {
+      id: d.id,
+      name: d.name,
+      photo: d.profile_path || "",
+      bio: d.biography || "",
+      birthday: d.birthday || "",
+      deathday: d.deathday || "",
+      place: d.place_of_birth || "",
+      department: d.known_for_department || "",
+      aka: (d.also_known_as || []).slice(0, 4),
+      photos: ((d.images && d.images.profiles) || []).map((p) => p.file_path).slice(0, 20),
+      imdbId: (d.external_ids && d.external_ids.imdb_id) || d.imdb_id || "",
+      instagram: (d.external_ids && d.external_ids.instagram_id) || "",
+      titles,
+      tmdbUrl: `https://www.themoviedb.org/person/${d.id}`,
+    };
+    try {
+      sessionStorage.setItem(key, JSON.stringify(out));
+    } catch (e) {}
+    return out;
+  }
+
+  // a person by name (library titles store their cast without TMDB ids)
+  async function findPerson(name) {
+    const d = await request("/search/person", { query: name });
+    const hit = (d.results || [])[0];
+    return hit ? hit.id : null;
+  }
+
   async function test() {
     await request("/configuration");
     return true;
   }
 
-  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, list, byGenre, details, detailsById, basic, findMatch, test, CATEGORIES, genreNames, genresFor };
+  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, list, byGenre, details, detailsById, basic, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
 })();
