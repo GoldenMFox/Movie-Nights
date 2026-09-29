@@ -12368,3 +12368,70 @@ html.home-fx .row-section.in:not(.shown) .top10-num {
 @keyframes hm-pop {
   from { opacity: 0; transform: scale(0.4) translateY(20px); }
 }
+
+/* ============================== Discover page: motion ============================== */
+/* (html.dx-fx is set by js/pages/discover.js, and only when motion isn't turned down) */
+
+/* placeholders while the first posters load */
+.dx-skeletons > .movie-item.skeleton {
+  aspect-ratio: 2 / 3;
+  border: 0;
+  border-radius: 14px;
+}
+
+/* opening the page: the title, the search, then the category chips one by one */
+html.dx-fx .page-title,
+html.dx-fx .discover-search,
+html.dx-fx .genre-bar {
+  animation: dx-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+html.dx-fx .discover-search { animation-delay: 0.08s; }
+html.dx-fx .genre-bar { animation-delay: 0.14s; }
+
+html.dx-fx .chips > .chip {
+  animation: dx-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+html.dx-fx .chips > .chip:nth-child(1) { animation-delay: 0.12s; }
+html.dx-fx .chips > .chip:nth-child(2) { animation-delay: 0.16s; }
+html.dx-fx .chips > .chip:nth-child(3) { animation-delay: 0.2s; }
+html.dx-fx .chips > .chip:nth-child(4) { animation-delay: 0.24s; }
+html.dx-fx .chips > .chip:nth-child(5) { animation-delay: 0.28s; }
+html.dx-fx .chips > .chip:nth-child(6) { animation-delay: 0.32s; }
+html.dx-fx .chips > .chip:nth-child(7) { animation-delay: 0.36s; }
+html.dx-fx .chips > .chip:nth-child(n + 8) { animation-delay: 0.4s; }
+
+/* picking a category: the chip gives a little bounce */
+html.dx-fx .chips > .chip.active {
+  animation: dx-bounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* posters: each batch flows in one after another (also the ones "Load more" shows) */
+html.dx-fx .movie-grid:not(.dx-skeletons) > .movie-item {
+  animation: dx-card 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: var(--dx-d, 0ms);
+}
+
+/* the count above the posters */
+html.dx-fx .result-count {
+  animation: dx-fade 0.4s ease backwards;
+}
+
+@keyframes dx-rise {
+  from { opacity: 0; transform: translateY(16px); }
+}
+
+@keyframes dx-bounce {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes dx-card {
+  from { opacity: 0; transform: translateY(24px) scale(0.95); }
+}
+
+@keyframes dx-fade {
+  from { opacity: 0; }
+}

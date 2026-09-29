@@ -78,6 +78,7 @@
     </div>
     <p class="result-count" aria-live="polite"></p>
     <div class="movie-grid"></div>
+    <div class="movie-grid dx-skeletons" aria-hidden="true" hidden></div>
     <div class="empty-state" hidden></div>
     <div class="load-more"><button class="btn" type="button" hidden>Load more</button></div>
     <p class="tmdb-note">Data and images from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.
@@ -87,6 +88,9 @@
   const countEl = root.querySelector(".result-count");
   const moreBtn = root.querySelector(".load-more button");
   const emptyEl = root.querySelector(".empty-state");
+  const skeletons = root.querySelector(".dx-skeletons");
+  // the page's motion (css: "Discover page: motion"), unless motion is turned down
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("dx-fx");
   const form = root.querySelector("form");
   const genreSel = root.querySelector('[name="genre"]');
   const gsortSel = root.querySelector('[name="gsort"]');
@@ -202,6 +206,9 @@
   const fiveRows = () => columns() * ROWS;
 
   async function load(reset) {
+    if (state.loading && !reset) return;
+    // how many posters were on show before: the new ones flow in after them
+    const before = reset ? 0 : Math.min(grid.children.length, state.limit);
     if (reset) {
       state.run++;
       state.loading = false;
@@ -211,13 +218,17 @@
       grid.innerHTML = "";
       emptyEl.hidden = true;
       state.limit = fiveRows();
+      // shimmering placeholders while the first posters load
+      skeletons.innerHTML = '<div class="movie-item skeleton"></div>'.repeat(state.limit);
+      skeletons.hidden = false;
+      moreBtn.hidden = true;
     } else {
-      state.limit = Math.min(grid.children.length, state.limit) + fiveRows();
+      state.limit = before + fiveRows();
+      moreBtn.disabled = true;
+      moreBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading…';
     }
-    if (state.loading) return;
     const run = state.run;
     state.loading = true;
-    moreBtn.hidden = true;
     countEl.textContent = "Loading…";
     try {
       // fetch TMDB pages until there are enough posters for the rows to show
@@ -244,7 +255,11 @@
         markComingSoon(results);
       }
       // posters past the last full row wait, hidden, for the next "Load more"
-      [...grid.children].forEach((c, i) => c.classList.toggle("dc-later", i >= state.limit));
+      [...grid.children].forEach((c, i) => {
+        c.classList.toggle("dc-later", i >= state.limit);
+        // the newly shown posters come in one after another
+        if (i >= before && i < state.limit) c.style.setProperty("--dx-d", `${Math.min(i - before, 30) * 30}ms`);
+      });
 
       const shown = Math.min(grid.children.length, state.limit);
       countEl.textContent = heading(shown);
@@ -263,7 +278,13 @@
       emptyEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>${esc(e.message)}.<br>
         Check your key in <a href="settings.html#keys">Settings</a> or <code>js/config.js</code>.`;
     } finally {
-      if (run === state.run) state.loading = false;
+      if (run === state.run) {
+        state.loading = false;
+        skeletons.hidden = true;
+        skeletons.innerHTML = "";
+        moreBtn.disabled = false;
+        moreBtn.textContent = "Load more";
+      }
     }
   }
 
