@@ -1,105 +1,117 @@
 /*
- * Settings page: theme, your streaming services, import from IMDb / Letterboxd, backup.
- * The owner also gets the TMDB / OMDb settings and the Members panel.
+ * Settings page, in the site's own style (glass cards with small red labels, like X-Ray;
+ * red icon circles; pill buttons; the red pill switch): theme, your streaming services,
+ * import from IMDb / Letterboxd, backup. The owner also gets Members and TMDB / OMDb.
  * (Your name, stats and watch diary are on the Profile page: js/pages/profile.js)
  */
 (function () {
   const { esc, toast, download } = UI;
   const root = document.getElementById("settings-app");
   const guest = Store.guest;
-
-  // iOS Settings style: sections with a small heading, rows in rounded glass groups, a small
-  // coloured icon square on each row
   const acct = window.Cloud && Cloud.account();
   const profile = Store.getProfile();
-  const icon = (fa, color) => `<span class="st-ic" style="--ic:${color}"><i class="fa-solid ${fa}"></i></span>`;
-  const section = (id, title, body, extra = "", cls = "") =>
-    `<section class="st-sec${cls ? ` ${cls}` : ""}" id="${id}"${extra}><h3 class="st-head">${title}</h3>${body}</section>`;
+
+  const label = (icon, text) => `<span class="xr-label"><i class="fa-solid ${icon}"></i> ${text}</span>`;
+  const card = (id, icon, title, body, extra = "") =>
+    `<section class="xr-card sv-card" id="${id}"${extra}>${label(icon, title)}${body}</section>`;
+  // a row: red icon circle, name (+ a line under it), what you can do on the right
+  const row = (icon, name, sub, right = "") => `<div class="sv-row">
+      <span class="sv-ic"><i class="fa-solid ${icon}"></i></span>
+      <span class="sv-name"><strong>${name}</strong>${sub ? `<small>${sub}</small>` : ""}</span>
+      ${right}
+    </div>`;
 
   root.innerHTML = `
-    <div class="st">
-      <a class="st-account" href="profile.html">
+    <div class="sv">
+      <a class="sv-account" href="profile.html">
         <img src="${esc((acct && acct.photo) || "images/placeholders/user.svg")}" alt="" referrerpolicy="no-referrer" />
-        <span><strong>${esc(profile.name)}</strong><small>${guest ? "Not signed in" : acct ? "Signed in with Google · Profile & stats" : "Profile & stats"}</small></span>
-        <i class="fa-solid fa-chevron-right st-chev"></i>
+        <span class="sv-name"><strong>${esc(profile.name)}</strong><small>${guest ? "Not signed in" : acct ? "Signed in with Google" : "Your profile"}</small></span>
+        <span class="btn sv-account-btn">Profile &amp; stats <i class="fa-solid fa-arrow-right"></i></span>
       </a>
-
-      ${section(
-        "appearance",
-        "Appearance",
-        `<div class="st-group">
-          <div class="st-row">${icon("fa-circle-half-stroke", "#5e5ce6")}<span class="st-label">Theme</span>
-            <div class="st-seg" role="group" aria-label="Theme">
-              <button type="button" data-theme-pick="dark"><i class="fa-solid fa-moon"></i> Dark</button>
-              <button type="button" data-theme-pick="light"><i class="fa-solid fa-sun"></i> Light</button>
-            </div>
-          </div>
-        </div>
-        <p class="st-foot">Russian titles, Poster details and Match % are switches in the profile menu (your picture, top right).</p>`
-      )}
 
       ${guest ? `<div class="p-guest">${UI.signInPrompt("Sign in for the rest of your settings")}</div>` : ""}
 
-      ${section(
-        "services",
-        "Streaming",
-        `<div class="st-group services">
-          <div class="st-row st-stack">
-            <div class="st-row-line">${icon("fa-tv", "#ff453a")}<span class="st-label">My streaming services</span></div>
-            <div class="svc-mine"></div>
-            <div class="svc-all" hidden></div>
-          </div>
+      <div class="sv-grid">
+        <div class="sv-col">
+          ${card(
+            "appearance",
+            "fa-palette",
+            "Appearance",
+            `${row(
+              "fa-circle-half-stroke",
+              "Theme",
+              "The whole site, dark or light",
+              `<div class="top10-switch sv-theme" role="group" aria-label="Theme">
+                <button type="button" class="top10-tab" data-theme-pick="dark"><i class="fa-solid fa-moon"></i> Dark</button>
+                <button type="button" class="top10-tab" data-theme-pick="light"><i class="fa-solid fa-sun"></i> Light</button>
+              </div>`
+            )}
+            <p class="sv-note"><i class="fa-solid fa-circle-info"></i> Russian titles, Poster details and Match % are switches in the profile menu (your picture, top right).</p>`
+          )}
+
+          ${card(
+            "services",
+            "fa-tv",
+            "Streaming",
+            `<div class="services">
+              <div class="svc-mine"></div>
+              <div class="svc-all" hidden></div>
+            </div>
+            <p class="sv-note">Used by "On my services" on the Watchlist and by "What should I watch?". Availability in ${esc(TMDB.COUNTRY)}, from JustWatch.</p>`,
+            guest ? " hidden" : ""
+          )}
+
+          ${card(
+            "backup",
+            "fa-floppy-disk",
+            "Backup",
+            `<p class="sv-note sv-lead">Your library is saved in your account and synced to every device you sign in on. A backup is an extra copy you keep yourself.</p>
+            <div class="sv-buttons">
+              <button class="btn export-backup" type="button"><i class="fa-solid fa-file-export"></i> Download backup</button>
+              <label class="btn"><i class="fa-solid fa-file-import"></i> Restore backup
+                <input type="file" accept=".json,application/json" class="import-file" hidden />
+              </label>
+            </div>
+            <div class="sv-danger">
+              ${row("fa-trash-can", "Delete my library", "Every title, score, list and tier. There's no undo.", '<button class="btn btn-danger reset-all" type="button">Delete</button>')}
+            </div>`,
+            guest ? " hidden" : ""
+          )}
         </div>
-        <p class="st-foot">Used by "On my services" on the Watchlist and by "What should I watch?". Availability in ${esc(TMDB.COUNTRY)}, from JustWatch.</p>`,
-        guest ? " hidden" : ""
-      )}
 
-      ${section("import", "Import", `<div class="st-group"><div class="st-pad import-panel"></div></div>`, guest ? " hidden" : "")}
+        <div class="sv-col">
+          ${card("import", "fa-file-import", "Import", '<div class="import-panel"></div>', guest ? " hidden" : "")}
 
-      ${section(
-        "backup",
-        "Backup",
-        `<div class="st-group">
-          <button class="st-row st-btn export-backup" type="button">${icon("fa-cloud-arrow-down", "#0a84ff")}<span class="st-label">Download backup</span><i class="fa-solid fa-chevron-right st-chev"></i></button>
-          <label class="st-row st-btn">${icon("fa-clock-rotate-left", "#30d158")}<span class="st-label">Restore backup</span><i class="fa-solid fa-chevron-right st-chev"></i>
-            <input type="file" accept=".json,application/json" class="import-file" hidden />
-          </label>
-          <button class="st-row st-btn st-danger reset-all" type="button">${icon("fa-trash-can", "#ff453a")}<span class="st-label">Delete my library</span></button>
-        </div>
-        <p class="st-foot">Your library is saved in your account and synced to every device you sign in on. A backup is an extra copy you keep yourself.</p>`,
-        guest ? " hidden" : ""
-      )}
+          ${card(
+            "members",
+            "fa-users",
+            "Members",
+            `<div class="member-list"><p class="sv-note">Loading…</p></div>
+            <p class="sv-note">Everyone who has signed in: you see how big their library is, never their ratings. To let someone in, add their Google email to the rules in the Firebase console (Firestore → Rules).</p>`,
+            ` data-owner${guest ? " hidden" : ""}`
+          )}
 
-      ${section(
-        "members",
-        "Members",
-        `<div class="st-group members"><div class="member-list"><p class="st-pad st-muted">Loading…</p></div></div>
-        <p class="st-foot">Everyone who has signed in: you see how big their library is, never their ratings. To let someone in, add their Google email to the rules in the Firebase console (Firestore → Rules).</p>`,
-        guest ? " hidden" : "",
-        "owner-only"
-      )}
-
-      ${section(
-        "keys",
-        "TMDB & IMDb",
-        `<div class="st-group">
-          <div class="st-row st-stack">
-            <div class="st-row-line">${icon("fa-key", "#ff9f0a")}<span class="st-label">TMDB API key</span><span class="st-value tmdb-status"></span></div>
-            <input class="input st-input" name="tmdb" type="password" autocomplete="off" placeholder="Paste your key or read access token (optional)" />
-            <div class="st-buttons">
-              <button class="btn btn-primary save-key" type="button">Save</button>
+          ${card(
+            "keys",
+            "fa-key",
+            "TMDB & IMDb",
+            `${row("fa-film", "TMDB API key", '<span class="tmdb-status"></span>')}
+            <input class="input" name="tmdb" type="password" autocomplete="off" placeholder="Paste your key or read access token (optional)" />
+            <div class="sv-buttons">
+              <button class="btn btn-primary save-key" type="button">Save key</button>
               <button class="btn test-key" type="button">Test</button>
               <button class="btn clear-key" type="button">Remove</button>
             </div>
-          </div>
-          <div class="st-row">${icon("fa-star", "#ffd60a")}<span class="st-label">IMDb ratings (OMDb)</span></div>
-          <p class="st-pad st-muted omdb-status"></p>
+            ${row("fa-star", "IMDb ratings (OMDb)", '<span class="omdb-status"></span>')}
+            <p class="sv-note">Free at themoviedb.org → Settings → API. A key typed here is stored only in this browser and overrides the one in <code>js/config.js</code>.</p>`,
+            " data-owner"
+          )}
         </div>
-        <p class="st-foot">Free at themoviedb.org → Settings → API. A key typed here is stored only in this browser and overrides the one in <code>js/config.js</code>.</p>`,
-        "",
-        "owner-only"
-      )}
+      </div>
     </div>`;
+
+  // owner-only cards
+  root.querySelectorAll("[data-owner]").forEach((el) => el.classList.add("owner-only"));
 
   const $ = (s) => root.querySelector(s);
 
@@ -109,12 +121,12 @@
     const light = document.documentElement.dataset.theme === "light";
     root.querySelectorAll("[data-theme-pick]").forEach((b) => {
       const on = (b.dataset.themePick === "light") === light;
-      b.classList.toggle("on", on);
+      b.classList.toggle("active", on);
       b.setAttribute("aria-pressed", on);
     });
   }
   paintTheme();
-  root.querySelector(".st-seg").addEventListener("click", (e) => {
+  $(".sv-theme").addEventListener("click", (e) => {
     const b = e.target.closest("[data-theme-pick]");
     if (!b) return;
     if (b.dataset.themePick === "light") document.documentElement.dataset.theme = "light";
@@ -302,10 +314,10 @@
               </div>`
             )
             .join("")
-        : '<p class="st-pad st-muted">Nobody yet.</p>';
+        : '<p class="sv-note">Nobody yet.</p>';
     } catch (e) {
       membersLoaded = false;
-      box.innerHTML = `<p class="st-pad st-muted">Couldn't load members: ${esc(e.message)}</p>`;
+      box.innerHTML = `<p class="sv-note">Couldn't load members: ${esc(e.message)}</p>`;
     }
   }
   if (window.Cloud) Cloud.onOwner((on) => on && renderMembers());

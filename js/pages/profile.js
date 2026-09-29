@@ -1,7 +1,8 @@
 /*
- * Profile page (Apple Fitness / Health style): a header with your photo and name, glass
- * stat tiles with a "rated" ring, the Wrapped banner, the watch diary (with a row of the
- * posters you watched lately) and the charts.
+ * Profile page, in the site's own style: a header like a title page (a blurred backdrop
+ * from your favourite, your photo, name and pill buttons), glass stat cards with small red
+ * labels (like X-Ray), the Wrapped banner, the watch diary with real poster rows, your
+ * Top 10 (like Home's) and a few charts in the red accent.
  * Settings (theme, streaming services, import, backup, owner tools) are on their own
  * page: js/pages/settings.js
  */
@@ -9,58 +10,53 @@
   const { esc, toast } = UI;
   const root = document.getElementById("profile-app");
   const photo = (window.Cloud && Cloud.account() && Cloud.account().photo) || "images/placeholders/user.svg";
+  const label = (icon, text) => `<span class="xr-label"><i class="fa-solid ${icon}"></i> ${text}</span>`;
 
   root.innerHTML = `
-    <div class="pf">
-      <header class="pf-hero">
-        <div class="pf-hero-bg" style="background-image:url('${esc(photo)}')" aria-hidden="true"></div>
-        <div class="pf-hero-tools">
-          <button class="pf-round pf-edit" type="button" aria-label="Edit your name" title="Edit your name"${Store.guest ? " hidden" : ""}><i class="fa-solid fa-pen"></i></button>
-          <a class="pf-round" href="settings.html" aria-label="Settings" title="Settings"><i class="fa-solid fa-gear"></i></a>
+    <div class="pv">
+      <header class="pv-hero">
+        <div class="pv-backdrop" aria-hidden="true"></div>
+        <div class="pv-hero-inner">
+          <div class="pv-avatar"><img src="${esc(photo)}" alt="" referrerpolicy="no-referrer" /></div>
+          <div class="pv-who">
+            <span class="hero-kicker"><i class="fa-solid fa-user"></i> Your profile</span>
+            <h1 class="p-name"></h1>
+            <p class="p-joined"></p>
+            <form class="name-form" hidden>
+              <input class="input" name="displayName" aria-label="Display name" maxlength="40" />
+              <button class="btn btn-primary" type="submit">Save</button>
+              <button class="btn pv-cancel" type="button">Cancel</button>
+            </form>
+            <div class="pv-actions">
+              <button class="btn pv-edit" type="button"${Store.guest ? " hidden" : ""}><i class="fa-solid fa-pen"></i> Edit name</button>
+              <a class="btn" href="settings.html"><i class="fa-solid fa-gear"></i> Settings</a>
+              <button class="btn btn-primary p-signin" type="button" hidden><i class="fa-brands fa-google"></i> Sign in</button>
+            </div>
+          </div>
         </div>
-        <div class="pf-avatar"><img src="${esc(photo)}" alt="" referrerpolicy="no-referrer" /></div>
-        <h1 class="p-name"></h1>
-        <p class="p-joined"></p>
-        <form class="name-form" hidden>
-          <input class="input" name="displayName" aria-label="Display name" maxlength="40" />
-          <button class="btn btn-primary" type="submit">Save</button>
-          <button class="btn pf-cancel" type="button">Cancel</button>
-        </form>
-        <button class="btn btn-primary p-signin" type="button" hidden><i class="fa-brands fa-google"></i> Sign in</button>
       </header>
 
       <div class="p-guest"${Store.guest ? "" : " hidden"}>${Store.guest ? UI.signInPrompt() : ""}</div>
 
-      <div class="pf-body"${Store.guest ? " hidden" : ""}>
-        <div class="pf-stats"></div>
-        <div class="pf-wrapped-slot"></div>
+      <div class="pv-body"${Store.guest ? " hidden" : ""}>
+        <div class="xr-grid pv-stats"></div>
+        <div class="pv-wrapped-slot"></div>
 
-        <section class="pf-card diary" id="diary">
-          <h2 class="pf-title"><i class="fa-solid fa-book-open" style="--ic:#ff9f0a"></i> Watch diary</h2>
+        <section class="pv-section diary" id="diary">
+          <div class="row-head"><h2><i class="fa-solid fa-book-open"></i> Watch diary</h2></div>
           <div class="diary-body"></div>
         </section>
 
-        <div class="pf-two">
-          <section class="pf-card">
-            <h2 class="pf-title"><i class="fa-solid fa-star" style="--ic:#ffd60a"></i> My ratings</h2>
-            <div class="pf-histo rating-chart"></div>
-          </section>
-          <section class="pf-card">
-            <h2 class="pf-title"><i class="fa-solid fa-trophy" style="--ic:#bf5af2"></i> Top rated</h2>
-            <ol class="pf-top top-rated"></ol>
-          </section>
-        </div>
+        <section class="row-section top10 pv-top"></section>
 
-        <div class="pf-two">
-          <section class="pf-card">
-            <h2 class="pf-title"><i class="fa-solid fa-hourglass-half" style="--ic:#64d2ff"></i> By decade</h2>
-            <div class="pf-bars decade-chart"></div>
-          </section>
-          <section class="pf-card">
-            <h2 class="pf-title"><i class="fa-solid fa-layer-group" style="--ic:#30d158"></i> Average by type</h2>
-            <div class="pf-types type-chart"></div>
-          </section>
-        </div>
+        <section class="pv-section">
+          <div class="row-head"><h2><i class="fa-solid fa-chart-simple"></i> Your taste</h2></div>
+          <div class="xr-grid pv-charts">
+            <div class="xr-card xr-money pv-histo-card">${label("fa-star", "My ratings")}<div class="pv-histo rating-chart"></div></div>
+            <div class="xr-card">${label("fa-hourglass-half", "By decade")}<div class="pv-bars decade-chart"></div></div>
+            <div class="xr-card">${label("fa-layer-group", "Average by type")}<div class="pv-bars type-chart"></div></div>
+          </div>
+        </section>
       </div>
     </div>`;
 
@@ -70,26 +66,41 @@
 
   function renderProfile() {
     const p = Store.getProfile();
+    const all = Store.all();
     $(".p-name").textContent = p.name;
     // signed out: no name to edit, just a way to sign in
-    $(".p-joined").textContent = p.guest ? "Not signed in" : p.joined ? `Member since ${p.joined}` : "Movie Nights member";
+    $(".p-joined").innerHTML = p.guest
+      ? "Not signed in"
+      : [p.joined ? `Member since ${esc(p.joined)}` : "", `${all.length} title${all.length === 1 ? "" : "s"}`, `${all.filter((i) => i.rating != null).length} rated`]
+          .filter(Boolean)
+          .join('<span class="dot">·</span>');
     $(".p-signin").hidden = !(p.guest && window.Cloud && Cloud.enabled);
     $(".name-form").elements.displayName.value = p.name;
     document.querySelectorAll(".profile-menu .user-info h2").forEach((h) => (h.textContent = p.name));
+
+    // the backdrop: your favourite (or best-rated) title, like a title page's header
+    const fav = all
+      .filter((i) => i.backdrop || Cards.posterOf(i))
+      .sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0) || (b.rating ?? -1) - (a.rating ?? -1))[0];
+    $(".pv-backdrop").innerHTML = fav
+      ? fav.backdrop
+        ? `<img src="${Store.img(fav.backdrop, "w1280")}" alt="" />`
+        : `<img class="pv-backdrop-blur" src="${Store.poster(Cards.posterOf(fav), "w500")}" alt="" />`
+      : "";
   }
 
   $(".p-signin").addEventListener("click", () => Cloud.signIn());
   // signed out: get Google sign-in ready so the button opens its window instantly (Safari needs that)
   if (Store.getProfile().guest && window.Cloud && Cloud.enabled) Cloud.prepare();
 
-  // ✏️ shows the name field instead of the name
   const editing = (on) => {
     $(".name-form").hidden = !on;
     $(".p-name").hidden = on;
+    $(".pv-actions").hidden = on;
     if (on) $(".name-form").elements.displayName.focus();
   };
-  $(".pf-edit").addEventListener("click", () => editing(true));
-  $(".pf-cancel").addEventListener("click", () => editing(false));
+  $(".pv-edit").addEventListener("click", () => editing(true));
+  $(".pv-cancel").addEventListener("click", () => editing(false));
   $(".name-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const name = e.target.elements.displayName.value.trim();
@@ -103,51 +114,45 @@
   /* ---------------- helpers ---------------- */
 
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const niceDate = (d) => {
-    const x = new Date(`${d}T00:00:00`);
-    return `${x.getDate()} ${MONTHS[x.getMonth()]}`;
-  };
-  const poster = (i, size) => Store.poster(Cards.posterOf(i), size || "w185");
+  const bar = (name, value, max, text) =>
+    `<div class="pv-bar"><span>${name}</span><div><i style="width:${max ? Math.max(2, (value / max) * 100) : 0}%"></i></div><b>${text ?? value}</b></div>`;
 
-  /* ---------------- stat tiles + the "rated" ring ---------------- */
+  /* ---------------- stat cards (X-Ray style) ---------------- */
 
-  function renderTiles(all, rated, avg) {
+  function renderStatCards(all, rated, avg) {
     const pct = all.length ? Math.round((rated.length / all.length) * 100) : 0;
-    const tile = (icon, color, num, label, href) =>
-      `<${href ? `a href="${href}"` : "div"} class="pf-tile" style="--ic:${color}">
-        <i class="fa-solid ${icon}"></i><b>${num}</b><span>${label}</span>
+    const card = (icon, name, big, sub, href, extra = "") =>
+      `<${href ? `a href="${href}"` : "div"} class="xr-card pv-stat">
+        ${label(icon, name)}
+        <div class="pv-big">${big}</div>
+        ${sub ? `<small>${sub}</small>` : ""}${extra}
       </${href ? "a" : "div"}>`;
-    $(".pf-stats").innerHTML = `
-      <div class="pf-ring-card">
-        <div class="pf-ring" style="--p:${pct}"><div><b>${pct}%</b><span>rated</span></div></div>
-        <div class="pf-ring-text"><b>${rated.length}</b> of <b>${all.length}</b> titles have your score</div>
-      </div>
-      <div class="pf-tiles">
-        ${tile("fa-film", "#ff453a", all.length, "Titles", "movies.html")}
-        ${tile("fa-star", "#ffd60a", rated.length ? avg.toFixed(1) : "–", "Average score")}
-        ${tile("fa-crown", "#bf5af2", rated.filter((i) => i.rating === 10).length, "Perfect 10s", "movies.html?sort=rating-desc")}
-        ${tile("fa-heart", "#ff375f", all.filter((i) => i.favorite).length, "Favorites", "watchlist.html?list=fav")}
-        ${tile("fa-bookmark", "#30d158", all.filter((i) => i.watchlist).length, "Watchlist", "watchlist.html")}
-        ${tile("fa-list-ul", "#64d2ff", Store.lists().length, "Your lists", "watchlist.html")}
-      </div>`;
+    $(".pv-stats").innerHTML = [
+      card("fa-film", "Titles", all.length, "in your library", "movies.html"),
+      card("fa-star", "Rated", rated.length, `${pct}% of your library`, "", `<div class="col-bar pv-progress"><span style="width:${pct}%"></span></div>`),
+      card("fa-chart-line", "Average", rated.length ? avg.toFixed(1) : "–", "out of 10"),
+      card("fa-crown", "Perfect 10s", rated.filter((i) => i.rating === 10).length, "the very best", "movies.html?sort=rating-desc"),
+      card("fa-heart", "Favorites", all.filter((i) => i.favorite).length, "hearted", "watchlist.html?list=fav"),
+      card("fa-bookmark", "Watchlist", all.filter((i) => i.watchlist).length, "waiting to be watched", "watchlist.html"),
+    ].join("");
   }
 
   /* ---------------- Wrapped banner ---------------- */
 
   function renderWrapped() {
-    const slot = $(".pf-wrapped-slot");
+    const slot = $(".pv-wrapped-slot");
     if (!window.Wrapped) return (slot.innerHTML = "");
     const year = Wrapped.yearToShow();
     const seen = Store.all().filter((i) => String(i.watchedAt || "").startsWith(String(year)));
-    const pics = seen.filter((i) => Cards.posterOf(i)).slice(-8).reverse();
-    slot.innerHTML = `<button class="pf-wrapped wr-open" type="button">
-        <span class="pf-wrapped-art" aria-hidden="true">${pics.map((i) => `<img src="${poster(i, "w185")}" alt="" loading="lazy" />`).join("")}</span>
-        <span class="pf-wrapped-text">
-          <small>Movie Nights Wrapped</small>
+    const pics = seen.filter((i) => Cards.posterOf(i)).slice(-6).reverse();
+    slot.innerHTML = `<button class="pv-wrapped wr-open" type="button">
+        <span class="pv-wrapped-art" aria-hidden="true">${pics.map((i) => `<img src="${Store.poster(Cards.posterOf(i), "w185")}" alt="" loading="lazy" />`).join("")}</span>
+        <span class="pv-wrapped-text">
+          ${label("fa-wand-magic-sparkles", "Movie Nights Wrapped")}
           <strong>Your ${year} in movies</strong>
-          <span>${seen.length >= 3 ? `${seen.length} titles so far · tap to relive them` : "Rate or mark a few titles as watched to unlock it"}</span>
+          <span>${seen.length >= 3 ? `${seen.length} titles so far. Tap to relive them.` : "Rate or mark a few titles as watched to unlock it."}</span>
         </span>
-        <i class="fa-solid fa-play pf-wrapped-play"></i>
+        <span class="hero-play pv-wrapped-play"><i class="fa-solid fa-play"></i> Play</span>
       </button>`;
   }
 
@@ -159,8 +164,8 @@
       .sort((a, b) => b.watchedAt.localeCompare(a.watchedAt));
     const box = $(".diary-body");
     if (!dated.length) {
-      box.innerHTML = `<p class="pf-empty">Every title you rate or mark <b>Watched</b> gets the day you watched it, and shows up here
-        (an import from IMDb or Letterboxd brings its dates too).</p>`;
+      box.innerHTML = `<div class="xr-card"><p class="pv-empty">Every title you rate or mark <b>Watched</b> gets the day you watched it, and shows up here
+        (an import from IMDb or Letterboxd brings its dates too).</p></div>`;
       return;
     }
     const now = new Date();
@@ -181,40 +186,37 @@
     const ago = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
     const from = new Date(ago - 7 * 86400000).toISOString().slice(0, 10);
     const to = new Date(+ago + 7 * 86400000).toISOString().slice(0, 10);
-    const memory = dated.filter((i) => i.watchedAt >= from && i.watchedAt <= to).slice(0, 6);
+    const memory = dated.filter((i) => i.watchedAt >= from && i.watchedAt <= to);
 
-    const posterRow = (list) => `<div class="pf-posters">${list
-      .map(
-        (i) => `<a class="pf-poster" href="title.html?id=${encodeURIComponent(i.id)}" title="${esc(Lang.title(i))}">
-          <img src="${poster(i)}" alt="" loading="lazy" />
-          ${i.rating != null ? `<b>★ ${Cards.formatRating(i.rating)}</b>` : ""}
-          <span>${esc(Lang.title(i))}</span><small>${niceDate(i.watchedAt)}</small>
-        </a>`
-      )
-      .join("")}</div>`;
+    const row = (title, icon, list) => `<section class="row-section pv-row">
+        <div class="row-head"><h2><i class="fa-solid ${icon}"></i> ${title}</h2></div>
+        <div class="movie-row">${list.slice(0, 20).map(Cards.card).join("")}</div>
+      </section>`;
 
     box.innerHTML = `
-      <div class="pf-diary-top">
-        <div class="pf-mini"><b>${thisYear}</b><span>in ${year}</span></div>
-        <div class="pf-mini"><b>${month}</b><span>this month</span></div>
-        <div class="pf-mini"><b>${dated.length}</b><span>all time</span></div>
+      <div class="xr-grid pv-diary">
+        <div class="xr-card pv-stat">${label("fa-calendar", `In ${year}`)}<div class="pv-big">${thisYear}</div><small>watched</small></div>
+        <div class="xr-card pv-stat">${label("fa-calendar-day", "This month")}<div class="pv-big">${month}</div><small>watched</small></div>
+        <div class="xr-card pv-stat">${label("fa-book-open", "All time")}<div class="pv-big">${dated.length}</div><small>in your diary</small></div>
+        <div class="xr-card xr-money pv-months-card"${months.some((m) => m.value) ? "" : " hidden"}>
+          ${label("fa-chart-column", "Last 12 months")}
+          <div class="pv-months" role="img" aria-label="Titles watched per month, last 12 months">
+            ${months
+              .map(
+                (m, n) => `<div class="pv-month${n === 11 ? " now" : ""}" title="${m.value} in ${m.label}">
+                  <span class="pv-month-num">${m.value || ""}</span>
+                  <span class="pv-month-bar"><i style="height:${Math.max(3, (m.value / max) * 100)}%"></i></span>
+                  <small>${m.label}</small></div>`
+              )
+              .join("")}
+          </div>
+        </div>
       </div>
-      <div class="pf-months" role="img" aria-label="Titles watched per month, last 12 months"${months.some((m) => m.value) ? "" : " hidden"}>
-        ${months
-          .map(
-            (m, n) => `<div class="pf-month${n === 11 ? " now" : ""}" title="${m.value} in ${m.label}">
-              <span class="pf-month-num">${m.value || ""}</span>
-              <span class="pf-month-bar"><i style="height:${Math.max(4, (m.value / max) * 100)}%"></i></span>
-              <small>${m.label}</small></div>`
-          )
-          .join("")}
-      </div>
-      ${memory.length ? `<h3 class="pf-sub"><i class="fa-solid fa-clock-rotate-left"></i> A year ago you watched</h3>${posterRow(memory)}` : ""}
-      <h3 class="pf-sub">Recently watched</h3>
-      ${posterRow(dated.slice(0, 12))}`;
+      ${memory.length ? row("A year ago you watched", "fa-clock-rotate-left", memory) : ""}
+      ${row("Recently watched", "fa-play", dated)}`;
   }
 
-  // Wrapped: the banner (or its button in the diary) opens the story
+  // the Wrapped banner opens the story
   root.addEventListener("click", (e) => {
     const b = e.target.closest(".wr-open");
     if (b && !b.disabled && window.Wrapped) {
@@ -223,6 +225,26 @@
     }
   });
 
+  /* ---------------- your Top 10 (like Home's) ---------------- */
+
+  function renderTop(rated) {
+    const top = rated
+      .slice()
+      .sort((a, b) => b.rating - a.rating || a.order - b.order)
+      .slice(0, 10);
+    $(".pv-top").hidden = top.length < 3;
+    $(".pv-top").innerHTML = `
+      <div class="row-head top10-head"><h2><span class="top10-word">TOP 10</span><span class="top10-sub">yours</span></h2></div>
+      <div class="movie-row top10-row">${top
+        .map(
+          (i, n) => `<a class="top10-item" href="title.html?id=${encodeURIComponent(i.id)}" title="#${n + 1} · ${esc(Lang.title(i))} · ★ ${Cards.formatRating(i.rating)}">
+            <span class="top10-num" aria-hidden="true">${n + 1}</span>
+            <img src="${Store.poster(Cards.posterOf(i), "w342")}" alt="${esc(Lang.title(i))}" loading="lazy" decoding="async" />
+          </a>`
+        )
+        .join("")}</div>`;
+  }
+
   /* ---------------- charts ---------------- */
 
   function renderStats() {
@@ -230,9 +252,11 @@
     const rated = all.filter((i) => i.rating != null);
     const avg = (list) => (list.length ? list.reduce((s, i) => s + i.rating, 0) / list.length : 0);
 
-    renderTiles(all, rated, avg(rated));
+    renderProfile();
+    renderStatCards(all, rated, avg(rated));
     renderWrapped();
     renderDiary();
+    renderTop(rated);
 
     // how you rate: a column for each score, 0 → 10
     const buckets = [];
@@ -240,63 +264,41 @@
     const hMax = Math.max(1, ...buckets.map((b) => b.value));
     const peak = buckets.reduce((a, b) => (b.value > a.value ? b : a), buckets[0]);
     $(".rating-chart").innerHTML = `
-      <div class="pf-histo-cols">${buckets
+      <div class="pv-months pv-histo-cols">${buckets
         .map(
-          (b) => `<div class="pf-hcol${b === peak && b.value ? " peak" : ""}" title="${b.value} rated ${b.label}${b.label === "10" ? "" : `–${b.label}.9`}">
-            <span class="pf-hnum">${b.value || ""}</span>
-            <span class="pf-hbar"><i style="height:${Math.max(3, (b.value / hMax) * 100)}%"></i></span>
+          (b) => `<div class="pv-month${b === peak && b.value ? " now" : ""}" title="${b.value} rated ${b.label}">
+            <span class="pv-month-num">${b.value || ""}</span>
+            <span class="pv-month-bar"><i style="height:${Math.max(3, (b.value / hMax) * 100)}%"></i></span>
             <small>${b.label}</small></div>`
         )
         .join("")}</div>
-      ${rated.length ? `<p class="pf-caption">You give <b>${peak.label}${peak.label === "10" ? "" : "s"}</b> most often · average <b>${avg(rated).toFixed(1)}</b></p>` : ""}`;
+      ${rated.length ? `<small class="pv-caption">You give <b>${peak.label}s</b> most often · average <b>${avg(rated).toFixed(1)}</b></small>` : ""}`;
 
-    // decades: horizontal bars
+    // decades
     const decades = {};
     all.forEach((i) => {
       if (!i.year) return;
       const d = Math.floor(i.year / 10) * 10;
       decades[d] = (decades[d] || 0) + 1;
     });
-    const dKeys = Object.keys(decades).sort();
     const dMax = Math.max(1, ...Object.values(decades));
-    $(".decade-chart").innerHTML = dKeys.length
-      ? dKeys
-          .map(
-            (d) => `<div class="pf-bar"><span>${d}s</span><div><i style="width:${(decades[d] / dMax) * 100}%"></i></div><b>${decades[d]}</b></div>`
-          )
-          .join("")
-      : '<p class="pf-empty">Nothing yet.</p>';
+    $(".decade-chart").innerHTML =
+      Object.keys(decades)
+        .sort()
+        .map((d) => bar(`${d}s`, decades[d], dMax))
+        .join("") || '<p class="pv-empty">Nothing yet.</p>';
 
-    // average by type: three rings
+    // average by type
     $(".type-chart").innerHTML = ["movie", "tv", "anime"]
       .map((t) => {
         const list = rated.filter((i) => i.type === t);
         const v = avg(list);
-        return `<div class="pf-type">
-          <div class="pf-ring small" style="--p:${Math.round(v * 10)}"><div><b>${v ? v.toFixed(1) : "–"}</b></div></div>
-          <strong>${Store.TYPE_LABEL[t]}</strong><small>${list.length} rated</small>
-        </div>`;
+        return bar(Store.TYPE_LABEL[t], v, 10, v ? v.toFixed(1) : "–");
       })
       .join("");
-
-    // top rated: a ranked list with posters
-    $(".top-rated").innerHTML =
-      rated
-        .slice()
-        .sort((a, b) => b.rating - a.rating || a.order - b.order)
-        .slice(0, 8)
-        .map(
-          (i, n) => `<li><a href="title.html?id=${encodeURIComponent(i.id)}">
-            <span class="pf-rank">${n + 1}</span>
-            <img src="${poster(i, "w92")}" alt="" loading="lazy" />
-            <span class="pf-top-name"><strong>${esc(Lang.title(i))}</strong><small>${i.year || ""} · ${Store.TYPE_LABEL[i.type] || ""}</small></span>
-            <b>★ ${Cards.formatRating(i.rating)}</b></a></li>`
-        )
-        .join("") || '<p class="pf-empty">Rate something to see your top list.</p>';
   }
 
   Store.onChange(renderStats);
-  renderProfile();
   renderStats();
 
   if (location.hash) {
