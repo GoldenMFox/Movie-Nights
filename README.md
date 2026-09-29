@@ -73,8 +73,9 @@ your Watchlist, or from your Favorites for a rewatch.
   **Coming up** on the Watchlist page without adding it to anything. Saved with your profile;
   drops off a month after release.
 - **Franchises** (title pages): "Harry Potter Collection · You've seen 2 of 8", every film in it.
-  "Seen" = rated or marked Watched; films only saved to your library / Watchlist are counted
-  apart ("· 1 more in your library"). Updates as you add or rate.
+  "Seen" = in your library (in your library means watched), unless it's only on your
+  Watchlist; those are counted apart ("· 1 on your Watchlist"). Updates as you add or rate.
+  X-Ray's "where you've seen the cast" counts the same way.
 - **Your own lists** ("Halloween marathon", "Date night"): **New list** on the Watchlist page,
   add titles from the quick menu or a title page's ⋯ menu (Add to a list). Each list gets a
   row and a place in the full-list switch (with Rename / Delete). Saved with your profile.

@@ -212,17 +212,18 @@
   function collectionPanel(c) {
     const today = Store.today();
     const out = c.parts.filter((p) => p.released && p.released <= today);
+    // "seen" = in your library (that means watched), unless it's only on your Watchlist;
+    // a score or a watch date always counts
     const seen = (p) => {
       const lib = Cards.inLibrary(p);
-      return !!(lib && (lib.rating != null || lib.watchedAt));
+      return !!(lib && (lib.rating != null || lib.watchedAt || !lib.watchlist));
     };
-    // "seen" = rated or marked Watched; titles only saved to your library / Watchlist count apart
     const n = out.filter(seen).length;
-    const saved = c.parts.filter((p) => Cards.inLibrary(p) && !seen(p)).length;
+    const planned = c.parts.filter((p) => Cards.inLibrary(p) && !seen(p)).length;
     const pct = out.length ? Math.round((n / out.length) * 100) : 0;
     const note =
       (!out.length ? "Nothing out yet" : n === out.length ? "You've seen them all" : `You've seen ${n} of ${out.length}`) +
-      (saved ? ` · ${saved} more in your library` : "");
+      (planned ? ` · ${planned} on your Watchlist` : "");
     return `<div class="col-progress${n && n === out.length ? " done" : ""}">
         <div class="col-bar"><span style="width:${pct}%"></span></div><span>${note}</span>
       </div>
@@ -298,7 +299,8 @@
     const start = async () => {
       if (seenLoading || seenBefore) return;
       seenLoading = true;
-      const mine = new Set(Store.all().filter((i) => i.rating != null || i.watchedAt).map((i) => i.id));
+      // watched = in your library, unless it's only on your Watchlist (same as the franchise counter)
+      const mine = new Set(Store.all().filter((i) => i.rating != null || i.watchedAt || !i.watchlist).map((i) => i.id));
       const here = tmdbRef || (Store.get(id) && Ratings.refOf(Store.get(id)));
       const out = [];
       for (const c of castWithIds(d).slice(0, 8)) {
