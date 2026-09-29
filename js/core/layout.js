@@ -106,12 +106,14 @@
             <a href="#" data-action="add-title"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="profile.html#settings"><i class="fa-solid fa-gear"></i><span>Settings &amp; backup</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="#" class="install-app" hidden><i class="fa-solid fa-mobile-screen"></i><span>Install the app</span><i class="fa-solid fa-chevron-right"></i></a>
-            ${langToggle("in-profile")}
-            <label class="menu-switch" title="Title, ratings and buttons under each poster (off: posters only)">
-              <i class="fa-solid fa-table-cells-large"></i><span>Details under posters</span>
-              <input type="checkbox" class="card-details-switch" />
-              <span class="switch-track"><span class="switch-thumb"></span></span>
-            </label>
+            <div class="menu-prefs">
+              ${langToggle("in-profile")}
+              <label class="menu-switch" title="Title, ratings and buttons under each poster (off: posters only)">
+                <i class="fa-solid fa-table-cells-large"></i><span>Poster details</span>
+                <input type="checkbox" class="card-details-switch" />
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+              </label>
+            </div>
             ${accountMenu()}
           </div>
         </div>
