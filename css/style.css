@@ -4663,13 +4663,35 @@ a.stat-tile:hover {
   transform: scale(1.07);
 }
 
-.hp-btn.on {
-  border-color: transparent;
-  background: var(--accent);
+/* already on: a soft tint of the button's own colour (like the card buttons), not a solid fill */
+.hp-btn.on[data-action="fav"] {
+  border-color: rgba(229, 9, 20, 0.45);
+  background: rgba(229, 9, 20, 0.16);
+  color: #ff4d57;
 }
 
-.hp-btn.on .fa-star {
+.hp-btn.on[data-action="rate"] {
+  border-color: rgba(245, 197, 24, 0.45);
+  background: rgba(245, 197, 24, 0.14);
   color: var(--gold);
+}
+
+.hp-btn.on[data-action="watch"] {
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* hover: each icon lights up in its own colour */
+.hp-btn[data-action$="fav"]:hover {
+  color: #ff4d57;
+}
+
+.hp-btn[data-action$="rate"]:hover {
+  color: var(--gold);
+}
+
+.hp-btn[data-action="t-add"]:hover {
+  color: #3fb950;
 }
 
 .hp-play {
