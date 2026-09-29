@@ -6691,3 +6691,28 @@ html.app-ui .soon-label {
 html.app-ui .soon-label .soon-word {
   display: none;
 }
+/* phones: exactly 3 posters across in the home rows (a little bigger), and the "Film" / "TV"
+   tag is a pill that fits its text (not squeezed into a circle) */
+html.app-ui .movie-row {
+  grid-auto-columns: calc((100% - 20px) / 3);
+}
+
+html.app-ui .movie-item .badges .type-badge {
+  width: auto;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  letter-spacing: 0.3px;
+}
+
+@media (min-width: 540px) {
+  html.app-ui .movie-row {
+    grid-auto-columns: calc((100% - 30px) / 4);
+  }
+}
+html.app-ui .movie-row {
+  padding-left: 0;
+  padding-right: 0;
+  scroll-padding: 0;
+}
