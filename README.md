@@ -65,8 +65,8 @@ your Watchlist, or from your Favorites for a rewatch.
   well-known titles (2,000+ votes on TMDB for movies, 500+ for shows / anime), best-known first;
   a title of yours with fewer than 6 of those makes way for another.
 - **Match %** ("92% match", `js/services/taste.js`): how much you'll probably like a title
-  you haven't rated, from how you rate its genres against your own average, nudged by its
-  TMDB score. Shows after 5 rated titles: "86%" in the poster's bottom-right corner (Poster
+  (every title, the ones you've seen too, so it's consistent), from how you rate its genres
+  against your own average, nudged by its TMDB score. Shows after 5 rated titles: "86%" in the poster's bottom-right corner (Poster
   details on; with posters only it's in the hover preview instead), and "86% match" in the
   hover preview and on title pages.
 - **Remind me** (titles not out yet: bell on the card, title page, quick menu): puts it in

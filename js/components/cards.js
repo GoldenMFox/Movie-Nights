@@ -68,6 +68,7 @@
         <img class="movie-poster" src="${Store.poster(posterOf(item))}" alt="" loading="lazy" decoding="async" />
         ${Store.isRecent(item) ? '<span class="new-label">NEW</span>' : ""}
         ${badges ? `<span class="badges">${badges}</span>` : ""}
+        ${matchPill(item)}
       </a>
       <div class="movie-info">
         <h3 class="movie-title"><a href="${url}" title="${esc(Lang.title(item))}">${esc(Lang.title(item))}</a></h3>

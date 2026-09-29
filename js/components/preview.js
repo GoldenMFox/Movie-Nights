@@ -76,8 +76,8 @@
 
   function scoreHtml(b, d) {
     const parts = [];
-    // not rated by you yet: how much you'll probably like it (js/services/taste.js)
-    if (window.Taste && !(b.item && b.item.rating != null)) {
+    // how much you'll probably like it (js/services/taste.js), for every title, seen or not
+    if (window.Taste) {
       const m = Taste.badge({ genres: (d && d.genres && d.genres.length ? d.genres : b.genres), score: b.score ?? (d && d.tmdbScore) });
       if (m) parts.push(m);
     }

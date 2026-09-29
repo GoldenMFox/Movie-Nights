@@ -38,8 +38,8 @@
   // "IMDb 8.6 / 10 · 1h 48m · 2025 · 🍅 86%"
   function metaHtml(t, d, e) {
     const parts = [];
-    // not rated by you yet: how much you'll probably like it (js/services/taste.js)
-    if (window.Taste && t.rating == null) {
+    // how much you'll probably like it (js/services/taste.js), for every title, seen or not
+    if (window.Taste) {
       const m = Taste.badge({ genres: d.genres && d.genres.length ? d.genres : t.genres, score: d.tmdbScore ?? t.score });
       if (m) parts.push(m);
     }

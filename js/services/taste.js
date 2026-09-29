@@ -34,7 +34,13 @@
     if (!model || !t) return null;
     const genres = (t.genres || []).map((g) => g.toLowerCase());
     const a = genres.length ? genres.reduce((s, g) => s + (model.aff[g] || 0), 0) / genres.length : 0;
-    const score = typeof t.score === "number" && t.score > 0 ? t.score : typeof t.tmdbScore === "number" && t.tmdbScore > 0 ? t.tmdbScore : 6.8;
+    let score = typeof t.score === "number" && t.score > 0 ? t.score : typeof t.tmdbScore === "number" && t.tmdbScore > 0 ? t.tmdbScore : null;
+    // a title in your library: the TMDB / IMDb score saved for it (js/services/ratings.js)
+    if (score == null && t.id && window.Ratings) {
+      const e = Ratings.entry(Ratings.refOf(t));
+      score = e && typeof e.tmdb === "number" ? e.tmdb : e && typeof e.imdb === "number" ? e.imdb : null;
+    }
+    if (score == null) score = 6.8;
     const predicted = model.mean + a * 1.3 + (score - 6.8) * 0.6;
     return Math.round(Math.max(40, Math.min(99, 72 + (predicted - model.mean) * 12)));
   }
