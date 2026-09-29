@@ -103,6 +103,8 @@ In the **profile menu**:
 - **Russian titles**: names, posters and trailers in Russian (dubbed trailers when TMDB has them in HD).
   On narrow computer windows it's the EN | RU switch in the side menu.
 - **Poster details** (computers): off = posters only, like on phones and tablets.
+- **Match %** (computers): off = no match on the posters or in the hover preview (title
+  pages keep it).
 
 Trailers play in the best quality available; if YouTube blocks one on other sites, the next one plays.
 

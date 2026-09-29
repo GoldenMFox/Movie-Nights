@@ -116,6 +116,11 @@
                 <input type="checkbox" class="card-details-switch" />
                 <span class="switch-track"><span class="switch-thumb"></span></span>
               </label>
+              <label class="menu-switch" title="How much you'll probably like each title (86%), on the posters and in the hover preview">
+                <i class="fa-solid fa-percent"></i><span>Match %</span>
+                <input type="checkbox" class="match-switch" />
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+              </label>
             </div>
             ${accountMenu()}
           </div>
@@ -467,6 +472,20 @@
     try {
       if (detailsSwitch.checked) localStorage.removeItem("mn:cardStyle");
       else localStorage.setItem("mn:cardStyle", "posters");
+    } catch (e) {}
+  });
+
+  // "Match %" off: no match on the posters or in the hover preview (title pages keep it)
+  try {
+    if (localStorage.getItem("mn:showMatch") === "off") document.documentElement.classList.add("no-match");
+  } catch (e) {}
+  const matchSwitch = nav.querySelector(".match-switch");
+  matchSwitch.checked = !document.documentElement.classList.contains("no-match");
+  matchSwitch.addEventListener("change", () => {
+    document.documentElement.classList.toggle("no-match", !matchSwitch.checked);
+    try {
+      if (matchSwitch.checked) localStorage.removeItem("mn:showMatch");
+      else localStorage.setItem("mn:showMatch", "off");
     } catch (e) {}
   });
 

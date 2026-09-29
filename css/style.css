@@ -9256,6 +9256,13 @@ html.tablet .match-pill {
   display: none;
 }
 
+/* "Match %" switched off in the profile menu: not on posters, not in the hover preview */
+html.no-match .match-pill,
+html.no-match .hover-preview .match,
+html.no-match .hover-preview .match + .dot {
+  display: none;
+}
+
 :root[data-theme="light"] .match {
   color: #1f8a4c;
 }
