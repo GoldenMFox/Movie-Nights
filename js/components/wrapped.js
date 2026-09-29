@@ -1,11 +1,17 @@
 /*
- * Movie Nights Wrapped: your year as a story (like Spotify Wrapped), from the watch diary
- * (the day you rated / marked each title as watched). Profile → Watch diary → Wrapped.
- * Tap the right side (or →) for the next card, the left side (or ←) to go back.
+ * Movie Nights Wrapped: your year as a story (like Spotify Wrapped / Instagram stories),
+ * from the watch diary (the day you rated / marked each title as watched).
+ * Profile → Watch diary → Wrapped.
+ *
+ * Plays by itself (each card ~6 s, the bars on top fill up). Tap the right side (or →) for
+ * the next card, the left side (or ←) to go back, hold anywhere to pause.
+ * Every card animates in: lines slide up one after the other, numbers count up, bars grow,
+ * soft colour blobs drift behind; the last card ends with confetti.
  */
 (function () {
   const { esc, toast } = UI;
   const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const DURATION = 6500; // ms per card
 
   // which year to show: this one, or last year early in January / February if this one is still empty
   function yearToShow() {
@@ -73,96 +79,222 @@
     };
   }
 
+  /* ---------------- the cards ---------------- */
+
+  // a line that slides up in turn (n = its place in the order)
+  const a = (n, html, tag = "div", cls = "") => `<${tag} class="wr-a ${cls}" style="--d:${n * 140}ms">${html}</${tag}>`;
+  // a number that counts up from 0
+  const count = (v, dec = 0) => `<span class="wr-num" data-count="${v}" data-dec="${dec}">0</span>`;
+  const posterUrl = (i) => Store.poster(Cards.posterOf(i), "w500");
+
   function cards(w) {
     const name = String(Store.getProfile().name || "").split(" ")[0];
-    const poster = (i) => `<img class="wr-poster" src="${Store.poster(Cards.posterOf(i), "w500")}" alt="" />`;
+    const posters = w.list.filter((i) => Cards.posterOf(i)).map(posterUrl);
+    // a slowly scrolling wall of this year's posters (intro, count)
+    const wall = () =>
+      posters.length >= 4
+        ? `<div class="wr-wall" aria-hidden="true">${[0, 1, 2]
+            .map((c) => `<div class="wr-wall-col" style="--s:${28 + c * 6}s">${posters.concat(posters).slice(c, c + 12).map((p) => `<img src="${p}" alt="" />`).join("")}</div>`)
+            .join("")}</div>`
+        : "";
+    const blurred = (i) => `<div class="wr-blur" style="background-image:url('${posterUrl(i)}')" aria-hidden="true"></div>`;
     const out = [];
+
     out.push({
       cls: "wr-intro",
-      html: `<small>Movie Nights</small><h2>${name ? `${esc(name)}, here's` : "Here's"} your ${w.year}</h2><p>Tap to start</p>`,
+      bg: wall(),
+      html: `${a(0, "Movie Nights · Wrapped", "small")}
+        ${a(1, `<span class="wr-year">${w.year}</span>`, "div")}
+        ${a(2, `${name ? `${esc(name)}, this` : "This"} was your year in movies`, "h2")}
+        ${a(4, '<span class="wr-hint"><i class="fa-solid fa-hand-pointer"></i> Tap to go on · hold to pause</span>', "p")}`,
     });
+
     out.push({
       cls: "wr-count",
-      html: `<small>This year you watched</small><div class="wr-big">${w.count}</div><h3>title${w.count === 1 ? "" : "s"}</h3>
-        <p>${[
-          w.byType.movie && `${w.byType.movie} movie${w.byType.movie === 1 ? "" : "s"}`,
-          w.byType.tv && `${w.byType.tv} series`,
-          w.byType.anime && `${w.byType.anime} anime`,
+      bg: wall(),
+      html: `${a(0, "This year you watched", "small")}
+        ${a(1, count(w.count), "div", "wr-big")}
+        ${a(2, `title${w.count === 1 ? "" : "s"}`, "h3")}
+        ${a(3, `<div class="wr-pills">${[
+          w.byType.movie && `<span><i class="fa-solid fa-film"></i> ${w.byType.movie} movie${w.byType.movie === 1 ? "" : "s"}</span>`,
+          w.byType.tv && `<span><i class="fa-solid fa-tv"></i> ${w.byType.tv} series</span>`,
+          w.byType.anime && `<span><i class="fa-solid fa-dragon"></i> ${w.byType.anime} anime</span>`,
         ]
           .filter(Boolean)
-          .join(" · ")}</p>
-        ${w.hours >= 5 ? `<p class="wr-note">That's about <b>${w.hours} hours</b> of movies alone.</p>` : ""}`,
+          .join("")}</div>`)}
+        ${w.hours >= 5 ? a(4, `That's about <b>${count(w.hours)} hours</b> of movies`, "p", "wr-note") : ""}`,
     });
+
     if (w.first)
       out.push({
         cls: "wr-first",
-        html: `<small>Your year started with</small>${poster(w.first)}<h3>${esc(Lang.title(w.first))}</h3><p>${new Date(`${w.first.watchedAt}T00:00:00`).getDate()} ${MONTHS[Number(w.first.watchedAt.slice(5, 7)) - 1]}</p>`,
+        bg: blurred(w.first),
+        html: `${a(0, "Your year started with", "small")}
+          ${a(1, `<img class="wr-poster" src="${posterUrl(w.first)}" alt="" />`, "div", "wr-pop")}
+          ${a(2, esc(Lang.title(w.first)), "h3")}
+          ${a(3, `<i class="fa-regular fa-calendar"></i> ${new Date(`${w.first.watchedAt}T00:00:00`).getDate()} ${MONTHS[Number(w.first.watchedAt.slice(5, 7)) - 1]}`, "p")}`,
       });
+
     if (w.genres.length) {
       const max = w.genres[0][1];
       out.push({
         cls: "wr-genres",
-        html: `<small>Your top genre was</small><h2>${esc(w.genres[0][0])}</h2>
+        html: `${a(0, "Your top genre was", "small")}
+          ${a(1, esc(w.genres[0][0]), "h2", "wr-glow")}
           <div class="wr-bars">${w.genres
-            .map(([g, c]) => `<div class="wr-bar"><span>${esc(g)}</span><div><i style="width:${(c / max) * 100}%"></i></div><b>${c}</b></div>`)
+            .map(
+              ([g, c], n) => `<div class="wr-bar wr-a" style="--d:${(n + 2) * 140}ms">
+                <span>${esc(g)}</span><div><i style="--w:${(c / max) * 100}%;--d:${(n + 3) * 140}ms"></i></div><b>${c}</b></div>`
+            )
             .join("")}</div>`,
       });
     }
-    if (w.count >= 3)
+
+    if (w.count >= 3) {
+      const max = Math.max(1, ...w.months);
       out.push({
         cls: "wr-months",
-        html: `<small>Your busiest month</small><h2>${MONTHS[w.busiest]}</h2><p>${w.months[w.busiest]} titles</p>
+        html: `${a(0, "Your busiest month", "small")}
+          ${a(1, MONTHS[w.busiest], "h2", "wr-glow")}
+          ${a(2, `${count(w.months[w.busiest])} titles`, "p")}
           <div class="wr-cols">${w.months
-            .map((m, i) => `<div class="${i === w.busiest ? "on" : ""}"><i style="height:${(m / Math.max(1, ...w.months)) * 100}%"></i><span>${MONTHS[i][0]}</span></div>`)
+            .map(
+              (m, i) => `<div class="${i === w.busiest ? "on" : ""}"><i style="--h:${(m / max) * 100}%;--d:${400 + i * 60}ms"></i><span>${MONTHS[i][0]}</span></div>`
+            )
             .join("")}</div>`,
       });
+    }
+
     if (w.top)
       out.push({
         cls: "wr-top",
-        html: `<small>Your highest-rated of the year</small>${poster(w.top)}<h3>${esc(Lang.title(w.top))}</h3><div class="wr-score">★ ${Cards.formatRating(w.top.rating)}</div>`,
+        bg: blurred(w.top),
+        html: `${a(0, "Your highest-rated of the year", "small")}
+          ${a(1, `<img class="wr-poster wr-tilt" src="${posterUrl(w.top)}" alt="" />`, "div", "wr-pop")}
+          ${a(2, esc(Lang.title(w.top)), "h3")}
+          ${a(3, `<i class="fa-solid fa-star"></i> ${count(w.top.rating, w.top.rating % 1 ? 1 : 0)}`, "div", "wr-score")}`,
       });
+
     if (w.actor)
       out.push({
         cls: "wr-actor",
-        html: `<small>The face of your year</small>${w.actor.photo ? `<img class="wr-face" src="${Store.img(w.actor.photo, "w300")}" alt="" />` : ""}<h2>${esc(w.actor.name)}</h2>
-          <p>In ${w.actor.titles.length} of your titles: ${w.actor.titles.slice(0, 3).map(esc).join(", ")}${w.actor.titles.length > 3 ? "…" : ""}</p>
-          ${w.director ? `<p class="wr-note">And your director: <b>${esc(w.director.name)}</b> (${w.director.titles.length} titles)</p>` : ""}`,
+        html: `${a(0, "The face of your year", "small")}
+          ${w.actor.photo ? a(1, `<img class="wr-face" src="${Store.img(w.actor.photo, "w300")}" alt="" />`, "div", "wr-pop wr-ring") : ""}
+          ${a(2, esc(w.actor.name), "h2")}
+          ${a(3, `In <b>${w.actor.titles.length}</b> of your titles`, "p")}
+          ${a(4, `<div class="wr-pills">${w.actor.titles.slice(0, 3).map((t) => `<span>${esc(t)}</span>`).join("")}</div>`)}
+          ${w.director ? a(5, `And your director: <b>${esc(w.director.name)}</b> (${w.director.titles.length} titles)`, "p", "wr-note") : ""}`,
       });
+
     if (w.avg != null)
       out.push({
         cls: "wr-avg",
-        html: `<small>On average you gave</small><div class="wr-big">${w.avg.toFixed(1)}</div><h3>out of 10</h3>
-          <p>${w.avg >= 8 ? "Generous! You love what you watch." : w.avg >= 6.5 ? "Fair and balanced." : "A tough critic."}${w.tens ? ` And ${w.tens} perfect 10${w.tens === 1 ? "" : "s"}.` : ""}</p>`,
+        html: `${a(0, "On average you gave", "small")}
+          ${a(1, count(w.avg, 1), "div", "wr-big")}
+          ${a(2, "out of 10", "h3")}
+          ${a(3, w.avg >= 8 ? "Generous! You love what you watch." : w.avg >= 6.5 ? "Fair and balanced." : "A tough critic.", "p")}
+          ${w.tens ? a(4, `<span class="wr-tens">${"★".repeat(Math.min(w.tens, 5))}</span> ${w.tens} perfect 10${w.tens === 1 ? "" : "s"}`, "p", "wr-note") : ""}`,
       });
+
     out.push({
       cls: "wr-sum",
-      html: `<small>Movie Nights Wrapped</small><h2>${w.year}</h2>
+      bg: wall(),
+      confetti: true,
+      html: `${a(0, "Movie Nights Wrapped", "small")}
+        ${a(1, `<span class="wr-year">${w.year}</span>`)}
         <div class="wr-grid">
-          <div><b>${w.count}</b><span>watched</span></div>
-          <div><b>${w.genres.length ? esc(w.genres[0][0]) : "–"}</b><span>top genre</span></div>
-          <div><b>${w.avg != null ? w.avg.toFixed(1) : "–"}</b><span>average score</span></div>
-          <div><b>${MONTHS[w.busiest].slice(0, 3)}</b><span>busiest month</span></div>
+          ${a(2, `<b>${count(w.count)}</b><span>watched</span>`)}
+          ${a(3, `<b>${w.genres.length ? esc(w.genres[0][0]) : "–"}</b><span>top genre</span>`)}
+          ${a(4, `<b>${w.avg != null ? count(w.avg, 1) : "–"}</b><span>average score</span>`)}
+          ${a(5, `<b>${MONTHS[w.busiest].slice(0, 3)}</b><span>busiest month</span>`)}
         </div>
-        ${w.top ? `<p>Best of the year: <b>${esc(Lang.title(w.top))}</b></p>` : ""}
-        <button class="btn btn-primary wr-share" type="button"><i class="fa-solid fa-share-nodes"></i> Share</button>`,
+        ${w.top ? a(6, `Best of the year: <b>${esc(Lang.title(w.top))}</b>`, "p") : ""}
+        ${a(7, `<div class="wr-actions">
+            <button class="btn wr-replay" type="button"><i class="fa-solid fa-rotate-left"></i> Replay</button>
+            <button class="btn btn-primary wr-share" type="button"><i class="fa-solid fa-share-nodes"></i> Share</button>
+          </div>`)}`,
     });
     return out;
   }
+
+  /* ---------------- the player ---------------- */
 
   let overlay;
   let index = 0;
   let deck = [];
   let data = null;
+  let timer = null;
+  let startedAt = 0;
+  let left = DURATION; // ms left on the current card
+  let paused = false;
 
-  function show(n) {
-    index = Math.max(0, Math.min(deck.length - 1, n));
-    overlay.querySelector(".wr-bars-top").innerHTML = deck.map((_, i) => `<span class="${i < index ? "done" : i === index ? "now" : ""}"></span>`).join("");
+  function countUp(root) {
+    root.querySelectorAll("[data-count]").forEach((el) => {
+      const to = Number(el.dataset.count);
+      const dec = Number(el.dataset.dec) || 0;
+      const t0 = performance.now() + 250;
+      const step = (t) => {
+        const p = Math.min(1, Math.max(0, (t - t0) / 1100));
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = (to * eased).toFixed(dec);
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+  }
+
+  function confetti(root) {
+    const colors = ["#e0393e", "#f5c518", "#46d369", "#2a5bd7", "#9b2fae", "#ffffff"];
+    const box = document.createElement("div");
+    box.className = "wr-confetti";
+    box.innerHTML = Array.from({ length: 44 }, () => {
+      const x = Math.random() * 100;
+      const r = Math.random() * 360;
+      return `<i style="left:${x}%;background:${colors[Math.floor(Math.random() * colors.length)]};--r:${r}deg;--x:${(Math.random() - 0.5) * 160}px;--t:${
+        2.4 + Math.random() * 1.8
+      }s;--d:${Math.random() * 0.6}s"></i>`;
+    }).join("");
+    root.append(box);
+  }
+
+  // run the clock for the current card (it goes on by itself; paused while you hold)
+  function runClock() {
+    clearTimeout(timer);
+    if (paused || index === deck.length - 1) return; // the last card stays
+    startedAt = Date.now();
+    timer = setTimeout(() => show(index + 1, 1), left);
+  }
+
+  function setPaused(on) {
+    if (on === paused) return;
+    paused = on;
+    overlay.classList.toggle("paused", on);
+    if (on) {
+      clearTimeout(timer);
+      left = Math.max(0, left - (Date.now() - startedAt));
+    } else runClock();
+  }
+
+  function show(n, dir) {
+    if (n < 0 || n >= deck.length) return;
+    index = n;
+    left = DURATION;
+    overlay.querySelector(".wr-bars-top").innerHTML = deck
+      .map((_, i) => `<span class="${i < index ? "done" : i === index ? "now" : ""}"><i style="--t:${DURATION}ms"></i></span>`)
+      .join("");
     const c = deck[index];
-    overlay.querySelector(".wr-card").className = `wr-card ${c.cls}`;
-    overlay.querySelector(".wr-card").innerHTML = c.html;
+    const card = overlay.querySelector(".wr-card");
+    card.className = `wr-card ${c.cls} ${dir < 0 ? "from-left" : "from-right"}`;
+    card.innerHTML = `<div class="wr-bg" aria-hidden="true"><span class="wr-blob b1"></span><span class="wr-blob b2"></span><span class="wr-blob b3"></span></div>${
+      c.bg || ""
+    }<div class="wr-grain" aria-hidden="true"></div><div class="wr-content">${c.html}</div>`;
+    countUp(card);
+    if (c.confetti) confetti(card);
+    runClock();
   }
 
   function close() {
+    clearTimeout(timer);
     overlay.classList.remove("open");
     document.documentElement.classList.remove("wr-lock");
   }
@@ -180,18 +312,42 @@
       <button class="wr-nav wr-next" type="button" aria-label="Next"></button>
     </div>`;
     document.body.append(overlay);
+
+    // hold to pause; a quick tap goes back / on
+    let downAt = 0;
+    const stage = overlay.querySelector(".wr-stage");
+    stage.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("button:not(.wr-nav)")) return;
+      downAt = Date.now();
+      setPaused(true);
+    });
+    const release = () => downAt && setPaused(false);
+    stage.addEventListener("pointerup", release);
+    stage.addEventListener("pointerleave", release);
+    stage.addEventListener("pointercancel", release);
+
     overlay.addEventListener("click", (e) => {
       if (e.target.closest(".wr-close")) return close();
       if (e.target.closest(".wr-share")) return share();
-      if (e.target.closest(".wr-prev")) return show(index - 1);
-      if (e.target.closest(".wr-next")) return index === deck.length - 1 ? close() : show(index + 1);
+      if (e.target.closest(".wr-replay")) return show(0, -1);
+      const held = downAt && Date.now() - downAt > 300; // that was a hold, not a tap
+      downAt = 0;
+      if (held) return;
+      if (e.target.closest(".wr-prev")) return show(index - 1, -1);
+      // (the last card stays open: ✕ or Esc closes it)
+      if (e.target.closest(".wr-next")) return show(index + 1, 1);
     });
     document.addEventListener("keydown", (e) => {
       if (!overlay.classList.contains("open")) return;
       if (e.key === "Escape") close();
-      if (e.key === "ArrowRight") show(index + 1);
-      if (e.key === "ArrowLeft") show(index - 1);
+      if (e.key === "ArrowRight") show(index + 1, 1);
+      if (e.key === "ArrowLeft") show(index - 1, -1);
+      if (e.key === " ") {
+        e.preventDefault();
+        setPaused(!paused);
+      }
     });
+    document.addEventListener("visibilitychange", () => overlay.classList.contains("open") && setPaused(document.hidden));
   }
 
   async function share() {
@@ -222,9 +378,11 @@
     }
     deck = cards(data);
     if (!overlay) build();
+    paused = false;
+    overlay.classList.remove("paused");
     overlay.classList.add("open");
     document.documentElement.classList.add("wr-lock");
-    show(0);
+    show(0, 1);
   }
 
   window.Wrapped = { open, yearToShow };

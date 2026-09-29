@@ -88,7 +88,10 @@ your Watchlist, or from your Favorites for a rewatch.
   per person (who they play here, and small posters of your titles they're in).
 - **Movie Nights Wrapped** (Profile → Watch diary): your year as a story: how many you watched,
   where it started, top genres, busiest month, your best-rated, the actor and director you saw
-  most, your average score, and a summary you can share.
+  most, your average score, and a summary you can share. Plays by itself like Instagram stories
+  (tap right / left, hold to pause, ← → and Space on a computer); lines slide in, numbers count
+  up, bars grow, colours drift behind, a wall of your year's posters scrolls on the intro and
+  summary, and the summary ends with confetti and Replay.
 
 **New library?** Home and Watchlist show a welcome card with the three ways to start
 (Discover, search, import).
