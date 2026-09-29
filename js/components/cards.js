@@ -444,7 +444,13 @@
 
   // hold a poster for half a second (without scrolling)
   let press = null;
-  let pressed = false;
+  let pressed = false; // the menu just opened and the finger is still down
+  let openedAt = 0;
+  const clearSelection = () => {
+    try {
+      window.getSelection().removeAllRanges();
+    } catch (e) {}
+  };
   document.addEventListener(
     "touchstart",
     (e) => {
@@ -453,6 +459,8 @@
       const t = e.touches[0];
       press = { x: t.clientX, y: t.clientY, timer: setTimeout(() => {
         pressed = true;
+        openedAt = Date.now();
+        clearSelection();
         if (navigator.vibrate) navigator.vibrate(10);
         openQuick(el.dataset.id);
       }, 500) };
@@ -465,15 +473,33 @@
     const t = e.touches[0];
     if (Math.abs(t.clientX - press.x) > 10 || Math.abs(t.clientY - press.y) > 10) cancelPress();
   }, { passive: true });
-  document.addEventListener("touchend", cancelPress);
-  document.addEventListener("touchcancel", cancelPress);
-  // the finger lifting after a long-press isn't a tap on the poster
+  // lifting the finger after a long-press: not a tap (on the poster, or on the menu row that
+  // slid up under it), and nothing gets selected
+  document.addEventListener(
+    "touchend",
+    (e) => {
+      cancelPress();
+      if (!pressed) return;
+      pressed = false;
+      e.preventDefault();
+      clearSelection();
+    },
+    { passive: false }
+  );
+  document.addEventListener("touchcancel", () => {
+    cancelPress();
+    pressed = false;
+  });
+  // the phone would start selecting text / the picture while you hold a poster
+  document.addEventListener("selectstart", (e) => {
+    if (press || pressed) e.preventDefault();
+  });
+  // backup for browsers that still send the tap: ignore it for a moment after opening
   document.addEventListener(
     "click",
     (e) => {
-      if (!pressed) return;
-      pressed = false;
-      if (quickCard(e.target)) {
+      if (Date.now() - openedAt > 600) return;
+      if (quickCard(e.target) || (e.target.closest && e.target.closest(".quick-modal"))) {
         e.preventDefault();
         e.stopPropagation();
       }

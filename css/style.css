@@ -9200,3 +9200,15 @@ html.app-ui:root[data-theme="light"] .tab-bar {
   height: 24px;
   font-size: 11px;
 }
+
+/* long-press on a phone opens the quick menu, not text / picture selection */
+.movie-item[data-id],
+.quick-modal,
+.qa-card {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.movie-item img {
+  -webkit-user-drag: none;
+}
