@@ -11647,3 +11647,487 @@ html.wr-lock {
   }
 }
 
+/* ============================== Profile page: motion and details ==============================
+   .pv-anim blocks play when they scroll into view (js adds .in); .no-anim = end state straight away. */
+
+/* cards rise in */
+.pv .pv-anim {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.6s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s, background 0.2s;
+}
+
+.pv .pv-anim.in {
+  opacity: 1;
+  transform: none;
+}
+
+.pv .pv-stats .pv-anim:nth-child(2),
+.pv .pv-diary .pv-anim:nth-child(2) { transition-delay: 0.06s; }
+.pv .pv-stats .pv-anim:nth-child(3),
+.pv .pv-diary .pv-anim:nth-child(3) { transition-delay: 0.12s; }
+.pv .pv-stats .pv-anim:nth-child(4),
+.pv .pv-diary .pv-anim:nth-child(4) { transition-delay: 0.18s; }
+.pv .pv-stats .pv-anim:nth-child(5) { transition-delay: 0.24s; }
+.pv .pv-stats .pv-anim:nth-child(6) { transition-delay: 0.3s; }
+
+.pv .no-anim,
+.pv .no-anim * {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* stat cards: 3 a row (2 on phones), room for the poster fan on the right */
+.pv .pv-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pv .pv-stat {
+  position: relative;
+  overflow: hidden;
+  min-height: 150px;
+}
+
+.pv .pv-stat:has(.pv-fan) > :not(.pv-fan):not(.xr-label) {
+  max-width: calc(100% - 110px);
+}
+
+.pv .pv-stat > :not(.pv-fan) {
+  position: relative;
+  z-index: 1;
+}
+
+.pv-fan {
+  position: absolute;
+  right: 18px;
+  bottom: -16px;
+  width: 120px;
+  height: 130px;
+  pointer-events: none;
+}
+
+.pv-fan img {
+  position: absolute;
+  right: calc(var(--n) * 20px);
+  bottom: 0;
+  width: 72px;
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5);
+  opacity: 0.85;
+  transform: rotate(calc(8deg - var(--n) * 8deg));
+  transform-origin: bottom center;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), right 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pv-fan img:nth-child(1) { z-index: 3; }
+.pv-fan img:nth-child(2) { z-index: 2; }
+.pv-fan img:nth-child(3) { z-index: 1; }
+
+.pv .pv-stat:hover .pv-fan img {
+  right: calc(var(--n) * 26px);
+  transform: rotate(calc(12deg - var(--n) * 12deg)) translateY(-8px);
+}
+
+/* the Rated bar fills up */
+.pv .pv-progress span {
+  width: 0;
+  transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.3s;
+}
+
+.pv .pv-anim.in .pv-progress span {
+  width: var(--w);
+}
+
+/* five stars filled to your average */
+.pv-stars {
+  position: relative;
+  display: inline-block;
+  width: max-content;
+  color: var(--glass-bg-hover);
+  font-size: 18px;
+  letter-spacing: 3px;
+}
+
+.pv-stars-on {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  overflow: hidden;
+  color: var(--gold);
+  white-space: nowrap;
+  text-shadow: 0 0 12px rgba(245, 197, 24, 0.5);
+  transition: width 1.3s cubic-bezier(0.22, 1, 0.36, 1) 0.3s;
+}
+
+.pv .pv-anim.in .pv-stars-on {
+  width: var(--s);
+}
+
+.pv-stat small b {
+  color: var(--text);
+}
+
+/* this month vs last month */
+.pv-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--glass-bg-hover);
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.pv-trend.up {
+  background: rgba(70, 211, 105, 0.14);
+  color: #46d369;
+}
+
+.pv-trend.down {
+  background: rgba(185, 34, 34, 0.18);
+  color: #ff6b63;
+}
+
+/* columns (months, ratings) rise one after another */
+.pv .pv-month-bar i {
+  height: 0;
+  transition: height 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--d, 0ms) + 0.2s);
+}
+
+.pv .pv-anim.in .pv-month-bar i {
+  height: var(--h);
+}
+
+.pv .pv-month-num {
+  opacity: 0;
+  transition: opacity 0.4s ease 0.9s;
+}
+
+.pv .pv-anim.in .pv-month-num {
+  opacity: 1;
+}
+
+/* months are buttons: tap one to see its titles */
+.pv button.pv-month {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pv button.pv-month:disabled {
+  cursor: default;
+}
+
+.pv button.pv-month:not(:disabled):hover .pv-month-bar {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pv .pv-month.picked .pv-month-bar i,
+.pv .pv-month.peak .pv-month-bar i {
+  background: linear-gradient(180deg, #ff8a84, #e0393e);
+  box-shadow: 0 0 20px rgba(224, 57, 62, 0.65);
+}
+
+.pv .pv-month.picked small,
+.pv .pv-month.peak small {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.pv .pv-month.now:not(.picked) small {
+  font-weight: 600;
+}
+
+.pv-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 14px;
+}
+
+.pv-card-head small {
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+/* the picked month's posters */
+.pv-month-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.pv-strip-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.pv-strip-head small {
+  color: var(--text-muted);
+}
+
+.pv-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 92px;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+
+.pv-strip-item {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  animation: pv-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d);
+}
+
+.pv-strip-item img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s;
+}
+
+.pv-strip-item:hover img {
+  transform: translateY(-3px);
+}
+
+.pv-strip-item b {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.65);
+  color: var(--gold);
+  font-size: 11px;
+}
+
+.pv-strip-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes pv-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+}
+
+/* the ratings caption: chips */
+.pv-caption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg-hover);
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.pv-chip b {
+  color: var(--text);
+}
+
+.pv-chip i {
+  color: var(--gold);
+}
+
+/* decades: bars fill in, the best title under each */
+.pv .pv-bar i {
+  width: 0;
+  transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--d, 0ms) + 0.2s);
+}
+
+.pv .pv-anim.in .pv-bar i {
+  width: var(--w);
+}
+
+.pv-decade {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pv-best {
+  overflow: hidden;
+  margin-left: 82px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pv-best:hover {
+  color: var(--text);
+}
+
+.pv-best i {
+  margin-right: 3px;
+  color: var(--gold);
+  font-size: 10px;
+}
+
+.pv-best span {
+  color: var(--gold);
+}
+
+.pv .decade-chart {
+  gap: 12px;
+}
+
+/* Your taste: ratings across the top, decades and types side by side under it */
+.pv .pv-charts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pv .pv-charts .pv-histo-card {
+  grid-column: 1 / -1;
+}
+
+.pv .pv-histo-cols {
+  height: 190px;
+}
+
+@media (max-width: 800px) {
+  .pv .pv-charts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* average by type: rings that fill */
+@property --pv-p {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+.pv-rings {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  text-align: center;
+}
+
+.pv-ring-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.pv-ring {
+  --pv-p: 0;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, #1b1b1f 78%, transparent 79%),
+    conic-gradient(from 0deg, #ff6b63, var(--accent) calc(var(--pv-p) * 1%), var(--glass-bg-hover) 0);
+  transition: --pv-p 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--d, 0ms) + 0.2s);
+}
+
+:root[data-theme="light"] .pv-ring {
+  background:
+    radial-gradient(closest-side, var(--surface) 78%, transparent 79%),
+    conic-gradient(from 0deg, #ff6b63, var(--accent) calc(var(--pv-p) * 1%), var(--glass-bg-hover) 0);
+}
+
+.pv .pv-anim.in .pv-ring {
+  --pv-p: var(--p);
+}
+
+.pv-ring b {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.pv-ring-item strong {
+  font-size: 14px;
+}
+
+.pv-ring-item small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .pv .pv-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .pv-fan {
+    right: 4px;
+    transform: scale(0.6);
+    transform-origin: bottom right;
+  }
+
+  .pv .pv-stat:has(.pv-fan) > :not(.pv-fan):not(.xr-label) {
+    max-width: calc(100% - 60px);
+  }
+
+  .pv-ring {
+    width: 80px;
+    height: 80px;
+  }
+
+  .pv-ring b {
+    font-size: 20px;
+  }
+
+  .pv-best {
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv .pv-anim,
+  .pv .pv-anim * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+

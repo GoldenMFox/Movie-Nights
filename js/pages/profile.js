@@ -114,26 +114,40 @@
   /* ---------------- helpers ---------------- */
 
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const bar = (name, value, max, text) =>
-    `<div class="pv-bar"><span>${name}</span><div><i style="width:${max ? Math.max(2, (value / max) * 100) : 0}%"></i></div><b>${text ?? value}</b></div>`;
 
   /* ---------------- stat cards (X-Ray style) ---------------- */
 
+  // a number that counts up when it comes into view (see reveal() below)
+  const num = (v, dec = 0) => `<span data-count="${v}" data-dec="${dec}">${Number(v).toFixed(dec)}</span>`;
+  // a small fan of posters in a card's corner (spreads out on hover)
+  const fan = (list) =>
+    list.length
+      ? `<span class="pv-fan" aria-hidden="true">${list
+          .slice(0, 3)
+          .map((i, n) => `<img src="${Store.poster(Cards.posterOf(i), "w154")}" alt="" loading="lazy" style="--n:${n}" />`)
+          .join("")}</span>`
+      : "";
+
   function renderStatCards(all, rated, avg) {
     const pct = all.length ? Math.round((rated.length / all.length) * 100) : 0;
+    const byRating = (a, b) => b.rating - a.rating || b.order - a.order;
+    const newest = all.slice().sort((a, b) => b.order - a.order);
+    const tens = rated.filter((i) => i.rating === 10);
     const card = (icon, name, big, sub, href, extra = "") =>
-      `<${href ? `a href="${href}"` : "div"} class="xr-card pv-stat">
+      `<${href ? `a href="${href}"` : "div"} class="xr-card pv-stat pv-anim">
         ${label(icon, name)}
         <div class="pv-big">${big}</div>
         ${sub ? `<small>${sub}</small>` : ""}${extra}
       </${href ? "a" : "div"}>`;
+    // five stars, filled to your average
+    const stars = `<span class="pv-stars" style="--s:${(avg / 10) * 100}%" aria-hidden="true"><span>★★★★★</span><span class="pv-stars-on">★★★★★</span></span>`;
     $(".pv-stats").innerHTML = [
-      card("fa-film", "Titles", all.length, "in your library", "movies.html"),
-      card("fa-star", "Rated", rated.length, `${pct}% of your library`, "", `<div class="col-bar pv-progress"><span style="width:${pct}%"></span></div>`),
-      card("fa-chart-line", "Average", rated.length ? avg.toFixed(1) : "–", "out of 10"),
-      card("fa-crown", "Perfect 10s", rated.filter((i) => i.rating === 10).length, "the very best", "movies.html?sort=rating-desc"),
-      card("fa-heart", "Favorites", all.filter((i) => i.favorite).length, "hearted", "watchlist.html?list=fav"),
-      card("fa-bookmark", "Watchlist", all.filter((i) => i.watchlist).length, "waiting to be watched", "watchlist.html"),
+      card("fa-film", "Titles", num(all.length), "in your library", "movies.html", fan(newest)),
+      card("fa-star", "Rated", num(rated.length), `${pct}% of your library`, "", `<div class="col-bar pv-progress"><span style="--w:${pct}%"></span></div>${fan(rated.slice().sort(byRating))}`),
+      card("fa-chart-line", "Average", rated.length ? num(avg.toFixed(1), 1) : "–", "out of 10", "", rated.length ? stars : ""),
+      card("fa-crown", "Perfect 10s", num(tens.length), "the very best", "movies.html?sort=rating-desc", fan(tens.slice().sort(() => Math.random() - 0.5))),
+      card("fa-heart", "Favorites", num(all.filter((i) => i.favorite).length), "hearted", "watchlist.html?list=fav", fan(newest.filter((i) => i.favorite))),
+      card("fa-bookmark", "Watchlist", num(all.filter((i) => i.watchlist).length), "waiting to be watched", "watchlist.html", fan(newest.filter((i) => i.watchlist))),
     ].join("");
   }
 
@@ -171,16 +185,36 @@
     const now = new Date();
     const year = String(now.getFullYear());
     const thisYear = dated.filter((i) => i.watchedAt.startsWith(year)).length;
-    const month = dated.filter((i) => i.watchedAt.startsWith(Store.today().slice(0, 7))).length;
 
     // the last 12 months, oldest first
     const months = [];
     for (let n = 11; n >= 0; n--) {
       const d = new Date(now.getFullYear(), now.getMonth() - n, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      months.push({ label: MONTHS[d.getMonth()], value: dated.filter((i) => i.watchedAt.startsWith(key)).length });
+      months.push({ key, label: MONTHS[d.getMonth()], long: d.toLocaleString("en", { month: "long", year: "numeric" }), items: dated.filter((i) => i.watchedAt.startsWith(key)) });
     }
+    months.forEach((m) => (m.value = m.items.length));
     const max = Math.max(1, ...months.map((m) => m.value));
+    const month = months[11].value;
+    const last = months[10];
+
+    // this month vs last month: ▲ 3 / ▼ 2 / same
+    const diff = month - last.value;
+    const trend =
+      diff > 0
+        ? `<span class="pv-trend up"><i class="fa-solid fa-arrow-trend-up"></i> ${diff} more than ${last.label}</span>`
+        : diff < 0
+          ? `<span class="pv-trend down"><i class="fa-solid fa-arrow-trend-down"></i> ${-diff} fewer than ${last.label}</span>`
+          : `<span class="pv-trend">same as ${last.label}</span>`;
+    const monthsIn = now.getMonth() + 1;
+    const first = dated[dated.length - 1].watchedAt;
+    const firstNice = (() => {
+      const x = new Date(`${first}T00:00:00`);
+      return `${x.getDate()} ${MONTHS[x.getMonth()]} ${x.getFullYear()}`;
+    })();
+    // the month shown under the chart: the one you clicked, else the latest with something in it
+    if (!months.some((m) => m.key === diaryMonth && m.value)) diaryMonth = (months.slice().reverse().find((m) => m.value) || months[11]).key;
+    const picked = months.find((m) => m.key === diaryMonth);
 
     // "a year ago": watched within a week of this day, last year
     const ago = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
@@ -195,26 +229,48 @@
 
     box.innerHTML = `
       <div class="xr-grid pv-diary">
-        <div class="xr-card pv-stat">${label("fa-calendar", `In ${year}`)}<div class="pv-big">${thisYear}</div><small>watched</small></div>
-        <div class="xr-card pv-stat">${label("fa-calendar-day", "This month")}<div class="pv-big">${month}</div><small>watched</small></div>
-        <div class="xr-card pv-stat">${label("fa-book-open", "All time")}<div class="pv-big">${dated.length}</div><small>in your diary</small></div>
-        <div class="xr-card xr-money pv-months-card"${months.some((m) => m.value) ? "" : " hidden"}>
-          ${label("fa-chart-column", "Last 12 months")}
-          <div class="pv-months" role="img" aria-label="Titles watched per month, last 12 months">
+        <div class="xr-card pv-stat pv-anim">${label("fa-calendar", `In ${year}`)}<div class="pv-big">${num(thisYear)}</div>
+          <small>watched · about <b>${(thisYear / monthsIn).toFixed(thisYear / monthsIn < 10 ? 1 : 0)}</b> a month</small></div>
+        <div class="xr-card pv-stat pv-anim">${label("fa-calendar-day", "This month")}<div class="pv-big">${num(month)}</div>${trend}</div>
+        <div class="xr-card pv-stat pv-anim">${label("fa-book-open", "All time")}<div class="pv-big">${num(dated.length)}</div><small>in your diary since <b>${firstNice}</b></small></div>
+        <div class="xr-card xr-money pv-months-card pv-anim"${months.some((m) => m.value) ? "" : " hidden"}>
+          <div class="pv-card-head">${label("fa-chart-column", "Last 12 months")}<small>Tap a month to see what you watched</small></div>
+          <div class="pv-months" role="group" aria-label="Titles watched per month, last 12 months">
             ${months
               .map(
-                (m, n) => `<div class="pv-month${n === 11 ? " now" : ""}" title="${m.value} in ${m.label}">
+                (m, n) => `<button type="button" class="pv-month${m.key === diaryMonth ? " picked" : ""}${n === 11 ? " now" : ""}" data-month="${m.key}" title="${m.value} in ${m.long}"${m.value ? "" : " disabled"}>
                   <span class="pv-month-num">${m.value || ""}</span>
-                  <span class="pv-month-bar"><i style="height:${Math.max(3, (m.value / max) * 100)}%"></i></span>
-                  <small>${m.label}</small></div>`
+                  <span class="pv-month-bar"><i style="--h:${m.value ? Math.max(6, (m.value / max) * 100) : 0}%;--d:${n * 45}ms"></i></span>
+                  <small>${m.label}</small></button>`
               )
               .join("")}
+          </div>
+          <div class="pv-month-strip">
+            <div class="pv-strip-head"><strong>${picked.long}</strong><small>${picked.value} title${picked.value === 1 ? "" : "s"}</small></div>
+            <div class="pv-strip">${picked.items
+              .map(
+                (i, n) => `<a class="pv-strip-item" href="title.html?id=${encodeURIComponent(i.id)}" title="${esc(Lang.title(i))}" style="--d:${n * 50}ms">
+                  <img src="${Store.poster(Cards.posterOf(i), "w154")}" alt="" loading="lazy" />
+                  ${i.rating != null ? `<b>★ ${Cards.formatRating(i.rating)}</b>` : ""}
+                  <span>${esc(Lang.title(i))}</span></a>`
+              )
+              .join("")}</div>
           </div>
         </div>
       </div>
       ${memory.length ? row("A year ago you watched", "fa-clock-rotate-left", memory) : ""}
       ${row("Recently watched", "fa-play", dated)}`;
   }
+
+  // the diary's chart: a tap on a month shows its posters under it
+  let diaryMonth = null;
+  root.addEventListener("click", (e) => {
+    const m = e.target.closest("[data-month]");
+    if (!m || m.disabled) return;
+    diaryMonth = m.dataset.month;
+    renderDiary();
+    reveal(true); // (already on screen: straight to the end state, no replay)
+  });
 
   // the Wrapped banner opens the story
   root.addEventListener("click", (e) => {
@@ -258,48 +314,110 @@
     renderDiary();
     renderTop(rated);
 
-    // how you rate: a column for each score, 0 → 10
+    // how you rate: a column for each score, 0 → 10 (they rise one after another)
     const buckets = [];
     for (let n = 0; n <= 10; n++) buckets.push({ label: String(n), value: rated.filter((i) => (n === 10 ? i.rating === 10 : i.rating >= n && i.rating < n + 1)).length });
     const hMax = Math.max(1, ...buckets.map((b) => b.value));
     const peak = buckets.reduce((a, b) => (b.value > a.value ? b : a), buckets[0]);
+    $(".rating-chart").closest(".xr-card").classList.add("pv-anim");
     $(".rating-chart").innerHTML = `
       <div class="pv-months pv-histo-cols">${buckets
         .map(
-          (b) => `<div class="pv-month${b === peak && b.value ? " now" : ""}" title="${b.value} rated ${b.label}">
+          (b, n) => `<div class="pv-month${b === peak && b.value ? " peak" : ""}" title="${b.value} rated ${b.label}">
             <span class="pv-month-num">${b.value || ""}</span>
-            <span class="pv-month-bar"><i style="height:${Math.max(3, (b.value / hMax) * 100)}%"></i></span>
+            <span class="pv-month-bar"><i style="--h:${b.value ? Math.max(6, (b.value / hMax) * 100) : 0}%;--d:${n * 55}ms"></i></span>
             <small>${b.label}</small></div>`
         )
         .join("")}</div>
-      ${rated.length ? `<small class="pv-caption">You give <b>${peak.label}s</b> most often · average <b>${avg(rated).toFixed(1)}</b></small>` : ""}`;
+      ${
+        rated.length
+          ? `<div class="pv-caption"><span class="pv-chip"><i class="fa-solid fa-star"></i> Your favourite score: <b>${peak.label}</b></span>
+             <span class="pv-chip">Average <b>${avg(rated).toFixed(1)}</b></span>
+             <span class="pv-chip">${Math.round((rated.filter((i) => i.rating >= 8).length / rated.length) * 100)}% rated <b>8+</b></span></div>`
+          : ""
+      }`;
 
-    // decades
+    // decades: a bar each, and the best-rated title of that decade
     const decades = {};
     all.forEach((i) => {
       if (!i.year) return;
       const d = Math.floor(i.year / 10) * 10;
-      decades[d] = (decades[d] || 0) + 1;
+      (decades[d] = decades[d] || []).push(i);
     });
-    const dMax = Math.max(1, ...Object.values(decades));
+    const dMax = Math.max(1, ...Object.values(decades).map((l) => l.length));
+    $(".decade-chart").closest(".xr-card").classList.add("pv-anim");
     $(".decade-chart").innerHTML =
       Object.keys(decades)
         .sort()
-        .map((d) => bar(`${d}s`, decades[d], dMax))
+        .map((d, n) => {
+          const list = decades[d];
+          const best = list.filter((i) => i.rating != null).sort((a, b) => b.rating - a.rating)[0];
+          return `<div class="pv-decade">
+            <div class="pv-bar"><span>${d}s</span><div><i style="--w:${Math.max(2, (list.length / dMax) * 100)}%;--d:${n * 70}ms"></i></div><b>${num(list.length)}</b></div>
+            ${best ? `<a class="pv-best" href="title.html?id=${encodeURIComponent(best.id)}"><i class="fa-solid fa-trophy"></i> ${esc(Lang.title(best))} <span>★ ${Cards.formatRating(best.rating)}</span></a>` : ""}
+          </div>`;
+        })
         .join("") || '<p class="pv-empty">Nothing yet.</p>';
 
-    // average by type
-    $(".type-chart").innerHTML = ["movie", "tv", "anime"]
-      .map((t) => {
+    // average by type: three rings that fill up
+    $(".type-chart").closest(".xr-card").classList.add("pv-anim");
+    $(".type-chart").innerHTML = `<div class="pv-rings">${["movie", "tv", "anime"]
+      .map((t, n) => {
         const list = rated.filter((i) => i.type === t);
         const v = avg(list);
-        return bar(Store.TYPE_LABEL[t], v, 10, v ? v.toFixed(1) : "–");
+        return `<div class="pv-ring-item">
+          <div class="pv-ring" style="--p:${v * 10};--d:${n * 150}ms"><b>${v ? num(v.toFixed(1), 1) : "–"}</b></div>
+          <strong>${Store.TYPE_LABEL[t]}</strong><small>${list.length} rated</small>
+        </div>`;
       })
-      .join("");
+      .join("")}</div>`;
   }
 
-  Store.onChange(renderStats);
+  /* ---------------- animations: things play when they come into view ---------------- */
+
+  function countUp(el) {
+    const to = Number(el.dataset.count);
+    const dec = Number(el.dataset.dec) || 0;
+    if (!to) return;
+    const t0 = performance.now();
+    const step = (t) => {
+      const p = Math.min(1, (t - t0) / 1200);
+      el.textContent = (to * (1 - Math.pow(1 - p, 3))).toFixed(dec);
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  let io = null;
+  // instant: show the end state straight away (a redraw of something already seen)
+  function reveal(instant) {
+    const items = [...root.querySelectorAll(".pv-anim:not(.in)")];
+    if (instant || !("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      items.forEach((el) => el.classList.add("in", "no-anim"));
+      return;
+    }
+    if (!io)
+      io = new IntersectionObserver(
+        (entries) =>
+          entries.forEach((en) => {
+            if (!en.isIntersecting) return;
+            io.unobserve(en.target);
+            en.target.classList.add("in");
+            en.target.querySelectorAll("[data-count]").forEach(countUp);
+          }),
+        { threshold: 0.2 }
+      );
+    items.forEach((el) => io.observe(el));
+  }
+
+  let drawn = false;
+  Store.onChange(() => {
+    renderStats();
+    reveal(drawn); // later redraws (you rated something): no replay
+  });
   renderStats();
+  reveal(false);
+  drawn = true;
 
   if (location.hash) {
     const target = document.querySelector(location.hash);
