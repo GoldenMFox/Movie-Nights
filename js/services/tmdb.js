@@ -55,9 +55,9 @@
   const CATEGORIES = {
     trending: { label: "Trending this week", path: "/trending/all/week" },
     "popular-movies": { label: "Popular movies", path: "/movie/popular", media: "movie" },
-    // in cinemas / coming to cinemas in your country (MN_CONFIG.RELEASE_COUNTRY), with its dates
-    "now-playing": { label: "In cinemas", path: "/movie/now_playing", media: "movie", params: { region: ((window.MN_CONFIG || {}).RELEASE_COUNTRY || "RO").toUpperCase() } },
-    upcoming: { label: "Coming soon", path: "/movie/upcoming", media: "movie", params: { region: ((window.MN_CONFIG || {}).RELEASE_COUNTRY || "RO").toUpperCase() } },
+    // worldwide lists (only the release dates on the labels are Romania's)
+    "now-playing": { label: "In cinemas", path: "/movie/now_playing", media: "movie" },
+    upcoming: { label: "Coming soon", path: "/movie/upcoming", media: "movie" },
     // TMDB's own "top rated" lists let in titles with only a few hundred votes,
     // so these ask for well-known titles only (thousands of votes)
     "top-movies": {
