@@ -51,13 +51,22 @@
     };
     const restart = () => {
       clearInterval(timer);
-      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) timer = setInterval(() => go(index + 1), 8000);
+      // the active dot fills up as the time to the next slide runs out
+      hero.classList.remove("ticking");
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        timer = setInterval(() => go(index + 1), 8000);
+        void hero.offsetWidth;
+        hero.classList.add("ticking");
+      }
     };
 
     hero.querySelector(".prev").onclick = () => go(index - 1);
     hero.querySelector(".next").onclick = () => go(index + 1);
     dots.forEach((d, n) => (d.onclick = () => go(n)));
-    hero.onmouseenter = () => clearInterval(timer);
+    hero.onmouseenter = () => {
+      clearInterval(timer);
+      hero.classList.remove("ticking");
+    };
     hero.onmouseleave = restart;
     // swipe left / right on phones (the arrows are hidden there)
     let startX = null;
@@ -392,6 +401,42 @@
   // "What should I watch?" buttons open the picker (js/components/picker.js)
 
   Store.onChange(renderMine);
+
+  // rows slide in as you scroll to them, their posters one after another. A row seen
+  // once (by its name) stays put when the page redraws it, e.g. after you rate a title.
+  if ("IntersectionObserver" in window && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    document.documentElement.classList.add("home-fx");
+    const revealed = new Set();
+    const io = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((en) => {
+          if (!en.isIntersecting) return;
+          const sec = en.target;
+          sec.classList.add("in");
+          revealed.add(sec.dataset.row);
+          // after the entrance, cards drawn again don't replay it
+          setTimeout(() => sec.classList.add("shown"), 2500);
+          io.unobserve(sec);
+        }),
+      { rootMargin: "0px 0px -60px 0px" }
+    );
+    const watch = (sec) => {
+      if (sec.classList.contains("in")) return;
+      if (revealed.has(sec.dataset.row)) sec.classList.add("in", "shown");
+      else io.observe(sec);
+    };
+    const main = document.querySelector("main");
+    main.querySelectorAll(".row-section").forEach(watch);
+    new MutationObserver((muts) =>
+      muts.forEach((m) =>
+        m.addedNodes.forEach((n) => {
+          if (n.nodeType !== 1) return;
+          if (n.matches(".row-section")) watch(n);
+          n.querySelectorAll(".row-section").forEach(watch);
+        })
+      )
+    ).observe(main, { childList: true, subtree: true });
+  }
 
   if (live) renderLive();
   else slideshow(personalSlides());

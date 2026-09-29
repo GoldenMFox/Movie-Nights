@@ -12268,3 +12268,103 @@ html[data-theme="light"] .sv-meter-bar {
 .movie-grid > .dc-later {
   display: none !important;
 }
+
+/* ============================== Home page: motion ============================== */
+/* (html.home-fx is set by js/pages/home.js, and only when motion isn't turned down) */
+
+/* the banner: a slow zoom out on the picture, the text coming in line by line */
+html.home-fx .hero-slide {
+  overflow: hidden;
+}
+
+html.home-fx .hero-slide.active img {
+  animation: hm-zoom 9s ease-out both;
+}
+
+html.home-fx .hero-slide.active .hero-caption > * {
+  animation: hm-rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+html.home-fx .hero-slide.active .hero-caption > :nth-child(1) { animation-delay: 0.15s; }
+html.home-fx .hero-slide.active .hero-caption > :nth-child(2) { animation-delay: 0.25s; }
+html.home-fx .hero-slide.active .hero-caption > :nth-child(3) { animation-delay: 0.35s; }
+html.home-fx .hero-slide.active .hero-caption > :nth-child(4) { animation-delay: 0.45s; }
+html.home-fx .hero-slide.active .hero-caption > :nth-child(5) { animation-delay: 0.55s; }
+html.home-fx .hero-slide.active .hero-caption > :nth-child(n + 6) { animation-delay: 0.65s; }
+
+/* the active dot fills up until the next slide */
+html.home-fx .hero-dots button {
+  position: relative;
+  overflow: hidden;
+}
+
+html.home-fx .hero.ticking .hero-dots button.active {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+html.home-fx .hero.ticking .hero-dots button.active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #fff;
+  transform-origin: left;
+  animation: hm-tick 8s linear both;
+}
+
+/* rows: the title slides in, then the posters one after another */
+html.home-fx .row-section:not(.in) .row-head,
+html.home-fx .row-section:not(.in) .movie-row > * {
+  opacity: 0;
+}
+
+html.home-fx .row-section.in:not(.shown) .row-head {
+  animation: hm-head 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+html.home-fx .row-section.in:not(.shown) .movie-row > * {
+  animation: hm-card 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: 0.7s;
+}
+
+html.home-fx .row-section.in:not(.shown) .movie-row > :nth-child(1) { animation-delay: 0.1s; }
+html.home-fx .row-section.in:not(.shown) .movie-row > :nth-child(2) { animation-delay: 0.16s; }
+html.home-fx .row-section.in:not(.shown) .movie-row > :nth-child(3) { animation-delay: 0.22s; }
+html.home-fx .row-section.in:not(.shown) .movie-row > :nth-child(4) { animation-delay: 0.28s; }
+html.home-fx .row-section.in:not(.shown) .movie-row > :nth-child(5) { animation-delay: 0.34s; }
+html.home-fx .row-section.in:not(.shown) .movie-row > :nth-child(6) { animation-delay: 0.4s; }
+html.home-fx .row-section.in:not(.shown) .movie-row > :nth-child(7) { animation-delay: 0.46s; }
+html.home-fx .row-section.in:not(.shown) .movie-row > :nth-child(8) { animation-delay: 0.52s; }
+html.home-fx .row-section.in:not(.shown) .movie-row > :nth-child(9) { animation-delay: 0.58s; }
+html.home-fx .row-section.in:not(.shown) .movie-row > :nth-child(10) { animation-delay: 0.64s; }
+
+/* the Top 10 numbers land a moment after their posters */
+html.home-fx .row-section.in:not(.shown) .top10-num {
+  animation: hm-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.45s backwards;
+}
+
+@keyframes hm-zoom {
+  from { transform: scale(1.1); }
+  to { transform: scale(1); }
+}
+
+@keyframes hm-rise {
+  from { opacity: 0; transform: translateY(18px); filter: blur(4px); }
+}
+
+@keyframes hm-tick {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes hm-head {
+  from { opacity: 0; transform: translateX(-24px); }
+}
+
+@keyframes hm-card {
+  from { opacity: 0; transform: translateY(26px) scale(0.94); }
+}
+
+@keyframes hm-pop {
+  from { opacity: 0; transform: scale(0.4) translateY(20px); }
+}
