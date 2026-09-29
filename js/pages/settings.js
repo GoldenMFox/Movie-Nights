@@ -13,7 +13,11 @@
 
   const label = (icon, text) => `<span class="xr-label"><i class="fa-solid ${icon}"></i> ${text}</span>`;
   const card = (id, icon, title, body, extra = "") =>
-    `<section class="xr-card sv-card" id="${id}"${extra}>${label(icon, title)}${body}</section>`;
+    `<section class="xr-card sv-card" id="${id}"${extra}>${
+      extra.includes("data-owner")
+        ? `<div class="sv-head">${label(icon, title)}<span class="sv-admin" title="Only you see this, as the owner"><i class="fa-solid fa-shield-halved"></i> Admin only</span></div>`
+        : label(icon, title)
+    }${body}</section>`;
   // a row: red icon circle, name (+ a line under it), what you can do on the right
   const row = (icon, name, sub, right = "") => `<div class="sv-row">
       <span class="sv-ic"><i class="fa-solid ${icon}"></i></span>
