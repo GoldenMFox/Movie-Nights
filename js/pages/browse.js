@@ -47,7 +47,7 @@
         order: l.items,
         base: (i) => ids.has(i.id),
         chips: "type",
-        empty: `Nothing in "${l.name}" yet. Long-press or right-click any poster → Add to list.`,
+        empty: `Nothing in "${l.name}" yet.`,
       };
     });
   }
@@ -171,6 +171,7 @@
           <button type="button" class="wl-close" aria-label="Close the full list" title="Close"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="wl-list-tools" hidden>
+          <button type="button" class="btn btn-primary wl-add-panel"><i class="fa-solid fa-plus"></i> Add titles</button>
           <button type="button" class="btn wl-rename"><i class="fa-solid fa-pen"></i> Rename</button>
           <button type="button" class="btn wl-delete"><i class="fa-solid fa-trash-can"></i> Delete list</button>
         </div>
@@ -273,14 +274,17 @@
         sec = document.createElement("section");
         sec.className = "row-section wl-row";
         sec.dataset.list = k;
+        const custom = LISTS[k].custom;
+        const addBtn = (cls, label) =>
+          custom ? `<button type="button" class="${cls}" data-add-to="${esc(custom)}"><i class="fa-solid fa-plus"></i> ${label}</button>` : "";
         sec.innerHTML = `<div class="row-head"><h2><i class="fa-solid ${LISTS[k].icon}"></i> <span class="wl-name"></span></h2>
-            <a href="?list=${encodeURIComponent(k)}" class="wl-see" data-see="${esc(k)}"></a></div>
+            <span class="wl-row-tools">${addBtn("wl-add", "Add titles")}<a href="?list=${encodeURIComponent(k)}" class="wl-see" data-see="${esc(k)}"></a></span></div>
           <div class="movie-row"></div>
-          <p class="wl-row-empty" hidden></p>`;
+          <div class="wl-row-empty" hidden><span></span>${addBtn("btn btn-primary wl-add-big", "Add titles")}</div>`;
       }
       if (box.children[n] !== sec) box.insertBefore(sec, box.children[n] || null);
       sec.querySelector(".wl-name").textContent = LISTS[k].label;
-      sec.querySelector(".wl-row-empty").textContent = LISTS[k].empty;
+      sec.querySelector(".wl-row-empty span").textContent = LISTS[k].empty;
     });
     root.querySelector(".wl-switch").innerHTML = keys
       .map((k) => `<button type="button" data-list-switch="${esc(k)}"><i class="fa-solid ${LISTS[k].icon}"></i> ${esc(LISTS[k].label)}<span class="count"></span></button>`)
@@ -435,6 +439,9 @@
       form.hidden = true;
       root.querySelector(".wl-new-btn").hidden = false;
     }
+    const add = e.target.closest("[data-add-to]");
+    if (add) Cards.openListAdder(add.dataset.addTo);
+    if (e.target.closest(".wl-add-panel") && PAGE.custom) Cards.openListAdder(PAGE.custom);
     if (e.target.closest(".wl-rename") && PAGE.custom) {
       const name = prompt("New name for this list", PAGE.label);
       if (name && name.trim()) Store.renameList(PAGE.custom, name);
@@ -452,11 +459,12 @@
       const input = e.target.elements.name;
       if (!input.value.trim()) return input.focus();
       const id = Store.createList(input.value);
-      UI.toast(`List "${input.value.trim()}" made. Long-press or right-click any poster → Add to list`);
+      UI.toast(`List "${input.value.trim()}" made`);
       input.value = "";
       e.target.hidden = true;
       root.querySelector(".wl-new-btn").hidden = false;
       openList(`c-${id}`, true);
+      Cards.openListAdder(id); // straight on to filling it
     });
 
   moreBtn.addEventListener("click", () => {

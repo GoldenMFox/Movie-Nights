@@ -205,8 +205,9 @@
     } else if (action === "t-remind") {
       toggleReminder(hit, key);
     } else if (action === "t-lists") {
-      // a list holds titles from your library: add it there first
-      openLists(addHit(hit).id);
+      // a list holds titles from your library: add it there first, on your Watchlist
+      // (in your library without it means you've watched it)
+      openLists(addHit(hit, inLibrary(hit) ? {} : { watchlist: true }).id);
     } else if (action === "t-trailer") {
       showTrailer(
         hit,
@@ -404,6 +405,105 @@
           })
           .join("")
       : '<p class="lm-empty">No lists yet. Make your first one below.</p>';
+  }
+
+  /* ---------------- "Add titles" to one of your lists: search your library and TMDB ---------------- */
+
+  let adder;
+  let adderList = null;
+  let adderTimer;
+  let adderHits = []; // TMDB results shown right now
+
+  function openListAdder(listId) {
+    const list = Store.lists().find((l) => l.id === listId);
+    if (!list) return;
+    adderList = listId;
+    if (!adder) {
+      adder = makeOverlay(
+        "adder-modal",
+        `<h3 class="ad-title"></h3>
+         <form class="glass-search ad-search" role="search">
+           <i class="fa-solid fa-magnifying-glass gs-icon" aria-hidden="true"></i>
+           <input type="search" name="q" placeholder="Search a movie, show or anime…" aria-label="Search" autocomplete="off" />
+         </form>
+         <p class="ad-hint"></p>
+         <div class="ad-results"></div>`
+      );
+      const input = adder.querySelector('[name="q"]');
+      adder.querySelector(".ad-search").addEventListener("submit", (e) => {
+        e.preventDefault();
+        clearTimeout(adderTimer);
+        fillAdder(input.value);
+      });
+      input.addEventListener("input", () => {
+        clearTimeout(adderTimer);
+        adderTimer = setTimeout(() => fillAdder(input.value), 300);
+      });
+      adder.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-ad]");
+        if (!b) return;
+        let id = b.dataset.ad;
+        const hit = b.dataset.hit != null ? adderHits[Number(b.dataset.hit)] : null;
+        // not in your library yet: it goes in on your Watchlist (a list is mostly what you plan to watch)
+        if (hit) id = addHit(hit, inLibrary(hit) ? {} : { watchlist: true }).id;
+        const on = Store.toggleInList(adderList, id);
+        b.classList.toggle("on", on);
+        b.innerHTML = on ? '<i class="fa-solid fa-check"></i> Added' : '<i class="fa-solid fa-plus"></i> Add';
+        if (hit) {
+          b.dataset.ad = id;
+          delete b.dataset.hit;
+        }
+      });
+    }
+    adder.querySelector(".ad-title").textContent = `Add to "${list.name}"`;
+    adder.querySelector('[name="q"]').value = "";
+    fillAdder("");
+    open(adder);
+  }
+
+  async function fillAdder(query) {
+    const box = adder.querySelector(".ad-results");
+    const hint = adder.querySelector(".ad-hint");
+    const list = Store.lists().find((l) => l.id === adderList);
+    if (!list) return;
+    const q = query.trim();
+    const row = (t, attrs, sub) => {
+      const on = attrs.id && list.items.includes(attrs.id);
+      return `<div class="ad-row">
+          <img src="${Store.poster(posterOf(t), "w92")}" alt="" loading="lazy" />
+          <div><strong>${esc(Lang.title(t))}</strong><small>${[t.year, Store.TYPE_LABEL[t.type], sub].filter(Boolean).map(esc).join(" · ")}</small></div>
+          <button type="button" class="btn ad-btn${on ? " on" : ""}" data-ad="${esc(attrs.id || "")}"${attrs.hit != null ? ` data-hit="${attrs.hit}"` : ""}>
+            ${on ? '<i class="fa-solid fa-check"></i> Added' : '<i class="fa-solid fa-plus"></i> Add'}</button>
+        </div>`;
+    };
+    // nothing typed: suggestions from your library (newest first)
+    const mine = Store.all()
+      .filter((i) => !q || Lang.matches(i, q.toLowerCase()))
+      .sort((a, b) => b.order - a.order)
+      .slice(0, q ? 8 : 12);
+    const mineHtml = mine.map((i) => row(i, { id: i.id }, "in your library")).join("");
+    hint.textContent = q ? "" : "Type a name, or pick from your library:";
+    box.innerHTML = mineHtml || (q ? "" : '<p class="ad-empty">Your library is empty: search above.</p>');
+    if (!q || !window.TMDB || !TMDB.enabled()) return;
+
+    box.insertAdjacentHTML("beforeend", '<p class="ad-loading"><i class="fa-solid fa-spinner fa-spin"></i> Searching TMDB…</p>');
+    try {
+      const { results } = await TMDB.searchSmart(q, "all", 1);
+      if (adder.querySelector('[name="q"]').value.trim() !== q) return; // typed something else meanwhile
+      const ids = new Set(mine.map((i) => i.id));
+      adderHits = results.filter((h) => h.poster).slice(0, 12);
+      const tmdbHtml = adderHits
+        .map((h, n) => {
+          const lib = inLibrary(h);
+          if (lib && ids.has(lib.id)) return "";
+          return lib ? row(lib, { id: lib.id }, "in your library") : row(h, { hit: n }, "");
+        })
+        .join("");
+      box.innerHTML = mineHtml + tmdbHtml || '<p class="ad-empty">Nothing found. Try another spelling.</p>';
+    } catch (e) {
+      const l = box.querySelector(".ad-loading");
+      if (l) l.textContent = `Couldn't search TMDB: ${e.message}`;
+    }
   }
 
   /* ---------------- quick actions: long-press (phones) or right-click (computers) ---------------- */
@@ -1109,6 +1209,7 @@
     addHit,
     removeTitle,
     openQuick,
+    openListAdder,
     hitOf: (key) => hits.get(key), // the TMDB result behind a card (hover preview)
     posterOf,
     isBadTrailer,

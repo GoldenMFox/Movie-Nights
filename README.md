@@ -77,7 +77,9 @@ your Watchlist, or from your Favorites for a rewatch.
   Watchlist; those are counted apart ("· 1 on your Watchlist"). Updates as you add or rate.
   X-Ray's "where you've seen the cast" counts the same way.
 - **Your own lists** ("Halloween marathon", "Date night"): **New list** on the Watchlist page,
-  add titles from the quick menu or a title page's ⋯ menu (Add to a list). Each list gets a
+  then **+ Add titles** (on the list's row, or in the full list): search your library and all
+  of TMDB and tap Add. Also from the quick menu or a title page's ⋯ menu (Add to a list).
+  A title that isn't in your library yet goes in on your Watchlist (not watched yet). Each list gets a
   row and a place in the full-list switch (with Rename / Delete). Saved with your profile.
 - **X-Ray** (title pages): tagline, release, budget and box office, awards (OMDb), studios,
   countries, language, keywords, and **where you've seen the cast** in your own library.
