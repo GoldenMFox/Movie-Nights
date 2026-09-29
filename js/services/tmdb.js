@@ -294,10 +294,18 @@
     const knownExact = exact.some((r) => (r.popularity || 0) >= 5);
     if ((exact.length && (first.results.length >= 5 || knownExact)) || !typed.some((w) => w.length >= 5)) return first;
 
-    // shorter versions: long words cut by 2 letters; then just the longest word, cut
+    // other tries: each word on its own ("forest gump": "gump" finds Forrest Gump), long words
+    // cut by 2 letters, and the longest word cut
     const cut = (w) => (w.length >= 5 ? w.slice(0, Math.max(4, w.length - 2)) : w);
     const longest = typed.slice().sort((a, b) => b.length - a.length)[0];
-    const variants = [...new Set([typed.map(cut).join(" "), cut(longest)])].filter((v) => v && v !== phrase);
+    const STOP = ["the", "and", "of", "a", "an", "in", "on", "to", "for", "with"];
+    const single = typed.length > 1 ? typed.filter((w) => w.length >= 4 && !STOP.includes(w)) : [];
+    // (and each long word cut on its own: "shawshenk redemtion" -> "shawshe" finds Shawshank)
+    const singleCut = typed.filter((w) => w.length >= 5 && !STOP.includes(w)).map(cut);
+    // (a typo near the end needs a shorter start: "inceptoin" -> "incept", "shawshenk" -> "shawsh")
+    const stem = (w) => w.slice(0, Math.max(4, Math.ceil(w.length * 0.6)));
+    const stems = typed.filter((w) => w.length >= 7 && !STOP.includes(w)).map(stem);
+    const variants = [...new Set([...single, typed.map(cut).join(" "), cut(longest), ...singleCut, ...stems])].filter((v) => v && v !== phrase).slice(0, 7);
     const extra = await Promise.all(variants.map((v) => searchIn(v, type, 1).catch(() => ({ results: [] }))));
 
     const seen = new Set();
@@ -311,7 +319,8 @@
         merged.push({ r, close, order: n * 100 + i });
       })
     );
-    merged.sort((a, b) => b.close - a.close || a.order - b.order);
+    // closest to what was typed first; nearly as close: the better-known title first
+    merged.sort((a, b) => (Math.abs(b.close - a.close) > 0.05 ? b.close - a.close : (b.r.popularity || 0) - (a.r.popularity || 0) || a.order - b.order));
     return { results: merged.map((m) => m.r).slice(0, 20), totalPages: 1, corrected: true };
   }
 

@@ -94,8 +94,10 @@
 
   // 0..1: how close a name is to what was typed (to sort typo-tolerant results)
   function similarity(name, q) {
-    const a = words(name).join(" ");
-    const b = words(q).join(" ");
+    // (a leading "the" / "a" / "an" doesn't count: "godfathr" is closest to The Godfather)
+    const bare = (s) => s.replace(/^(the|a|an) /, "");
+    const a = bare(words(name).join(" "));
+    const b = bare(words(q).join(" "));
     if (!a || !b) return 0;
     if (a === b) return 1;
     if (a.startsWith(b)) return 0.95;
