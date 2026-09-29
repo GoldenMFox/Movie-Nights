@@ -184,6 +184,14 @@
       </div>`;
   }
 
+  // the sections are redrawn when something changes: keep each sideways row where you
+  // scrolled it. rowScrolls() reads them, rowScrolls(saved) puts them back
+  function rowScrolls(saved) {
+    const rows = [...mainEl.querySelectorAll(".movie-row, .t-cast, .t-media-row")];
+    if (!saved) return rows.map((r) => r.scrollLeft);
+    rows.forEach((r, n) => saved[n] && (r.scrollLeft = saved[n]));
+  }
+
   /* ---------------- franchise (like HBO Max's collections) ---------------- */
 
   let colData = null; // the franchise this movie belongs to, once loaded
@@ -208,9 +216,13 @@
       const lib = Cards.inLibrary(p);
       return !!(lib && (lib.rating != null || lib.watchedAt));
     };
+    // "seen" = rated or marked Watched; titles only saved to your library / Watchlist count apart
     const n = out.filter(seen).length;
+    const saved = c.parts.filter((p) => Cards.inLibrary(p) && !seen(p)).length;
     const pct = out.length ? Math.round((n / out.length) * 100) : 0;
-    const note = !out.length ? "Nothing out yet" : n === out.length ? "You've seen them all" : `You've seen ${n} of ${out.length}`;
+    const note =
+      (!out.length ? "Nothing out yet" : n === out.length ? "You've seen them all" : `You've seen ${n} of ${out.length}`) +
+      (saved ? ` · ${saved} more in your library` : "");
     return `<div class="col-progress${n && n === out.length ? " done" : ""}">
         <div class="col-bar"><span style="width:${pct}%"></span></div><span>${note}</span>
       </div>
@@ -546,6 +558,7 @@
       .slice(0, 16);
 
     const loading = TMDB.enabled() && !extra;
+    const keep = rowScrolls();
     mainEl.innerHTML = `
       <div class="t-sections">${sectionsHtml(d, loading)}</div>
       ${recommendationsHtml(extra)}
@@ -554,6 +567,7 @@
         TMDB.enabled() ? TMDB_NOTE : 'Tip: add a free TMDB API key in <a href="profile.html#settings">Settings</a> to see the overview, cast, trailer and recommendations for every title.'
       }</p>
       <p><button class="btn btn-danger remove-title" type="button"><i class="fa-solid fa-trash"></i> Remove from library</button></p>`;
+    rowScrolls(keep);
     if (extra && extra.xray) watchXray(d, renderLibrary);
 
   }
@@ -584,7 +598,8 @@
     });
 
     Store.onChange((changedId) => {
-      if (!changedId || changedId === id) renderLibrary();
+      // this title, or (with a franchise shown) any title: its counter may change
+      if (!changedId || changedId === id || colData) renderLibrary();
     });
 
     renderLibrary();
@@ -643,11 +658,15 @@
     Ratings.seed(tmdbRef, d.tmdbScore, d.imdbId);
     renderExternal(d);
     const renderMain = () => {
+      const keep = rowScrolls();
       mainEl.innerHTML = `<div class="t-sections">${sectionsHtml(d, false)}</div>${recommendationsHtml(d)}<p class="tmdb-note">${TMDB_NOTE}</p>`;
+      rowScrolls(keep);
       watchXray(d, renderMain);
     };
     renderMain();
     loadCollection(d, renderMain);
+    // the franchise counter follows what you add / rate (not this title: it goes to its library page)
+    Store.onChange(() => colData && !Cards.inLibrary(d) && renderMain());
 
     // IMDb rating (one OMDb lookup the first time you open this title)
     Ratings.forRef(tmdbRef).then(() => heroEl.dataset.tmdb === tmdbRef && renderExternal(d));
