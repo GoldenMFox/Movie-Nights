@@ -303,6 +303,13 @@
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
     const action = btn.dataset.action;
+    // signed out: trailers yes, but saving to a list needs your own library
+    if (Store.guest && action !== "trailer" && action !== "t-trailer") {
+      e.preventDefault();
+      e.stopPropagation();
+      UI.needSignIn();
+      return;
+    }
     if (action === "add-title") {
       e.preventDefault();
       if (window.AddTitle) AddTitle.open();

@@ -14,6 +14,10 @@
   const POOL_LIMIT = 200;
 
   const root = document.getElementById("tier-app");
+  if (Store.guest) {
+    root.innerHTML = UI.signInPrompt("Sign in to make your own tier list");
+    return;
+  }
   const tiers = Store.getTiers();
   TIERS.forEach((t) => (tiers[t.id] = (tiers[t.id] || []).filter((id) => Store.get(id))));
   let selected = null;

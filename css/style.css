@@ -554,46 +554,6 @@ label.field {
   object-fit: cover;
 }
 
-/* friends' ratings on a title page */
-.t-partners {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 10px 0 2px;
-}
-
-.t-partner {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 14px 5px 5px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font-size: 14px;
-}
-
-.t-partner img {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.t-partner .fa-star {
-  color: var(--gold);
-}
-
-.t-partner .fa-heart {
-  color: #e0393e;
-}
-
-.t-partner .dot {
-  opacity: 0.5;
-}
-
 /* ---------- mobile nav ---------- */
 
 @media (max-width: 1330px) {
@@ -8082,4 +8042,140 @@ html.custom-scrollbars .t-seasons.grabbing * {
 .rating-modal .feedback-message {
   color: rgba(255, 255, 255, 0.85);
   font-weight: 600;
+}
+/* ============================== Private libraries ============================== */
+
+/* things only the site's owner sees (html.is-owner is set by js/core/cloud.js) */
+html:not(.is-owner) .owner-only {
+  display: none !important;
+}
+
+/* signed out: "Sign in to start your own list" */
+.guest-state {
+  max-width: 460px;
+  margin: 40px auto;
+  padding: 36px 28px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+}
+
+.guest-state > i {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 38px;
+  color: var(--accent-hover);
+}
+
+.guest-state h3 {
+  margin: 0 0 8px;
+  font-size: 21px;
+}
+
+.guest-state p {
+  margin: 0 0 20px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.guest-state .btn {
+  border-radius: 999px;
+  padding-inline: 22px;
+}
+
+.mine-head + .guest-state {
+  margin-top: 8px;
+}
+
+.p-guest .guest-state {
+  margin-top: 0;
+}
+
+:root[data-theme="light"] .guest-state {
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+/* Members (owner only, Profile page) */
+.members {
+  margin-bottom: 24px;
+}
+
+.member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.member {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.member img {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.member-info {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.member-info strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-info small {
+  color: var(--text-muted);
+}
+
+.member-you {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: 2px;
+}
+
+.member-counts {
+  display: flex;
+  flex: none;
+  gap: 14px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.member-counts .fa-star {
+  color: var(--gold);
+}
+
+@media (max-width: 520px) {
+  .member {
+    flex-wrap: wrap;
+  }
+
+  .member-counts {
+    width: 100%;
+    padding-left: 52px;
+  }
 }

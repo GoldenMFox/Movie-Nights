@@ -7,9 +7,10 @@
 // Who can do what:
 //   - Only Google sign-in with a verified email, and only allowlisted emails.
 //   - Each person reads and saves only their own library (users/{uid}).
-//   - The owner (you) can read everyone's library.
-//   - public/owner is the owner's library for visitors: anyone reads it,
-//     only the owner saves it. Friends see the owner's ratings through it.
+//   - The owner (you) can list everyone (the Members panel on the Profile page).
+//     The site only shows the owner names and counts, never anyone's ratings.
+//   - public/owner used to hold a public copy of the owner's library. Libraries are
+//     private now: nobody reads it, and the site only ever empties it.
 //   - Documents must have exactly the fields the site sends, with size limits.
 //   - Nothing can be deleted from the site, and everything else is denied.
 //
@@ -85,10 +86,10 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // ---------- the owner's public library ----------
+    // ---------- the old public copy (emptied, never read) ----------
 
     match /public/owner {
-      allow get: if true;
+      allow get: if false;
       allow list: if false;
       allow create, update: if owner() && validPublicDoc(request.resource.data);
       allow delete: if false;

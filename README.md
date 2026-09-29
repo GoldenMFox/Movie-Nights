@@ -23,8 +23,8 @@ The site lives at **https://goldenmfox.github.io/Movie-Nights/** (GitHub Pages, 
 `github.com/GoldenMFox/Movie-Nights`, branch `main`).
 
 To publish changes, double-click **`Publish to GitHub.bat`**. It saves every change in this
-folder and uploads it, and the live site updates a minute or two later. For example, after
-replacing `data/library.js` with an export from Profile → Backup.
+folder and uploads it, and the live site updates a minute or two later. Libraries aren't
+part of the site's files (they live in each person's account), so publishing never touches them.
 
 ## Install it as an app
 
@@ -49,7 +49,7 @@ It updates by itself whenever the site is published.
 | `title.html?id=...` | Details for one title: your score, trailer, where to watch, overview, **Seasons** (TV: each season's trailer), cast, media, reviews, "more like this" |
 | `person.html?id=...` | An actor / crew member (tap a cast card or the director's name): photo, bio, facts, best known for, full filmography with a role filter |
 | `tier-list.html` | Drag posters into S / A / B / C / D tiers |
-| `profile.html` | Your stats, settings (theme, TMDB key) and backup / export |
+| `profile.html` | Your stats, settings and backup. The owner also sees the TMDB / OMDb settings and **Members** |
 
 The navbar search (or `/` on any page) searches your library and all of TMDB.
 
@@ -69,7 +69,15 @@ Trailers play in the best quality available; if YouTube blocks one on other site
 
 ## Adding and editing titles
 
-All titles live in **`data/library.js`**, one line per title:
+Everyone has their own **private** library, saved in their account (see **Sign in and sync**
+below). Nobody else sees it: not other people, not visitors, and not the owner either
+(the owner's Members panel shows only how many titles people have).
+
+Visitors who aren't signed in see everything from TMDB (Discover, Home rows, title pages,
+trailers) but no library: the list pages show **Sign in to start your own list**.
+
+`data/library.js` is only used when sign-in isn't set up (`FIREBASE` empty in `js/config.js`),
+as a local list. Each line is one title:
 
 ```js
 {"id":"interstellar-2014","title":"Interstellar","year":2014,"type":"movie","rating":10,"poster":"/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg","favorite":true},
@@ -84,16 +92,15 @@ The **NEW** label on cards (and the "New releases" filter) is automatic: it show
 released in the last 6 months (exact dates looked up on TMDB; for movies the cinema date in
 Romania, set by `RELEASE_COUNTRY` in `js/config.js`), so it disappears by itself as titles age.
 
-You can also do it from the site:
+On the site:
 
-- **Rate, favorite, watchlist** with the buttons on each card.
-- **Add a title** from the profile menu (top right).
+- **Watchlist, Watched, Rate** on any title (from Discover, search or a title page) adds it
+  to your library. **Favorite** with the heart.
+- **Add a title** by hand (profile menu): owner only.
 - **Remove a title** from its title page.
 
-Those changes are saved in your browser straight away and, when you're signed in, synced
-to your account (see **Sign in and sync** below). To bake them into the site's own list,
-go to **Profile → Backup → Export library.js** and replace `data/library.js` with the
-downloaded file. **Download backup / Restore backup** makes a file copy of everything.
+Changes are saved in the browser straight away and synced to your account.
+**Profile → Backup**: download / restore a file copy, or delete your library.
 
 ## TMDB and IMDb ratings
 
@@ -129,14 +136,16 @@ outside ratings.
 
 ## Sign in and sync (Firebase)
 
-Profile menu → **Sign in to sync** (Google). Your ratings, favorites, watchlist, added
-titles, tiers and profile are then saved to your account and follow you to every device.
+Profile menu → **Sign in** (Google). Your ratings, favorites, watchlist, added titles,
+tiers and profile are saved to your account and follow you to every device.
 
-- The first account that ever signed in is the **owner**: it keeps `data/library.js` as
-  its library, and a copy of it (`public/owner`) is what visitors who aren't signed in see.
-- Every other allowed person (wife, friends) gets their own **empty** library.
-- The owner sees everyone's ratings on title pages and gets "Watch with …" filters on the
-  Watchlist. Everyone else sees only the owner's.
+- Every allowed person starts with an **empty** library and sees only their own.
+- The **owner** is whoever the security rules allow to list all users (the site checks
+  that on sign-in, so it can't be faked). The owner also gets **Add a title**, the TMDB /
+  OMDb settings and **Profile → Members**: everyone who signed in, with their photo,
+  last sync and how many titles / rated / watchlist they have (never their ratings).
+- The owner's old library (it used to be public, from `data/library.js`) moved into the
+  owner's account the first time they signed in after the change.
 - Several people can stay signed in on one device: **Who's watching?** in the profile menu.
 - Who may sign in is set by the Firestore security rules. A copy is in
   [`docs/firestore.rules`](docs/firestore.rules). To add someone, add their Gmail there
@@ -157,12 +166,12 @@ Movie-Nights-NEW/
 ├── css/
 │   └── style.css              all styles (dark + light theme)
 ├── data/
-│   └── library.js             the list of titles
+│   └── library.js             a local list (only used without sign-in)
 ├── js/
 │   ├── config.js              TMDB, OMDb and Firebase keys / settings
 │   ├── core/                  loaded on every page
-│   │   ├── store.js           the library + your changes (saved in the browser)
-│   │   ├── cloud.js           Google sign-in, sync, profiles, friends' ratings
+│   │   ├── store.js           your library (kept in the browser, synced by cloud.js)
+│   │   ├── cloud.js           Google sign-in, sync, profiles, owner + Members
 │   │   ├── lang.js            EN / RU movie names, typo-tolerant name matching
 │   │   └── layout.js          navbar, footer, search, profile menu, dark mode
 │   ├── services/              talking to outside services

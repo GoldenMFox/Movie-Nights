@@ -130,7 +130,7 @@
   });
   hero.addEventListener("click", (e) => {
     const btn = e.target.closest('.hero-watch[data-action="t-watch"]');
-    if (btn) setTimeout(() => paintWatch(btn, true), 0); // just added from TMDB
+    if (btn && !Store.guest) setTimeout(() => paintWatch(btn, true), 0); // just added from TMDB
   });
 
   function personalSlides() {
@@ -282,6 +282,10 @@
   }
 
   function renderMine() {
+    if (Store.guest) {
+      mineEl.innerHTML = `<div class="mine-head"><h2 class="section-title">Your Movie Nights</h2></div>${UI.signInPrompt()}`;
+      return;
+    }
     const all = Store.all();
     const rated = all.filter((i) => i.rating != null);
     const avg = rated.length ? rated.reduce((s, i) => s + i.rating, 0) / rated.length : 0;

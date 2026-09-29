@@ -1,7 +1,7 @@
 /*
- * Store: combines the library in data/library.js with the changes you make on
- * the site (ratings, favorites, watchlist, added/removed titles, tiers) which
- * are kept in the browser's localStorage.
+ * Store: your library (titles, ratings, favorites, watchlist, tiers, profile), kept in
+ * the browser's localStorage and synced to your account (js/core/cloud.js). Everyone
+ * has their own; visitors who aren't signed in have none.
  */
 (function () {
   const KEYS = {
@@ -47,16 +47,22 @@
   // what's synced to your account (js/core/cloud.js)
   const SYNCED = [KEYS.overrides, KEYS.custom, KEYS.tiers, KEYS.profile];
 
-  // signed in: your own library ("library" = starts from data/library.js, "empty" = starts empty).
-  // signed out: data/library.js plus the owner's published changes (mn:public), then this browser's own.
+  // Every person has their own private library, kept in their account (js/core/cloud.js):
+  //   signed in: your library ("empty" = all yours in the account; "library" = the owner's
+  //     from before it moved into the account: data/library.js plus your changes)
+  //   signed out (with sign-in set up): no library at all, until you sign in
+  //   no sign-in set up (MN_CONFIG.FIREBASE empty): data/library.js, as a local site
   const account = read("mn:account", null);
-  const pub = account ? null : read("mn:public", null);
-  const pubData = (pub && pub.data) || {};
-  const pubOverrides = pubData.overrides || {};
+  const cloudOn = !!(window.MN_CONFIG && MN_CONFIG.FIREBASE && MN_CONFIG.FIREBASE.apiKey);
+  const guest = cloudOn && !account;
+  try {
+    localStorage.removeItem("mn:public"); // the owner's library used to be shown to visitors
+  } catch (e) {}
 
-  const base = account && account.base === "empty" ? [] : (Array.isArray(window.LIBRARY) ? window.LIBRARY : []).concat(pubData.custom || []);
-  let overrides = read(KEYS.overrides, {});
-  let custom = read(KEYS.custom, []);
+  const siteLibrary = Array.isArray(window.LIBRARY) ? window.LIBRARY : [];
+  const base = guest ? [] : account ? (account.base === "library" ? siteLibrary : []) : siteLibrary;
+  let overrides = guest ? {} : read(KEYS.overrides, {});
+  let custom = guest ? [] : read(KEYS.custom, []);
   let cache = null;
   const listeners = [];
   const saveListeners = [];
@@ -64,7 +70,7 @@
   function build() {
     const byId = new Map();
     base.concat(custom).forEach((item, index) => {
-      const merged = Object.assign({ order: index }, item, pubOverrides[item.id] || {}, overrides[item.id] || {});
+      const merged = Object.assign({ order: index }, item, overrides[item.id] || {});
       // rated = watched, so it's not on the Watchlist (unless you put it back on to watch again)
       if (merged.watchlist && typeof merged.rating === "number" && !merged.rewatch) merged.watchlist = false;
       if (!merged.removed) byId.set(item.id, merged);
@@ -185,11 +191,29 @@
   }
 
   function getTiers() {
-    return read(KEYS.tiers, null) || pubData.tiers || { S: [], A: [], B: [], C: [], D: [] };
+    return (!guest && read(KEYS.tiers, null)) || { S: [], A: [], B: [], C: [], D: [] };
   }
 
   function setTiers(tiers) {
     write(KEYS.tiers, tiers);
+  }
+
+  // the whole library as one list with every change baked in (the owner's library moving
+  // from data/library.js into the account: js/core/cloud.js)
+  function flatten() {
+    const fields = [
+      "id", "title", "titleRu", "year", "type", "rating", "poster", "genres", "isNew", "favorite", "watchlist", "rewatch",
+      "tmdbId", "tmdbMedia", "backdrop", "trailer", "runtime", "certification", "director", "overview", "cast",
+    ];
+    const list = all()
+      .sort((a, b) => a.order - b.order)
+      .map((item) => {
+        const clean = {};
+        fields.forEach((f) => item[f] !== undefined && item[f] !== false && (clean[f] = item[f]));
+        if (clean.rating === undefined) clean.rating = null;
+        return clean;
+      });
+    return { overrides: {}, custom: list, tiers: read(KEYS.tiers, null), profile: Object.assign({ name: getProfile().name, joined: getProfile().joined }, read(KEYS.profile, {})) };
   }
 
   // signed in: your own name (the owner's defaults to the site's; others get their Google name).
@@ -205,45 +229,7 @@
     write(KEYS.profile, Object.assign(getProfile(), patch));
   }
 
-  /* ---------- export / import ---------- */
-
-  const FILE_HEADER = `/*
- * Movie Nights library - every movie, TV show and anime on the site.
- *
- * To add a title, copy one line and change it. Fields:
- *   id        unique, lowercase-title-year
- *   type      "movie" | "tv" | "anime"
- *   rating    your score 0-10, or null if not rated yet
- *   poster    TMDB image path (the part after /t/p/original)
- *   titleRu   Russian name (shown when movie names are switched to RU)
- *   genres    e.g. ["Action", "Drama"] (used by the Genre filter)
- *   tmdbId / tmdbMedia   which TMDB entry it is (e.g. 157336 / "movie")
- *   optional: isNew, favorite, watchlist, backdrop, trailer (YouTube id),
- *             runtime, certification, director, overview, cast
- *
- * Changes you make on the site (ratings, favorites, tiers...) are saved in your
- * browser. Profile -> "Export library" downloads an updated copy of this file.
- */
-`;
-
-  // Produces a new data/library.js with every change baked in.
-  function exportLibraryFile() {
-    const fields = [
-      "id", "title", "titleRu", "year", "type", "rating", "poster", "genres", "isNew", "favorite", "watchlist", "rewatch",
-      "tmdbId", "tmdbMedia", "backdrop", "trailer", "runtime", "certification", "director", "overview", "cast",
-    ];
-    const lines = all()
-      .sort((a, b) => a.order - b.order)
-      .map((item) => {
-        const clean = {};
-        fields.forEach((f) => {
-          if (item[f] !== undefined && item[f] !== false) clean[f] = item[f];
-        });
-        if (clean.rating === undefined) clean.rating = null;
-        return "  " + JSON.stringify(clean) + ",";
-      });
-    return `${FILE_HEADER}window.LIBRARY = [\n${lines.join("\n")}\n];\n`;
-  }
+  /* ---------- backup ---------- */
 
   function exportBackup() {
     return JSON.stringify(
@@ -345,7 +331,8 @@
     setTiers,
     getProfile,
     setProfile,
-    exportLibraryFile,
+    flatten,
+    guest,
     exportBackup,
     importBackup,
     resetAll,

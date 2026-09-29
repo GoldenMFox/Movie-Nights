@@ -1,6 +1,6 @@
 /*
- * Profile page: your name, stats about the library, settings (TMDB key,
- * theme) and backup / export.
+ * Profile page: your name, stats about your library, settings and backup.
+ * The owner also gets the TMDB / OMDb settings and the Members panel.
  */
 (function () {
   const { esc, toast, download } = UI;
@@ -17,7 +17,7 @@
             <input class="input" name="displayName" aria-label="Display name" maxlength="40" />
             <button class="btn" type="submit">Save</button>
           </form>
-          <button class="btn btn-primary p-signin" type="button" hidden><i class="fa-brands fa-google"></i> Sign in to sync</button>
+          <button class="btn btn-primary p-signin" type="button" hidden><i class="fa-brands fa-google"></i> Sign in</button>
         </div>
 
         <div class="panel" id="settings">
@@ -26,6 +26,7 @@
             <label class="field">Theme
               <select class="select" name="theme"><option value="dark">Dark</option><option value="light">Light</option></select>
             </label>
+            <div class="stack owner-only">
             <label class="field">TMDB API key (optional)
               <input class="input" name="tmdb" type="password" autocomplete="off" placeholder="Paste your key or read access token" />
             </label>
@@ -38,26 +39,32 @@
             <p class="help omdb-status"></p>
             <p class="help">Free at themoviedb.org → Settings → API. A key typed here is stored only in this browser
               and overrides the one in <code>js/config.js</code>.</p>
+            </div>
           </div>
         </div>
 
-        <div class="panel" id="backup">
+        <div class="panel" id="backup"${Store.guest ? " hidden" : ""}>
           <h2><i class="fa-solid fa-floppy-disk"></i> Backup</h2>
           <div class="stack">
-            <button class="btn export-lib" type="button"><i class="fa-solid fa-download"></i> Export library.js</button>
-            <p class="help">Downloads <code>library.js</code> with all your ratings, favorites and added titles.
-              Replace <code>data/library.js</code> with it to make the changes permanent (and to put them on GitHub).</p>
             <button class="btn export-backup" type="button"><i class="fa-solid fa-file-export"></i> Download backup</button>
             <label class="btn" style="cursor:pointer"><i class="fa-solid fa-file-import"></i> Restore backup
               <input type="file" accept=".json,application/json" class="import-file" hidden />
             </label>
-            <p class="help">Your changes live in this browser only. Use a backup to move them to another browser or device.</p>
-            <button class="btn btn-danger reset-all" type="button"><i class="fa-solid fa-rotate-left"></i> Reset all my changes</button>
+            <p class="help">Your library is saved in your account and synced to every device you sign in on. A backup is an extra copy you keep yourself.</p>
+            <button class="btn btn-danger reset-all" type="button"><i class="fa-solid fa-trash-can"></i> Delete my library</button>
           </div>
         </div>
       </div>
 
-      <div>
+      <div class="p-guest"${Store.guest ? "" : " hidden"}>${Store.guest ? UI.signInPrompt() : ""}</div>
+      <div${Store.guest ? " hidden" : ""}>
+        <div class="panel members owner-only" id="members">
+          <h2><i class="fa-solid fa-users"></i> Members</h2>
+          <p class="help">Everyone who has signed in. You see how big their library is, never their ratings.</p>
+          <div class="member-list"><p class="help">Loading…</p></div>
+          <p class="help">To let someone in, add their Google email to the rules in the Firebase console
+            (Firestore → Rules), then ask them to sign in here.</p>
+        </div>
         <div class="stat-strip stats-tiles" style="margin-top:0"></div>
         <div class="panel" style="margin-top:24px">
           <h2>My ratings</h2>
@@ -251,11 +258,6 @@
 
   /* ---------------- backup ---------------- */
 
-  $(".export-lib").addEventListener("click", () => {
-    download("library.js", Store.exportLibraryFile(), "text/javascript");
-    toast("library.js downloaded");
-  });
-
   $(".export-backup").addEventListener("click", () => {
     const date = new Date().toISOString().slice(0, 10);
     download(`movie-nights-backup-${date}.json`, Store.exportBackup(), "application/json");
@@ -275,11 +277,58 @@
   });
 
   $(".reset-all").addEventListener("click", () => {
-    if (!confirm("Undo every rating, favorite, watchlist change, added title and tier you've made in this browser?")) return;
+    if (!confirm("Delete every title, rating, favorite, watchlist entry and tier in your library? Download a backup first if you might want it back.")) return;
     Store.resetAll();
     renderProfile();
-    toast("Everything reset to data/library.js");
+    toast("Your library is empty now");
   });
+
+  /* ---------------- members (owner only) ---------------- */
+
+  function ago(ms) {
+    if (!ms) return "never";
+    const min = Math.round((Date.now() - ms) / 60000);
+    if (min < 2) return "just now";
+    if (min < 60) return `${min} min ago`;
+    const h = Math.round(min / 60);
+    if (h < 24) return `${h} h ago`;
+    const d = Math.round(h / 24);
+    return d < 30 ? `${d} days ago` : new Date(ms).toLocaleDateString();
+  }
+
+  // names, photos and counts only: nobody's ratings, not even for the owner
+  let membersLoaded = false;
+  async function renderMembers() {
+    if (membersLoaded || !(window.Cloud && Cloud.isOwner())) return;
+    membersLoaded = true;
+    const box = $(".member-list");
+    try {
+      const list = (await Cloud.members()).sort((a, b) => b.me - a.me || (Number(b.updatedAt) || 0) - (Number(a.updatedAt) || 0));
+      box.innerHTML = list.length
+        ? list
+            .map(
+              (m) => `<div class="member">
+                <img src="${esc(m.photo || "images/placeholders/user.svg")}" alt="" referrerpolicy="no-referrer" />
+                <div class="member-info">
+                  <strong>${esc(m.name || "Someone")}${m.me ? ' <span class="member-you">you</span>' : ""}</strong>
+                  <small>Last sync: ${ago(Number(m.updatedAt))}</small>
+                </div>
+                <div class="member-counts">
+                  <span title="Titles"><i class="fa-solid fa-film"></i> ${m.titles}</span>
+                  <span title="Rated"><i class="fa-solid fa-star"></i> ${m.rated}</span>
+                  <span title="On the watchlist"><i class="fa-solid fa-bookmark"></i> ${m.watchlist}</span>
+                </div>
+              </div>`
+            )
+            .join("")
+        : '<p class="help">Nobody yet.</p>';
+    } catch (e) {
+      membersLoaded = false;
+      box.innerHTML = `<p class="help">Couldn't load members: ${esc(e.message)}</p>`;
+    }
+  }
+  if (window.Cloud) Cloud.onOwner((on) => on && renderMembers());
+  renderMembers();
 
   Store.onChange(renderStats);
   renderProfile();

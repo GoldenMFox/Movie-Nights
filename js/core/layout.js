@@ -57,7 +57,7 @@
           '<i class="fa-solid fa-right-from-bracket"></i>',
           "Sign out"
         )}`
-      : `<hr />${who}${row('data-cloud="add"', '<i class="fa-brands fa-google"></i>', "Sign in to sync")}`;
+      : `<hr />${who}${row('data-cloud="add"', '<i class="fa-brands fa-google"></i>', "Sign in")}`;
   }
 
   /* ---------------- navbar ---------------- */
@@ -110,7 +110,7 @@
             <a href="favorites.html" class="tablet-link"><i class="fa-solid fa-heart"></i><span>Favorites</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="tier-list.html" class="tablet-link"><i class="fa-solid fa-ranking-star"></i><span>Tier List</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="profile.html"><i class="fa-solid fa-user"></i><span>Profile &amp; stats</span><i class="fa-solid fa-chevron-right"></i></a>
-            <a href="#" data-action="add-title"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
+            <a href="#" data-action="add-title" class="owner-only"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="profile.html#settings"><i class="fa-solid fa-gear"></i><span>Settings &amp; backup</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="#" class="install-app" hidden><i class="fa-solid fa-mobile-screen"></i><span>Install the app</span><i class="fa-solid fa-chevron-right"></i></a>
             <div class="menu-prefs">
@@ -782,5 +782,25 @@
     };
   }
 
-  window.UI = { esc, toast, download, PAGES, foldTools };
+  // signed out (with sign-in set up): nobody's library is shown, so lists ask you to sign in
+  function signInPrompt(text) {
+    return `<div class="guest-state">
+      <i class="fa-solid fa-film"></i>
+      <h3>${esc(text || "Sign in to start your own list")}</h3>
+      <p>Everyone gets their own private library: ratings, favorites, watchlist and tier list. Only you can see yours.</p>
+      <button class="btn btn-primary" type="button" data-cloud="add"><i class="fa-brands fa-google"></i> Sign in with Google</button>
+    </div>`;
+  }
+
+  // a library action while signed out: explain and open the menu with the Sign in button
+  function needSignIn() {
+    toast("Sign in to start your own list");
+    const box = document.querySelector(".profile");
+    if (!box) return;
+    if (window.Cloud && Cloud.enabled) Cloud.prepare();
+    // after this click has finished (clicks outside the menu close it)
+    setTimeout(() => box.classList.add("open"), 0);
+  }
+
+  window.UI = { esc, toast, download, PAGES, foldTools, signInPrompt, needSignIn };
 })();

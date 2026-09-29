@@ -3,17 +3,17 @@
  * watchlist, tiers, profile) follows you to every device.
  *
  *  - Sign-in: Firebase Auth (its script is only loaded for signed-in people).
- *  - Storage: Firestore, one document per person in "users/{uid}", read and
+ *  - Storage: Firestore, one private document per person in "users/{uid}", read and
  *    written through Firestore's REST API. Who may use it is decided by the
  *    security rules in the Firebase console (only the listed Google accounts).
- *  - The first account ever to sign in keeps data/library.js as its library
- *    and is mirrored to "public/owner", which is what visitors who aren't
- *    signed in see. Every later account starts with an empty library.
+ *  - Everyone has their own library and sees only their own ratings. Visitors who
+ *    aren't signed in see no library at all.
+ *  - The owner (admin) is the account the rules allow to list everyone ("users"):
+ *    it gets Add a title, the advanced settings and the Members panel.
+ *  - The owner's library used to live in the public data/library.js (plus a public
+ *    copy, "public/owner"); on the owner's next visit it moves into their private
+ *    account and the public copy is emptied (migrate()).
  *  - Several accounts can stay signed in on one device ("Who's watching?").
- *  - Friends' ratings / watchlists are shown on title pages, and the
- *    Watchlist gets "Watch with …" filters. The owner sees everyone; everyone
- *    else sees only the owner (read from public/owner), never each other
- *    (enforced by the Firestore rules).
  *
  * This browser's localStorage stays the working copy: pages read it straight
  * away, and changes are uploaded a moment later. Nothing here runs unless
@@ -29,13 +29,11 @@
     account: "mn:account", // who's watching right now
     syncAt: "mn:syncAt", // time of the account version this browser has
     dirty: "mn:dirty", // changes not uploaded yet
-    pub: "mn:public", // the owner's library, for visitors
-    friends: "mn:friends", // the other people's ratings / watchlists you can see
     backup: "mn:localBackup", // what this browser had before signing in
   };
-  const FRIENDS_MAX_AGE = 60 * 1000;
   try {
-    localStorage.removeItem("mn:partner"); // older single-partner version
+    // older versions: a partner's / friends' ratings, the owner's public library
+    ["mn:partner", "mn:friends", "mn:public"].forEach((k) => localStorage.removeItem(k));
   } catch (e) {}
 
   const read = Store.read;
@@ -176,9 +174,6 @@
       tok,
       body: toDoc({ data: text, name: acct.name, photo: acct.photo || "", base: acct.base, updatedAt: at }),
     });
-    if (acct.base === "library") {
-      await api("public/owner", { method: "PATCH", tok, body: toDoc({ data: text, name: acct.name, updatedAt: at }) });
-    }
     return at;
   }
 
@@ -205,12 +200,14 @@
 
   /* ---------------- download ---------------- */
 
+  let reloading = false;
   function reloadOnce() {
     try {
       const last = Number(sessionStorage.getItem("mn:syncReload") || 0);
       if (Date.now() - last < 10000) return;
       sessionStorage.setItem("mn:syncReload", Date.now());
     } catch (e) {}
+    reloading = true;
     location.reload();
   }
 
@@ -229,6 +226,14 @@
       const tok = await token(account);
       const remote = fromDoc(await api(`users/${account.uid}`, { tok }));
       caughtUp = true;
+      // the account's library changed shape on another device (the owner's moved into
+      // the account): take the account's version and start again
+      if (remote && remote.base && remote.base !== account.base) {
+        remember(Object.assign({}, account, { base: remote.base }));
+        Store.replaceData(dataOf(remote));
+        write(K.syncAt, remote.updatedAt);
+        return reloadOnce();
+      }
       if (!remote) {
         write(K.dirty, true);
         await push();
@@ -242,7 +247,9 @@
       } else {
         setStatus("synced");
       }
-      loadFriends(tok);
+      await checkOwner(tok);
+      // (not while the page is reloading with a newer version: that happens on the next load)
+      if (account.base === "library" && !reloading) await migrate(tok);
     } catch (err) {
       console.warn("Sync:", err.message);
       if (err.signedOut) {
@@ -252,112 +259,80 @@
     }
   }
 
-  // signed out: show the owner's latest library
-  async function refreshPublic() {
+  /* ---------------- the owner (admin) ---------------- */
+
+  // Only the owner may list everyone's documents (Firestore rules), so asking is a
+  // check nobody can fake. Remembered on the account; the page gets html.is-owner.
+  const ownerListeners = [];
+  const isOwner = () => !!(account && account.owner === true);
+  if (isOwner()) document.documentElement.classList.add("is-owner");
+
+  async function checkOwner(tok) {
+    if (typeof account.owner === "boolean") return;
     try {
-      const doc = fromDoc(await api("public/owner"));
-      const cached = read(K.pub, null);
-      if (!doc) {
-        if (cached) {
-          drop(K.pub);
-          reloadOnce();
-        }
-        return;
-      }
-      if (cached && cached.updatedAt === doc.updatedAt) return;
-      write(K.pub, { updatedAt: doc.updatedAt, name: doc.name, data: dataOf(doc) });
-      reloadOnce();
-    } catch (err) {
-      console.warn("Public library:", err.message);
+      await api("users?pageSize=1", { tok });
+      account.owner = true;
+    } catch (e) {
+      if (e.status !== 403) return; // offline: ask again next time
+      account.owner = false;
     }
+    write(K.account, account);
+    write(K.accounts, accounts().map((a) => (a.uid === account.uid ? Object.assign({}, a, { owner: account.owner }) : a)));
+    document.documentElement.classList.toggle("is-owner", account.owner);
+    ownerListeners.forEach((fn) => fn(account.owner));
   }
 
-  /* ---------------- friends (the other profiles you can see) ---------------- */
+  // The owner's library moves from the public data/library.js into their private account
+  // (everything baked into one list), and the public copy visitors used to see is emptied.
+  async function migrate(tok) {
+    if (!(window.LIBRARY || []).length) return; // the site's list is gone already: nothing to move
+    const flat = Store.flatten();
+    if (!flat.custom.length) return;
+    write(K.backup, Store.snapshot());
+    const acct = Object.assign({}, account, { base: "empty", owner: true });
+    const at = await upload(acct, tok, flat);
+    try {
+      await api("public/owner", { method: "PATCH", tok, body: toDoc({ data: "{}", name: "-", updatedAt: at }) });
+    } catch (e) {
+      console.warn("Public copy:", e.message);
+    }
+    remember(acct);
+    Store.replaceData(flat);
+    write(K.syncAt, at);
+    toast("Your library is now private: only you can see it");
+    setTimeout(() => location.reload(), 1500);
+  }
 
-  const friendListeners = [];
-  const nameKey = (title, year) => `n:${String(title || "").toLowerCase().replace(/[^a-z0-9]+/g, "")}|${year || ""}`;
-
-  // their ratings / watchlist / favorites, looked up by TMDB id or by title + year
-  function indexOf(data, base) {
-    const ov = data.overrides || {};
-    const items = (base === "library" ? window.LIBRARY || [] : []).concat(data.custom || []);
-    const index = {};
-    items.forEach((it) => {
-      const m = Object.assign({}, it, ov[it.id] || {});
-      if (m.watchlist && typeof m.rating === "number" && !m.rewatch) m.watchlist = false; // rated = watched
-      if (m.removed || (m.rating == null && !m.watchlist && !m.favorite)) return;
-      const v = { r: m.rating == null ? null : m.rating, w: !!m.watchlist, f: !!m.favorite };
-      if (m.tmdbId && m.tmdbMedia) index[`${m.tmdbMedia}-${m.tmdbId}`] = v;
-      index[nameKey(m.title, m.year)] = v;
+  // Members panel (owner only): everyone who has signed in, with how big their library is
+  // (counts only, not their ratings)
+  async function members() {
+    const res = await api("users", { tok: await token(account) });
+    return ((res && res.documents) || []).map(fromDoc).map((d) => {
+      const data = dataOf(d);
+      const ov = data.overrides || {};
+      const items = (d.base === "library" ? window.LIBRARY || [] : [])
+        .concat(data.custom || [])
+        .map((it) => Object.assign({}, it, ov[it.id] || {}))
+        .filter((it) => !it.removed);
+      return {
+        uid: d.id,
+        name: d.name,
+        photo: d.photo,
+        updatedAt: d.updatedAt,
+        titles: items.length,
+        rated: items.filter((it) => typeof it.rating === "number").length,
+        watchlist: items.filter((it) => it.watchlist).length,
+        me: d.id === account.uid,
+      };
     });
-    return index;
-  }
-
-  // the owner sees every profile; everyone else sees only the owner's (public) library
-  async function loadFriends(tok) {
-    const cached = read(K.friends, null);
-    if (cached && Date.now() - cached.at < FRIENDS_MAX_AGE) return;
-    try {
-      let list;
-      if (account.base === "library") {
-        const res = await api("users", { tok });
-        list = ((res && res.documents) || [])
-          .map(fromDoc)
-          .filter((d) => d.id !== account.uid)
-          .map((d) => ({ uid: d.id, name: first(d.name), photo: d.photo, index: indexOf(dataOf(d), d.base) }));
-      } else {
-        const owner = fromDoc(await api("public/owner"));
-        list = owner ? [{ uid: "owner", name: first(owner.name), photo: "images/placeholders/user.svg", index: indexOf(dataOf(owner), "library") }] : [];
-      }
-      list.sort((a, b) => a.name.localeCompare(b.name));
-      write(K.friends, { at: Date.now(), list });
-      friendListeners.forEach((fn) => fn());
-    } catch (err) {
-      console.warn("Friends:", err.message);
-    }
-  }
-
-  function friends() {
-    return account ? (read(K.friends, null) || {}).list || [] : [];
-  }
-
-  // what each friend did with this title: [{uid, name, photo, r, w, f}]
-  // (works for library items and for TMDB results, which have mediaType instead of tmdbMedia)
-  function friendsFor(item) {
-    if (!item) return [];
-    const media = item.tmdbMedia || item.mediaType;
-    return friends()
-      .map((p) => {
-        const v = (item.tmdbId && media && p.index[`${media}-${item.tmdbId}`]) || p.index[nameKey(item.title, item.year)];
-        return v ? Object.assign({ uid: p.uid, name: p.name, photo: p.photo }, v) : null;
-      })
-      .filter(Boolean);
-  }
-
-  // on your watchlist and theirs (everyone's, for "all"), and nobody has rated it yet
-  function together(item, uid) {
-    if (!item.watchlist || item.rating != null) return false;
-    const mine = friendsFor(item);
-    const want = uid === "all" ? friends().map((f) => f.uid) : [uid];
-    return want.length > 0 && want.every((id) => mine.some((f) => f.uid === id && f.w && f.r == null));
   }
 
   /* ---------------- sign in / switch / sign out ---------------- */
 
-  // this browser's changes from before signing in, added on top of the account's
-  function mergeLocal(remote) {
-    const local = Store.snapshot();
-    const overrides = Object.assign({}, remote.overrides);
-    Object.entries(local.overrides || {}).forEach(([id, o]) => (overrides[id] = Object.assign({}, overrides[id], o)));
-    const ids = new Set((remote.custom || []).map((c) => c.id));
-    const custom = (remote.custom || []).concat((local.custom || []).filter((c) => !ids.has(c.id)));
-    return { overrides, custom, tiers: remote.tiers || local.tiers, profile: Object.assign({}, local.profile, remote.profile) };
-  }
-
   function remember(acct) {
     write(K.accounts, accounts().filter((a) => a.uid !== acct.uid).concat(acct));
     write(K.account, acct);
-    drop(K.friends, K.dirty);
+    drop(K.dirty);
   }
 
   // a message that stays until it's closed (a toast is easy to miss after the Google pop-up)
@@ -375,10 +350,7 @@
     Cards.openModal(overlay);
   }
 
-  function ownerName() {
-    const pub = read(K.pub, null);
-    return pub && pub.name ? first(pub.name) : "the owner";
-  }
+  const ownerName = () => "the site's owner";
 
   // Safari (iPhone / iPad) only allows a pop-up that opens straight from the tap, with no
   // waiting in between. So the sign-in code is loaded ahead of time (when the profile menu
@@ -503,29 +475,16 @@
       write(K.backup, Store.snapshot());
 
       if (remote) {
-        // signed in before on another device
+        // signed in before on another device: your library comes from your account
         acct.base = remote.base || "empty";
-        let data = dataOf(remote);
-        let at = remote.updatedAt;
-        if (acct.base === "library" && !account) {
-          const merged = mergeLocal(data);
-          if (JSON.stringify(merged) !== JSON.stringify(data)) {
-            data = merged;
-            at = await upload(acct, tok, data);
-          }
-        }
         remember(acct);
-        Store.replaceData(data);
-        write(K.syncAt, at);
+        Store.replaceData(dataOf(remote));
+        write(K.syncAt, remote.updatedAt);
       } else {
-        // first time ever: the first account keeps the site's library, everyone after starts empty
-        const owner = await api("public/owner");
-        acct.base = owner ? "empty" : "library";
+        // first time ever: a new, empty library of your own
+        acct.base = "empty";
         const joined = new Date().toLocaleString("en", { month: "long", year: "numeric" });
-        const data =
-          acct.base === "library" && !account
-            ? Store.snapshot()
-            : { overrides: {}, custom: [], tiers: null, profile: acct.base === "empty" ? { joined } : {} };
+        const data = { overrides: {}, custom: [], tiers: null, profile: { joined } };
         const at = await upload(acct, tok, data);
         remember(acct);
         Store.replaceData(data);
@@ -601,6 +560,7 @@
     try {
       await flush();
       const remote = fromDoc(await api(`users/${acct.uid}`, { tok: await token(acct) }));
+      if (remote && remote.base) acct.base = remote.base;
       remember(acct);
       Store.replaceData(remote ? dataOf(remote) : {});
       write(K.syncAt, remote ? remote.updatedAt : 0);
@@ -623,8 +583,8 @@
       await app.delete();
     } catch (e) {}
     write(K.accounts, accounts().filter((a) => a.uid !== account.uid));
-    // this device goes back to the public library; your data stays in your account
-    drop(K.account, K.syncAt, K.dirty, K.friends, ...Store.SYNCED);
+    // this device shows no library until someone signs in; your data stays in your account
+    drop(K.account, K.syncAt, K.dirty, ...Store.SYNCED);
     location.reload();
   }
 
@@ -634,7 +594,7 @@
     if (account) Store.onSave(schedulePush);
     document.addEventListener("DOMContentLoaded", async () => {
       if (await finishRedirect()) return;
-      account ? start() : refreshPublic();
+      if (account) start();
     });
   }
 
@@ -648,9 +608,8 @@
     switchTo,
     status: () => status,
     onStatus: (fn) => statusListeners.push(fn),
-    friends,
-    friendsFor,
-    together,
-    onFriends: (fn) => friendListeners.push(fn),
+    isOwner,
+    onOwner: (fn) => ownerListeners.push(fn),
+    members,
   };
 })();

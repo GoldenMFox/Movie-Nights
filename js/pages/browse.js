@@ -9,6 +9,12 @@
   const page = document.body.dataset.page;
   const BATCH = 60;
 
+  // signed out: there's no library to show, only the invitation to start your own
+  if (Store.guest) {
+    root.innerHTML = UI.signInPrompt();
+    return;
+  }
+
   const PAGE = {
     movie: { base: (i) => i.type === "movie", chips: "status" },
     tv: { base: (i) => i.type === "tv", chips: "status" },
@@ -40,13 +46,6 @@
     { id: "anime", label: "Anime", test: (i) => i.type === "anime" },
   ];
   const CHIPS = PAGE.chips === "type" ? TYPE_CHIPS.slice() : STATUS_CHIPS;
-  // "Watch with Ana": on both watchlists and neither of you has rated it (signed in, with friends)
-  if (page === "watchlist" && window.Cloud && Cloud.friends().length) {
-    const list = Cloud.friends();
-    list.forEach((f) => CHIPS.push({ id: `with-${f.uid}`, label: `Watch with ${f.name}`, test: (i) => Cloud.together(i, f.uid) }));
-    if (list.length > 1) CHIPS.push({ id: "with-all", label: "Watch with everyone", test: (i) => Cloud.together(i, "all") });
-    Cloud.onFriends(() => render());
-  }
 
   // IMDb rating (or TMDB when IMDb isn't known yet); titles not looked up yet go last
   const outside = (i) => {
