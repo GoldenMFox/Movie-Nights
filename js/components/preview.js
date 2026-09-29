@@ -149,7 +149,8 @@
     preview.style.width = "440px"; // to measure the text at a typical width
     const infoH = preview.querySelector(".hp-info").offsetHeight + 24; // + room for genres / details arriving later
     const videoH = Math.max(r.height - infoH, 248); // at least ~440 × 248
-    const width = Math.round(Math.min(Math.max((videoH * 16) / 9, r.width), window.innerWidth - 24));
+    // (+48px: a touch wider than 16:9, same height; the video covers it, cropped a little)
+    const width = Math.round(Math.min(Math.max((videoH * 16) / 9 + 48, r.width), window.innerWidth - 24));
     const height = Math.round(Math.max(r.height, videoH + infoH));
     preview.style.width = `${width}px`;
     preview.style.height = `${height}px`;
