@@ -378,7 +378,7 @@
 
   function renderLibrary() {
     const item = Store.get(id);
-    if (!item) return message("fa-regular fa-face-frown", "This title isn't in your library (maybe it was removed).");
+    if (!item) return message("fa-regular fa-face-frown", "This title isn't in your library any more.");
     const d = Object.assign({}, extra || {}, pick(item));
     document.title = `${Lang.title(item)} (${item.year}) · Movie Nights`;
     heroEl.dataset.id = item.id;
@@ -440,11 +440,8 @@
 
     document.addEventListener("click", (e) => {
       if (!e.target.closest(".remove-title")) return;
-      const item = Store.get(id);
-      if (!confirm(`Remove "${Lang.title(item)}" from your library?\n\nYour score and dates for it go too. You can add it again any time from Discover or search.`)) return;
-      Store.remove(id);
-      toast(`${Lang.title(item)} removed`);
-      setTimeout(() => (location.href = "index.html"), 700);
+      // no confirm: the message has an Undo button (js/components/cards.js)
+      Cards.removeTitle(id);
     });
 
     Store.onChange((changedId) => {

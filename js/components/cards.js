@@ -297,8 +297,113 @@
       openRating(id);
     } else if (action === "trailer") {
       openTrailer(id);
+    } else if (action === "remove") {
+      removeTitle(id);
     }
   }
+
+  // Remove from the library, no questions asked: the message has an Undo button that puts
+  // it back exactly as it was (score, lists, tier)
+  function removeTitle(id) {
+    const item = Store.get(id);
+    if (!item) return;
+    const undo = Store.remove(id);
+    toast(`Removed "${Lang.title(item)}"`, {
+      label: "Undo",
+      run: () => {
+        undo();
+        toast(`"${Lang.title(item)}" is back`);
+      },
+    });
+  }
+
+  /* ---------------- quick actions: long-press (phones) or right-click (computers) ---------------- */
+
+  let quick;
+  function openQuick(id) {
+    const item = Store.get(id);
+    if (!item) return;
+    if (!quick) {
+      quick = makeOverlay("quick-modal", '<div class="qa-body"></div>');
+      // any choice closes the menu (the button itself is handled by the listener below)
+      quick.addEventListener("click", (e) => e.target.closest("[data-action], a") && setTimeout(() => close(quick), 0));
+    }
+    const row = (action, icon, label, extra) =>
+      `<button type="button" class="qa-row${extra || ""}" data-action="${action}"><i class="${icon}"></i><span>${label}</span></button>`;
+    quick.querySelector(".qa-body").dataset.id = id;
+    quick.querySelector(".qa-body").innerHTML = `
+      <div class="qa-head">
+        <img src="${Store.poster(posterOf(item), "w154")}" alt="" />
+        <div><strong>${esc(Lang.title(item))}</strong><small>${[item.year, Store.TYPE_LABEL[item.type]].filter(Boolean).join(" · ")}${
+          item.rating != null ? ` · ★ ${formatRating(item.rating)}` : ""
+        }</small></div>
+      </div>
+      <div class="qa-list">
+        ${row("watch", `fa-${item.watchlist ? "solid" : "regular"} fa-bookmark`, item.watchlist ? "Remove from Watchlist" : "Add to Watchlist")}
+        ${row("fav", `fa-${item.favorite ? "solid" : "regular"} fa-heart`, item.favorite ? "Remove from Favorites" : "Add to Favorites")}
+        ${row("rate", "fa-solid fa-star", item.rating != null ? "Change your score" : "Rate it")}
+        ${row("trailer", "fa-solid fa-play", "Play trailer")}
+        <a class="qa-row" href="title.html?id=${encodeURIComponent(id)}"><i class="fa-solid fa-circle-info"></i><span>Open details</span></a>
+      </div>
+      <div class="qa-list">${row("remove", "fa-solid fa-trash-can", "Remove from library", " qa-danger")}</div>`;
+    open(quick);
+  }
+
+  // library cards only (not on the Tier List, which has its own drag and tap)
+  const quickCard = (target) => {
+    const el = target.closest && target.closest(".movie-item[data-id]");
+    return el && !el.closest("#tier-app, .quick-modal") ? el : null;
+  };
+
+  document.addEventListener("contextmenu", (e) => {
+    const el = quickCard(e.target);
+    if (!el || e.pointerType === "touch") return;
+    e.preventDefault();
+    openQuick(el.dataset.id);
+  });
+
+  // hold a poster for half a second (without scrolling)
+  let press = null;
+  let pressed = false;
+  document.addEventListener(
+    "touchstart",
+    (e) => {
+      const el = quickCard(e.target);
+      if (!el || e.touches.length > 1) return;
+      const t = e.touches[0];
+      press = { x: t.clientX, y: t.clientY, timer: setTimeout(() => {
+        pressed = true;
+        if (navigator.vibrate) navigator.vibrate(10);
+        openQuick(el.dataset.id);
+      }, 500) };
+    },
+    { passive: true }
+  );
+  const cancelPress = () => press && (clearTimeout(press.timer), (press = null));
+  document.addEventListener("touchmove", (e) => {
+    if (!press) return;
+    const t = e.touches[0];
+    if (Math.abs(t.clientX - press.x) > 10 || Math.abs(t.clientY - press.y) > 10) cancelPress();
+  }, { passive: true });
+  document.addEventListener("touchend", cancelPress);
+  document.addEventListener("touchcancel", cancelPress);
+  // the finger lifting after a long-press isn't a tap on the poster
+  document.addEventListener(
+    "click",
+    (e) => {
+      if (!pressed) return;
+      pressed = false;
+      if (quickCard(e.target)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    },
+    true
+  );
+  // the phone's own long-press menu (save image / open link) would cover ours
+  document.addEventListener("contextmenu", (e) => {
+    if (quickCard(e.target) && (pressed || press)) e.preventDefault();
+  });
 
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-action]");
@@ -752,6 +857,8 @@
     tmdbCard,
     inLibrary,
     addHit,
+    removeTitle,
+    openQuick,
     hitOf: (key) => hits.get(key), // the TMDB result behind a card (hover preview)
     posterOf,
     isBadTrailer,

@@ -8895,3 +8895,172 @@ html.app-ui:root[data-theme="light"] .tab-bar {
 :root[data-theme="light"] .svc-opt.on {
   background: rgba(185, 34, 34, 0.1);
 }
+
+/* ============================== Removing a title: Undo, quick actions ============================== */
+
+/* a message with a button ("Removed · Undo") */
+.toast.has-action {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 8px 8px 18px;
+  border-radius: 999px;
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+}
+
+.toast.has-action.show {
+  pointer-events: auto;
+}
+
+.toast-action {
+  flex: none;
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.toast-action:hover {
+  background: var(--accent-hover);
+}
+
+/* quick actions: long-press a poster (phones) or right-click it (computers) */
+.quick-modal {
+  max-width: 380px;
+  padding: 18px;
+}
+
+.qa-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 44px 14px 0;
+}
+
+.qa-head img {
+  width: 54px;
+  height: 81px;
+  flex: none;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+.qa-head div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.qa-head strong {
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.qa-head small {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.qa-list {
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.qa-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.qa-row:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.qa-row i {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+}
+
+.qa-row .fa-heart.fa-solid {
+  color: #ff5a5f;
+}
+
+.qa-row .fa-bookmark.fa-solid,
+.qa-row .fa-star {
+  color: var(--gold);
+}
+
+.qa-row.qa-danger {
+  color: #ff8a84;
+}
+
+.qa-row.qa-danger i {
+  border-color: rgba(185, 34, 34, 0.35);
+  background: rgba(185, 34, 34, 0.16);
+  color: #ff6b63;
+}
+
+.qa-row.qa-danger:hover {
+  background: rgba(185, 34, 34, 0.14);
+}
+
+/* phones: the menu comes up from the bottom, like a native sheet */
+@media (max-width: 600px) {
+  .overlay:has(.quick-modal) {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .quick-modal {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom));
+    border-radius: 26px 26px 0 0;
+  }
+}
+
+/* the phone's own long-press menu (save image / open link) would cover ours */
+.movie-item[data-id] img,
+.movie-item[data-id] a {
+  -webkit-touch-callout: none;
+}
+
+/* hover preview: the trash button turns red */
+.hp-btn.hp-remove:hover {
+  border-color: transparent;
+  background: rgba(185, 34, 34, 0.9);
+  color: #fff;
+}

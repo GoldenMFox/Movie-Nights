@@ -102,7 +102,8 @@
         ? round("trailer", "Play trailer with sound", "fa-solid fa-play", false).replace("hp-btn", "hp-btn hp-play") +
           round("watch", b.item.watchlist ? "Remove from Watchlist" : "Add to Watchlist", `fa-${b.item.watchlist ? "solid" : "regular"} fa-bookmark`, b.item.watchlist) +
           round("fav", b.item.favorite ? "Remove favorite" : "Add to Favorites", `fa-${b.item.favorite ? "solid" : "regular"} fa-heart`, b.item.favorite) +
-          round("rate", b.item.rating != null ? "Change rating" : "Rate it", "fa-solid fa-star", b.item.rating != null)
+          round("rate", b.item.rating != null ? "Change rating" : "Rate it", "fa-solid fa-star", b.item.rating != null) +
+          round("remove", "Remove from library", "fa-solid fa-trash-can", false).replace("hp-btn", "hp-btn hp-remove")
         : round("t-trailer", "Play trailer with sound", "fa-solid fa-play", false).replace("hp-btn", "hp-btn hp-play") +
           round("t-watch", "Add to Watchlist", "fa-regular fa-bookmark", false) +
           round("t-add", "Add to library", "fa-solid fa-plus", false) +
@@ -341,7 +342,7 @@
     }
     // the full trailer pop-up takes over: close the preview
     const btn = e.target.closest(".hover-preview [data-action]");
-    if (btn && /trailer|rate/.test(btn.dataset.action)) setTimeout(close, 0);
+    if (btn && /trailer|rate|remove/.test(btn.dataset.action)) setTimeout(close, 0);
   });
 
   function close() {

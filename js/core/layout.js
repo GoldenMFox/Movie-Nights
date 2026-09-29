@@ -688,8 +688,10 @@
 
   /* ---------------- shared helpers ---------------- */
 
+  // a short message at the bottom; with { label, run } it gets a button (e.g. Undo)
+  // and stays a little longer
   let toastTimer;
-  function toast(message) {
+  function toast(message, action) {
     let el = document.querySelector(".toast");
     if (!el) {
       el = document.createElement("div");
@@ -698,9 +700,21 @@
       document.body.append(el);
     }
     el.textContent = message;
+    el.classList.toggle("has-action", !!action);
+    if (action) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "toast-action";
+      btn.textContent = action.label;
+      btn.addEventListener("click", () => {
+        el.classList.remove("show");
+        action.run();
+      });
+      el.append(btn);
+    }
     el.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
+    toastTimer = setTimeout(() => el.classList.remove("show"), action ? 6000 : 2200);
   }
 
   function download(filename, text, type) {

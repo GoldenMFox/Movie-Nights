@@ -210,7 +210,29 @@
     changed(null);
   }
 
+  // returns an "undo" function that puts it back exactly as it was (score, lists, tier)
   function remove(id) {
+    const at = custom.findIndex((c) => c.id === id);
+    const saved = {
+      entry: at >= 0 ? custom[at] : null,
+      override: overrides[id] ? Object.assign({}, overrides[id]) : undefined,
+      tiers: JSON.parse(JSON.stringify(getTiers())),
+    };
+    removeNow(id);
+    return function undo() {
+      if (saved.entry && !custom.some((c) => c.id === id)) {
+        custom.splice(Math.min(at, custom.length), 0, saved.entry);
+        write(KEYS.custom, custom);
+      }
+      if (saved.override) overrides[id] = saved.override;
+      else delete overrides[id];
+      write(KEYS.overrides, overrides);
+      setTiers(saved.tiers);
+      changed(id);
+    };
+  }
+
+  function removeNow(id) {
     const isCustom = custom.some((c) => c.id === id);
     if (isCustom) {
       custom = custom.filter((c) => c.id !== id);
