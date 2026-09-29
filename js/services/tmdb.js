@@ -142,6 +142,7 @@
       type: anime ? "anime" : media === "movie" ? "movie" : "tv",
       title: r.title || r.name,
       year: yearOf(r.release_date || r.first_air_date),
+      released: r.release_date || r.first_air_date || "", // "2026-12-15" (Discover's "Coming soon" label)
       poster: r.poster_path || "",
       backdrop: r.backdrop_path || "",
       overview: r.overview || "",

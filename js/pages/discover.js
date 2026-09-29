@@ -145,6 +145,25 @@
     return `${TMDB.CATEGORIES[state.cat].label}: ${shown} titles`;
   }
 
+  // "Coming soon · Dec 15" on titles that aren't out yet (only here on Discover). Not on
+  // the "Coming soon" list itself, where every title would have it.
+  const today = () => new Date().toISOString().slice(0, 10);
+  function markComingSoon(results) {
+    if (!state.q && !state.genre && state.cat === "upcoming") return;
+    const cards = [...grid.children].slice(-results.length); // one card per result, just added
+    results.forEach((r, i) => {
+      const img = cards[i] && cards[i].querySelector(".poster-link .movie-poster");
+      if (!img || !r.released || r.released <= today()) return;
+      const when = new Date(`${r.released}T00:00:00Z`).toLocaleDateString("en", {
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+        ...(r.released.slice(0, 4) !== today().slice(0, 4) ? { year: "numeric" } : {}),
+      });
+      img.insertAdjacentHTML("afterend", `<span class="soon-label" title="Comes out ${esc(when)}"><i class="fa-regular fa-clock"></i> Coming soon · ${esc(when)}</span>`);
+    });
+  }
+
   async function load(reset) {
     if (reset) {
       state.run++;
@@ -179,6 +198,7 @@
       }
       results.forEach((r) => state.seen.add(`${r.mediaType}-${r.tmdbId}`));
       grid.insertAdjacentHTML("beforeend", results.map(Cards.tmdbCard).join(""));
+      markComingSoon(results);
 
       const shown = grid.children.length;
       countEl.textContent = heading(shown);
