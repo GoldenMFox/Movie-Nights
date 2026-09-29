@@ -200,6 +200,34 @@
   const emptyEl = root.querySelector(".empty-state");
   const genreSel = root.querySelector('[name="genre"]');
 
+  // Movies / TV Shows / Anime: the page's motion (css: "Library pages: motion"), unless motion
+  // is turned down. The grid is redrawn on every change (rating, removing...), so posters only
+  // flow in when the view itself changes: opening the page, a chip, a search or filter, Show more.
+  const fx = !isLists && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let animateFrom = 0; // posters from this one on flow in at the next draw (null: none)
+  const pill = document.createElement("span");
+  pill.className = "chip-indicator intro";
+  pill.setAttribute("aria-hidden", "true");
+  if (fx) {
+    document.documentElement.classList.add("lb-fx");
+    chipsBox.classList.add("lb-intro");
+    setTimeout(() => chipsBox.classList.remove("lb-intro"), 1200);
+    pill.addEventListener("animationend", () => pill.classList.remove("intro"));
+    window.addEventListener("resize", () => movePill());
+  }
+  // the red pill sits behind the picked chip and glides to the next one
+  function movePill() {
+    if (!fx) return;
+    if (pill.parentNode !== chipsBox) chipsBox.prepend(pill);
+    const on = chipsBox.querySelector(".chip.active");
+    pill.classList.toggle("off", !on);
+    if (!on) return;
+    pill.style.left = `${on.offsetLeft}px`;
+    pill.style.top = `${on.offsetTop}px`;
+    pill.style.width = `${on.offsetWidth}px`;
+    pill.style.height = `${on.offsetHeight}px`;
+  }
+
   const filtersInUse = () => !!(state.sort !== "default" || state.min || state.from || state.to || state.genre);
   const tools = UI.foldTools(isLists ? root.querySelector(".wl-title") : document.querySelector(".page-title"), {
     search: root.querySelector(".list-search"),
@@ -230,12 +258,15 @@
 
   function renderChips() {
     const list = baseList();
-    chipsBox.innerHTML = CHIPS.map((c) => {
+    // only the chips are redrawn: the red pill stays, so it can glide
+    chipsBox.querySelectorAll(".chip").forEach((c) => c.remove());
+    chipsBox.insertAdjacentHTML("beforeend", CHIPS.map((c) => {
       const n = list.filter(c.test).length;
       if (!n && c.id !== "all") return "";
       return `<button class="chip${c.id === state.chip ? " active" : ""}" data-chip="${c.id}" aria-pressed="${c.id === state.chip}">
         ${c.label}<span class="count">${n}</span></button>`;
-    }).join("");
+    }).join(""));
+    movePill();
   }
 
   // genres that appear in this list, with how many titles have each
@@ -354,7 +385,16 @@
     renderChips();
     renderGenres();
     tools.mark(state.q.trim(), filtersInUse());
-    countEl.textContent = items.length === total ? `${total} titles` : `Showing ${items.length} of ${total} titles`;
+    const count = items.length === total ? `${total} titles` : `Showing ${items.length} of ${total} titles`;
+    if (count !== countEl.textContent) {
+      countEl.textContent = count;
+      // the count slides in afresh when it changes
+      if (fx) {
+        countEl.classList.remove("lb-count");
+        void countEl.offsetWidth;
+        countEl.classList.add("lb-count");
+      }
+    }
 
     emptyEl.hidden = items.length > 0;
     if (!items.length) {
@@ -364,6 +404,12 @@
     }
 
     grid.innerHTML = items.slice(0, shown).map(Cards.card).join("");
+    if (fx && animateFrom != null)
+      [...grid.children].slice(animateFrom).forEach((c, i) => {
+        c.classList.add("lb-in");
+        c.style.setProperty("--lb-d", `${Math.min(i, 24) * 30}ms`);
+      });
+    animateFrom = null;
     moreBtn.hidden = items.length <= shown;
     moreBtn.textContent = `Show more (${items.length - Math.min(shown, items.length)} left)`;
   }
@@ -385,6 +431,7 @@
   function set(patch) {
     Object.assign(state, patch);
     shown = BATCH;
+    animateFrom = 0;
     syncUrl();
     render();
   }
@@ -468,6 +515,7 @@
     });
 
   moreBtn.addEventListener("click", () => {
+    animateFrom = shown;
     shown += BATCH;
     render();
   });
@@ -477,6 +525,7 @@
     new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !moreBtn.hidden) {
+          animateFrom = shown;
           shown += BATCH;
           render();
         }
