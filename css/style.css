@@ -1,5 +1,5 @@
 /* Inter: the closest free match to Netflix Sans (Netflix's own font can't be used elsewhere) */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@800&display=swap");
 
 /* ============================== Theme ============================== */
 
@@ -6942,4 +6942,93 @@ html.tablet .top10-num {
 .movie-row.top10-row,
 html .movie-row.top10-row {
   overflow-y: hidden;
+}
+/* Top 10: Poppins for the outlined text (Inter's letters are drawn from overlapping pieces,
+   which show up as extra lines inside an outline) */
+.top10-word,
+.top10-num {
+  font-family: "Poppins", "Arial Black", sans-serif;
+  font-weight: 800;
+}
+
+/* the number sits at the middle of the poster's height, not at its foot */
+.top10-item {
+  align-items: center;
+}
+
+.movie-row.top10-row,
+html .movie-row.top10-row {
+  align-items: center;
+}
+
+.top10-num {
+  line-height: 1;
+}
+
+/* heading row: TOP 10 · today, and the Movies / TV shows switch on the right */
+.top10-head {
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 16px;
+}
+
+.top10-sub {
+  color: var(--text-muted);
+}
+
+.top10-switch {
+  display: inline-flex;
+  gap: 2px;
+  margin-bottom: 4px;
+  padding: 4px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+}
+
+.top10-tab {
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--glass-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s, color 0.25s;
+}
+
+.top10-tab:hover {
+  color: var(--glass-text);
+}
+
+.top10-tab.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(144, 13, 9, 0.45);
+}
+
+@media (max-width: 700px) {
+  .top10-tab {
+    padding: 7px 13px;
+    font-size: 13px;
+  }
+}
+/* every number gets room of its own (a thin "1" isn't swallowed by the poster) */
+.top10-num {
+  min-width: 0.62em;
+  margin-right: -6px;
+  text-align: right;
+}
+
+html.tablet .top10-num {
+  margin-right: -6px;
+}
+
+@media (max-width: 700px) {
+  .top10-num {
+    margin-right: -2px;
+    font-size: 104px;
+  }
 }

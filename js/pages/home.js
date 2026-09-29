@@ -165,17 +165,40 @@
 
   /* ---------------- Top 10 today (movies, TV shows): big numbers next to the posters ---------------- */
 
-  const TOP10 = [
-    { media: "movie", sub: "Movies today" },
-    { media: "tv", sub: "TV shows today" },
-  ];
+  // one row, with a Movies / TV shows switch (the choice is remembered)
+  const TOP10_KEY = "mn:top10";
+  let top10Media = "movie";
+  try {
+    if (localStorage.getItem(TOP10_KEY) === "tv") top10Media = "tv";
+  } catch (e) {}
 
-  function top10Shell(t) {
-    return `<section class="row-section top10" data-row="top10-${t.media}">
-      <div class="row-head top10-head"><h2><span class="top10-word">TOP 10</span><span class="top10-sub">${t.sub}</span></h2></div>
+  function top10Shell() {
+    const btn = (media, label) =>
+      `<button type="button" class="top10-tab${media === top10Media ? " active" : ""}" data-top10="${media}" aria-pressed="${media === top10Media}">${label}</button>`;
+    return `<section class="row-section top10" data-row="top10">
+      <div class="row-head top10-head">
+        <h2><span class="top10-word">TOP 10</span><span class="top10-sub">today</span></h2>
+        <div class="top10-switch" role="group" aria-label="Top 10">${btn("movie", "Movies")}${btn("tv", "TV shows")}</div>
+      </div>
       <div class="movie-row top10-row">${'<div class="top10-item skeleton"></div>'.repeat(5)}</div>
     </section>`;
   }
+
+  rowsEl.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-top10]");
+    if (!b || b.dataset.top10 === top10Media) return;
+    top10Media = b.dataset.top10;
+    try {
+      localStorage.setItem(TOP10_KEY, top10Media);
+    } catch (err) {}
+    rowsEl.querySelectorAll("[data-top10]").forEach((x) => {
+      x.classList.toggle("active", x === b);
+      x.setAttribute("aria-pressed", x === b);
+    });
+    const row = rowsEl.querySelector(".top10-row");
+    row.scrollLeft = 0;
+    fillTop10(top10Media);
+  });
 
   function top10Item(hit, i) {
     const lib = Cards.inLibrary(hit);
@@ -186,9 +209,9 @@
     </a>`;
   }
 
-  async function fillTop10(t) {
-    const row = rowsEl.querySelector(`[data-row="top10-${t.media}"] .top10-row`);
-    const key = `mn:home:top10-${t.media}:${Lang.get()}`;
+  async function fillTop10(media) {
+    const row = rowsEl.querySelector(".top10-row");
+    const key = `mn:home:top10-${media}:${Lang.get()}`;
     try {
       let results = null;
       try {
@@ -196,14 +219,16 @@
         if (c && Date.now() - c.at < CACHE_MINUTES * 60000) results = c.results;
       } catch (e) {}
       if (!results) {
-        results = await TMDB.top10(t.media);
+        row.innerHTML = '<div class="top10-item skeleton"></div>'.repeat(5);
+        results = await TMDB.top10(media);
         try {
           sessionStorage.setItem(key, JSON.stringify({ at: Date.now(), results }));
         } catch (e) {}
       }
+      if (media !== top10Media) return; // switched while it loaded
       row.innerHTML = results.map(top10Item).join("");
     } catch (e) {
-      row.closest(".top10").remove();
+      if (media === top10Media) row.innerHTML = `<p class="muted" style="padding:20px">Couldn't load the Top 10: ${esc(e.message)}</p>`;
     }
   }
 
@@ -216,8 +241,8 @@
 
   function renderLive() {
     hero.innerHTML = '<div class="hero-slide active skeleton"></div>';
-    rowsEl.innerHTML = TOP10.map(top10Shell).join("") + LIVE_ROWS.map((r) => rowShell(r.cat, r.title, `discover.html?cat=${r.cat}`)).join("");
-    TOP10.forEach(fillTop10);
+    rowsEl.innerHTML = top10Shell() + LIVE_ROWS.map((r) => rowShell(r.cat, r.title, `discover.html?cat=${r.cat}`)).join("");
+    fillTop10(top10Media);
 
     LIVE_ROWS.forEach(async (r) => {
       const row = rowsEl.querySelector(`[data-row="${r.cat}"] .movie-row`);
