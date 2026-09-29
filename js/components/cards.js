@@ -173,7 +173,11 @@
     } else if (action === "t-rate") {
       openRating(addHit(hit).id);
     } else if (action === "t-trailer") {
-      showTrailer(hit, () => TMDB.detailsById(hit.mediaType, hit.tmdbId).then((d) => d && d.trailer));
+      showTrailer(
+        hit,
+        () => TMDB.detailsById(hit.mediaType, hit.tmdbId).then((d) => d && d.trailer),
+        () => TMDB.detailsById(hit.mediaType, hit.tmdbId).then((d) => ((d && d.videos) || []).map((v) => v.key))
+      );
     }
   }
 
@@ -483,7 +487,7 @@
 
   function embed(key) {
     const origin = OPENED_AS_FILE ? "" : `&origin=${encodeURIComponent(location.origin)}`;
-    return `<iframe src="https://www.youtube.com/embed/${encodeURIComponent(key)}?autoplay=1&rel=0&playsinline=1${origin}" title="Trailer"
+    return `<iframe src="https://www.youtube.com/embed/${encodeURIComponent(key)}?autoplay=1&rel=0&playsinline=1&enablejsapi=1${origin}" title="Trailer"
       referrerpolicy="strict-origin-when-cross-origin"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
       ${
@@ -501,28 +505,65 @@
 
   function openTrailer(id) {
     const item = Store.get(id);
-    showTrailer(item, () =>
-      TMDB.details(item).then((d) => {
-        const key = d && d.trailer;
-        if (key) Store.update(item.id, { trailer: key }); // remember it: instant next time
-        return key;
-      })
+    showTrailer(
+      item,
+      () =>
+        TMDB.details(item).then((d) => {
+          const key = d && d.trailer;
+          if (key) Store.update(item.id, { trailer: key }); // remember it: instant next time
+          return key;
+        }),
+      () => TMDB.details(item).then((d) => ((d && d.videos) || []).map((v) => v.key))
     );
   }
 
+  /* Some YouTube videos can't be played on other websites (their owner turned embedding
+     off: "Video unavailable"). The player reports it (onError 101 / 150), and then the next
+     trailer / teaser TMDB lists for the title plays instead. Blocked videos are remembered
+     (mn:badTrailers) and skipped from then on; a library title keeps the one that worked. */
+  const BAD_TRAILERS = "mn:badTrailers";
+  const isBadTrailer = (key) => Store.read(BAD_TRAILERS, []).includes(key);
+  function markBadTrailer(key) {
+    const list = Store.read(BAD_TRAILERS, []);
+    if (!list.includes(key)) Store.write(BAD_TRAILERS, list.concat(key).slice(-300));
+  }
+
+  let trailerRun = null; // { item, key, tried: Set, nextAlt(), frame }
+
   // Always plays inside the pop-up, never sends you away from the site.
-  // item: {title, year, trailer?}; loadKey: async fallback that asks TMDB
-  async function showTrailer(item, loadKey) {
-    let key = item.trailer;
+  // item: {title, year, trailer?}; loadKey: async fallback that asks TMDB;
+  // loadVideos (optional): async list of other video keys to try if YouTube refuses one
+  async function showTrailer(item, loadKey, loadVideos) {
+    let key = item.trailer && !isBadTrailer(item.trailer) ? item.trailer : null;
 
     if (!trailerOverlay) {
       trailerOverlay = makeOverlay("trailer-modal", `<div class="trailer-head"></div><div class="trailer-body"></div>`);
-      trailerOverlay.onclose = () => (trailerOverlay.querySelector(".trailer-body").innerHTML = "");
+      trailerOverlay.onclose = () => {
+        trailerOverlay.querySelector(".trailer-body").innerHTML = "";
+        trailerRun = null;
+      };
     }
     trailerOverlay.querySelector(".trailer-head").textContent = `${Lang.title(item)}${item.year ? ` (${item.year})` : ""} · Trailer`;
     const body = trailerOverlay.querySelector(".trailer-body");
     body.innerHTML = trailerMessage("fa-solid fa-spinner fa-spin", "Looking for the trailer…");
     open(trailerOverlay);
+
+    const run = { item, key: null, first: item.trailer || null, tried: new Set(), alts: null };
+    trailerRun = run;
+    run.nextAlt = async () => {
+      if (!run.alts) {
+        try {
+          run.alts = loadVideos && window.TMDB && TMDB.enabled() ? await loadVideos() : [];
+        } catch (e) {
+          run.alts = [];
+        }
+      }
+      while (run.alts.length) {
+        const k = run.alts.shift();
+        if (k && !run.tried.has(k) && !isBadTrailer(k)) return k;
+      }
+      return null;
+    };
 
     if (!key && window.TMDB && TMDB.enabled()) {
       try {
@@ -530,17 +571,66 @@
       } catch (e) {
         console.warn(e);
       }
+      if (key && isBadTrailer(key)) key = null;
     }
-    if (!trailerOverlay.classList.contains("active")) return;
-    body.innerHTML = key
-      ? embed(key)
-      : trailerMessage(
-          "fa-solid fa-film",
-          window.TMDB && TMDB.enabled()
-            ? "TMDB doesn't have a trailer for this title yet."
-            : 'No trailer saved for this title. Add a TMDB key in <a href="profile.html#settings">Settings</a> to load trailers automatically.'
-        );
+    if (!key) key = await run.nextAlt();
+    if (trailerRun !== run || !trailerOverlay.classList.contains("active")) return;
+    if (key) return playTrailer(run, key);
+    body.innerHTML = trailerMessage(
+      "fa-solid fa-film",
+      run.first
+        ? `This trailer can only be played on YouTube. <a href="https://www.youtube.com/watch?v=${encodeURIComponent(run.first)}" target="_blank" rel="noopener">Watch it on YouTube</a>`
+        : window.TMDB && TMDB.enabled()
+        ? "TMDB doesn't have a trailer for this title yet."
+        : 'No trailer saved for this title. Add a TMDB key in <a href="profile.html#settings">Settings</a> to load trailers automatically.'
+    );
   }
+
+  function playTrailer(run, key) {
+    run.key = key;
+    run.tried.add(key);
+    run.ok = false;
+    const body = trailerOverlay.querySelector(".trailer-body");
+    body.innerHTML = embed(key);
+    run.frame = body.querySelector("iframe");
+    // ask the player to report back (errors, playing)
+    run.frame.addEventListener("load", () => {
+      try {
+        run.frame.contentWindow.postMessage(JSON.stringify({ event: "listening", id: 1, channel: "widget" }), "*");
+      } catch (e) {}
+    });
+  }
+
+  window.addEventListener("message", async (e) => {
+    const run = trailerRun;
+    if (!run || !run.frame || e.source !== run.frame.contentWindow) return;
+    let data;
+    try {
+      data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+    } catch (err) {
+      return;
+    }
+    if (!data) return;
+    const state = data.event === "onStateChange" ? data.info : data.info && data.info.playerState;
+    // it plays: a library title remembers this video
+    if ((state === 1 || state === 3) && !run.ok) {
+      run.ok = true;
+      if (run.item && run.item.id && Store.get(run.item.id) && run.item.trailer !== run.key) Store.update(run.item.id, { trailer: run.key });
+    }
+    // refused (embedding off, removed, private…): the next video, or a link to YouTube
+    if (data.event === "onError") {
+      const bad = run.key;
+      markBadTrailer(bad);
+      const next = await run.nextAlt();
+      if (trailerRun !== run) return;
+      if (next) playTrailer(run, next);
+      else
+        trailerOverlay.querySelector(".trailer-body").innerHTML = trailerMessage(
+          "fa-brands fa-youtube",
+          `This trailer can only be played on YouTube. <a href="https://www.youtube.com/watch?v=${encodeURIComponent(bad)}" target="_blank" rel="noopener">Watch it on YouTube</a>`
+        );
+    }
+  });
 
   /* ---------------- NEW label: exact release dates ---------------- */
 
@@ -593,6 +683,8 @@
     hitOf: (key) => hits.get(key), // the TMDB result behind a card (hover preview)
     fillRuName,
     posterOf,
+    isBadTrailer,
+    markBadTrailer,
     addHit,
     formatRating,
     openRating,

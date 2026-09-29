@@ -172,7 +172,13 @@
       if (!preview || previewRef !== ref) return;
       preview.querySelector(".hp-info").innerHTML = infoHtml(ref, d);
       if (d && d.backdrop && !b.backdrop) preview.querySelector(".hp-backdrop").src = Store.img(d.backdrop, "w780");
-      if (d && d.key) playVideo(d.key);
+      // the trailer, then TMDB's other videos in case YouTube refuses one here
+      // (videos known to be blocked are skipped)
+      const keys = [d && d.key, ...((d && d.videos) || []).map((v) => v.key)].filter(
+        (k, i, all) => k && all.indexOf(k) === i && !Cards.isBadTrailer(k)
+      );
+      preview.videoQueue = keys.slice(1);
+      if (keys.length) playVideo(keys[0]);
     });
   }
 
@@ -214,6 +220,7 @@
     const origin = location.protocol === "file:" ? "" : `&origin=${encodeURIComponent(location.origin)}`;
     const iframe = document.createElement("iframe");
     iframe.className = "hp-frame";
+    iframe.dataset.key = key;
     iframe.title = "Trailer";
     iframe.allow = "autoplay; encrypted-media; picture-in-picture";
     iframe.referrerPolicy = "strict-origin-when-cross-origin";
@@ -289,10 +296,15 @@
       send("command", "playVideo");
       paintSound();
     }
-    // YouTube won't play it here (embedding off, removed…): keep the picture
+    // YouTube won't play it here (embedding off, removed…): remember that, and try the
+    // next video; none left: keep the picture
     if (data.event === "onError") {
+      if (frame.dataset.key) Cards.markBadTrailer(frame.dataset.key);
       frame.remove();
       preview.classList.remove("playing");
+      delete preview.dataset.started;
+      const next = (preview.videoQueue || []).shift();
+      if (next) playVideo(next);
     }
   });
 
