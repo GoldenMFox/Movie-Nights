@@ -341,6 +341,12 @@
       genres: genreNames((d.genres || []).map((g) => g.id), media),
     };
   }
+  // the exact release / first air date, "2026-05-01" (for the NEW label on cards)
+  async function releaseDate(media, id) {
+    const d = await request(`/${media}/${id}`);
+    return d.release_date || d.first_air_date || "";
+  }
+
   function pickTrailer(videos) {
     const yt = ((videos && videos.results) || []).filter((v) => v.site === "YouTube");
     const best =
@@ -590,5 +596,5 @@
     return true;
   }
 
-  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, list, byGenre, details, detailsById, basic, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
+  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, list, byGenre, details, detailsById, basic, releaseDate, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
 })();

@@ -134,13 +134,22 @@
     return id;
   }
 
-  // a new release: out this year (and last year's titles until the end of March).
-  // Decided from the year, so the NEW label goes away by itself as titles get older.
+  // A new release: came out in the last 6 months (not upcoming ones). Needs the exact
+  // release date, which js/components/cards.js looks up on TMDB for this and last
+  // year's titles and keeps in mn:releases ({ id: { d: "2026-05-01", at } }).
+  // So the NEW label goes away by itself as titles get older.
+  const RECENT_DAYS = 183;
+  function releaseOf(item) {
+    const r = read("mn:releases", {})[item.id];
+    return r ? r.d : null; // null = not looked up yet, "" = TMDB has no date
+  }
   function isRecent(item) {
-    const now = new Date();
     const year = Number(item && item.year);
-    if (!year) return false;
-    return year >= now.getFullYear() - (now.getMonth() < 3 ? 1 : 0);
+    if (!year || year < new Date().getFullYear() - 1) return false;
+    const d = releaseOf(item);
+    if (!d) return false;
+    const days = (Date.now() - new Date(`${d}T00:00:00Z`).getTime()) / 86400000;
+    return days >= 0 && days <= RECENT_DAYS;
   }
 
   function add(item) {
@@ -326,6 +335,7 @@
     all,
     get,
     isRecent,
+    releaseOf,
     update,
     toggle,
     add,

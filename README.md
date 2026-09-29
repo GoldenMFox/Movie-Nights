@@ -69,7 +69,7 @@ All titles live in **`data/library.js`**, one line per title:
 - optional: `isNew`, `favorite`, `watchlist`, `trailer` (YouTube video id), `overview`, `genres`, `runtime`, `director`, `cast`, `backdrop`
 
 The red **NEW** label on cards (and the "New releases" filter) is automatic: it shows on titles
-from this year (and last year's until the end of March), so it disappears by itself as titles age.
+released in the last 6 months (exact dates looked up on TMDB), so it disappears by itself as titles age.
 
 You can also do it from the site:
 

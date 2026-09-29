@@ -520,6 +520,47 @@
         );
   }
 
+  /* ---------------- NEW label: exact release dates ---------------- */
+
+  // Store.isRecent needs the release date; titles only keep their year. Look it up on
+  // TMDB for this and last year's titles (a few dozen at most), once, and remember it.
+  // Unreleased titles and ones TMDB had no date for are checked again after a week.
+  const RELEASES = "mn:releases";
+  async function lookUpReleases() {
+    if (!window.TMDB || !TMDB.enabled() || !window.Ratings) return;
+    const saved = Store.read(RELEASES, {});
+    const today = new Date().toISOString().slice(0, 10);
+    const stale = (r) => !r || (Date.now() - r.at > 7 * 86400000 && (!r.d || r.d > today));
+    const minYear = new Date().getFullYear() - 1;
+    const todo = Store.all().filter((i) => Number(i.year) >= minYear && stale(saved[i.id]));
+    if (!todo.length) return;
+    for (const item of todo) {
+      try {
+        let ref = Ratings.refOf(item);
+        if (!ref) {
+          const m = await TMDB.findMatch(item);
+          ref = m ? `${m.media}-${m.id}` : "none";
+          Ratings.setLink(item.id, ref);
+        }
+        const [media, id] = ref.split("-");
+        saved[item.id] = { d: ref === "none" ? "" : await TMDB.releaseDate(media, id), at: Date.now() };
+      } catch (e) {
+        break; // offline / TMDB trouble: try again next time
+      }
+    }
+    Store.write(RELEASES, saved);
+    // put the label on (or take it off) the cards already on the page
+    document.querySelectorAll(".movie-item[data-id]").forEach((el) => {
+      const item = Store.get(el.dataset.id);
+      const img = el.querySelector(".poster-link .movie-poster");
+      if (!item || !img) return;
+      const label = el.querySelector(".poster-link .new-label");
+      if (Store.isRecent(item) && !label) img.insertAdjacentHTML("afterend", '<span class="new-label">NEW</span>');
+      if (!Store.isRecent(item) && label) label.remove();
+    });
+  }
+  document.addEventListener("DOMContentLoaded", () => setTimeout(lookUpReleases, 1200));
+
   window.Cards = {
     card,
     tmdbCard,
