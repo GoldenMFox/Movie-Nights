@@ -6338,3 +6338,27 @@ button.p-lib-line:hover .p-lib-arrow {
     padding-top: 6px;
   }
 }
+/* cards a little wider, so they look less tall (poster keeps its 2:3 shape).
+   Grid pages keep the same number of columns but get a bit more room:
+   on a big screen 6 columns of ~250px instead of ~233px */
+.movie-grid {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.container:has(.movie-grid) {
+  max-width: 1650px;
+}
+
+.movie-row {
+  grid-auto-columns: 226px;
+}
+
+@media (max-width: 700px) {
+  .movie-grid {
+    grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  }
+
+  .movie-row {
+    grid-auto-columns: 162px;
+  }
+}
