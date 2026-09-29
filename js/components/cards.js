@@ -65,7 +65,7 @@
     const needScore = (window.Ratings && Ratings.needsWork(item)) || needsRuName(item);
     return `<article class="movie-item" data-id="${esc(item.id)}"${needScore ? " data-need-score" : ""}>
       <a class="poster-link" href="${url}" tabindex="-1" aria-hidden="true">
-        <img class="movie-poster" src="${Store.poster(item.poster)}" alt="" loading="lazy" decoding="async" />
+        <img class="movie-poster" src="${Store.poster(posterOf(item))}" alt="" loading="lazy" decoding="async" />
         ${Store.isRecent(item) ? '<span class="new-label">NEW</span>' : ""}
         ${badges ? `<span class="badges">${badges}</span>` : ""}
       </a>
@@ -116,7 +116,7 @@
     const url = `title.html?tmdb=${key}`;
     return `<article class="movie-item" data-tmdb="${key}">
       <a class="poster-link" href="${url}" tabindex="-1" aria-hidden="true">
-        <img class="movie-poster" src="${Store.poster(hit.poster)}" alt="" loading="lazy" decoding="async" />
+        <img class="movie-poster" src="${Store.poster(posterOf(hit))}" alt="" loading="lazy" decoding="async" />
         <span class="badges"><span title="${Store.TYPE_LABEL[hit.type]}" class="type-badge">${hit.type === "movie" ? "Film" : hit.type === "anime" ? "Anime" : "TV"}</span></span>
       </a>
       <div class="movie-info">
@@ -177,12 +177,28 @@
     }
   }
 
-  /* ---------------- Russian names for titles added later ---------------- */
+  /* ---------------- Russian names and posters (RU on) ---------------- */
 
-  // library titles from data/library.js already have "titleRu"; newer ones get it
-  // from TMDB the first time they're on screen while RU is on
+  // Russian posters of library titles, looked up once and kept in this browser
+  // (mn:ruPosters: { libraryId: "/path.jpg" | "" }, "" = TMDB has no other poster)
+  const RU_POSTERS = "mn:ruPosters";
+  let ruPosters = Store.read(RU_POSTERS, {});
+  const ruOn = () => !!(window.Lang && Lang.isRu());
+
+  // the poster to show: the Russian one while RU is on (when there is one)
+  function posterOf(x) {
+    if (!x) return "";
+    if (ruOn()) {
+      if (x.posterRu) return x.posterRu; // TMDB results
+      if (x.id && ruPosters[x.id]) return ruPosters[x.id]; // library titles
+    }
+    return x.poster;
+  }
+
+  // library titles from data/library.js already have "titleRu"; newer ones get it, and
+  // every title gets its Russian poster, from TMDB the first time it's on screen while RU is on
   function needsRuName(item) {
-    return !!(window.Lang && Lang.isRu() && !item.titleRu && window.TMDB && TMDB.enabled());
+    return !!(ruOn() && window.TMDB && TMDB.enabled() && (!item.titleRu || ruPosters[item.id] === undefined));
   }
 
   const ruPending = new Set();
@@ -193,8 +209,14 @@
     ruPending.add(item.id);
     try {
       const [media, tmdbId] = ref.split("-");
-      const name = await TMDB.ruTitle(media, Number(tmdbId));
-      if (name) Store.update(item.id, { titleRu: name });
+      const ru = await TMDB.ruInfo(media, Number(tmdbId));
+      ruPosters = Store.read(RU_POSTERS, {});
+      ruPosters[item.id] = ru.poster && ru.poster !== item.poster ? ru.poster : "";
+      Store.write(RU_POSTERS, ruPosters);
+      if (ruPosters[item.id]) {
+        document.querySelectorAll(`.movie-item[data-id="${CSS.escape(item.id)}"] .movie-poster`).forEach((img) => (img.src = Store.poster(ruPosters[item.id])));
+      }
+      if (ru.title && !item.titleRu) Store.update(item.id, { titleRu: ru.title });
     } catch (e) {
       console.warn("Russian name:", item.title, e.message);
     }
@@ -570,6 +592,7 @@
     inLibrary,
     hitOf: (key) => hits.get(key), // the TMDB result behind a card (hover preview)
     fillRuName,
+    posterOf,
     addHit,
     formatRating,
     openRating,

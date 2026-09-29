@@ -19,8 +19,15 @@
 
   const current = document.body.dataset.page;
 
-  // EN | RU switch for movie names (in the profile menu on computers; in the side menu on phones)
-  const langToggle = (where) => `<div class="lang-toggle ${where}" role="group" aria-label="Movie names language">
+  // Russian names (and posters) on / off: a switch in the profile menu, EN | RU in the side menu
+  const langToggle = (where) =>
+    where === "in-profile"
+      ? `<label class="menu-switch lang-switch" title="Movie, show and anime names and posters in Russian">
+          <i class="fa-solid fa-language"></i><span>Russian titles</span>
+          <input type="checkbox" class="lang-switch-input"${Lang.isRu() ? " checked" : ""} />
+          <span class="switch-track"><span class="switch-thumb"></span></span>
+        </label>`
+      : `<div class="lang-toggle ${where}" role="group" aria-label="Movie names language">
       ${where === "in-menu" ? "<span>Movie names</span>" : ""}
       ${where === "in-profile" ? `<i class="fa-solid fa-language"></i><span>Movie names</span>` : ""}
       <button type="button" data-lang="en" aria-pressed="${!Lang.isRu()}" class="${Lang.isRu() ? "" : "active"}">EN</button>
@@ -191,6 +198,11 @@
     if (!btn || btn.dataset.lang === Lang.get()) return;
     Lang.set(btn.dataset.lang);
     location.reload(); // every list, card and title picks up the new names
+  });
+  document.addEventListener("change", (e) => {
+    if (!e.target.classList.contains("lang-switch-input")) return;
+    Lang.set(e.target.checked ? "ru" : "en");
+    setTimeout(() => location.reload(), 250); // (lets the switch finish sliding)
   });
 
   /* ---------------- theme ---------------- */

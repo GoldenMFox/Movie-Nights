@@ -151,7 +151,7 @@
 
   // lists are kept for 30 minutes, so going back to Home is instant
   async function cachedList(cat) {
-    const key = `mn:home:${cat}:${Lang.get()}`;
+    const key = `mn:home2:${cat}:${Lang.get()}`;
     try {
       const c = JSON.parse(sessionStorage.getItem(key) || "null");
       if (c && Date.now() - c.at < CACHE_MINUTES * 60000) return c.results;
@@ -205,13 +205,13 @@
     const url = lib ? `title.html?id=${encodeURIComponent(lib.id)}` : `title.html?tmdb=${hit.mediaType}-${hit.tmdbId}`;
     return `<a class="top10-item" href="${url}" title="#${i + 1} · ${esc(Lang.title(hit))}">
       <span class="top10-num" aria-hidden="true">${i + 1}</span>
-      <img src="${Store.poster(hit.poster, "w342")}" alt="${esc(Lang.title(hit))}" loading="lazy" decoding="async" />
+      <img src="${Store.poster(Cards.posterOf(hit), "w342")}" alt="${esc(Lang.title(hit))}" loading="lazy" decoding="async" />
     </a>`;
   }
 
   async function fillTop10(media) {
     const row = rowsEl.querySelector(".top10-row");
-    const key = `mn:home:top10-${media}:${Lang.get()}`;
+    const key = `mn:home2:top10-${media}:${Lang.get()}`;
     try {
       let results = null;
       try {

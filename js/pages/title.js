@@ -183,7 +183,7 @@
       }</div>
       ${topbarHtml(menuItems)}
       <div class="container t-hero-inner">
-        <img class="t-poster" src="${Store.poster(t.poster, "w500")}" alt="${esc(Lang.title(t))} poster" />
+        <img class="t-poster" src="${Store.poster(Lang.isRu() && d.posterRu ? d.posterRu : Cards.posterOf(t), "w500")}" alt="${esc(Lang.title(t))} poster" />
         <div class="t-head">
           <h1>${esc(Lang.title(t))}${t.year ? ` <span class="year">(${t.year})</span>` : ""}</h1>
           ${Lang.altTitle(t) ? `<div class="t-alt-title">${esc(Lang.altTitle(t))}</div>` : ""}

@@ -165,22 +165,27 @@
     ]);
   }
 
-  // put the Russian names onto simplified results ("titleRu")
+  // put the Russian names and posters onto simplified results ("titleRu", "posterRu")
   function applyRu(results, ruData, media) {
     if (!ruData || !ruData.results) return results;
-    const names = {};
-    ruData.results.forEach((r) => (names[`${r.media_type || media}-${r.id}`] = r.title || r.name));
+    const ru = {};
+    ruData.results.forEach((r) => (ru[`${r.media_type || media}-${r.id}`] = r));
     results.forEach((h) => {
-      const n = names[`${h.mediaType}-${h.tmdbId}`];
-      if (n) h.titleRu = n;
+      const r = ru[`${h.mediaType}-${h.tmdbId}`];
+      if (!r) return;
+      if (r.title || r.name) h.titleRu = r.title || r.name;
+      if (r.poster_path && r.poster_path !== h.poster) h.posterRu = r.poster_path;
     });
     return results;
   }
 
-  // Russian name of one title (for library titles added later)
-  async function ruTitle(media, id) {
+  // Russian name and poster of one title (for library titles)
+  async function ruInfo(media, id) {
     const d = await request(`/${media}/${id}`, { language: "ru-RU" });
-    return d.title || d.name || "";
+    return { title: d.title || d.name || "", poster: d.poster_path || "" };
+  }
+  async function ruTitle(media, id) {
+    return (await ruInfo(media, id)).title;
   }
 
   function isAnime(r) {
@@ -539,12 +544,13 @@
 
   // RU mode: add the Russian name of the title and of its recommendations (saved with the details)
   async function withRuNames(result, media, id) {
-    if (!wantRu() || result.ruDone) return result;
+    if (!wantRu() || result.ruDone2) return result;
     try {
       const ru = await request(`/${media}/${id}`, { language: "ru-RU", append_to_response: "recommendations" });
       result.titleRu = ru.title || ru.name || "";
+      if (ru.poster_path && ru.poster_path !== result.poster) result.posterRu = ru.poster_path;
       applyRu(result.recommendations || [], ru.recommendations, media);
-      result.ruDone = true;
+      result.ruDone2 = true;
       const cache = readCache();
       cache[`v4:${media}-${id}`] = result;
       writeCache(cache);
@@ -657,5 +663,5 @@
     return true;
   }
 
-  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
+  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, ruInfo, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
 })();

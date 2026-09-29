@@ -7315,3 +7315,33 @@ html.tablet .menu-switch {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* "Russian titles" switch: in the profile menu on computers, phones and tablets
+   (narrow computer windows have EN | RU in the side menu instead) */
+@media (max-width: 1330px) {
+  .menu-switch.lang-switch {
+    display: none;
+  }
+}
+
+html.app-ui .menu-switch.lang-switch,
+html.tablet .menu-switch.lang-switch {
+  display: flex;
+}
+
+/* Top 10: its own sizes win over every other row rule (posters-only, phones, tablets) */
+#home-rows .movie-row.top10-row {
+  grid-auto-columns: max-content;
+  gap: 18px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+@media (max-width: 700px) {
+  #home-rows .movie-row.top10-row {
+    gap: 12px;
+  }
+}
+/* home: the rows use the full width of the screen too, like the library pages */
+body[data-page="home"] main.container {
+  max-width: none;
+}
