@@ -7345,3 +7345,214 @@ html.tablet .menu-switch.lang-switch {
 body[data-page="home"] main.container {
   max-width: none;
 }
+/* ============================== Trailer pop-up: glass redesign ============================== */
+
+/* the page behind blurs and darkens */
+.overlay:has(.trailer-modal) {
+  background: rgba(6, 6, 8, 0.72);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+}
+
+.trailer-modal {
+  max-width: 1100px;
+  padding: 10px;
+  overflow: visible;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 26px;
+  background: rgba(24, 24, 28, 0.72);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  backdrop-filter: saturate(180%) blur(24px);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+
+/* head: a "Trailer" pill and the title */
+.trailer-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 6px 60px 14px 8px;
+  border: 0;
+  background: none;
+  color: #fff;
+}
+
+.th-kicker {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.th-kicker i {
+  color: #ff4d3a;
+  font-size: 10px;
+}
+
+.th-title {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.th-title span {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+/* round glass close button */
+.trailer-modal .modal-close {
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.trailer-modal .modal-close i {
+  font-weight: 900;
+}
+
+.trailer-modal .modal-close i::before {
+  content: "\f00d"; /* an X, drawn plain inside the glass circle */
+}
+
+.trailer-modal .modal-close:hover {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+/* the video (or a message) in a rounded frame */
+.trailer-body {
+  overflow: hidden;
+  border-radius: 18px;
+  background: #000;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.trailer-modal iframe {
+  border-radius: 18px;
+}
+
+.trailer-message {
+  gap: 12px;
+  background: radial-gradient(circle at 50% 40%, rgba(144, 13, 9, 0.18), transparent 60%), #0b0b0c;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.trailer-message i {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.trailer-message .fa-youtube {
+  color: #ff3b3b;
+}
+
+.trailer-message a {
+  color: #fff;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--accent-hover);
+  text-underline-offset: 3px;
+}
+
+/* foot: open on YouTube */
+.trailer-foot {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 8px;
+  padding: 0 4px;
+}
+
+.trailer-foot:not(:empty) {
+  padding: 10px 4px 2px;
+}
+
+.tf-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+
+.tf-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.tf-link .fa-youtube {
+  color: #ff3b3b;
+  font-size: 15px;
+}
+
+.tf-link .fa-arrow-up-right-from-square {
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+@media (max-width: 700px) {
+  .trailer-modal {
+    padding: 8px;
+    border-radius: 20px;
+  }
+
+  .trailer-head {
+    gap: 8px;
+    padding: 4px 52px 10px 6px;
+  }
+
+  .th-kicker {
+    padding: 4px 9px;
+    font-size: 10.5px;
+  }
+
+  .th-title {
+    font-size: 16px;
+  }
+
+  .trailer-modal .modal-close {
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .trailer-body,
+  .trailer-modal iframe {
+    border-radius: 14px;
+  }
+}

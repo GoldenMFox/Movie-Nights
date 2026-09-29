@@ -537,13 +537,16 @@
     let key = item.trailer && !isBadTrailer(item.trailer) ? item.trailer : null;
 
     if (!trailerOverlay) {
-      trailerOverlay = makeOverlay("trailer-modal", `<div class="trailer-head"></div><div class="trailer-body"></div>`);
+      trailerOverlay = makeOverlay("trailer-modal", `<div class="trailer-head"></div><div class="trailer-body"></div><div class="trailer-foot"></div>`);
       trailerOverlay.onclose = () => {
         trailerOverlay.querySelector(".trailer-body").innerHTML = "";
+        trailerOverlay.querySelector(".trailer-foot").innerHTML = "";
         trailerRun = null;
       };
     }
-    trailerOverlay.querySelector(".trailer-head").textContent = `${Lang.title(item)}${item.year ? ` (${item.year})` : ""} · Trailer`;
+    trailerOverlay.querySelector(".trailer-head").innerHTML = `<span class="th-kicker"><i class="fa-solid fa-play"></i> Trailer</span>
+      <h2 class="th-title">${esc(Lang.title(item))}${item.year ? ` <span>${item.year}</span>` : ""}</h2>`;
+    trailerOverlay.querySelector(".trailer-foot").innerHTML = "";
     const body = trailerOverlay.querySelector(".trailer-body");
     body.innerHTML = trailerMessage("fa-solid fa-spinner fa-spin", "Looking for the trailer…");
     open(trailerOverlay);
@@ -593,6 +596,8 @@
     const body = trailerOverlay.querySelector(".trailer-body");
     body.innerHTML = embed(key);
     run.frame = body.querySelector("iframe");
+    trailerOverlay.querySelector(".trailer-foot").innerHTML = `<a class="tf-link" href="https://www.youtube.com/watch?v=${encodeURIComponent(key)}" target="_blank" rel="noopener">
+      <i class="fa-brands fa-youtube"></i> Open on YouTube <i class="fa-solid fa-arrow-up-right-from-square"></i></a>`;
     // ask the player to report back (errors, playing)
     run.frame.addEventListener("load", () => {
       try {
