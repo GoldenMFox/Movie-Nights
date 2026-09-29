@@ -292,6 +292,38 @@
     write(KEYS.profile, Object.assign(getProfile(), patch));
   }
 
+  /* ---------- your own lists ("Halloween marathon", "Date night"…), saved with your profile ---------- */
+
+  // [{ id, name, items: [library ids] }]
+  const lists = () => (getProfile().lists || []).filter((l) => l && l.id);
+  function saveLists(l) {
+    setProfile({ lists: l });
+    changed(null);
+  }
+  function createList(name) {
+    const id = `l${Date.now().toString(36)}`;
+    saveLists(lists().concat({ id, name: String(name).trim().slice(0, 40) || "My list", items: [] }));
+    return id;
+  }
+  function renameList(listId, name) {
+    saveLists(lists().map((l) => (l.id === listId ? Object.assign({}, l, { name: String(name).trim().slice(0, 40) || l.name }) : l)));
+  }
+  function deleteList(listId) {
+    saveLists(lists().filter((l) => l.id !== listId));
+  }
+  // put a title in a list, or take it out; returns true when it's in now
+  function toggleInList(listId, itemId) {
+    let on = false;
+    saveLists(
+      lists().map((l) => {
+        if (l.id !== listId) return l;
+        on = !l.items.includes(itemId);
+        return Object.assign({}, l, { items: on ? [itemId].concat(l.items) : l.items.filter((x) => x !== itemId) });
+      })
+    );
+    return on;
+  }
+
   /* ---------- backup ---------- */
 
   function exportBackup() {
@@ -397,6 +429,11 @@
     setTiers,
     getProfile,
     setProfile,
+    lists,
+    createList,
+    renameList,
+    deleteList,
+    toggleInList,
     flatten,
     guest,
     exportBackup,

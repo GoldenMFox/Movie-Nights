@@ -509,7 +509,7 @@
   }
 
   function writeCache(cache) {
-    Object.keys(cache).forEach((k) => /^v[2-6]:/.test(k) && delete cache[k]); // older formats
+    Object.keys(cache).forEach((k) => /^v[2-7]:/.test(k) && delete cache[k]); // older formats
     const keys = Object.keys(cache);
     if (keys.length > CACHE_LIMIT) {
       keys
@@ -561,13 +561,13 @@
 
   // Full details for a TMDB movie / show (cached for a week)
   async function detailsById(media, id) {
-    const cacheKey = `v7:${media}-${id}`; // v7: TV seasons listed (Seasons section)
+    const cacheKey = `v8:${media}-${id}`; // v8: franchise (collection) and X-Ray facts
     const cache = readCache();
     if (cache[cacheKey] && Date.now() - cache[cacheKey].savedAt < DETAILS_MAX_AGE) return withRuNames(cache[cacheKey], media, id);
 
     const country = region();
     const d = await request(`/${media}/${id}`, {
-      append_to_response: `videos,credits,recommendations,external_ids,images,reviews,watch/providers,${media === "movie" ? "release_dates" : "content_ratings"}`,
+      append_to_response: `videos,credits,recommendations,external_ids,images,reviews,watch/providers,keywords,${media === "movie" ? "release_dates" : "content_ratings"}`,
       include_image_language: "en,null",
     });
     // Many TV shows keep their trailers on the seasons, not the show (Breaking Bad has
@@ -633,6 +633,24 @@
         url: r.url || "",
       })),
       tmdbUrl: `https://www.themoviedb.org/${media}/${id}`,
+      // the franchise it belongs to (e.g. "Harry Potter Collection"): the Collection section
+      collection: d.belongs_to_collection ? { id: d.belongs_to_collection.id, name: d.belongs_to_collection.name } : null,
+      // X-Ray: behind-the-scenes facts
+      xray: {
+        tagline: d.tagline || "",
+        budget: d.budget || 0,
+        revenue: d.revenue || 0,
+        status: d.status || "",
+        released: d.release_date || d.first_air_date || "",
+        lastAir: d.last_air_date || "",
+        episodes: d.number_of_episodes || 0,
+        language: d.original_language || "",
+        languages: (d.spoken_languages || []).map((l) => l.english_name || l.name).filter(Boolean).slice(0, 4),
+        countries: (d.production_countries || d.origin_country || []).map((c) => c.name || c).filter(Boolean).slice(0, 4),
+        companies: (d.production_companies || []).map((c) => c.name).slice(0, 4),
+        networks: (d.networks || []).map((n) => n.name).slice(0, 3),
+        keywords: (((d.keywords && (d.keywords.keywords || d.keywords.results)) || []).map((k) => k.name)).slice(0, 10),
+      },
       savedAt: Date.now(),
     });
     cache[cacheKey] = result;
@@ -650,7 +668,7 @@
       applyRu(result.recommendations || [], ru.recommendations, media);
       result.ruDone2 = true;
       const cache = readCache();
-      cache[`v7:${media}-${id}`] = result;
+      cache[`v8:${media}-${id}`] = result;
       writeCache(cache);
     } catch (e) {}
     return result;
@@ -824,5 +842,25 @@
     return null;
   }
 
-  window.TMDB = { findByImdb, findFilm, providersFor, providerCatalog, nextUp, enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos, seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
+  // a franchise: every film in it, in release order (kept a week)
+  async function collection(id) {
+    const cache = readCache();
+    const key = `col:${id}`;
+    if (cache[key] && Date.now() - cache[key].savedAt < DETAILS_MAX_AGE) return cache[key];
+    const d = await request(`/collection/${id}`);
+    const result = {
+      id,
+      name: d.name || "",
+      parts: (d.parts || [])
+        .filter((p) => p.poster_path || p.release_date)
+        .sort((a, b) => (a.release_date || "9999").localeCompare(b.release_date || "9999"))
+        .map((p) => simplify(p, "movie")),
+      savedAt: Date.now(),
+    };
+    cache[key] = result;
+    writeCache(cache);
+    return result;
+  }
+
+  window.TMDB = { collection, findByImdb, findFilm, providersFor, providerCatalog, nextUp, enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos, seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
 })();

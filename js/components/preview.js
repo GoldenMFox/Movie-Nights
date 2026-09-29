@@ -76,6 +76,11 @@
 
   function scoreHtml(b, d) {
     const parts = [];
+    // not rated by you yet: how much you'll probably like it (js/services/taste.js)
+    if (window.Taste && !(b.item && b.item.rating != null)) {
+      const m = Taste.badge({ genres: (d && d.genres && d.genres.length ? d.genres : b.genres), score: b.score ?? (d && d.tmdbScore) });
+      if (m) parts.push(m);
+    }
     if (b.item && b.item.rating != null) parts.push(`<span class="hp-mine"><i class="fa-solid fa-star"></i> ${Cards.formatRating(b.item.rating)}</span>`);
     const ext = b.item && window.Ratings ? Ratings.display(b.item) : null;
     if (ext && ext.kind === "imdb" && typeof ext.value === "number") parts.push(`<span><span class="imdb-tag">IMDb</span>${ext.value.toFixed(1)}</span>`);

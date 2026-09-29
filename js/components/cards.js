@@ -123,16 +123,32 @@
         <h3 class="movie-title"><a href="${url}" title="${esc(Lang.title(hit))}">${esc(Lang.title(hit))}</a></h3>
         <div class="movie-meta">
           <span class="ratings">${tmdbBadge(hit.score)}</span>
-          <span class="year">${hit.year || ""}</span>
+          ${(window.Taste && Taste.badge(hit, "year")) || `<span class="year">${hit.year || ""}</span>`}
         </div>
         <div class="action-circle">
           ${actionButton("t-add", false, "Add to library", "fa-solid fa-plus")}
-          ${actionButton("t-rate", false, "Rate it", "fa-solid fa-star")}
+          ${
+            unreleased(hit)
+              ? actionButton("t-remind", isReminded(key), isReminded(key) ? "Reminder on" : "Remind me", `fa-${isReminded(key) ? "solid" : "regular"} fa-bell`)
+              : actionButton("t-rate", false, "Rate it", "fa-solid fa-star")
+          }
           ${actionButton("t-watch", false, "Add to Watchlist", "fa-regular fa-bookmark")}
           ${actionButton("t-trailer", false, "Play Trailer", "fa-brands fa-youtube")}
         </div>
       </div>
     </article>`;
+  }
+
+  // not out yet ("Remind me" instead of "Rate it")
+  const unreleased = (hit) => !!(hit && hit.released && hit.released > Store.today());
+  const isReminded = (key) => !!(window.Watch && Watch.isReminded(key));
+
+  // "Remind me": into "Coming up" on the Watchlist page, without adding it to anything
+  function toggleReminder(hit, key) {
+    const on = Watch.toggleReminder(hit, key);
+    toast(on ? `We'll show "${Lang.title(hit)}" in Coming up on your Watchlist page` : `Reminder for "${Lang.title(hit)}" removed`);
+    document.querySelectorAll(`.movie-item[data-tmdb="${CSS.escape(key)}"]`).forEach((el) => (el.outerHTML = tmdbCard(hit)));
+    return on;
   }
 
   // Add a TMDB result to the library (or return it if it's already there)
@@ -176,6 +192,11 @@
       openRating(addHit(hit, lib && lib.watchedAt ? {} : { watchedAt: Store.today() }).id, { watched: true });
     } else if (action === "t-rate") {
       openRating(addHit(hit).id);
+    } else if (action === "t-remind") {
+      toggleReminder(hit, key);
+    } else if (action === "t-lists") {
+      // a list holds titles from your library: add it there first
+      openLists(addHit(hit).id);
     } else if (action === "t-trailer") {
       showTrailer(
         hit,
@@ -299,6 +320,8 @@
       openTrailer(id);
     } else if (action === "remove") {
       removeTitle(id);
+    } else if (action === "lists") {
+      openLists(id);
     }
   }
 
@@ -315,6 +338,62 @@
         toast(`"${Lang.title(item)}" is back`);
       },
     });
+  }
+
+  /* ---------------- your own lists: "Add to a list" pop-up ---------------- */
+
+  let listsOverlay;
+  function openLists(id) {
+    const item = Store.get(id);
+    if (!item) return;
+    if (!listsOverlay) {
+      listsOverlay = makeOverlay(
+        "lists-modal",
+        `<h3>Add to a list</h3>
+         <p class="lm-for"></p>
+         <div class="lm-lists"></div>
+         <form class="lm-new">
+           <input class="input" name="name" maxlength="40" placeholder="New list, e.g. Halloween marathon" aria-label="New list name" autocomplete="off" />
+           <button class="btn btn-primary" type="submit"><i class="fa-solid fa-plus"></i> Create</button>
+         </form>`
+      );
+      listsOverlay.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-list]");
+        if (!b) return;
+        const on = Store.toggleInList(b.dataset.list, listsOverlay.dataset.item);
+        const name = (Store.lists().find((l) => l.id === b.dataset.list) || {}).name;
+        toast(on ? `Added to "${name}"` : `Removed from "${name}"`);
+        fillLists();
+      });
+      listsOverlay.querySelector(".lm-new").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const input = e.target.elements.name;
+        if (!input.value.trim()) return input.focus();
+        const listId = Store.createList(input.value);
+        Store.toggleInList(listId, listsOverlay.dataset.item);
+        toast(`Added to "${input.value.trim()}"`);
+        input.value = "";
+        fillLists();
+      });
+    }
+    listsOverlay.dataset.item = id;
+    listsOverlay.querySelector(".lm-for").textContent = Lang.title(item);
+    fillLists();
+    open(listsOverlay);
+  }
+
+  function fillLists() {
+    const id = listsOverlay.dataset.item;
+    const all = Store.lists();
+    listsOverlay.querySelector(".lm-lists").innerHTML = all.length
+      ? all
+          .map((l) => {
+            const on = l.items.includes(id);
+            return `<button type="button" class="lm-row${on ? " on" : ""}" data-list="${esc(l.id)}" aria-pressed="${on}">
+              <i class="fa-solid ${on ? "fa-circle-check" : "fa-circle-plus"}"></i><span>${esc(l.name)}</span><small>${l.items.filter((x) => Store.get(x)).length}</small></button>`;
+          })
+          .join("")
+      : '<p class="lm-empty">No lists yet. Make your first one below.</p>';
   }
 
   /* ---------------- quick actions: long-press (phones) or right-click (computers) ---------------- */
@@ -366,15 +445,20 @@
               ${row("watch", `fa-${item.watchlist ? "solid" : "regular"} fa-bookmark`, item.watchlist ? "Remove from Watchlist" : "Add to Watchlist")}
               ${row("fav", `fa-${item.favorite ? "solid" : "regular"} fa-heart`, item.favorite ? "Remove from Favorites" : "Add to Favorites")}
               ${row("rate", "fa-solid fa-star", item.rating != null ? "Change your score" : "Rate it")}
+              ${row("lists", "fa-solid fa-list-ul", "Add to a list…")}
               ${row("trailer", "fa-solid fa-play", "Play trailer")}
               <a class="qa-row" href="title.html?id=${encodeURIComponent(item.id)}"><i class="fa-solid fa-circle-info"></i><span>Open details</span></a>
             </div>
             <div class="qa-list">${row("remove", "fa-solid fa-trash-can", "Remove from library", " qa-danger")}</div>`
           : `<div class="qa-list">
               ${row("t-watch", "fa-regular fa-bookmark", "Add to Watchlist")}
-              ${row("t-watched", "fa-regular fa-circle-check", "Watched it")}
-              ${row("t-rate", "fa-solid fa-star", "Rate it")}
+              ${
+                unreleased(item)
+                  ? row("t-remind", `fa-${isReminded(s.key) ? "solid" : "regular"} fa-bell`, isReminded(s.key) ? "Reminder on (tap to remove)" : "Remind me when it's out")
+                  : `${row("t-watched", "fa-regular fa-circle-check", "Watched it")}${row("t-rate", "fa-solid fa-star", "Rate it")}`
+              }
               ${row("t-add", "fa-solid fa-plus", "Add to library")}
+              ${row("t-lists", "fa-solid fa-list-ul", "Add to a list…")}
               ${row("t-trailer", "fa-solid fa-play", "Play trailer")}
               <a class="qa-row" href="title.html?tmdb=${encodeURIComponent(s.key)}"><i class="fa-solid fa-circle-info"></i><span>Open details</span></a>
             </div>`
@@ -399,13 +483,17 @@
       ? `${row("watch", `fa-${item.watchlist ? "solid" : "regular"} fa-bookmark`, item.watchlist ? "On Watchlist" : "Watchlist", item.watchlist ? " on" : "")}
         ${row("fav", `fa-${item.favorite ? "solid" : "regular"} fa-heart`, "Favorite", item.favorite ? " on" : "")}
         ${row("rate", "fa-solid fa-star", item.rating != null ? `Your score ${formatRating(item.rating)}` : "Rate", item.rating != null ? " on" : "")}
+        ${row("lists", "fa-solid fa-list-ul", "Add to list")}
         ${row("trailer", "fa-solid fa-play", "Trailer")}
         <a class="qa-p-row" href="title.html?id=${encodeURIComponent(item.id)}"><i class="fa-solid fa-circle-info"></i><span>Details</span></a>
         ${row("remove", "fa-solid fa-trash-can", "Remove", " danger")}`
       : `${row("t-watch", "fa-regular fa-bookmark", "Watchlist")}
-        ${row("t-watched", "fa-regular fa-circle-check", "Watched")}
-        ${row("t-rate", "fa-solid fa-star", "Rate")}
-        ${row("t-add", "fa-solid fa-plus", "Add to library")}
+        ${
+          unreleased(item)
+            ? row("t-remind", `fa-${isReminded(s.key) ? "solid" : "regular"} fa-bell`, isReminded(s.key) ? "Reminder on" : "Remind me", isReminded(s.key) ? " on" : "")
+            : `${row("t-watched", "fa-regular fa-circle-check", "Watched")}${row("t-rate", "fa-solid fa-star", "Rate")}`
+        }
+        ${row("t-lists", "fa-solid fa-list-ul", "Add to list")}
         ${row("t-trailer", "fa-solid fa-play", "Trailer")}
         <a class="qa-p-row" href="title.html?tmdb=${encodeURIComponent(s.key)}"><i class="fa-solid fa-circle-info"></i><span>Details</span></a>`;
     return `<div class="qa-p-title">${esc(Lang.title(item))}</div><div class="qa-p-list">${rows}</div>`;

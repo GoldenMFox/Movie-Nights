@@ -57,6 +57,27 @@ The navbar search (or `/` on any page) searches your library and all of TMDB.
 1h45 / 2h30 / one episode, a genre, only your streaming services) and it picks one title from
 your Watchlist, or from your Favorites for a rewatch.
 
+**Borrowed from Netflix, HBO Max, Plex and Prime Video:**
+
+- **Because you liked …** (Home): two rows of TMDB recommendations for two of your best-rated
+  titles (8+ or favorites), different ones each visit, without what you already have.
+- **Match %** ("92% match", `js/services/taste.js`): how much you'll probably like a title
+  you haven't rated, from how you rate its genres against your own average, nudged by its
+  TMDB score. Shows after 5 rated titles, in the hover preview, on title pages, in the quick
+  menu and under posters (Poster details on).
+- **Remind me** (titles not out yet: bell on the card, title page, quick menu): puts it in
+  **Coming up** on the Watchlist page without adding it to anything. Saved with your profile;
+  drops off a month after release.
+- **Franchises** (title pages): "Harry Potter Collection · You've seen 2 of 8", every film in it.
+- **Your own lists** ("Halloween marathon", "Date night"): **New list** on the Watchlist page,
+  add titles from the quick menu or a title page's ⋯ menu (Add to a list). Each list gets a
+  row and a place in the full-list switch (with Rename / Delete). Saved with your profile.
+- **X-Ray** (title pages): tagline, release, budget and box office, awards (OMDb), studios,
+  countries, language, keywords, and **where you've seen the cast** in your own library.
+- **Movie Nights Wrapped** (Profile → Watch diary): your year as a story: how many you watched,
+  where it started, top genres, busiest month, your best-rated, the actor and director you saw
+  most, your average score, and a summary you can share.
+
 **New library?** Home and Watchlist show a welcome card with the three ways to start
 (Discover, search, import).
 
@@ -202,14 +223,16 @@ Movie-Nights-NEW/
 │   ├── services/              talking to outside services
 │   │   ├── tmdb.js            TMDB (details, trailers, cast, Discover)
 │   │   ├── ratings.js         IMDb via OMDb (daily budget) with TMDB fallback
-│   │   └── watch.js           your streaming services, what's coming (Watchlist, picker)
+│   │   ├── watch.js           your streaming services, what's coming, reminders
+│   │   └── taste.js           match % from your own scores
 │   ├── components/            pieces used by several pages
 │   │   ├── cards.js           poster cards, rating pop-up, trailer pop-up
 │   │   ├── add-title.js       "Add a title" form
 │   │   ├── preview.js         hover a poster: Netflix-style trailer preview (computers)
 │   │   ├── scrollbars.js      slim scrollbars with a hand cursor under the rows (computers)
 │   │   ├── picker.js          "What should I watch?" pop-up
-│   │   └── import.js          import from IMDb / Letterboxd (Profile)
+│   │   ├── import.js          import from IMDb / Letterboxd (Profile)
+│   │   └── wrapped.js         Movie Nights Wrapped (Profile)
 │   └── pages/                 one script per page
 │       ├── home.js, discover.js, browse.js (movies / TV / anime / favorites / watchlist)
 │       └── title.js, person.js, tier-list.js, profile.js

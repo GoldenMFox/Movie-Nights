@@ -185,6 +185,7 @@
         ${i.rating != null ? `<b class="diary-score">★ ${Cards.formatRating(i.rating)}</b>` : ""}</a></li>`;
 
     box.innerHTML = `
+      ${window.Wrapped ? `<button class="btn btn-primary wr-open" type="button"><i class="fa-solid fa-wand-magic-sparkles"></i> Your ${Wrapped.yearToShow()} Wrapped</button>` : ""}
       <div class="diary-tiles">
         <div><strong>${thisYear}</strong><span>watched in ${year}</span></div>
         <div><strong>${month}</strong><span>this month</span></div>
@@ -204,6 +205,14 @@
       <h3 class="diary-sub">Recently watched</h3>
       <ul class="diary-list">${dated.slice(0, 8).map(line).join("")}</ul>`;
   }
+
+  $(".diary").addEventListener("click", (e) => {
+    const b = e.target.closest(".wr-open");
+    if (b && !b.disabled) {
+      b.disabled = true;
+      Wrapped.open(b).finally(() => (b.disabled = false));
+    }
+  });
 
   function renderStats() {
     renderDiary();

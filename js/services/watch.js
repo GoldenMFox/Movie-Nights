@@ -126,14 +126,44 @@
     return { date: v.date, label, soon: (new Date(`${v.date}T00:00:00`) - new Date(`${Store.today()}T00:00:00`)) / 86400000 < 14 };
   }
 
-  // titles worth checking: movies on your Watchlist from this year on, and the shows on
-  // your Watchlist or Favorites (for new seasons)
+  /* ---------------- "Remind me" (titles not out yet, without adding them anywhere) ---------------- */
+
+  // saved in your profile (so they follow your account): [{ key: "movie-123", title, poster, type, year, released }]
+  // a month after release they drop off by themselves
+  function reminders() {
+    const limit = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    return (Store.getProfile().reminders || []).filter((r) => r && r.key && !(r.released && r.released < limit));
+  }
+  const isReminded = (key) => reminders().some((r) => r.key === key);
+
+  function toggleReminder(hit, key) {
+    const list = reminders();
+    const on = !list.some((r) => r.key === key);
+    const entry = { key, title: hit.title, poster: hit.poster || "", type: hit.type, year: hit.year || null, released: hit.released || "" };
+    if (hit.titleRu) entry.titleRu = hit.titleRu;
+    Store.setProfile({ reminders: on ? list.concat(entry) : list.filter((r) => r.key !== key) });
+    listeners.forEach((fn) => fn());
+    return on;
+  }
+
+  // reminders in the shape of library titles (what "Coming up" works with)
+  function reminderItems() {
+    return reminders().map((r) => {
+      const [media, id] = r.key.split("-");
+      return Object.assign({ id: null, reminder: true, tmdbId: Number(id), tmdbMedia: media }, r);
+    });
+  }
+
+  // titles worth checking: movies on your Watchlist from this year on, the shows on your
+  // Watchlist or Favorites (for new seasons), and your reminders
   function candidates(all) {
     const year = new Date().getFullYear();
-    return all
+    const lib = all
       .filter((i) => i.watchlist || i.favorite)
       .filter((i) => (i.type === "movie" ? i.watchlist && Number(i.year) >= year : true))
       .slice(0, 60);
+    const have = new Set(all.map(knownRef).filter(Boolean));
+    return lib.concat(reminderItems().filter((r) => !have.has(r.key)));
   }
 
   window.Watch = {
@@ -145,6 +175,9 @@
     loadNext,
     upcoming,
     candidates,
+    reminders,
+    isReminded,
+    toggleReminder,
     onChange: (fn) => listeners.push(fn),
   };
 })();

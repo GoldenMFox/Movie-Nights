@@ -35,6 +35,23 @@
     },
   };
   const isLists = page === "watchlist";
+  // your own lists (Store.lists()) join Plan to watch and Favorites as "c-<id>"
+  function syncLists() {
+    Object.keys(LISTS).forEach((k) => k.startsWith("c-") && delete LISTS[k]);
+    Store.lists().forEach((l) => {
+      const ids = new Set(l.items);
+      LISTS[`c-${l.id}`] = {
+        label: l.name,
+        icon: "fa-list-ul",
+        custom: l.id,
+        order: l.items,
+        base: (i) => ids.has(i.id),
+        chips: "type",
+        empty: `Nothing in "${l.name}" yet. Long-press or right-click any poster → Add to list.`,
+      };
+    });
+  }
+  if (isLists) syncLists();
   const startParams = new URLSearchParams(location.search);
   let PAGE = isLists
     ? LISTS[startParams.get("list")] || LISTS.watch
@@ -138,23 +155,24 @@
         <div class="row-head"><h2><i class="fa-regular fa-calendar"></i> Coming up</h2></div>
         <div class="wl-coming-list"></div>
       </section>
-      ${Object.keys(LISTS)
-        .map(
-          (k) => `<section class="row-section wl-row" data-list="${k}">
-            <div class="row-head"><h2><i class="fa-solid ${LISTS[k].icon}"></i> ${LISTS[k].label}</h2>
-              <a href="?list=${k}" class="wl-see" data-see="${k}"></a></div>
-            <div class="movie-row"></div>
-            <p class="wl-row-empty" hidden>${esc(LISTS[k].empty)}</p>
-          </section>`
-        )
-        .join("")}
+      <div class="wl-rows"></div>
+      <div class="wl-new">
+        <button type="button" class="btn wl-new-btn"><i class="fa-solid fa-plus"></i> New list</button>
+        <form class="wl-new-form" hidden>
+          <input class="input" name="name" maxlength="40" placeholder="e.g. Halloween marathon, Date night" aria-label="New list name" autocomplete="off" />
+          <button class="btn btn-primary" type="submit">Create</button>
+          <button class="btn wl-new-cancel" type="button">Cancel</button>
+        </form>
+      </div>
       <section class="wl-panel"${state.list ? "" : " hidden"}>
         <h2 class="wl-title">All titles</h2>
-        <div class="wl-switch" role="group" aria-label="Which list">
-          ${Object.keys(LISTS)
-            .map((k) => `<button type="button" data-list-switch="${k}"><i class="fa-solid ${LISTS[k].icon}"></i> ${LISTS[k].label}<span class="count"></span></button>`)
-            .join("")}
+        <div class="wl-switch-row">
+          <div class="wl-switch" role="group" aria-label="Which list"></div>
           <button type="button" class="wl-close" aria-label="Close the full list" title="Close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="wl-list-tools" hidden>
+          <button type="button" class="btn wl-rename"><i class="fa-solid fa-pen"></i> Rename</button>
+          <button type="button" class="btn wl-delete"><i class="fa-solid fa-trash-can"></i> Delete list</button>
         </div>
         ${listHtml}
       </section>`
@@ -231,16 +249,53 @@
       names.map((g) => `<option value="${esc(g)}"${g === state.genre ? " selected" : ""}>${esc(g)} (${counts[g] || 0})</option>`).join("");
   }
 
-  // Watchlist page: the two rows (newest first) and the switch above the full list
+  // Watchlist page: a row per list (newest first) and the switch above the full list
   function renderRows() {
+    syncLists();
+    if (state.list && !LISTS[state.list]) {
+      // that list was just deleted
+      state.list = "";
+      panel.hidden = true;
+      syncUrl();
+    }
+    PAGE = LISTS[state.list] || LISTS.watch;
     const all = Store.all();
     root.querySelector(".wl-welcome").innerHTML = all.length ? "" : UI.welcome();
     renderComing(all);
+
+    // one section per list: add the new ones, drop deleted ones, keep the rest (and their scroll)
+    const box = root.querySelector(".wl-rows");
+    const keys = Object.keys(LISTS);
+    box.querySelectorAll(".wl-row").forEach((sec) => !keys.includes(sec.dataset.list) && sec.remove());
+    keys.forEach((k, n) => {
+      let sec = box.querySelector(`.wl-row[data-list="${CSS.escape(k)}"]`);
+      if (!sec) {
+        sec = document.createElement("section");
+        sec.className = "row-section wl-row";
+        sec.dataset.list = k;
+        sec.innerHTML = `<div class="row-head"><h2><i class="fa-solid ${LISTS[k].icon}"></i> <span class="wl-name"></span></h2>
+            <a href="?list=${encodeURIComponent(k)}" class="wl-see" data-see="${esc(k)}"></a></div>
+          <div class="movie-row"></div>
+          <p class="wl-row-empty" hidden></p>`;
+      }
+      if (box.children[n] !== sec) box.insertBefore(sec, box.children[n] || null);
+      sec.querySelector(".wl-name").textContent = LISTS[k].label;
+      sec.querySelector(".wl-row-empty").textContent = LISTS[k].empty;
+    });
+    root.querySelector(".wl-switch").innerHTML = keys
+      .map((k) => `<button type="button" data-list-switch="${esc(k)}"><i class="fa-solid ${LISTS[k].icon}"></i> ${esc(LISTS[k].label)}<span class="count"></span></button>`)
+      .join("");
+    root.querySelector(".wl-list-tools").hidden = !PAGE.custom;
+
     root.querySelectorAll(".wl-row").forEach((sec) => {
       const k = sec.dataset.list;
       const row = sec.querySelector(".movie-row");
       const scroll = row.scrollLeft;
-      const items = all.filter(LISTS[k].base).sort((a, b) => b.order - a.order);
+      // your own lists: in the order you added them (newest first)
+      const order = LISTS[k].order;
+      const items = all
+        .filter(LISTS[k].base)
+        .sort(order ? (a, b) => order.indexOf(a.id) - order.indexOf(b.id) : (a, b) => b.order - a.order);
       row.innerHTML = items.slice(0, 20).map(Cards.card).join("");
       row.hidden = !items.length;
       row.scrollLeft = scroll;
@@ -269,9 +324,9 @@
     box.hidden = !list.length;
     box.querySelector(".wl-coming-list").innerHTML = list
       .map(
-        ({ i, u }) => `<a class="coming-item${u.soon ? " soon" : ""}" href="title.html?id=${encodeURIComponent(i.id)}">
+        ({ i, u }) => `<a class="coming-item${u.soon ? " soon" : ""}" href="${i.reminder ? `title.html?tmdb=${encodeURIComponent(i.key)}` : `title.html?id=${encodeURIComponent(i.id)}`}">
           <img src="${Store.poster(Cards.posterOf(i), "w154")}" alt="" loading="lazy" />
-          <span><strong>${esc(Lang.title(i))}</strong><small>${esc(u.label)}</small></span>
+          <span><strong>${i.reminder ? '<i class="fa-solid fa-bell" title="Reminder"></i> ' : ""}${esc(Lang.title(i))}</strong><small>${esc(u.label)}</small></span>
         </a>`
       )
       .join("");
@@ -279,6 +334,7 @@
 
   // open the full list (or switch it) and bring it into view
   function openList(k, scroll) {
+    if (!LISTS[k]) return;
     PAGE = LISTS[k];
     const q = root.querySelector('[name="q"]');
     if (q) q.value = "";
@@ -367,7 +423,41 @@
       set({ list: "" });
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
+
+    // your own lists: new, rename, delete
+    const form = root.querySelector(".wl-new-form");
+    if (e.target.closest(".wl-new-btn")) {
+      form.hidden = false;
+      root.querySelector(".wl-new-btn").hidden = true;
+      form.elements.name.focus();
+    }
+    if (e.target.closest(".wl-new-cancel")) {
+      form.hidden = true;
+      root.querySelector(".wl-new-btn").hidden = false;
+    }
+    if (e.target.closest(".wl-rename") && PAGE.custom) {
+      const name = prompt("New name for this list", PAGE.label);
+      if (name && name.trim()) Store.renameList(PAGE.custom, name);
+    }
+    if (e.target.closest(".wl-delete") && PAGE.custom) {
+      if (!confirm(`Delete the list "${PAGE.label}"? The titles stay in your library.`)) return;
+      Store.deleteList(PAGE.custom);
+      UI.toast("List deleted");
+    }
   });
+
+  if (isLists)
+    root.querySelector(".wl-new-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const input = e.target.elements.name;
+      if (!input.value.trim()) return input.focus();
+      const id = Store.createList(input.value);
+      UI.toast(`List "${input.value.trim()}" made. Long-press or right-click any poster → Add to list`);
+      input.value = "";
+      e.target.hidden = true;
+      root.querySelector(".wl-new-btn").hidden = false;
+      openList(`c-${id}`, true);
+    });
 
   moreBtn.addEventListener("click", () => {
     shown += BATCH;

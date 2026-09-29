@@ -223,6 +223,9 @@
     e.imdb = isNaN(imdb) ? null : imdb;
     e.votes = data.imdbVotes && data.imdbVotes !== "N/A" ? data.imdbVotes : null;
     e.rt = rt ? rt.Value : null;
+    // for the X-Ray section on title pages
+    e.awards = data.Awards && data.Awards !== "N/A" ? data.Awards : null;
+    e.boxOffice = data.BoxOffice && data.BoxOffice !== "N/A" ? data.BoxOffice : null;
     e.omdb = isNaN(imdb) ? "none" : "ok";
     e.omdbAt = Date.now();
     saveEntry(ref, e);

@@ -38,6 +38,11 @@
   // "IMDb 8.6 / 10 · 1h 48m · 2025 · 🍅 86%"
   function metaHtml(t, d, e) {
     const parts = [];
+    // not rated by you yet: how much you'll probably like it (js/services/taste.js)
+    if (window.Taste && t.rating == null) {
+      const m = Taste.badge({ genres: d.genres && d.genres.length ? d.genres : t.genres, score: d.tmdbScore ?? t.score });
+      if (m) parts.push(m);
+    }
     if (e && typeof e.imdb === "number") {
       parts.push(`<span class="t-score" title="${e.votes ? `IMDb rating from ${esc(e.votes)} votes` : "IMDb rating"}"><span class="imdb-tag">IMDb</span>${Cards.formatRating(e.imdb)} / 10</span>`);
     } else {
@@ -179,6 +184,136 @@
       </div>`;
   }
 
+  /* ---------------- franchise (like HBO Max's collections) ---------------- */
+
+  let colData = null; // the franchise this movie belongs to, once loaded
+
+  function loadCollection(d, done) {
+    if (!d || !d.collection || colData || !TMDB.enabled()) return;
+    TMDB.collection(d.collection.id)
+      .then((c) => {
+        if (c && c.parts.length > 1) {
+          colData = c;
+          done();
+        }
+      })
+      .catch(() => {});
+  }
+
+  // "Harry Potter Collection · you've seen 5 of 8" + every film in it
+  function collectionPanel(c) {
+    const today = Store.today();
+    const out = c.parts.filter((p) => p.released && p.released <= today);
+    const seen = (p) => {
+      const lib = Cards.inLibrary(p);
+      return !!(lib && (lib.rating != null || lib.watchedAt));
+    };
+    const n = out.filter(seen).length;
+    const pct = out.length ? Math.round((n / out.length) * 100) : 0;
+    const note = !out.length ? "Nothing out yet" : n === out.length ? "You've seen them all" : `You've seen ${n} of ${out.length}`;
+    return `<div class="col-progress${n && n === out.length ? " done" : ""}">
+        <div class="col-bar"><span style="width:${pct}%"></span></div><span>${note}</span>
+      </div>
+      <div class="movie-row">${c.parts
+        .map((p) => {
+          const lib = Cards.inLibrary(p);
+          return lib ? Cards.card(lib) : Cards.tmdbCard(p);
+        })
+        .join("")}</div>`;
+  }
+
+  /* ---------------- X-Ray (like Prime Video): behind the scenes ---------------- */
+
+  let seenBefore = null; // [{ name, id, photo, titles: [{ id, title, character }] }], once loaded
+  let seenLoading = false;
+  // the cast as TMDB has it (with ids): library titles may keep their own list of names only
+  const castWithIds = (d) => ((extra && extra.cast) || d.cast || []).filter((c) => c && c.id);
+
+  const money = (n) => (n >= 1e9 ? `$${(n / 1e9).toFixed(n >= 1e10 ? 0 : 1)}B` : n >= 1e6 ? `$${Math.round(n / 1e6)}M` : `$${n.toLocaleString("en-US")}`);
+  const langName = (code) => {
+    try {
+      return new Intl.DisplayNames(["en"], { type: "language" }).of(code);
+    } catch (e) {
+      return code;
+    }
+  };
+  const niceDay = (s) => {
+    const x = new Date(`${s}T00:00:00`);
+    return isNaN(x) ? s : `${x.getDate()} ${MONTHS[x.getMonth()]} ${x.getFullYear()}`;
+  };
+
+  function xrayPanel(d) {
+    const x = d.xray;
+    const e = window.Ratings ? Ratings.entry(tmdbRef || Ratings.refOf(Store.get(id) || {})) || {} : {};
+    const facts = [];
+    const fact = (icon, label, value) => value && facts.push(`<div class="xr-fact"><i class="fa-solid ${icon}"></i><div><small>${label}</small><span>${value}</span></div></div>`);
+    fact("fa-calendar-day", d.media === "tv" ? "First aired" : "Released", x.released ? niceDay(x.released) : "");
+    if (x.status && !/^(Released|Ended)$/.test(x.status)) fact("fa-circle-info", "Status", esc(x.status));
+    if (d.media === "tv") fact("fa-list-ol", "Episodes", x.episodes ? `${x.episodes}${x.lastAir ? ` · last aired ${niceDay(x.lastAir)}` : ""}` : "");
+    fact("fa-sack-dollar", "Budget", x.budget ? money(x.budget) : "");
+    const gross = x.revenue ? money(x.revenue) + " worldwide" : e.boxOffice ? `${esc(e.boxOffice)} in the US` : "";
+    fact("fa-ticket", "Box office", gross && x.budget && x.revenue ? `${gross} · ${(x.revenue / x.budget).toFixed(1)}× its budget` : gross);
+    fact("fa-trophy", "Awards", e.awards ? esc(e.awards) : "");
+    fact("fa-tower-broadcast", "Network", esc(x.networks.join(", ")));
+    fact("fa-building", "Made by", esc(x.companies.join(", ")));
+    fact("fa-earth-europe", "Filmed in / from", esc(x.countries.join(", ")));
+    fact("fa-language", "Original language", x.language ? esc(langName(x.language)) : "");
+
+    const seen = seenBefore
+      ? seenBefore.length
+        ? `<ul class="xr-seen-list">${seenBefore
+            .map(
+              (p) => `<li>
+                <a class="xr-person" href="person.html?id=${p.id}">${p.photo ? `<img src="${Store.img(p.photo, "w185")}" alt="" loading="lazy" />` : '<span class="xr-noimg"><i class="fa-solid fa-user"></i></span>'}<strong>${esc(p.name)}</strong></a>
+                <span>you've seen them in ${p.titles
+                  .map((t) => `<a href="title.html?id=${encodeURIComponent(t.id)}">${esc(t.title)}</a>${t.character ? ` <small>(${esc(t.character)})</small>` : ""}`)
+                  .join(", ")}</span></li>`
+            )
+            .join("")}</ul>`
+        : '<p class="muted">None of the main cast is in anything else you\'ve watched.</p>'
+      : '<p class="muted xr-seen-wait"><i class="fa-solid fa-spinner fa-spin"></i> Checking your library…</p>';
+
+    return `${x.tagline ? `<blockquote class="xr-tagline">“${esc(x.tagline)}”</blockquote>` : ""}
+      ${facts.length ? `<div class="xr-facts">${facts.join("")}</div>` : ""}
+      ${castWithIds(d).length ? `<h3 class="xr-sub"><i class="fa-solid fa-user-check"></i> Where you've seen the cast</h3><div class="xr-seen">${seen}</div>` : ""}
+      ${x.keywords.length ? `<div class="xr-tags">${x.keywords.map((k) => `<span>${esc(k)}</span>`).join("")}</div>` : ""}`;
+  }
+
+  // "where you've seen the cast": looked up when the X-Ray section comes into view
+  function watchXray(d, done) {
+    const box = mainEl.querySelector(".t-xray");
+    if (!box || seenBefore || seenLoading || !castWithIds(d).length) return;
+    const start = async () => {
+      if (seenLoading || seenBefore) return;
+      seenLoading = true;
+      const mine = new Set(Store.all().filter((i) => i.rating != null || i.watchedAt).map((i) => i.id));
+      const here = tmdbRef || (Store.get(id) && Ratings.refOf(Store.get(id)));
+      const out = [];
+      for (const c of castWithIds(d).slice(0, 8)) {
+        try {
+          const p = await TMDB.person(c.id);
+          const titles = p.titles
+            .filter((t) => `${t.mediaType}-${t.tmdbId}` !== here)
+            .map((t) => ({ t, lib: Cards.inLibrary(t) }))
+            .filter(({ lib }) => lib && mine.has(lib.id) && lib.id !== id)
+            .slice(0, 3)
+            .map(({ t, lib }) => ({ id: lib.id, title: Lang.title(lib), character: (t.characters || [])[0] || "" }));
+          if (titles.length) out.push({ id: c.id, name: c.name, photo: c.photo, titles });
+        } catch (e) {}
+      }
+      seenBefore = out;
+      done();
+    };
+    if (!("IntersectionObserver" in window)) return start();
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((en) => en.isIntersecting)) {
+        io.disconnect();
+        start();
+      }
+    }, { rootMargin: "300px" });
+    io.observe(box);
+  }
+
   /* ---------------- sections: Cast & Crew, Media, Reviews (one under the other) ---------------- */
 
   function sectionsHtml(d, loading) {
@@ -186,14 +321,16 @@
     const videos = d.videos || [];
     const images = d.images || [];
     const reviews = d.reviews || [];
-    const block = (title, count, body) =>
-      `<section class="t-section"><h2 class="t-section-title">${title}${count ? ` <small>${count}</small>` : ""}</h2>${body}</section>`;
+    const block = (title, count, body, cls) =>
+      `<section class="t-section${cls ? ` ${cls}` : ""}"><h2 class="t-section-title">${title}${count ? ` <small>${count}</small>` : ""}</h2>${body}</section>`;
 
     let html = "";
     const seasons = d.seasons || [];
+    if (colData) html += block(esc(colData.name), colData.parts.length, collectionPanel(colData), "t-collection");
     if (d.media === "tv" && d.tmdbId && seasons.length > 1) html += block("Seasons", seasons.length, seasonsPanel(d, seasons));
     if (cast.length) html += block("Cast &amp; Crew", 0, castPanel(cast));
     if (loading) return html + '<p class="muted t-empty">Loading more details…</p>';
+    if (d.xray) html += block('<i class="fa-solid fa-bolt"></i> X-Ray', 0, xrayPanel(d), "t-xray");
     if (videos.length || images.length) html += block("Media", 0, mediaPanel(videos, images));
     if (reviews.length) html += block("Reviews", reviews.length, reviewsPanel(reviews, d.tmdbUrl));
     return html;
@@ -397,6 +534,7 @@
       </div>
       ${watchedOnHtml(item)}`;
     const menu = `
+      <button type="button" data-action="lists"><i class="fa-solid fa-list-ul"></i> Add to a list…</button>
       ${d.tmdbUrl ? `<a href="${esc(d.tmdbUrl)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open on TMDB</a>` : ""}
       <button type="button" class="remove-title"><i class="fa-solid fa-trash"></i> Remove from library</button>`;
     heroEl.innerHTML = heroHtml(item, d, e, buttons, menu);
@@ -416,6 +554,7 @@
         TMDB.enabled() ? TMDB_NOTE : 'Tip: add a free TMDB API key in <a href="profile.html#settings">Settings</a> to see the overview, cast, trailer and recommendations for every title.'
       }</p>
       <p><button class="btn btn-danger remove-title" type="button"><i class="fa-solid fa-trash"></i> Remove from library</button></p>`;
+    if (extra && extra.xray) watchXray(d, renderLibrary);
 
   }
 
@@ -459,6 +598,7 @@
       TMDB.details(item)
         .then((details) => {
           extra = details || {};
+          loadCollection(extra, renderLibrary); // its franchise, if it's part of one
           if (details && details.titleRu && !Store.get(id).titleRu) Store.update(id, { titleRu: details.titleRu });
           Ratings.request(Store.get(id)); // now that the IMDb id is known
           // remember the trailer so it also works on cards and in the exported library
@@ -502,10 +642,16 @@
     mainEl.dataset.tmdb = tmdbRef;
     Ratings.seed(tmdbRef, d.tmdbScore, d.imdbId);
     renderExternal(d);
-    mainEl.innerHTML = `<div class="t-sections">${sectionsHtml(d, false)}</div>${recommendationsHtml(d)}<p class="tmdb-note">${TMDB_NOTE}</p>`;
+    const renderMain = () => {
+      mainEl.innerHTML = `<div class="t-sections">${sectionsHtml(d, false)}</div>${recommendationsHtml(d)}<p class="tmdb-note">${TMDB_NOTE}</p>`;
+      watchXray(d, renderMain);
+    };
+    renderMain();
+    loadCollection(d, renderMain);
 
     // IMDb rating (one OMDb lookup the first time you open this title)
     Ratings.forRef(tmdbRef).then(() => heroEl.dataset.tmdb === tmdbRef && renderExternal(d));
+    if (window.Watch) Watch.onChange(() => heroEl.dataset.tmdb === tmdbRef && renderExternal(d)); // Remind me on / off
 
     // once it's added, show the normal library page (but not while a pop-up is open,
     // e.g. the rating you're about to give it)
@@ -514,14 +660,22 @@
   }
 
   function renderExternal(d) {
+    // not out yet: "Remind me" (into Coming up on the Watchlist page) instead of Watched / Rate
+    const soon = d.released && d.released > Store.today();
+    const reminded = soon && window.Watch && Watch.isReminded(tmdbRef);
     const buttons = `
       <button class="btn t-trailer" data-action="t-trailer"><i class="fa-solid fa-play"></i> Trailer</button>
       <div class="t-actions">
         <button class="btn" data-action="t-watch"><i class="fa-regular fa-bookmark"></i> Watchlist</button>
-        <button class="btn" data-action="t-watched"><i class="fa-regular fa-circle-check"></i> Watched</button>
-        <button class="btn" data-action="t-rate"><i class="fa-regular fa-thumbs-up"></i> Rate</button>
+        ${
+          soon
+            ? `<button class="btn${reminded ? " is-on" : ""}" data-action="t-remind" aria-pressed="${!!reminded}"><i class="fa-${reminded ? "solid" : "regular"} fa-bell"></i> ${reminded ? "Reminder on" : "Remind me"}</button>`
+            : `<button class="btn" data-action="t-watched"><i class="fa-regular fa-circle-check"></i> Watched</button>
+               <button class="btn" data-action="t-rate"><i class="fa-regular fa-thumbs-up"></i> Rate</button>`
+        }
       </div>`;
-    const menu = `<a href="${esc(d.tmdbUrl)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open on TMDB</a>`;
+    const menu = `<button type="button" data-action="t-lists"><i class="fa-solid fa-list-ul"></i> Add to a list…</button>
+      <a href="${esc(d.tmdbUrl)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open on TMDB</a>`;
     heroEl.innerHTML = heroHtml(d, d, Ratings.entry(tmdbRef), buttons, menu);
   }
 

@@ -239,10 +239,44 @@
     </section>`;
   }
 
+  /* ---------------- "Because you liked …" (like Netflix): from your best-rated titles ---------------- */
+
+  // two of your favorites / 8+ titles, different ones each visit
+  function becauseSeeds() {
+    if (Store.guest || !window.Watch) return [];
+    const good = Store.all().filter((i) => (typeof i.rating === "number" ? i.rating >= 8 : i.favorite));
+    for (let i = good.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [good[i], good[j]] = [good[j], good[i]];
+    }
+    return good.slice(0, 2);
+  }
+
+  async function fillBecause(item, n) {
+    const sec = rowsEl.querySelector(`[data-row="because-${n}"]`);
+    try {
+      const ref = await Watch.refOf(item);
+      if (!ref) throw new Error("not on TMDB");
+      const [media, id] = ref.split("-");
+      const d = await TMDB.detailsById(media, Number(id));
+      // what TMDB recommends for it, minus what you already have
+      const recs = ((d && d.recommendations) || []).filter((h) => h.poster && !Cards.inLibrary(h));
+      if (recs.length < 4) throw new Error("too few");
+      sec.querySelector(".movie-row").innerHTML = recs.map(Cards.tmdbCard).join("");
+    } catch (e) {
+      sec.remove();
+    }
+  }
+
   function renderLive() {
     hero.innerHTML = '<div class="hero-slide active skeleton"></div>';
-    rowsEl.innerHTML = top10Shell() + LIVE_ROWS.map((r) => rowShell(r.cat, r.title, `discover.html?cat=${r.cat}`)).join("");
+    const seeds = becauseSeeds();
+    rowsEl.innerHTML =
+      top10Shell() +
+      seeds.map((s, n) => rowShell(`because-${n}`, `Because you liked ${Lang.title(s)}`, "")).join("") +
+      LIVE_ROWS.map((r) => rowShell(r.cat, r.title, `discover.html?cat=${r.cat}`)).join("");
     fillTop10(top10Media);
+    seeds.forEach(fillBecause);
 
     LIVE_ROWS.forEach(async (r) => {
       const row = rowsEl.querySelector(`[data-row="${r.cat}"] .movie-row`);
