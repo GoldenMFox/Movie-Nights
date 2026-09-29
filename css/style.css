@@ -9651,7 +9651,7 @@ html.no-match:not(.posters-only) .hover-preview .match + .dot {
 /* the cards: glass, a small red label on top, the fact large */
 .xr-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 12px;
 }
 
@@ -9810,6 +9810,57 @@ html.no-match:not(.posters-only) .hover-preview .match + .dot {
   font-size: 16px;
   font-weight: 700;
   line-height: 1.4;
+}
+
+/* 🏆 2 / Oscars won / 132 wins · 139 nominations */
+.xr-award-big {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--gold);
+}
+
+.xr-award-big i {
+  font-size: 26px;
+  filter: drop-shadow(0 0 12px rgba(245, 197, 24, 0.45));
+}
+
+.xr-award-big b {
+  font-size: 44px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.xr-award-name {
+  margin-top: -4px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.xr-award-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.xr-award-stats:empty {
+  display: none;
+}
+
+.xr-award-stats span {
+  padding: 4px 12px;
+  border: 1px solid rgba(245, 197, 24, 0.25);
+  border-radius: 999px;
+  background: rgba(245, 197, 24, 0.08);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.xr-award-stats b {
+  color: var(--text);
 }
 
 /* studios / networks: their logos in white */

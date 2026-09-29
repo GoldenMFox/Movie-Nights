@@ -250,6 +250,22 @@
       return code;
     }
   };
+  // IMDb's awards line (via OMDb), e.g. "Won 2 Oscars. 132 wins & 139 nominations total",
+  // "Nominated for 1 Primetime Emmy. 5 wins & 20 nominations total", "3 wins & 4 nominations"
+  function parseAwards(s) {
+    const out = { major: null, wins: null, noms: null };
+    const m = /(Won|Nominated for) (\d+) (Oscars?|Primetime Emmys?|Emmys?|Golden Globes?|BAFTA(?: Film)? Awards?)/i.exec(s);
+    if (m) {
+      const name = /oscar/i.test(m[3]) ? "Oscar" : /emmy/i.test(m[3]) ? "Emmy" : /globe/i.test(m[3]) ? "Golden Globe" : "BAFTA";
+      out.major = { won: /^won/i.test(m[1]), n: Number(m[2]), name };
+    }
+    const w = /(\d+) wins?/i.exec(s);
+    const n = /(\d+) nominations?/i.exec(s);
+    if (w) out.wins = Number(w[1]);
+    if (n) out.noms = Number(n[1]);
+    return out;
+  }
+
   // "in 5 days", "today", "3 months ago", "12 years ago"
   const fromNow = (s) => {
     const days = Math.round((new Date(`${s}T00:00:00`) - new Date(`${Store.today()}T00:00:00`)) / 86400000);
@@ -308,11 +324,30 @@
         </div>`);
     }
 
-    if (e.awards)
+    if (e.awards) {
+      const a = parseAwards(e.awards);
+      const stat = (n, word) => (n != null ? `<span><b>${n}</b> ${word}${n === 1 ? "" : "s"}</span>` : "");
+      // the big one: Oscars (or Emmys / Golden Globes / BAFTAs), else all the wins
+      const main = a.major
+        ? { n: a.major.n, text: a.major.won ? `${a.major.name}${a.major.n === 1 ? "" : "s"} won` : `${a.major.name} nomination${a.major.n === 1 ? "" : "s"}` }
+        : a.wins != null
+          ? { n: a.wins, text: `award${a.wins === 1 ? "" : "s"} won` }
+          : a.noms != null
+            ? { n: a.noms, text: `nomination${a.noms === 1 ? "" : "s"}` }
+            : null;
       cards.push(`<div class="xr-card xr-awards">
           ${label("fa-trophy", "Awards")}
-          <p>${esc(e.awards)}</p>
+          <div class="xr-body">
+            ${
+              main
+                ? `<div class="xr-award-big"><i class="fa-solid fa-trophy"></i><b>${main.n}</b></div>
+                   <div class="xr-award-name">${esc(main.text)}</div>
+                   <div class="xr-award-stats">${a.major ? stat(a.wins, "win") : ""}${a.major || a.wins != null ? stat(a.noms, "nomination") : ""}</div>`
+                : `<p>${esc(e.awards)}</p>`
+            }
+          </div>
         </div>`);
+    }
 
     // studios / networks: their logos (white), or the name when TMDB has no logo
     const brands = (list) =>
