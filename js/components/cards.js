@@ -477,10 +477,6 @@
 
   let trailerOverlay;
 
-  function youtubeSearchUrl(item) {
-    return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${item.title} ${item.year} trailer`)}`;
-  }
-
   // YouTube refuses to play embedded videos on a page opened straight from disk
   // (file://), because the page has no web address. See "Start Movie Nights.bat".
   const OPENED_AS_FILE = location.protocol === "file:";
@@ -549,17 +545,14 @@
     let key = !tmdbOn && item.trailer && !isBadTrailer(item.trailer) ? item.trailer : null;
 
     if (!trailerOverlay) {
-      trailerOverlay = makeOverlay("trailer-modal", `<div class="trailer-head"></div><div class="trailer-body"></div><div class="trailer-foot"></div>`);
+      trailerOverlay = makeOverlay("trailer-modal", `<div class="trailer-head"></div><div class="trailer-body"></div>`);
       trailerOverlay.onclose = () => {
         trailerOverlay.querySelector(".trailer-body").innerHTML = "";
-        trailerOverlay.querySelector(".trailer-foot").innerHTML = "";
         trailerRun = null;
       };
     }
     trailerOverlay.querySelector(".trailer-head").innerHTML = `<span class="th-kicker"><i class="fa-solid fa-play"></i> Trailer</span>
-      <h2 class="th-title">${esc(Lang.title(item))}</h2>${item.year ? `<span class="th-year">${item.year}</span>` : ""}`;
-    trailerOverlay.querySelector(".trailer-foot").innerHTML = "";
-    const body = trailerOverlay.querySelector(".trailer-body");
+      <h2 class="th-title">${esc(Lang.title(item))}</h2>${item.year ? `<span class="th-year">${item.year}</span>` : ""}`;    const body = trailerOverlay.querySelector(".trailer-body");
     body.innerHTML = trailerMessage("fa-solid fa-spinner fa-spin", "Looking for the trailer…");
     open(trailerOverlay);
 
@@ -717,18 +710,13 @@
     tmdbCard,
     inLibrary,
     hitOf: (key) => hits.get(key), // the TMDB result behind a card (hover preview)
-    fillRuName,
     posterOf,
     isBadTrailer,
     markBadTrailer,
-    addHit,
     formatRating,
-    openRating,
-    openTrailer,
     showTrailer,
     makeOverlay,
     openModal: open,
     closeModal: close,
-    youtubeSearchUrl,
   };
 })();

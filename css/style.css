@@ -111,15 +111,6 @@ h3 {
   padding: 24px 30px 48px;
 }
 
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
 .muted {
   color: var(--text-muted);
 }
@@ -974,32 +965,7 @@ label.field {
   }
 }
 
-/* ============================== Browse toolbar ============================== */
-
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-end;
-  margin-bottom: 18px;
-  padding: 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.toolbar .field {
-  min-width: 130px;
-}
-
-.toolbar .field.grow {
-  flex: 1 1 220px;
-}
-
-.toolbar .field.small {
-  min-width: 90px;
-  width: 100px;
-}
+/* ============================== Chips (filters) ============================== */
 
 .chips {
   display: flex;
@@ -2699,13 +2665,6 @@ a.stat-tile:hover {
   letter-spacing: 0.5px;
 }
 
-.hero-scores {
-  display: flex;
-  gap: 14px;
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-
 .hero-score {
   display: inline-flex;
   align-items: center;
@@ -3833,19 +3792,6 @@ a.stat-tile:hover {
     background: rgba(255, 255, 255, 0.12);
   }
 
-  .tab-bar .tab-pic {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    object-fit: cover;
-    opacity: 0.6;
-    border: 1.5px solid transparent;
-  }
-
-  .tab-bar .tab.on .tab-pic {
-    opacity: 1;
-    border-color: #fff;
-  }
 
   /* Library panel: slides up from the bottom */
   html.app-ui .app-sheet {
@@ -7032,44 +6978,7 @@ html.tablet .top10-num {
     font-size: 104px;
   }
 }
-/* ============================== Settings: on / off switch ============================== */
-
-.setting-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 14px;
-  border: 1px solid var(--glass-border);
-  border-radius: 14px;
-  background: var(--glass-bg);
-}
-
-.setting-toggle strong {
-  display: block;
-  font-size: 14.5px;
-}
-
-.setting-toggle small {
-  display: block;
-  margin-top: 3px;
-  color: var(--text-muted);
-  font-size: 12.5px;
-  line-height: 1.45;
-}
-
-.switch {
-  position: relative;
-  flex-shrink: 0;
-  cursor: pointer;
-}
-
-.switch input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
+/* ============================== On / off switch (profile menu) ============================== */
 
 .switch-track {
   display: block;
@@ -7093,19 +7002,6 @@ html.tablet .top10-num {
   background: #fff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.switch input:checked + .switch-track {
-  background: var(--accent);
-}
-
-.switch input:checked + .switch-track .switch-thumb {
-  transform: translateX(20px);
-}
-
-.switch input:focus-visible + .switch-track {
-  outline: 2px solid #fff;
-  outline-offset: 2px;
 }
 
 /* ============================== Computers: "posters only" card style ============================== */
@@ -7480,48 +7376,6 @@ body[data-page="home"] main.container {
   text-decoration: underline;
   text-decoration-color: var(--accent-hover);
   text-underline-offset: 3px;
-}
-
-/* foot: open on YouTube */
-.trailer-foot {
-  display: flex;
-  justify-content: flex-end;
-  min-height: 8px;
-  padding: 0 4px;
-}
-
-.trailer-foot:not(:empty) {
-  padding: 10px 4px 2px;
-}
-
-.tf-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background 0.2s, color 0.2s;
-}
-
-.tf-link:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-}
-
-.tf-link .fa-youtube {
-  color: #ff3b3b;
-  font-size: 15px;
-}
-
-.tf-link .fa-arrow-up-right-from-square {
-  font-size: 10px;
-  opacity: 0.6;
 }
 
 @media (max-width: 700px) {

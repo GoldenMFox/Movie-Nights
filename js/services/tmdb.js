@@ -240,10 +240,6 @@
     return p;
   }
 
-  async function ruTitle(media, id) {
-    return (await ruInfo(media, id)).title;
-  }
-
   function isAnime(r) {
     const genres = r.genre_ids || (r.genres || []).map((g) => g.id);
     return genres.includes(ANIMATION) && (r.original_language === "ja" || (r.origin_country || []).includes("JP"));
@@ -441,7 +437,7 @@
   const COUNTRY = ((window.MN_CONFIG || {}).RELEASE_COUNTRY || "RO").toUpperCase();
   const LOCAL_DATES = "mn:localDates2"; // { movieId: { d: "2026-10-03" | "", at } }, "" = no cinema date there
   try {
-    localStorage.removeItem("mn:localDates");
+    ["mn:localDates", "mn:ruVideos"].forEach((k) => localStorage.removeItem(k)); // older versions
   } catch (e) {}
 
   // TMDB release types: 1 premiere, 2 limited, 3 cinemas, 4 digital, 5 physical, 6 TV.
@@ -765,5 +761,5 @@
     return true;
   }
 
-  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, ruInfo, ruVideos, seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
+  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos, seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
 })();

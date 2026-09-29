@@ -42,18 +42,30 @@ It updates by itself whenever the site is published.
 
 | Page | What it does |
 | --- | --- |
-| `discover.html` | Browse and search **all** movies, TV shows and anime on TMDB (search everything, or only movies / TV shows / anime) (trending, popular, in cinemas, coming soon, top rated, anime), or browse by genre (e.g. Horror movies, top rated). Add anything to your library or watchlist |
-| `index.html` | Home, live from TMDB: this week's trending titles in the slideshow, then rows for in cinemas, coming soon, popular and top rated movies / TV / anime. At the bottom, "Your Movie Nights": your stats, watchlist, favorites and a "What should I watch?" button. (Without a TMDB key it shows your own list instead.) |
+| `discover.html` | Browse and search **all** movies, TV shows and anime on TMDB (trending, popular, in cinemas, coming soon, top rated, anime), or browse by genre. Search forgives typos ("forest gump" finds Forrest Gump) and hides shorts / posterless uploads. Unreleased titles get a "Coming soon · date" label (the cinema date in Romania). Add anything to your library or watchlist |
+| `index.html` | Home, live from TMDB: this week's trending titles in the slideshow, **Top 10 today** (movies / TV shows switch), then rows for in cinemas, coming soon, popular and top rated movies / TV / anime. At the bottom, "Your Movie Nights": your stats, watchlist, favorites and a "What should I watch?" button. (Without a TMDB key it shows your own list instead.) |
 | `movies.html`, `tv-shows.html`, `anime.html` | Full lists with search, genre, sort, rating and year filters |
 | `favorites.html`, `watchlist.html` | Everything you've hearted or bookmarked |
-| `title.html?id=...` | Details for one title: your score, trailer, overview, cast, "more like this" |
-| `person.html?id=...` | An actor / crew member (tap a cast card): photo, bio, facts, best known for, full filmography |
+| `title.html?id=...` | Details for one title: your score, trailer, where to watch, overview, **Seasons** (TV: each season's trailer), cast, media, reviews, "more like this" |
+| `person.html?id=...` | An actor / crew member (tap a cast card or the director's name): photo, bio, facts, best known for, full filmography with a role filter |
 | `tier-list.html` | Drag posters into S / A / B / C / D tiers |
 | `profile.html` | Your stats, settings (theme, TMDB key) and backup / export |
 
-Press `/` on any page to search the whole library.
+The navbar search (or `/` on any page) searches your library and all of TMDB.
 
-**EN | RU** (in the profile menu, or in the side menu on phones) switches movie, show and anime names between English and Russian. Search finds titles by either name.
+In the **profile menu**:
+
+- **Russian titles**: names, posters and trailers in Russian (dubbed trailers when TMDB has them in HD).
+  On narrow computer windows it's the EN | RU switch in the side menu.
+- **Poster details** (computers): off = posters only, like on phones and tablets.
+
+Trailers play in the best quality available; if YouTube blocks one on other sites, the next one plays.
+
+## Phones and tablets
+
+- **Phones** (browser and installed app): a floating tab bar at the bottom, and poster-only cards, 2 per row.
+- **Tablets / iPad**: the pill navbar on top, a full-width slideshow and poster-only cards (4 per row
+  upright). Add `?tablet=1` to any address to preview it on a computer (`?tablet=0` to stop).
 
 ## Adding and editing titles
 
@@ -68,8 +80,9 @@ All titles live in **`data/library.js`**, one line per title:
 - `poster`: the TMDB image path (the end of a TMDB poster URL)
 - optional: `isNew`, `favorite`, `watchlist`, `trailer` (YouTube video id), `overview`, `genres`, `runtime`, `director`, `cast`, `backdrop`
 
-The red **NEW** label on cards (and the "New releases" filter) is automatic: it shows on titles
-released in the last 6 months (exact dates looked up on TMDB), so it disappears by itself as titles age.
+The **NEW** label on cards (and the "New releases" filter) is automatic: it shows on titles
+released in the last 6 months (exact dates looked up on TMDB; for movies the cinema date in
+Romania, set by `RELEASE_COUNTRY` in `js/config.js`), so it disappears by itself as titles age.
 
 You can also do it from the site:
 
@@ -150,7 +163,7 @@ Movie-Nights-NEW/
 │   ├── core/                  loaded on every page
 │   │   ├── store.js           the library + your changes (saved in the browser)
 │   │   ├── cloud.js           Google sign-in, sync, profiles, friends' ratings
-│   │   ├── lang.js            EN / RU movie names
+│   │   ├── lang.js            EN / RU movie names, typo-tolerant name matching
 │   │   └── layout.js          navbar, footer, search, profile menu, dark mode
 │   ├── services/              talking to outside services
 │   │   ├── tmdb.js            TMDB (details, trailers, cast, Discover)
