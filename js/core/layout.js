@@ -100,6 +100,8 @@
               </div>
             </div>
             <hr />
+            <a href="favorites.html" class="tablet-link"><i class="fa-solid fa-heart"></i><span>Favorites</span><i class="fa-solid fa-chevron-right"></i></a>
+            <a href="tier-list.html" class="tablet-link"><i class="fa-solid fa-ranking-star"></i><span>Tier List</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="profile.html"><i class="fa-solid fa-user"></i><span>Profile &amp; stats</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="#" data-action="add-title"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="profile.html#settings"><i class="fa-solid fa-gear"></i><span>Settings &amp; backup</span><i class="fa-solid fa-chevron-right"></i></a>
@@ -374,11 +376,32 @@
   })();
   const standalone = previewApp || window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   if (standalone) document.documentElement.classList.add("standalone");
-  // the phone layout (tab bar at the bottom) is used by the installed app and by phones /
-  // tablets in the browser: decided by touch, not by pixel counts, so every phone gets it
+  // Tablets (iPad…) get their own layout: the pill navbar on top, a full-width slideshow and
+  // poster-only cards (css: html.tablet). Decided by touch + a screen whose short side is at
+  // least 600px, in the browser and the installed app. (?tablet=1 previews it, ?tablet=0 stops.)
+  // Phones get the phone layout (tab bar at the bottom): the installed app and phones in the
+  // browser, decided by touch, not by pixel counts, so every phone gets it.
   const touchOnly = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-  const appUi = standalone || touchOnly;
+  const previewTablet = (() => {
+    try {
+      const t = new URLSearchParams(location.search).get("tablet");
+      if (t === "1") sessionStorage.setItem("mn:previewTablet", "1");
+      if (t === "0") sessionStorage.removeItem("mn:previewTablet");
+      return sessionStorage.getItem("mn:previewTablet") === "1";
+    } catch (e) {
+      return false;
+    }
+  })();
+  const tablet = previewTablet || (touchOnly && Math.min(screen.width, screen.height) >= 600);
+  if (tablet) document.documentElement.classList.add("tablet");
+  const appUi = (standalone || touchOnly) && !tablet;
   if (appUi) document.documentElement.classList.add("app-ui");
+
+  // the navbar turns see-through over the top of the page (tablet slideshow) and
+  // frosted once you scroll
+  const onScroll = () => document.documentElement.classList.toggle("scrolled", window.scrollY > 30);
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
 
   // the installed app has no browser back button, so the navbar gets one
   const backBtn = nav.querySelector(".nav-back");
