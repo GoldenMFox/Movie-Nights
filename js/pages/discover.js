@@ -72,6 +72,7 @@
       </span>
     </div>
     <div class="chips" role="group" aria-label="Category">
+      <span class="chip-indicator intro" aria-hidden="true"></span>
       ${Object.entries(TMDB.CATEGORIES)
         .map(([k, c]) => `<button class="chip" type="button" data-cat="${k}">${c.label}</button>`)
         .join("")}
@@ -117,8 +118,23 @@
     ind.style.left = `${on.offsetLeft}px`;
     ind.style.width = `${on.offsetWidth}px`;
   }
+  // the red pill glides to the picked category (and fades out while searching or browsing a genre)
+  function moveChip() {
+    const ind = root.querySelector(".chip-indicator");
+    const on = root.querySelector(".chips .chip.active");
+    ind.classList.toggle("off", !on);
+    if (!on) return;
+    ind.style.left = `${on.offsetLeft}px`;
+    ind.style.top = `${on.offsetTop}px`;
+    ind.style.width = `${on.offsetWidth}px`;
+    ind.style.height = `${on.offsetHeight}px`;
+  }
+  // after its entrance the pill keeps only the glide
+  root.querySelector(".chip-indicator").addEventListener("animationend", (e) => e.currentTarget.classList.remove("intro"));
+
   window.addEventListener("resize", moveSegment);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveSegment);
+  window.addEventListener("resize", moveChip);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => (moveSegment(), moveChip()));
 
   function syncUi() {
     root.querySelectorAll("[data-cat]").forEach((c) => {
@@ -134,6 +150,7 @@
     gsortSel.value = state.gsort;
     gsortSel.disabled = !state.genre;
     moveSegment();
+    moveChip();
     tools.mark(state.q, state.genre);
     let p = {};
     if (state.q) p = state.sin === "all" ? { q: state.q } : { q: state.q, in: state.sin };
@@ -263,6 +280,10 @@
 
       const shown = Math.min(grid.children.length, state.limit);
       countEl.textContent = heading(shown);
+      // the count slides in afresh each time it changes
+      countEl.classList.remove("dx-count");
+      void countEl.offsetWidth;
+      countEl.classList.add("dx-count");
       if (!shown) {
         emptyEl.hidden = false;
         emptyEl.innerHTML = `<i class="fa-regular fa-face-meh"></i>${
