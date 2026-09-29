@@ -918,8 +918,9 @@ label.field {
   color: var(--gold);
 }
 
+/* on the watchlist: the filled bookmark (and the bookmark on the poster) is enough, no colour */
 .action-circle .watch.on i {
-  color: #4f86ff;
+  color: #fff;
 }
 
 .action-circle .watch.on:hover i {
@@ -6062,5 +6063,58 @@ button.p-lib-line:hover .p-lib-arrow {
     bottom: 6px;
     padding: 3px 8px;
     font-size: 10.5px;
+  }
+}
+/* NEW label: frosted-glass pill with a red dot (same family as the TMDB tag and "Coming soon") */
+.new-label {
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(10, 10, 12, 0.62);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.new-label::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e50914;
+  box-shadow: 0 0 8px rgba(229, 9, 20, 0.9);
+}
+
+/* "Coming soon" sits in the top-right corner too (a title is never both new and coming soon) */
+.soon-label {
+  top: 8px;
+  right: 8px;
+  left: auto;
+  bottom: auto;
+  max-width: calc(100% - 60px); /* clear of the "Film" tag on the left */
+}
+
+@media (max-width: 700px) {
+  .new-label {
+    top: 6px;
+    right: 6px;
+    padding: 3px 8px 3px 7px;
+    font-size: 10px;
+  }
+
+  .soon-label {
+    top: 6px;
+    right: 6px;
+    left: auto;
+    bottom: auto;
   }
 }
