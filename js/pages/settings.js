@@ -8,80 +8,121 @@
   const root = document.getElementById("settings-app");
   const guest = Store.guest;
 
+  // iOS Settings style: sections with a small heading, rows in rounded glass groups, a small
+  // coloured icon square on each row
+  const acct = window.Cloud && Cloud.account();
+  const profile = Store.getProfile();
+  const icon = (fa, color) => `<span class="st-ic" style="--ic:${color}"><i class="fa-solid ${fa}"></i></span>`;
+  const section = (id, title, body, extra = "", cls = "") =>
+    `<section class="st-sec${cls ? ` ${cls}` : ""}" id="${id}"${extra}><h3 class="st-head">${title}</h3>${body}</section>`;
+
   root.innerHTML = `
-    <div class="settings-page">
-      <div class="panel" id="appearance">
-        <h2><i class="fa-solid fa-palette"></i> Appearance</h2>
-        <label class="field">Theme
-          <select class="select" name="theme"><option value="dark">Dark</option><option value="light">Light</option></select>
-        </label>
-        <p class="help">Russian titles, Poster details and Match % are switches in the profile menu (your picture, top right).</p>
-      </div>
+    <div class="st">
+      <a class="st-account" href="profile.html">
+        <img src="${esc((acct && acct.photo) || "images/placeholders/user.svg")}" alt="" referrerpolicy="no-referrer" />
+        <span><strong>${esc(profile.name)}</strong><small>${guest ? "Not signed in" : acct ? "Signed in with Google · Profile & stats" : "Profile & stats"}</small></span>
+        <i class="fa-solid fa-chevron-right st-chev"></i>
+      </a>
+
+      ${section(
+        "appearance",
+        "Appearance",
+        `<div class="st-group">
+          <div class="st-row">${icon("fa-circle-half-stroke", "#5e5ce6")}<span class="st-label">Theme</span>
+            <div class="st-seg" role="group" aria-label="Theme">
+              <button type="button" data-theme-pick="dark"><i class="fa-solid fa-moon"></i> Dark</button>
+              <button type="button" data-theme-pick="light"><i class="fa-solid fa-sun"></i> Light</button>
+            </div>
+          </div>
+        </div>
+        <p class="st-foot">Russian titles, Poster details and Match % are switches in the profile menu (your picture, top right).</p>`
+      )}
 
       ${guest ? `<div class="p-guest">${UI.signInPrompt("Sign in for the rest of your settings")}</div>` : ""}
 
-      <div class="panel services" id="services"${guest ? " hidden" : ""}>
-        <h2><i class="fa-solid fa-tv"></i> My streaming services</h2>
-        <div class="svc-mine"></div>
-        <div class="svc-all" hidden></div>
-        <p class="help">Used by "On my services" on the Watchlist and by "What should I watch?". Availability in ${esc(TMDB.COUNTRY)}, from JustWatch.</p>
-      </div>
-
-      <div class="panel import-panel" id="import"${guest ? " hidden" : ""}></div>
-
-      <div class="panel" id="backup"${guest ? " hidden" : ""}>
-        <h2><i class="fa-solid fa-floppy-disk"></i> Backup</h2>
-        <div class="stack">
-          <p class="help" style="margin:0">Your library is saved in your account and synced to every device you sign in on. A backup is an extra copy you keep yourself.</p>
-          <div class="settings-row">
-            <button class="btn export-backup" type="button"><i class="fa-solid fa-file-export"></i> Download backup</button>
-            <label class="btn" style="cursor:pointer"><i class="fa-solid fa-file-import"></i> Restore backup
-              <input type="file" accept=".json,application/json" class="import-file" hidden />
-            </label>
+      ${section(
+        "services",
+        "Streaming",
+        `<div class="st-group services">
+          <div class="st-row st-stack">
+            <div class="st-row-line">${icon("fa-tv", "#ff453a")}<span class="st-label">My streaming services</span></div>
+            <div class="svc-mine"></div>
+            <div class="svc-all" hidden></div>
           </div>
-          <button class="btn btn-danger reset-all" type="button"><i class="fa-solid fa-trash-can"></i> Delete my library</button>
         </div>
-      </div>
+        <p class="st-foot">Used by "On my services" on the Watchlist and by "What should I watch?". Availability in ${esc(TMDB.COUNTRY)}, from JustWatch.</p>`,
+        guest ? " hidden" : ""
+      )}
 
-      <div class="panel members owner-only" id="members"${guest ? " hidden" : ""}>
-        <h2><i class="fa-solid fa-users"></i> Members</h2>
-        <p class="help">Everyone who has signed in. You see how big their library is, never their ratings.</p>
-        <div class="member-list"><p class="help">Loading…</p></div>
-        <p class="help">To let someone in, add their Google email to the rules in the Firebase console
-          (Firestore → Rules), then ask them to sign in here.</p>
-      </div>
+      ${section("import", "Import", `<div class="st-group"><div class="st-pad import-panel"></div></div>`, guest ? " hidden" : "")}
 
-      <div class="panel owner-only" id="keys">
-        <h2><i class="fa-solid fa-key"></i> TMDB &amp; IMDb</h2>
-        <div class="stack">
-          <label class="field">TMDB API key (optional)
-            <input class="input" name="tmdb" type="password" autocomplete="off" placeholder="Paste your key or read access token" />
+      ${section(
+        "backup",
+        "Backup",
+        `<div class="st-group">
+          <button class="st-row st-btn export-backup" type="button">${icon("fa-cloud-arrow-down", "#0a84ff")}<span class="st-label">Download backup</span><i class="fa-solid fa-chevron-right st-chev"></i></button>
+          <label class="st-row st-btn">${icon("fa-clock-rotate-left", "#30d158")}<span class="st-label">Restore backup</span><i class="fa-solid fa-chevron-right st-chev"></i>
+            <input type="file" accept=".json,application/json" class="import-file" hidden />
           </label>
-          <div class="settings-row">
-            <button class="btn btn-primary save-key" type="button">Save key</button>
-            <button class="btn test-key" type="button">Test</button>
-            <button class="btn clear-key" type="button">Remove</button>
-          </div>
-          <p class="help tmdb-status"></p>
-          <p class="help omdb-status"></p>
-          <p class="help">Free at themoviedb.org → Settings → API. A key typed here is stored only in this browser
-            and overrides the one in <code>js/config.js</code>.</p>
+          <button class="st-row st-btn st-danger reset-all" type="button">${icon("fa-trash-can", "#ff453a")}<span class="st-label">Delete my library</span></button>
         </div>
-      </div>
+        <p class="st-foot">Your library is saved in your account and synced to every device you sign in on. A backup is an extra copy you keep yourself.</p>`,
+        guest ? " hidden" : ""
+      )}
+
+      ${section(
+        "members",
+        "Members",
+        `<div class="st-group members"><div class="member-list"><p class="st-pad st-muted">Loading…</p></div></div>
+        <p class="st-foot">Everyone who has signed in: you see how big their library is, never their ratings. To let someone in, add their Google email to the rules in the Firebase console (Firestore → Rules).</p>`,
+        guest ? " hidden" : "",
+        "owner-only"
+      )}
+
+      ${section(
+        "keys",
+        "TMDB & IMDb",
+        `<div class="st-group">
+          <div class="st-row st-stack">
+            <div class="st-row-line">${icon("fa-key", "#ff9f0a")}<span class="st-label">TMDB API key</span><span class="st-value tmdb-status"></span></div>
+            <input class="input st-input" name="tmdb" type="password" autocomplete="off" placeholder="Paste your key or read access token (optional)" />
+            <div class="st-buttons">
+              <button class="btn btn-primary save-key" type="button">Save</button>
+              <button class="btn test-key" type="button">Test</button>
+              <button class="btn clear-key" type="button">Remove</button>
+            </div>
+          </div>
+          <div class="st-row">${icon("fa-star", "#ffd60a")}<span class="st-label">IMDb ratings (OMDb)</span></div>
+          <p class="st-pad st-muted omdb-status"></p>
+        </div>
+        <p class="st-foot">Free at themoviedb.org → Settings → API. A key typed here is stored only in this browser and overrides the one in <code>js/config.js</code>.</p>`,
+        "",
+        "owner-only"
+      )}
     </div>`;
 
   const $ = (s) => root.querySelector(s);
 
   /* ---------------- appearance ---------------- */
 
-  const themeSel = $('[name="theme"]');
-  themeSel.value = document.documentElement.dataset.theme === "light" ? "light" : "dark";
-  themeSel.addEventListener("change", () => {
-    if (themeSel.value === "light") document.documentElement.dataset.theme = "light";
+  function paintTheme() {
+    const light = document.documentElement.dataset.theme === "light";
+    root.querySelectorAll("[data-theme-pick]").forEach((b) => {
+      const on = (b.dataset.themePick === "light") === light;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", on);
+    });
+  }
+  paintTheme();
+  root.querySelector(".st-seg").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-theme-pick]");
+    if (!b) return;
+    if (b.dataset.themePick === "light") document.documentElement.dataset.theme = "light";
     else delete document.documentElement.dataset.theme;
     try {
-      localStorage.setItem("mn:theme", themeSel.value);
-    } catch (e) {}
+      localStorage.setItem("mn:theme", b.dataset.themePick);
+    } catch (err) {}
+    paintTheme();
   });
 
   /* ---------------- TMDB / OMDb (owner) ---------------- */
@@ -89,7 +130,8 @@
   const keyInput = $('[name="tmdb"]');
   function showKeyStatus() {
     const src = TMDB.keySource();
-    $(".tmdb-status").textContent = src === "config" ? "✔ Using the TMDB key from js/config.js." : src === "browser" ? "✔ Using the TMDB key saved in this browser." : "No TMDB key yet: Discover and trailers are off.";
+    // short, on the right of the row (like a value in iOS Settings)
+    $(".tmdb-status").textContent = src === "config" ? "On · js/config.js" : src === "browser" ? "On · this browser" : "Off";
   }
   showKeyStatus();
 
@@ -220,7 +262,7 @@
 
   /* ---------------- import (js/components/import.js) ---------------- */
 
-  if (!guest && window.Importer) Importer.mount($("#import"));
+  if (!guest && window.Importer) Importer.mount($("#import .import-panel"));
 
   /* ---------------- members (owner only) ---------------- */
 
@@ -260,10 +302,10 @@
               </div>`
             )
             .join("")
-        : '<p class="help">Nobody yet.</p>';
+        : '<p class="st-pad st-muted">Nobody yet.</p>';
     } catch (e) {
       membersLoaded = false;
-      box.innerHTML = `<p class="help">Couldn't load members: ${esc(e.message)}</p>`;
+      box.innerHTML = `<p class="st-pad st-muted">Couldn't load members: ${esc(e.message)}</p>`;
     }
   }
   if (window.Cloud) Cloud.onOwner((on) => on && renderMembers());
