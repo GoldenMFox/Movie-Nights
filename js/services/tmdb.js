@@ -184,22 +184,23 @@
     const d = await request(`/${media}/${id}`, { language: "ru-RU" });
     return { title: d.title || d.name || "", poster: d.poster_path || "" };
   }
-  // Russian trailers / teasers of a title (YouTube keys, trailers first), for when RU is on.
-  // Remembered for two weeks (mn:ruVideos).
+  // Russian trailers / teasers of a title (YouTube keys, best quality first), for when RU is
+  // on. Only HD ones (720p and up): a blurry Russian upload loses to the HD original.
+  // Remembered for two weeks (mn:ruVideos2).
   async function ruVideos(media, id) {
     const key = `${media}-${id}`;
-    const cache = Store.read("mn:ruVideos", {});
+    const cache = Store.read("mn:ruVideos2", {});
     if (cache[key] && Date.now() - cache[key].at < 14 * 86400000) return cache[key].keys;
     const d = await request(`/${media}/${id}/videos`, { language: "ru-RU" });
     const keys = (d.results || [])
-      .filter((v) => v.site === "YouTube" && /Trailer|Teaser/.test(v.type))
-      .sort((a, b) => (b.type === "Trailer") - (a.type === "Trailer") || (b.official === true) - (a.official === true))
+      .filter((v) => v.site === "YouTube" && /Trailer|Teaser/.test(v.type) && (v.size || 0) >= 720)
+      .sort(byQuality)
       .map((v) => v.key);
-    const fresh = Store.read("mn:ruVideos", {});
+    const fresh = Store.read("mn:ruVideos2", {});
     fresh[key] = { keys, at: Date.now() };
     const all = Object.keys(fresh);
     if (all.length > 400) all.sort((a, b) => fresh[a].at - fresh[b].at).slice(0, all.length - 400).forEach((k) => delete fresh[k]);
-    Store.write("mn:ruVideos", fresh);
+    Store.write("mn:ruVideos2", fresh);
     return keys;
   }
 
@@ -432,11 +433,14 @@
     return d.release_date || d.first_air_date || "";
   }
 
+  // Best video first: trailers, then teasers; the highest quality (TMDB's "size": 360…2160);
+  // official ones win a tie
+  const videoRank = (v) => (v.type === "Trailer" ? 20000 : v.type === "Teaser" ? 10000 : 0) + (v.size || 0) + (v.official ? 1 : 0);
+  const byQuality = (a, b) => videoRank(b) - videoRank(a);
+
   function pickTrailer(videos) {
-    const yt = ((videos && videos.results) || []).filter((v) => v.site === "YouTube");
-    const best =
-      yt.find((v) => v.type === "Trailer" && v.official) || yt.find((v) => v.type === "Trailer") || yt.find((v) => v.type === "Teaser") || yt[0];
-    return best ? best.key : null;
+    const yt = ((videos && videos.results) || []).filter((v) => v.site === "YouTube").sort(byQuality);
+    return yt[0] ? yt[0].key : null;
   }
 
   function formatRuntime(min) {
@@ -451,7 +455,7 @@
   }
 
   function writeCache(cache) {
-    Object.keys(cache).forEach((k) => /^v[23]:/.test(k) && delete cache[k]); // older formats
+    Object.keys(cache).forEach((k) => /^v[234]:/.test(k) && delete cache[k]); // older formats
     const keys = Object.keys(cache);
     if (keys.length > CACHE_LIMIT) {
       keys
@@ -503,7 +507,7 @@
 
   // Full details for a TMDB movie / show (cached for a week)
   async function detailsById(media, id) {
-    const cacheKey = `v4:${media}-${id}`; // v4: cast and director have TMDB person ids
+    const cacheKey = `v5:${media}-${id}`; // v5: videos best quality first
     const cache = readCache();
     if (cache[cacheKey] && Date.now() - cache[cacheKey].savedAt < DETAILS_MAX_AGE) return withRuNames(cache[cacheKey], media, id);
 
@@ -540,7 +544,7 @@
       providers: providersOf(d, country),
       videos: ((d.videos && d.videos.results) || [])
         .filter((v) => v.site === "YouTube")
-        .sort((a, b) => (b.type === "Trailer") - (a.type === "Trailer") || (b.official === true) - (a.official === true))
+        .sort(byQuality)
         .slice(0, 12)
         .map((v) => ({ key: v.key, name: v.name, type: v.type })),
       images: ((d.images && d.images.backdrops) || []).slice(0, 12).map((i) => i.file_path),
@@ -571,7 +575,7 @@
       applyRu(result.recommendations || [], ru.recommendations, media);
       result.ruDone2 = true;
       const cache = readCache();
-      cache[`v4:${media}-${id}`] = result;
+      cache[`v5:${media}-${id}`] = result;
       writeCache(cache);
     } catch (e) {}
     return result;

@@ -249,12 +249,15 @@
       // only if it hasn't started by itself (a nudge makes YouTube flash its buttons)
       setTimeout(nudge, 1000);
     });
-    // cover the video area like a picture would (the player itself is always 16:9)
+    // Cover the video area like a picture would (the player itself is always 16:9).
+    // YouTube picks the quality from the player's size, and a ~490px player gets 360p: so
+    // the player is really 1920 × 1080 (HD) and shrunk to fit with a CSS scale.
     const bw = box.clientWidth;
     const bh = box.clientHeight;
     const fw = Math.max(bw, (bh * 16) / 9);
-    iframe.style.width = `${Math.ceil(fw)}px`;
-    iframe.style.height = `${Math.ceil((fw * 9) / 16)}px`;
+    iframe.style.width = "1920px";
+    iframe.style.height = "1080px";
+    iframe.style.setProperty("--hp-fit", String(fw / 1920));
     box.insertBefore(iframe, box.querySelector(".hp-sound"));
     muted = true;
   }

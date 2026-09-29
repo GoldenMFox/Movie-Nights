@@ -7556,3 +7556,8 @@ body[data-page="home"] main.container {
     border-radius: 14px;
   }
 }
+/* hover preview: the player is a real 1920 × 1080 (so YouTube sends HD), shrunk to the
+   preview with --hp-fit, then zoomed 1.4× as before to hide YouTube's own labels */
+.hp-frame {
+  transform: translate(-50%, -50%) scale(calc(var(--hp-fit, 0.25) * 1.4));
+}

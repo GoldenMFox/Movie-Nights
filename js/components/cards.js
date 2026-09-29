@@ -543,7 +543,10 @@
   // item: {title, year, trailer?}; loadKey: async fallback that asks TMDB;
   // loadVideos (optional): async list of other video keys to try if YouTube refuses one
   async function showTrailer(item, loadKey, loadVideos) {
-    let key = item.trailer && !isBadTrailer(item.trailer) ? item.trailer : null;
+    // with TMDB on, ask it for the best-quality trailer (details are cached, so it's quick);
+    // the saved one is the fallback
+    const tmdbOn = !!(window.TMDB && TMDB.enabled() && loadVideos);
+    let key = !tmdbOn && item.trailer && !isBadTrailer(item.trailer) ? item.trailer : null;
 
     if (!trailerOverlay) {
       trailerOverlay = makeOverlay("trailer-modal", `<div class="trailer-head"></div><div class="trailer-body"></div><div class="trailer-foot"></div>`);
@@ -604,6 +607,7 @@
       }
       if (key && isBadTrailer(key)) key = null;
     }
+    if (!key && item.trailer && !isBadTrailer(item.trailer)) key = item.trailer;
     if (!key) key = await run.nextAlt();
     if (trailerRun !== run || !trailerOverlay.classList.contains("active")) return;
     if (key) return playTrailer(run, key);
