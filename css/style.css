@@ -5961,3 +5961,69 @@ a.t-person {
   color: #fff;
   text-decoration-color: var(--accent-hover);
 }
+/* person page: role dropdown + type chips + "In my library" */
+.p-filters {
+  align-items: center;
+}
+
+.p-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.p-role {
+  min-width: 190px;
+  border-color: var(--glass-border);
+}
+
+.p-lib-chip i {
+  margin-right: 4px;
+}
+
+/* "9 titles in your library" opens the filmography showing only those */
+button.p-lib-line {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  margin: 0 auto;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+button.p-lib-line:hover {
+  background: rgba(144, 13, 9, 0.25);
+  border-color: rgba(255, 90, 79, 0.3);
+}
+
+.p-lib-arrow {
+  font-size: 11px;
+  transition: transform 0.2s;
+}
+
+button.p-lib-line:hover .p-lib-arrow {
+  transform: translateX(3px);
+}
+
+@media (max-width: 900px) {
+  button.p-lib-line {
+    margin: 0 0 0 -12px; /* text lines up with the name; the hover pill sticks out a little */
+  }
+}
+
+@media (max-width: 700px) {
+  .p-filters {
+    width: 100%;
+  }
+
+  .p-role {
+    width: 100%;
+  }
+}

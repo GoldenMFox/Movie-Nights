@@ -508,7 +508,7 @@
 
   // One person: bio, photos and everything they were in (kept for this visit)
   async function person(id) {
-    const key = `mn:person:${id}:${Lang.get()}`;
+    const key = `mn:person2:${id}:${Lang.get()}`;
     try {
       const c = JSON.parse(sessionStorage.getItem(key) || "null");
       if (c) return c;
@@ -520,32 +520,40 @@
     const ruNames = {};
     if (ru) (ru.cast || []).concat(ru.crew || []).forEach((r) => (ruNames[`${r.media_type}-${r.id}`] = r.title || r.name));
 
-    // the same title can appear several times (several roles / jobs): keep one, roles joined
+    // the same title can appear several times (several roles / jobs): keep one, with
+    // the characters played, the jobs done and the departments ("Acting", "Directing",
+    // "Production", "Writing"…) collected
     const byTitle = new Map();
-    const add = (r, role, kind) => {
+    const add = (r, kind) => {
       if (r.media_type !== "movie" && r.media_type !== "tv") return;
       const k = `${r.media_type}-${r.id}`;
       let t = byTitle.get(k);
       if (!t) {
         t = Object.assign(simplify(r, r.media_type), {
-          roles: [],
+          characters: [],
+          jobs: [],
+          depts: [],
           kind,
           popularity: r.popularity || 0,
           votes: r.vote_count || 0,
-          episodes: r.episode_count || 0,
+          episodes: 0,
           talk: (r.genre_ids || []).some((g) => TALK_NEWS.includes(g)),
         });
         if (ruNames[k]) t.titleRu = ruNames[k];
         byTitle.set(k, t);
       }
-      if (role && !t.roles.includes(role)) t.roles.push(role);
-      if (kind === "cast") t.kind = "cast";
-      if (kind === "cast" && NOT_ACTING.test(role || "")) t.self = true;
-      else if (kind === "cast") t.self = false;
+      const dept = kind === "cast" ? "Acting" : r.department || "Crew";
+      if (!t.depts.includes(dept)) t.depts.push(dept);
+      if (kind === "cast") {
+        t.kind = "cast";
+        if (r.character && !t.characters.includes(r.character)) t.characters.push(r.character);
+        t.self = NOT_ACTING.test(r.character || "");
+        t.episodes = Math.max(t.episodes, r.episode_count || 0);
+      } else if (r.job && !t.jobs.includes(r.job)) t.jobs.push(r.job);
     };
     const credits = d.combined_credits || {};
-    (credits.cast || []).forEach((r) => add(r, r.character, "cast"));
-    (credits.crew || []).forEach((r) => add(r, r.job, "crew"));
+    (credits.cast || []).forEach((r) => add(r, "cast"));
+    (credits.crew || []).forEach((r) => add(r, "crew"));
     const titles = [...byTitle.values()];
 
     const out = {

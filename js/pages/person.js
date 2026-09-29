@@ -15,7 +15,9 @@
   const mainEl = document.getElementById("person-main");
 
   let p = null; // the person (TMDB.person)
-  let filter = "all"; // filmography: all | movie | tv | crew
+  let filter = "all"; // filmography: all | movie | tv
+  let role = "all"; // filmography: all | a department ("Acting", "Directing", "Production", "Writing"…)
+  let libOnly = false; // filmography: only titles in your library
   let showOther = false; // talk shows / appearances as themselves
   let bioOpen = false;
 
@@ -48,7 +50,7 @@
   };
 
   // real roles (not talk shows or appearing as themselves)
-  const isWork = (t) => !t.talk && !t.self;
+  const isWork = (t) => !t.talk && !(t.self && !t.jobs.length);
 
   // the titles they're best known for: well-known work, most votes first
   function knownFor() {
@@ -60,11 +62,12 @@
   }
 
   function libraryStats() {
-    const items = [];
+    const byId = new Map();
     p.titles.forEach((t) => {
       const lib = Cards.inLibrary(t);
-      if (lib && !items.includes(lib)) items.push(Store.get(lib.id) || lib);
+      if (lib) byId.set(lib.id, Store.get(lib.id) || lib);
     });
+    const items = [...byId.values()];
     const rated = items.filter((i) => i.rating != null);
     const avg = rated.length ? rated.reduce((s, i) => s + i.rating, 0) / rated.length : null;
     return { count: items.length, rated: rated.length, avg };
@@ -149,7 +152,11 @@
                 <button class="p-round" type="button" data-p="share" title="Share" aria-label="Share"><i class="fa-solid fa-arrow-up-from-bracket"></i></button>
               </div>
               <div class="p-lib">
-                <span class="p-lib-line"><i class="fa-solid fa-bolt"></i> ${lib.count ? `${lib.count} title${lib.count === 1 ? "" : "s"} in your library` : "Nothing in your library yet"}</span>
+                ${
+                  lib.count
+                    ? `<button class="p-lib-line" type="button" data-p="library" title="Show them in the filmography"><i class="fa-solid fa-bolt"></i> ${lib.count} title${lib.count === 1 ? "" : "s"} in your library <i class="fa-solid fa-chevron-right p-lib-arrow"></i></button>`
+                    : '<span class="p-lib-line"><i class="fa-solid fa-bolt"></i> Nothing in your library yet</span>'
+                }
                 ${lib.avg != null ? `<small>Your average: <i class="fa-solid fa-star"></i> ${Cards.formatRating(Math.round(lib.avg * 10) / 10)} from ${lib.rated} rated</small>` : ""}
               </div>
             </div>
@@ -199,16 +206,57 @@
 
   /* ---------------- filmography ---------------- */
 
+  // TMDB departments, as the roles you can pick
+  const ROLE_LABEL = {
+    Acting: "Actor",
+    Directing: "Director",
+    Production: "Producer",
+    Writing: "Writer",
+    Creator: "Creator",
+    Camera: "Camera",
+    Editing: "Editor",
+    Sound: "Sound / music",
+    Art: "Art department",
+    "Costume & Make-Up": "Costume & make-up",
+    "Visual Effects": "Visual effects",
+    Lighting: "Lighting",
+    Crew: "Other crew",
+  };
+  const ROLE_ORDER = Object.keys(ROLE_LABEL);
+  const roleLabel = (d) => ROLE_LABEL[d] || d;
+
+  // the main jobs first: "Director, Screenplay, Producer, Songs"
+  const JOB_ORDER = [/^director$/i, /creator/i, /screenplay|writer|story|novel/i, /^producer$/i, /producer/i];
+  const jobRank = (job) => {
+    const i = JOB_ORDER.findIndex((re) => re.test(job));
+    return i < 0 ? JOB_ORDER.length : i;
+  };
+
+  // what they did on a title: "as Cooper · Director, Producer" (only the picked role's part)
+  function roleText(t) {
+    const parts = [];
+    if ((role === "all" || role === "Acting") && t.characters.length) parts.push(`as ${t.characters.join(", ")}`);
+    if (role !== "Acting" && t.jobs.length) parts.push([...t.jobs].sort((a, b) => jobRank(a) - jobRank(b)).join(", "));
+    return parts.join(" · ");
+  }
+
   function renderFilmography() {
-    const hasCrew = p.titles.some((t) => t.kind === "crew");
     const hidden = p.titles.filter((t) => !isWork(t)).length;
     const pool = p.titles.filter((t) => showOther || isWork(t));
+
+    // the roles this person has, most used first (their main one on top), with counts
+    const counts = {};
+    pool.forEach((t) => t.depts.forEach((d) => (counts[d] = (counts[d] || 0) + 1)));
+    const roles = Object.keys(counts).sort((a, b) => (b === p.department) - (a === p.department) || counts[b] - counts[a] || ROLE_ORDER.indexOf(a) - ROLE_ORDER.indexOf(b));
+    if (role !== "all" && !counts[role]) role = "all";
+
     const list = pool
-      .filter((t) => (filter === "all" ? true : filter === "crew" ? t.kind === "crew" : t.mediaType === filter))
+      .filter((t) => filter === "all" || t.mediaType === filter)
+      .filter((t) => role === "all" || t.depts.includes(role))
+      .filter((t) => !libOnly || Cards.inLibrary(t))
       .sort((a, b) => (b.year || 9999) - (a.year || 9999) || b.popularity - a.popularity);
 
     const FILTERS = { all: "All", movie: "Movies", tv: "TV shows" };
-    if (hasCrew) FILTERS.crew = "Behind the camera";
 
     let lastYear; // the year is shown once per group
     const rows = list
@@ -217,7 +265,7 @@
         const item = lib && Store.get(lib.id);
         const yearCell = t.year !== lastYear ? t.year || "Soon" : "";
         lastYear = t.year;
-        const roles = t.roles.filter(Boolean).join(", ");
+        const roles = roleText(t);
         const score =
           item && item.rating != null
             ? `<span class="p-score mine" title="Your rating"><i class="fa-solid fa-star"></i> ${Cards.formatRating(item.rating)}</span>`
@@ -229,7 +277,7 @@
           <img src="${t.poster ? Store.img(t.poster, "w92") : "images/placeholders/poster-placeholder.svg"}" alt="" loading="lazy" />
           <span class="p-credit-text">
             <strong>${esc(Lang.title(t))}${lib ? ' <i class="fa-solid fa-circle-check" title="In your library"></i>' : ""}</strong>
-            <small>${[t.mediaType === "tv" ? "TV" : "Movie", roles ? (t.kind === "cast" ? `as ${esc(roles)}` : esc(roles)) : "", t.episodes ? `${t.episodes} episode${t.episodes === 1 ? "" : "s"}` : ""]
+            <small>${[t.mediaType === "tv" ? "TV" : "Movie", esc(roles), t.episodes && (role === "all" || role === "Acting") ? `${t.episodes} episode${t.episodes === 1 ? "" : "s"}` : ""]
               .filter(Boolean)
               .join(" · ")}</small>
           </span>
@@ -242,13 +290,33 @@
       <section class="t-section p-filmography" id="filmography">
         <div class="p-film-head">
           <h2 class="t-section-title">Filmography <small>${list.length}</small></h2>
-          <div class="p-filters" role="group" aria-label="Show">
-            ${Object.entries(FILTERS)
-              .map(([k, l]) => `<button type="button" class="chip${k === filter ? " active" : ""}" data-filter="${k}" aria-pressed="${k === filter}">${l}</button>`)
-              .join("")}
+          <div class="p-filters">
+            ${
+              roles.length > 1
+                ? `<span class="glass-select small p-role">
+                    <i class="fa-solid fa-user-tag" aria-hidden="true"></i>
+                    <select aria-label="Role">
+                      <option value="all">All roles (${pool.length})</option>
+                      ${roles.map((d) => `<option value="${esc(d)}"${d === role ? " selected" : ""}>${esc(roleLabel(d))} (${counts[d]})</option>`).join("")}
+                    </select>
+                  </span>`
+                : ""
+            }
+            <div class="p-chips-row" role="group" aria-label="Show">
+              ${Object.entries(FILTERS)
+                .map(([k, l]) => `<button type="button" class="chip${k === filter ? " active" : ""}" data-filter="${k}" aria-pressed="${k === filter}">${l}</button>`)
+                .join("")}
+              <button type="button" class="chip p-lib-chip${libOnly ? " active" : ""}" data-p="lib-only" aria-pressed="${libOnly}">
+                <i class="fa-solid fa-${libOnly ? "circle-check" : "clapperboard"}"></i> In my library</button>
+            </div>
           </div>
         </div>
-        <div class="p-credits">${rows || '<p class="muted t-empty">Nothing here.</p>'}</div>
+        <div class="p-credits">${
+          rows ||
+          `<p class="muted t-empty">${libOnly ? "None of these are in your library." : "Nothing here."}${
+            libOnly || role !== "all" || filter !== "all" ? ' <button class="t-link" type="button" data-p="reset">Show everything</button>' : ""
+          }</p>`
+        }</div>
         ${hidden ? `<button class="t-link p-other" type="button">${showOther ? "Hide" : "Show"} ${hidden} talk show / guest appearance${hidden === 1 ? "" : "s"}</button>` : ""}
       </section>
       <p class="tmdb-note">Details and photos from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.
@@ -274,6 +342,27 @@
       e.target.closest(".p-bio-more").textContent = bioOpen ? "Show less" : "Read more";
       return;
     }
+    // "9 titles in your library": the filmography, only those
+    if (e.target.closest('[data-p="library"]')) {
+      libOnly = true;
+      filter = "all";
+      role = "all";
+      renderFilmography();
+      document.getElementById("filmography").scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    if (e.target.closest('[data-p="lib-only"]')) {
+      libOnly = !libOnly;
+      renderFilmography();
+      return;
+    }
+    if (e.target.closest('[data-p="reset"]')) {
+      libOnly = false;
+      filter = "all";
+      role = "all";
+      renderFilmography();
+      return;
+    }
     const f = e.target.closest("[data-filter]");
     if (f) {
       filter = f.dataset.filter;
@@ -290,6 +379,12 @@
       e.preventDefault();
       document.getElementById("filmography").scrollIntoView({ behavior: "smooth", block: "start" });
     }
+  });
+
+  document.addEventListener("change", (e) => {
+    if (!e.target.closest(".p-role select")) return;
+    role = e.target.value;
+    renderFilmography();
   });
 
   // your ratings / library changed (e.g. rated a card in "Best known for")
