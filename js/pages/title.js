@@ -393,7 +393,7 @@
       <button class="btn t-trailer" data-action="trailer"><i class="fa-solid fa-play"></i> Trailer</button>
       <div class="t-actions">
         <button class="btn${item.watchlist ? " is-on" : ""}" data-action="watch" aria-pressed="${!!item.watchlist}">
-          <i class="fa-${item.watchlist ? "solid" : "regular"} fa-bookmark"></i> ${item.watchlist ? "On my list" : "My List"}</button>
+          <i class="fa-${item.watchlist ? "solid" : "regular"} fa-bookmark"></i> ${item.watchlist ? "On Watchlist" : "Watchlist"}</button>
         <button class="btn${item.favorite ? " is-on" : ""}" data-action="fav" aria-pressed="${!!item.favorite}">
           <i class="fa-${item.favorite ? "solid" : "regular"} fa-heart"></i> Favorite</button>
         <button class="btn${item.rating != null ? " is-rated" : ""}" data-action="rate">
@@ -507,8 +507,8 @@
     const buttons = `
       <button class="btn t-trailer" data-action="t-trailer"><i class="fa-solid fa-play"></i> Trailer</button>
       <div class="t-actions">
-        <button class="btn" data-action="t-watch"><i class="fa-solid fa-plus"></i> My List</button>
-        <button class="btn" data-action="t-add"><i class="fa-regular fa-circle-check"></i> Watched</button>
+        <button class="btn" data-action="t-watch"><i class="fa-regular fa-bookmark"></i> Watchlist</button>
+        <button class="btn" data-action="t-watched"><i class="fa-regular fa-circle-check"></i> Watched</button>
         <button class="btn" data-action="t-rate"><i class="fa-regular fa-thumbs-up"></i> Rate</button>
       </div>`;
     const menu = `<a href="${esc(d.tmdbUrl)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open on TMDB</a>`;

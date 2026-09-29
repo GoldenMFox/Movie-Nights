@@ -170,6 +170,9 @@
     } else if (action === "t-watch") {
       addHit(hit, { watchlist: true });
       toast(`${Lang.title(hit)} added to Watchlist`);
+    } else if (action === "t-watched") {
+      // "Watched": into the library, then a gentle "rate it?" (Skip leaves it unrated)
+      openRating(addHit(hit).id, { watched: true });
     } else if (action === "t-rate") {
       openRating(addHit(hit).id);
     } else if (action === "t-trailer") {
@@ -394,6 +397,7 @@
   /* ---------------- rating pop-up ---------------- */
 
   let ratingOverlay, ratingId, picked;
+  let ratingWatched = false; // opened by "Watched": "Skip for now" instead of "Clear rating"
 
   function buildRating() {
     ratingOverlay = makeOverlay(
@@ -448,8 +452,13 @@
     });
 
     ratingOverlay.querySelector(".clear").addEventListener("click", () => {
-      Store.update(ratingId, { rating: null });
-      toast("Rating cleared");
+      if (ratingWatched) {
+        // just watched, no rating yet: it stays in the library, unrated
+        toast(`${Lang.title(Store.get(ratingId))} added to your library`);
+      } else {
+        Store.update(ratingId, { rating: null });
+        toast("Rating cleared");
+      }
       close(ratingOverlay);
     });
 
@@ -463,11 +472,15 @@
     ratingOverlay.showPicked = showPicked;
   }
 
-  function openRating(id) {
+  // opts.watched: opened right after "Watched" (a gentle "rate it?", with Skip)
+  function openRating(id, opts) {
     if (!ratingOverlay) buildRating();
     const item = Store.get(id);
     ratingId = id;
     picked = item.rating;
+    ratingWatched = !!(opts && opts.watched);
+    ratingOverlay.querySelector("h3").textContent = ratingWatched ? "Watched it? Rate it" : "Rate it";
+    ratingOverlay.querySelector(".clear").textContent = ratingWatched ? "Skip for now" : "Clear rating";
     ratingOverlay.querySelector(".rating-for").textContent = `${Lang.title(item)} (${item.year})`;
     ratingOverlay.showPicked();
     open(ratingOverlay);
