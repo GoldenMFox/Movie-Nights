@@ -539,8 +539,14 @@
     const buttons = `
       <button class="btn t-trailer" data-action="trailer"><i class="fa-solid fa-play"></i> Trailer</button>
       <div class="t-actions">
-        <button class="btn${item.watchlist ? " is-on" : ""}" data-action="watch" aria-pressed="${!!item.watchlist}">
-          <i class="fa-${item.watchlist ? "solid" : "regular"} fa-bookmark"></i> ${item.watchlist ? "On Watchlist" : "Watchlist"}</button>
+        ${
+          // in your library = watched: no Watchlist button. Still on the Watchlist (not seen
+          // yet): take it off, or mark it Watched
+          item.watchlist
+            ? `<button class="btn is-on" data-action="watch" aria-pressed="true"><i class="fa-solid fa-bookmark"></i> On Watchlist</button>
+               <button class="btn" data-action="watched"><i class="fa-regular fa-circle-check"></i> Watched</button>`
+            : ""
+        }
         <button class="btn${item.favorite ? " is-on" : ""}" data-action="fav" aria-pressed="${!!item.favorite}">
           <i class="fa-${item.favorite ? "solid" : "regular"} fa-heart"></i> Favorite</button>
         <button class="btn${item.rating != null ? " is-rated" : ""}" data-action="rate">

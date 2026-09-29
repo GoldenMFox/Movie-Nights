@@ -329,6 +329,10 @@
       openRating(id);
     } else if (action === "trailer") {
       openTrailer(id);
+    } else if (action === "watched") {
+      // seen it: off the Watchlist, today in the diary, then a gentle "rate it?"
+      Store.update(id, { watchlist: false, watchedAt: item.watchedAt || Store.today() });
+      openRating(id, { watched: true });
     } else if (action === "remove") {
       removeTitle(id);
     } else if (action === "lists") {
@@ -939,7 +943,7 @@
     ratingOverlay.querySelector(".clear").addEventListener("click", () => {
       if (ratingWatched) {
         // just watched, no rating yet: it stays in the library, unrated
-        toast(`${Lang.title(Store.get(ratingId))} added to your library`);
+        toast(`${Lang.title(Store.get(ratingId))} marked as watched`);
       } else {
         Store.update(ratingId, { rating: null });
         toast("Rating cleared");
