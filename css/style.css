@@ -6602,3 +6602,92 @@ html.tablet .movie-row {
     width: 400px;
   }
 }
+/* ============================== Phones: poster-only cards, like on tablets ============================== */
+/* (html.app-ui = phones in the browser and the installed app; tap a poster to open its page) */
+
+html.app-ui .movie-item {
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  box-shadow: none;
+}
+
+html.app-ui .movie-item .movie-info {
+  display: none;
+}
+
+html.app-ui .poster-link {
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+html.app-ui .movie-item:hover,
+html.app-ui .movie-item:focus-within {
+  transform: none;
+}
+
+/* 3 posters across on a phone, rows show a little more than 3 */
+html.app-ui .movie-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+html.app-ui .movie-row {
+  grid-auto-columns: calc((100% - 20px) / 3.3);
+  gap: 10px;
+}
+
+/* smaller labels on the small posters */
+html.app-ui .movie-item .badges {
+  top: 6px;
+  left: 6px;
+}
+
+html.app-ui .movie-item .badges span {
+  width: 22px;
+  height: 22px;
+  font-size: 10px;
+}
+
+html.app-ui .movie-item .badges .type-badge {
+  padding: 0 6px;
+  font-size: 9.5px;
+}
+
+html.app-ui .new-label {
+  top: 6px;
+  right: 6px;
+  gap: 4px;
+  padding: 2px 6px 2px 5px;
+  font-size: 8.5px;
+}
+
+html.app-ui .new-label::before {
+  width: 6px;
+  height: 6px;
+}
+
+html.app-ui .soon-label {
+  top: auto;
+  right: auto;
+  left: 6px;
+  bottom: 6px;
+  max-width: calc(100% - 12px);
+  padding: 2px 7px;
+  font-size: 9px;
+}
+
+/* wider phones / small tablets in phone mode: 4 across */
+@media (min-width: 540px) {
+  html.app-ui .movie-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  html.app-ui .movie-row {
+    grid-auto-columns: calc((100% - 30px) / 4.3);
+  }
+}
+/* small phone posters: the clock + date is enough ("Oct 2") */
+html.app-ui .soon-label .soon-word {
+  display: none;
+}

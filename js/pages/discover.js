@@ -165,7 +165,7 @@
     });
     img.insertAdjacentHTML(
       "afterend",
-      `<span class="soon-label" title="In cinemas in ${esc(TMDB.COUNTRY === "RO" ? "Romania" : TMDB.COUNTRY)} from ${esc(when)}"><i class="fa-regular fa-clock"></i> Coming soon · ${esc(when)}</span>`
+      `<span class="soon-label" title="In cinemas in ${esc(TMDB.COUNTRY === "RO" ? "Romania" : TMDB.COUNTRY)} from ${esc(when)}"><i class="fa-regular fa-clock"></i> <span class="soon-word">Coming soon · </span>${esc(when)}</span>`
     );
   }
 
