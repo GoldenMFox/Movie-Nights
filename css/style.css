@@ -12263,3 +12263,8 @@ html[data-theme="light"] .sv-meter-bar {
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+
+/* Discover: posters waiting for the next "Load more" */
+.movie-grid > .dc-later {
+  display: none !important;
+}

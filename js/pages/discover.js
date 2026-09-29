@@ -196,6 +196,11 @@
     for (let k = 0; k < 4; k++) next();
   }
 
+  // the page shows 5 rows of posters; each "Load more" adds 5 more
+  const ROWS = 5;
+  const columns = () => Math.max(1, getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length);
+  const fiveRows = () => columns() * ROWS;
+
   async function load(reset) {
     if (reset) {
       state.run++;
@@ -205,34 +210,43 @@
       state.seen.clear();
       grid.innerHTML = "";
       emptyEl.hidden = true;
+      state.limit = fiveRows();
+    } else {
+      state.limit = Math.min(grid.children.length, state.limit) + fiveRows();
     }
-    if (state.loading || state.page >= state.totalPages) return;
+    if (state.loading) return;
     const run = state.run;
     state.loading = true;
     moreBtn.hidden = true;
     countEl.textContent = "Loading…";
     try {
-      let results = [];
-      // a filtered search (e.g. Anime) can have pages with nothing left after
-      // filtering, so look up to 3 pages ahead before giving up
-      for (let tries = 0; tries < 3 && !results.length && state.page < state.totalPages; tries++) {
-        const page = state.page + 1;
-        const data = state.q
-          ? await TMDB.searchSmart(state.q, state.sin, page)
-          : state.genre
-          ? await TMDB.byGenre(state.gtype, state.genre, state.gsort, page)
-          : await TMDB.list(state.cat, page);
-        if (run !== state.run) return;
-        state.page = page;
-        state.totalPages = data.totalPages;
-        // TMDB lists sometimes repeat a title across pages
-        results = data.results.filter((r) => !state.seen.has(`${r.mediaType}-${r.tmdbId}`));
+      // fetch TMDB pages until there are enough posters for the rows to show
+      while (grid.children.length < state.limit && state.page < state.totalPages) {
+        let results = [];
+        // a filtered search (e.g. Anime) can have pages with nothing left after
+        // filtering, so look up to 3 pages ahead before giving up
+        for (let tries = 0; tries < 3 && !results.length && state.page < state.totalPages; tries++) {
+          const page = state.page + 1;
+          const data = state.q
+            ? await TMDB.searchSmart(state.q, state.sin, page)
+            : state.genre
+            ? await TMDB.byGenre(state.gtype, state.genre, state.gsort, page)
+            : await TMDB.list(state.cat, page);
+          if (run !== state.run) return;
+          state.page = page;
+          state.totalPages = data.totalPages;
+          // TMDB lists sometimes repeat a title across pages
+          results = data.results.filter((r) => !state.seen.has(`${r.mediaType}-${r.tmdbId}`));
+        }
+        if (!results.length) break;
+        results.forEach((r) => state.seen.add(`${r.mediaType}-${r.tmdbId}`));
+        grid.insertAdjacentHTML("beforeend", results.map(Cards.tmdbCard).join(""));
+        markComingSoon(results);
       }
-      results.forEach((r) => state.seen.add(`${r.mediaType}-${r.tmdbId}`));
-      grid.insertAdjacentHTML("beforeend", results.map(Cards.tmdbCard).join(""));
-      markComingSoon(results);
+      // posters past the last full row wait, hidden, for the next "Load more"
+      [...grid.children].forEach((c, i) => c.classList.toggle("dc-later", i >= state.limit));
 
-      const shown = grid.children.length;
+      const shown = Math.min(grid.children.length, state.limit);
       countEl.textContent = heading(shown);
       if (!shown) {
         emptyEl.hidden = false;
@@ -241,7 +255,7 @@
         }`;
         countEl.textContent = "";
       }
-      moreBtn.hidden = state.page >= state.totalPages;
+      moreBtn.hidden = grid.children.length <= state.limit && state.page >= state.totalPages;
     } catch (e) {
       if (run !== state.run) return;
       countEl.textContent = "";
@@ -330,12 +344,6 @@
   });
 
   moreBtn.addEventListener("click", () => load(false));
-
-  if ("IntersectionObserver" in window) {
-    new IntersectionObserver((entries) => entries[0].isIntersecting && !moreBtn.hidden && load(false), { rootMargin: "600px" }).observe(
-      moreBtn.parentElement
-    );
-  }
 
   fillGenres();
   syncUi();
