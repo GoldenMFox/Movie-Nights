@@ -7561,3 +7561,33 @@ body[data-page="home"] main.container {
 .hp-frame {
   transform: translate(-50%, -50%) scale(calc(var(--hp-fit, 0.25) * 1.4));
 }
+/* trailer pop-up head: title in the site's heading style, the year in its own glass pill */
+.th-title {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.th-year {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 700px) {
+  .th-title {
+    font-size: 16px;
+  }
+
+  .th-year {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+}

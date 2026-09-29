@@ -455,7 +455,7 @@
   }
 
   function writeCache(cache) {
-    Object.keys(cache).forEach((k) => /^v[234]:/.test(k) && delete cache[k]); // older formats
+    Object.keys(cache).forEach((k) => /^v[2345]:/.test(k) && delete cache[k]); // older formats
     const keys = Object.keys(cache);
     if (keys.length > CACHE_LIMIT) {
       keys
@@ -507,7 +507,7 @@
 
   // Full details for a TMDB movie / show (cached for a week)
   async function detailsById(media, id) {
-    const cacheKey = `v5:${media}-${id}`; // v5: videos best quality first
+    const cacheKey = `v6:${media}-${id}`; // v6: TV trailers from the seasons when the show has none
     const cache = readCache();
     if (cache[cacheKey] && Date.now() - cache[cacheKey].savedAt < DETAILS_MAX_AGE) return withRuNames(cache[cacheKey], media, id);
 
@@ -516,6 +516,20 @@
       append_to_response: `videos,credits,recommendations,external_ids,images,reviews,watch/providers,${media === "movie" ? "release_dates" : "content_ratings"}`,
       include_image_language: "en,null",
     });
+    // Many TV shows keep their trailers on the seasons, not the show (Breaking Bad has
+    // none of its own): then take season 1's videos, or the latest season's
+    if (media === "tv" && !((d.videos && d.videos.results) || []).some((v) => v.site === "YouTube")) {
+      const seasons = [...new Set([1, d.number_of_seasons].filter((n) => n > 0))];
+      for (const n of seasons) {
+        try {
+          const s = await request(`/tv/${id}/season/${n}/videos`);
+          if ((s.results || []).some((v) => v.site === "YouTube")) {
+            d.videos = s;
+            break;
+          }
+        } catch (e) {}
+      }
+    }
     const crew = (d.credits && d.credits.crew) || [];
     const base = simplify(d, media);
 
@@ -575,7 +589,7 @@
       applyRu(result.recommendations || [], ru.recommendations, media);
       result.ruDone2 = true;
       const cache = readCache();
-      cache[`v5:${media}-${id}`] = result;
+      cache[`v6:${media}-${id}`] = result;
       writeCache(cache);
     } catch (e) {}
     return result;

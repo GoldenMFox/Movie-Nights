@@ -557,7 +557,7 @@
       };
     }
     trailerOverlay.querySelector(".trailer-head").innerHTML = `<span class="th-kicker"><i class="fa-solid fa-play"></i> Trailer</span>
-      <h2 class="th-title">${esc(Lang.title(item))}${item.year ? ` <span>${item.year}</span>` : ""}</h2>`;
+      <h2 class="th-title">${esc(Lang.title(item))}</h2>${item.year ? `<span class="th-year">${item.year}</span>` : ""}`;
     trailerOverlay.querySelector(".trailer-foot").innerHTML = "";
     const body = trailerOverlay.querySelector(".trailer-body");
     body.innerHTML = trailerMessage("fa-solid fa-spinner fa-spin", "Looking for the trailer…");
