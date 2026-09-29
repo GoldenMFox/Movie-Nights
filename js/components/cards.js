@@ -1111,7 +1111,7 @@
         ? `This trailer can only be played on YouTube. <a href="https://www.youtube.com/watch?v=${encodeURIComponent(run.first)}" target="_blank" rel="noopener">Watch it on YouTube</a>`
         : window.TMDB && TMDB.enabled()
         ? "TMDB doesn't have a trailer for this title yet."
-        : 'No trailer saved for this title. Add a TMDB key in <a href="profile.html#settings">Settings</a> to load trailers automatically.'
+        : 'No trailer saved for this title. Add a TMDB key in <a href="settings.html#keys">Settings</a> to load trailers automatically.'
     );
   }
 

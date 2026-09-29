@@ -16,7 +16,7 @@
         <li>Create a free account at <a href="https://www.themoviedb.org/signup" target="_blank" rel="noopener">themoviedb.org/signup</a> and confirm your email.</li>
         <li>Go to <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">Settings → API</a> and request a key (choose "Personal / Developer").</li>
         <li>Copy the <strong>API Key</strong> (or the API Read Access Token).</li>
-        <li>Paste it in <a href="profile.html#settings">Profile → Settings</a>, or into <code>js/config.js</code> so it works everywhere.</li>
+        <li>Paste it in <a href="settings.html#keys">Settings</a>, or into <code>js/config.js</code> so it works everywhere.</li>
       </ol>
     </div>`;
     return;
@@ -247,7 +247,7 @@
       countEl.textContent = "";
       emptyEl.hidden = false;
       emptyEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>${esc(e.message)}.<br>
-        Check your key in <a href="profile.html#settings">Profile → Settings</a> or <code>js/config.js</code>.`;
+        Check your key in <a href="settings.html#keys">Settings</a> or <code>js/config.js</code>.`;
     } finally {
       if (run === state.run) state.loading = false;
     }

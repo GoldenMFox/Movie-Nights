@@ -49,7 +49,8 @@ It updates by itself whenever the site is published.
 | `title.html?id=...` | Details for one title (in your library = watched: no Watchlist button; still on the Watchlist: **On Watchlist** + **Watched**): your score, **Watched on** (change the date), trailer, where to watch, overview, **Seasons** (TV: each season's trailer), cast, media, reviews, "more like this" |
 | `person.html?id=...` | An actor / crew member (tap a cast card or the director's name): photo, bio, facts, best known for, full filmography with a role filter |
 | `tier-list.html` | Drag posters into S / A / B / C / D tiers |
-| `profile.html` | Your stats, **Watch diary** (watched this year / month, a chart of the last 12 months, "a year ago you watched…"), settings (theme, **your streaming services**), **Import** from IMDb / Letterboxd, backup. The owner also sees the TMDB / OMDb settings and **Members** |
+| `profile.html` | Your name, stats, **Watch diary** (watched this year / month, a chart of the last 12 months, "a year ago you watched…", **Wrapped**) and charts |
+| `settings.html` | Theme, **your streaming services**, **Import** from IMDb / Letterboxd, backup. The owner also sees **Members** and the TMDB / OMDb settings |
 
 The navbar search (or `/` on any page) searches your library and all of TMDB.
 
@@ -96,7 +97,7 @@ your Watchlist, or from your Favorites for a rewatch.
 **New library?** Home and Watchlist show a welcome card with the three ways to start
 (Discover, search, import).
 
-**Import** (Profile): the `.csv` exports of IMDb (Your ratings, Your watchlist; matched on TMDB
+**Import** (Settings): the `.csv` exports of IMDb (Your ratings, Your watchlist; matched on TMDB
 by IMDb id) and Letterboxd (ratings / watched / diary / watchlist.csv; matched by name + year,
 stars × 2 = score). You see what was found before anything is added, and titles you already
 have keep your own score.
@@ -104,7 +105,7 @@ have keep your own score.
 **Watch diary**: the day you rate a title or press Watched is saved as the day you watched it
 (`watchedAt`); change it on the title page. Imports bring their dates.
 
-**Streaming services**: pick yours in Profile → Settings (saved with your profile, so they
+**Streaming services**: pick yours in Settings (saved with your profile, so they
 follow you). Availability comes from TMDB / JustWatch for `RELEASE_COUNTRY` (Romania) and is
 kept for a week in `mn:providers`; release dates / next episodes are kept for a day in `mn:nextUp`
 (`js/services/watch.js`).
@@ -164,7 +165,7 @@ On the site:
   seconds) that puts the title back exactly as it was, with its score, lists and tier.
 
 Changes are saved in the browser straight away and synced to your account.
-**Profile → Backup**: download / restore a file copy, or delete your library.
+**Settings → Backup**: download / restore a file copy, or delete your library.
 
 ## TMDB and IMDb ratings
 
@@ -189,9 +190,9 @@ The free OMDb key allows 1,000 lookups a day, so the site:
 - keeps TMDB scores on Discover cards (TMDB has no daily limit). Opening a title
   from Discover shows its IMDb rating.
 
-Profile → Settings shows how many OMDb lookups were used today.
+Settings shows how many OMDb lookups were used today.
 
-A TMDB key pasted in **Profile → Settings** is stored only in that browser and overrides
+A TMDB key pasted in **Settings** is stored only in that browser and overrides
 the one in `config.js`. Without keys the site still works, just without Discover and the
 outside ratings.
 
@@ -206,7 +207,7 @@ tiers and profile are saved to your account and follow you to every device.
 - Every allowed person starts with an **empty** library and sees only their own.
 - The **owner** is whoever the security rules allow to list all users (the site checks
   that on sign-in, so it can't be faked). The owner also gets **Add a title**, the TMDB /
-  OMDb settings and **Profile → Members**: everyone who signed in, with their photo,
+  OMDb settings and **Settings → Members**: everyone who signed in, with their photo,
   last sync and how many titles / rated / watchlist they have (never their ratings).
 - The owner's old library (it used to be public, from `data/library.js`) moved into the
   owner's account the first time they signed in after the change.
@@ -249,11 +250,11 @@ Movie-Nights-NEW/
 │   │   ├── preview.js         hover a poster: Netflix-style trailer preview (computers)
 │   │   ├── scrollbars.js      slim scrollbars with a hand cursor under the rows (computers)
 │   │   ├── picker.js          "What should I watch?" pop-up
-│   │   ├── import.js          import from IMDb / Letterboxd (Profile)
+│   │   ├── import.js          import from IMDb / Letterboxd (Settings)
 │   │   └── wrapped.js         Movie Nights Wrapped (Profile)
 │   └── pages/                 one script per page
 │       ├── home.js, discover.js, browse.js (movies / TV / anime / favorites / watchlist)
-│       └── title.js, person.js, tier-list.js, profile.js
+│       └── title.js, person.js, tier-list.js, profile.js, settings.js
 ├── images/
 │   ├── brand/                 logo, favicon
 │   ├── icons/                 installed-app icons

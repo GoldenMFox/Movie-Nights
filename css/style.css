@@ -10919,3 +10919,90 @@ html.wr-lock {
     animation: none !important;
   }
 }
+
+/* ============================== Settings page (settings.html) ============================== */
+
+.settings-page {
+  display: grid;
+  max-width: 780px;
+  gap: 18px;
+}
+
+.settings-page .panel {
+  margin: 0;
+  border-radius: 20px;
+}
+
+.settings-page .panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  font-size: 19px;
+}
+
+.settings-page .panel h2 i {
+  color: var(--accent-hover);
+}
+
+.settings-page .p-guest .guest-state {
+  margin: 0;
+  max-width: none;
+}
+
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-page .btn {
+  border-radius: 999px;
+}
+
+.settings-page .reset-all {
+  align-self: flex-start;
+}
+
+/* Profile page: the shortcut to Settings */
+.settings-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 24px;
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.settings-link:hover {
+  border-color: rgba(185, 34, 34, 0.45);
+}
+
+.settings-link > i:first-child {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 50%;
+  background: rgba(185, 34, 34, 0.18);
+  color: #ff6b63;
+}
+
+.settings-link span {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-link small {
+  color: var(--text-muted);
+}
+
+.settings-link > i:last-child {
+  color: var(--text-muted);
+  font-size: 13px;
+}

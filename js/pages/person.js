@@ -393,7 +393,7 @@
   /* ---------------- start ---------------- */
 
   async function init() {
-    if (!TMDB.enabled()) return message("fa-solid fa-key", 'This page needs a TMDB API key. Add one in <a href="profile.html#settings">Profile → Settings</a>.');
+    if (!TMDB.enabled()) return message("fa-solid fa-key", 'This page needs a TMDB API key. Add one in <a href="settings.html#keys">Settings</a>.');
     heroEl.hidden = true;
     mainEl.innerHTML = '<p class="result-count">Loading…</p>';
     try {

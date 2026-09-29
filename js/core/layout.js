@@ -106,7 +106,7 @@
               <a href="tier-list.html" class="tablet-link"><i class="fa-solid fa-ranking-star"></i><span>Tier List</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="profile.html"><i class="fa-solid fa-user"></i><span>Profile &amp; stats</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="#" data-action="add-title" class="owner-only"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
-              <a href="profile.html#settings"><i class="fa-solid fa-gear"></i><span>Settings &amp; backup</span><i class="fa-solid fa-chevron-right"></i></a>
+              <a href="settings.html"><i class="fa-solid fa-gear"></i><span>Settings</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="#" class="install-app" hidden><i class="fa-solid fa-mobile-screen"></i><span>Install the app</span><i class="fa-solid fa-chevron-right"></i></a>
             </div>
             <div class="menu-prefs">
@@ -410,7 +410,7 @@
       </nav>
       <nav class="footer-col" aria-label="My lists">
         <h3>My lists</h3>
-        <ul>${PAGES.slice(5, 6).map(footLink).join("")}${footLink({ href: "watchlist.html?list=fav", label: "Favorites", icon: "fa-solid fa-heart" })}${PAGES.slice(6).map(footLink).join("")}${footLink({ href: "profile.html", label: "Profile &amp; stats", icon: "fa-solid fa-user" })}</ul>
+        <ul>${PAGES.slice(5, 6).map(footLink).join("")}${footLink({ href: "watchlist.html?list=fav", label: "Favorites", icon: "fa-solid fa-heart" })}${PAGES.slice(6).map(footLink).join("")}${footLink({ href: "profile.html", label: "Profile &amp; stats", icon: "fa-solid fa-user" })}${footLink({ href: "settings.html", label: "Settings", icon: "fa-solid fa-gear" })}</ul>
       </nav>
     </div>
     <div class="footer-bottom">
@@ -852,7 +852,7 @@
         ${step(2, "fa-bookmark", "Save or rate it", "<b>Watchlist</b> to see it later, <b>Watched</b> or <b>Rate</b> if you've seen it, the heart for favorites.",
           '<button class="btn" type="button" data-open-search><i class="fa-solid fa-magnifying-glass"></i> Search a title</button>')}
         ${step(3, "fa-file-import", "Bring your history", "Rated films on IMDb or Letterboxd? Import them all at once.",
-          '<a class="btn" href="profile.html#import"><i class="fa-solid fa-file-import"></i> Import</a>')}
+          '<a class="btn" href="settings.html#import"><i class="fa-solid fa-file-import"></i> Import</a>')}
       </div>
     </div>`;
   }

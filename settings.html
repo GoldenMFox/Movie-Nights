@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Profile &middot; Movie Nights</title>
-    <meta name="description" content="Your profile, stats and watch diary." />
+    <title>Settings &middot; Movie Nights</title>
+    <meta name="description" content="Theme, streaming services, import and backup." />
     <link rel="icon" href="images/brand/favicon.png" type="image/png" />
     <link rel="manifest" href="manifest.webmanifest" />
     <meta name="theme-color" content="#17181c" />
@@ -27,9 +27,10 @@
       } catch (e) {}
     </script>
   </head>
-  <body data-page="profile">
+  <body data-page="settings">
     <main class="container">
-      <div id="profile-app"></div>
+      <h1 class="page-title">Settings</h1>
+      <div id="settings-app"></div>
     </main>
     <script src="data/library.js"></script>
     <script src="js/config.js"></script>
@@ -46,7 +47,7 @@
     <script src="js/services/watch.js"></script>
     <script src="js/services/taste.js"></script>
     <script src="js/components/picker.js"></script>
-    <script src="js/components/wrapped.js"></script>
-    <script src="js/pages/profile.js"></script>
+    <script src="js/components/import.js"></script>
+    <script src="js/pages/settings.js"></script>
   </body>
 </html>
