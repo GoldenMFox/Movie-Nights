@@ -277,11 +277,13 @@
     const seeds = becauseSeeds(false, 2);
     const animeSeed = becauseSeeds(true, 1)[0];
     const because = (s, row) => rowShell(row, `Because you liked ${Lang.title(s)}`, "");
+    // movies / shows: right before the anime rows; anime: under them (the last ones)
     rowsEl.innerHTML =
       top10Shell() +
-      seeds.map((s, n) => because(s, `because-${n}`)).join("") +
-      LIVE_ROWS.map((r) => rowShell(r.cat, r.title, `discover.html?cat=${r.cat}`)).join("") +
-      (animeSeed ? because(animeSeed, "because-anime") : ""); // under the anime rows (the last ones)
+      LIVE_ROWS.map(
+        (r) => (r.cat === "anime" ? seeds.map((s, n) => because(s, `because-${n}`)).join("") : "") + rowShell(r.cat, r.title, `discover.html?cat=${r.cat}`)
+      ).join("") +
+      (animeSeed ? because(animeSeed, "because-anime") : "");
     fillTop10(top10Media);
     seeds.forEach((s, n) => fillBecause(s, `because-${n}`));
     if (animeSeed) fillBecause(animeSeed, "because-anime");

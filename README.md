@@ -59,8 +59,8 @@ your Watchlist, or from your Favorites for a rewatch.
 
 **Borrowed from Netflix, HBO Max, Plex and Prime Video:**
 
-- **Because you liked …** (Home): two rows near the top for two of your best-rated movies /
-  shows (8+ or favorites), and one for an anime under the anime rows. TMDB recommendations,
+- **Because you liked …** (Home): two rows right before the anime rows for two of your
+  best-rated movies / shows (8+ or favorites), and one for an anime under the anime rows. TMDB recommendations,
   different each visit, without what you already have; anime only in the anime row.
 - **Match %** ("92% match", `js/services/taste.js`): how much you'll probably like a title
   you haven't rated, from how you rate its genres against your own average, nudged by its
