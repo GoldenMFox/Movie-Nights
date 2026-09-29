@@ -66,7 +66,7 @@
     return `<article class="movie-item" data-id="${esc(item.id)}"${needScore ? " data-need-score" : ""}>
       <a class="poster-link" href="${url}" tabindex="-1" aria-hidden="true">
         <img class="movie-poster" src="${Store.poster(item.poster)}" alt="" loading="lazy" decoding="async" />
-        ${item.isNew ? '<span class="new-label">NEW</span>' : ""}
+        ${Store.isRecent(item) ? '<span class="new-label">NEW</span>' : ""}
         ${badges ? `<span class="badges">${badges}</span>` : ""}
       </a>
       <div class="movie-info">

@@ -134,6 +134,15 @@
     return id;
   }
 
+  // a new release: out this year (and last year's titles until the end of March).
+  // Decided from the year, so the NEW label goes away by itself as titles get older.
+  function isRecent(item) {
+    const now = new Date();
+    const year = Number(item && item.year);
+    if (!year) return false;
+    return year >= now.getFullYear() - (now.getMonth() < 3 ? 1 : 0);
+  }
+
   function add(item) {
     const id = idFor(item.title, item.year);
     const entry = Object.assign({ id, isNew: true }, item);
@@ -316,6 +325,7 @@
     write,
     all,
     get,
+    isRecent,
     update,
     toggle,
     add,

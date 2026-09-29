@@ -31,7 +31,7 @@
     { id: "unrated", label: "Not rated", test: (i) => i.rating == null },
     { id: "fav", label: "Favorites", test: (i) => i.favorite },
     { id: "watch", label: "Watchlist", test: (i) => i.watchlist },
-    { id: "new", label: "New", test: (i) => i.isNew },
+    { id: "new", label: "New releases", test: (i) => Store.isRecent(i) },
   ];
   const TYPE_CHIPS = [
     { id: "all", label: "All", test: () => true },
