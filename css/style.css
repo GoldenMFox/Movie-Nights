@@ -12131,3 +12131,112 @@ html.wr-lock {
   }
 }
 
+
+/* Settings: today's OMDb lookups as a meter */
+.sv-meter {
+  margin: 4px 0 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sv-meter:empty {
+  display: none;
+}
+
+.sv-meter .sv-note {
+  margin: 0;
+}
+
+.sv-meter-top {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sv-meter-num {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.sv-meter-num b {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.sv-meter-label {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.sv-meter-pct {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent-hover);
+  background: rgba(229, 9, 20, 0.14);
+}
+
+.sv-meter-pct.high {
+  color: #f5b041;
+  background: rgba(245, 176, 65, 0.15);
+}
+
+.sv-meter-pct.full {
+  color: #fff;
+  background: var(--accent);
+}
+
+.sv-meter-bar {
+  height: 10px;
+  margin: 10px 0 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.sv-meter-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  box-shadow: 0 0 12px rgba(229, 9, 20, 0.5);
+  transition: width 0.8s ease;
+}
+
+.sv-meter-bar.high i {
+  background: linear-gradient(90deg, #e67e22, #f5b041);
+  box-shadow: 0 0 12px rgba(245, 176, 65, 0.45);
+}
+
+.sv-meter-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.sv-meter-facts b {
+  color: var(--text);
+}
+
+.sv-meter-facts i {
+  margin-right: 4px;
+  color: var(--accent-hover);
+}
+
+html[data-theme="light"] .sv-meter {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+html[data-theme="light"] .sv-meter-bar {
+  background: rgba(0, 0, 0, 0.08);
+}

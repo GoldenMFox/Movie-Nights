@@ -102,7 +102,8 @@
               <button class="btn test-key" type="button">Test</button>
               <button class="btn clear-key" type="button">Remove</button>
             </div>
-            ${row("fa-star", "IMDb ratings (OMDb)", '<span class="omdb-status"></span>')}
+            ${row("fa-star", "IMDb ratings (OMDb)", '<span class="omdb-state"></span>')}
+            <div class="omdb-status sv-meter"></div>
             <p class="sv-note">Free at themoviedb.org → Settings → API. A key typed here is stored only in this browser and overrides the one in <code>js/config.js</code>.</p>`,
             " data-owner"
           )}
@@ -147,13 +148,34 @@
   }
   showKeyStatus();
 
+  // today's OMDb lookups as a meter you can read at a glance: 211 / 900, a bar, what's left
   function showOmdbStatus() {
     const s = Ratings.status();
-    $(".omdb-status").textContent = !s.enabled
-      ? s.keyRejected
-        ? "✖ OMDb rejected the key in js/config.js: IMDb ratings are off."
-        : "No OMDb key: cards show the TMDB score instead of IMDb."
-      : `✔ IMDb ratings on. OMDb lookups today: ${s.used} of ${s.limit}${s.blocked ? " (daily limit reached, more tomorrow)" : ""}. Ratings saved: ${s.cached}.`;
+    const box = $(".omdb-status");
+    if (!s.enabled) {
+      $(".omdb-state").textContent = s.keyRejected ? "Off · the key was rejected" : "Off · no key";
+      box.innerHTML = `<p class="sv-note">${s.keyRejected ? "OMDb rejected the key in js/config.js." : "No OMDb key: cards show the TMDB score instead of IMDb."}</p>`;
+      return;
+    }
+    const pct = Math.min(100, Math.round((s.used / s.limit) * 100));
+    const full = s.blocked || s.used >= s.limit;
+    const level = full ? "full" : pct >= 75 ? "high" : "";
+    // OMDb's day ends at midnight UTC: when that is here
+    const now = new Date();
+    const reset = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    $(".omdb-state").textContent = full ? "Daily limit reached" : "On";
+    box.innerHTML = `
+      <div class="sv-meter-top">
+        <span class="sv-meter-num"><b>${s.used}</b> / ${s.limit}</span>
+        <span class="sv-meter-label">lookups today</span>
+        <span class="sv-meter-pct ${level}">${full ? "Limit reached" : `${pct}%`}</span>
+      </div>
+      <div class="sv-meter-bar ${level}"><i style="width:${pct}%"></i></div>
+      <div class="sv-meter-facts">
+        <span><i class="fa-solid fa-gauge-high"></i> <b>${Math.max(0, s.limit - s.used)}</b> left today</span>
+        <span><i class="fa-solid fa-clock-rotate-left"></i> resets at <b>${reset}</b></span>
+        <span><i class="fa-solid fa-database"></i> <b>${s.cached}</b> ratings saved</span>
+      </div>`;
   }
   showOmdbStatus();
   Ratings.onChange(showOmdbStatus);
