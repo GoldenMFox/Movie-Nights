@@ -66,8 +66,9 @@ your Watchlist, or from your Favorites for a rewatch.
   a title of yours with fewer than 6 of those makes way for another.
 - **Match %** ("92% match", `js/services/taste.js`): how much you'll probably like a title
   you haven't rated, from how you rate its genres against your own average, nudged by its
-  TMDB score. Shows after 5 rated titles, in the hover preview, on title pages, in the quick
-  menu and under posters (Poster details on).
+  TMDB score. Shows after 5 rated titles: "86%" in the poster's bottom-right corner (Poster
+  details on; with posters only it's in the hover preview instead), and "86% match" in the
+  hover preview and on title pages.
 - **Remind me** (titles not out yet: bell on the card, title page, quick menu): puts it in
   **Coming up** on the Watchlist page without adding it to anything. Saved with your profile;
   drops off a month after release.

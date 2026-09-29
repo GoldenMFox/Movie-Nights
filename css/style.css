@@ -9225,8 +9225,35 @@ html.app-ui:root[data-theme="light"] .tab-bar {
   color: #46d369; /* Netflix green */
 }
 
-.movie-meta .match {
+/* on the poster (bottom-right corner): just the number, "86%" */
+.match-pill {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  padding: 3px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(10, 10, 12, 0.72);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #6fcf8f;
   font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+}
+
+.match-pill.high {
+  color: #46d369;
+}
+
+/* posters only (the switch in the profile menu, and always on phones / tablets): no pill,
+   the match is in the hover preview instead */
+html.posters-only .match-pill,
+html.app-ui .match-pill,
+html.tablet .match-pill {
+  display: none;
 }
 
 :root[data-theme="light"] .match {

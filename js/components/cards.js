@@ -118,12 +118,13 @@
       <a class="poster-link" href="${url}" tabindex="-1" aria-hidden="true">
         <img class="movie-poster" src="${Store.poster(posterOf(hit))}" alt="" loading="lazy" decoding="async" />
         <span class="badges"><span title="${Store.TYPE_LABEL[hit.type]}" class="type-badge">${hit.type === "movie" ? "Film" : hit.type === "anime" ? "Anime" : "TV"}</span></span>
+        ${matchPill(hit)}
       </a>
       <div class="movie-info">
         <h3 class="movie-title"><a href="${url}" title="${esc(Lang.title(hit))}">${esc(Lang.title(hit))}</a></h3>
         <div class="movie-meta">
           <span class="ratings">${tmdbBadge(hit.score)}</span>
-          ${(window.Taste && Taste.badge(hit, "year")) || `<span class="year">${hit.year || ""}</span>`}
+          <span class="year">${hit.year || ""}</span>
         </div>
         <div class="action-circle">
           ${actionButton("t-add", false, "Add to library", "fa-solid fa-plus")}
@@ -137,6 +138,14 @@
         </div>
       </div>
     </article>`;
+  }
+
+  // match % in the poster's bottom-right corner ("86%"), for good matches (js/services/taste.js).
+  // Hidden while the cards show posters only: then it's in the hover preview instead
+  function matchPill(hit) {
+    const m = window.Taste ? Taste.match(hit) : null;
+    if (m == null || m < 65) return "";
+    return `<span class="match-pill${m >= 85 ? " high" : ""}" title="${m}% match: how much you'll probably like it, from your own scores">${m}%</span>`;
   }
 
   // not out yet ("Remind me" instead of "Rate it")
