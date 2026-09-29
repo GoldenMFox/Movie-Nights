@@ -84,8 +84,8 @@ your Watchlist, or from your Favorites for a rewatch.
 - **X-Ray** (title pages): the tagline as a banner; budget vs box office as two bars with a
   verdict (Blockbuster 5×+, Hit 2×+, Broke even, Flop); the release date with "2 months ago" /
   "in 5 days" (series: episodes, last aired); awards in gold (OMDb); studio / network logos;
-  flags of the countries and the original language; keywords; and **where you've seen the
-  cast** in your own library.
+  flags of the countries and the original language; and **where you've seen the cast**: a card
+  per person (who they play here, and small posters of your titles they're in).
 - **Movie Nights Wrapped** (Profile → Watch diary): your year as a story: how many you watched,
   where it started, top genres, busiest month, your best-rated, the actor and director you saw
   most, your average score, and a summary you can share.

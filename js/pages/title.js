@@ -340,24 +340,33 @@
           </div>
         </div>`);
 
+    // one card per person: photo, name, who they play here, then small posters of your titles
+    // they're in (the role on hover)
+    const person = (p) => `<div class="xr-cast">
+        <a class="xr-cast-head" href="person.html?id=${p.id}">
+          ${p.photo ? `<img class="xr-face" src="${Store.img(p.photo, "w185")}" alt="" loading="lazy" />` : '<span class="xr-face xr-noimg"><i class="fa-solid fa-user"></i></span>'}
+          <span><strong>${esc(p.name)}</strong>${p.here ? `<small>Here: ${esc(p.here)}</small>` : ""}</span>
+        </a>
+        <div class="xr-cast-label">You've seen them in</div>
+        <div class="xr-cast-titles">${p.titles
+          .map((t) => {
+            const item = Store.get(t.id);
+            return `<a class="xr-mini-poster" href="title.html?id=${encodeURIComponent(t.id)}" title="${esc(t.title)}${t.character ? ` as ${esc(t.character)}` : ""}">
+                <img src="${Store.poster(item ? Cards.posterOf(item) : "", "w185")}" alt="" loading="lazy" />
+                <span>${esc(t.title)}</span>
+              </a>`;
+          })
+          .join("")}</div>
+      </div>`;
     const seen = seenBefore
       ? seenBefore.length
-        ? `<ul class="xr-seen-list">${seenBefore
-            .map(
-              (p) => `<li>
-                <a class="xr-person" href="person.html?id=${p.id}">${p.photo ? `<img src="${Store.img(p.photo, "w185")}" alt="" loading="lazy" />` : '<span class="xr-noimg"><i class="fa-solid fa-user"></i></span>'}<strong>${esc(p.name)}</strong></a>
-                <span>you've seen them in ${p.titles
-                  .map((t) => `<a href="title.html?id=${encodeURIComponent(t.id)}">${esc(t.title)}</a>${t.character ? ` <small>(${esc(t.character)})</small>` : ""}`)
-                  .join(", ")}</span></li>`
-            )
-            .join("")}</ul>`
+        ? `<div class="xr-cast-grid">${seenBefore.map(person).join("")}</div>`
         : '<p class="muted">None of the main cast is in anything else you\'ve watched.</p>'
       : '<p class="muted xr-seen-wait"><i class="fa-solid fa-spinner fa-spin"></i> Checking your library…</p>';
 
     return `${x.tagline ? `<blockquote class="xr-tagline">“${esc(x.tagline)}”</blockquote>` : ""}
       ${cards.length ? `<div class="xr-grid">${cards.join("")}</div>` : ""}
-      ${castWithIds(d).length ? `<h3 class="xr-sub"><i class="fa-solid fa-user-check"></i> Where you've seen the cast</h3><div class="xr-seen">${seen}</div>` : ""}
-      ${x.keywords.length ? `<div class="xr-tags">${x.keywords.map((k) => `<span>${esc(k)}</span>`).join("")}</div>` : ""}`;
+      ${castWithIds(d).length ? `<h3 class="xr-sub"><i class="fa-solid fa-user-check"></i> Where you've seen the cast</h3><div class="xr-seen">${seen}</div>` : ""}`;
   }
 
   // "where you've seen the cast": looked up when the X-Ray section comes into view
@@ -380,7 +389,7 @@
             .filter(({ lib }) => lib && mine.has(lib.id) && lib.id !== id)
             .slice(0, 3)
             .map(({ t, lib }) => ({ id: lib.id, title: Lang.title(lib), character: (t.characters || [])[0] || "" }));
-          if (titles.length) out.push({ id: c.id, name: c.name, photo: c.photo, titles });
+          if (titles.length) out.push({ id: c.id, name: c.name, photo: c.photo, here: c.character || "", titles });
         } catch (e) {}
       }
       seenBefore = out;
