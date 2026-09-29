@@ -6566,3 +6566,39 @@ html.tablet .movie-row {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
 }
+/* navbar search: "In your library" / "More from TMDB" headings, and "All results" on Discover */
+.search-results .search-group {
+  padding: 10px 8px 4px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.search-results .search-all a {
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font-weight: 600;
+}
+
+.search-results .search-all a:hover,
+.search-results .search-all a.focused {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.search-results .search-all i {
+  color: #ff6b61;
+}
+
+/* a bit wider on tablets and computers (room for the TMDB results) */
+@media (min-width: 701px) {
+  .search-panel {
+    width: 400px;
+  }
+}

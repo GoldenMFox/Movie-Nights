@@ -83,7 +83,7 @@
         <div class="search">
           <button class="icon-btn search-toggle" aria-label="Search (press /)"><i class="fa-solid fa-magnifying-glass"></i></button>
           <div class="search-panel">
-            <input type="search" placeholder="Search your library..." aria-label="Search your library" autocomplete="off" />
+            <input type="search" placeholder="Search movies, TV shows & anime..." aria-label="Search movies, TV shows and anime" autocomplete="off" />
             <ul class="search-results"></ul>
           </div>
         </div>
@@ -255,9 +255,44 @@
     searchBox.classList.contains("open") ? closeSearch() : openSearch();
   });
 
+  // your library straight away, then everything else on TMDB (the same search as Discover,
+  // a moment after you stop typing), and a link to all the results on Discover
+  let navTyping;
+  let navRun = 0;
+  const tmdbHit = (hit) => `<li><a href="title.html?tmdb=${hit.mediaType}-${hit.tmdbId}">
+      <img src="${Store.poster(hit.poster, "w92")}" alt="" loading="lazy" />
+      <span>${esc(Lang.title(hit))}<small>${[hit.year, Store.TYPE_LABEL[hit.type], hit.score ? `TMDB ${hit.score.toFixed(1)}` : ""]
+        .filter(Boolean)
+        .join(" · ")}</small></span></a></li>`;
+
   function renderResults() {
     focused = -1;
-    resultsList.innerHTML = resultsHtml(searchInput.value);
+    const q = searchInput.value.trim();
+    const mine = resultsHtml(q);
+    const hasMine = mine && !mine.includes("search-empty");
+    const tmdbOn = window.TMDB && TMDB.enabled();
+    clearTimeout(navTyping);
+    const token = ++navRun;
+    if (!q) return (resultsList.innerHTML = "");
+    if (!tmdbOn) return (resultsList.innerHTML = mine);
+    const allLink = `<li class="search-all"><a href="discover.html?q=${encodeURIComponent(q)}"><i class="fa-solid fa-compass"></i><span>All results for "${esc(q)}"</span></a></li>`;
+    const head = (label) => `<li class="search-group">${label}</li>`;
+    const libPart = hasMine ? head("In your library") + mine : "";
+    resultsList.innerHTML = `${libPart}${head("More from TMDB")}<li class="search-empty"><i class="fa-solid fa-spinner fa-spin"></i> Searching…</li>`;
+    navTyping = setTimeout(async () => {
+      let tmdbPart;
+      try {
+        const data = await TMDB.searchSmart(q, "all", 1);
+        if (token !== navRun) return;
+        const hits = data.results.filter((h) => !(window.Cards && Cards.inLibrary(h))).slice(0, 10);
+        tmdbPart = hits.length ? head("More from TMDB") + hits.map(tmdbHit).join("") : hasMine ? "" : `<li class="search-empty">Nothing found for "${esc(q)}"</li>`;
+      } catch (err) {
+        if (token !== navRun) return;
+        tmdbPart = `<li class="search-empty">Couldn't search TMDB: ${esc(err.message)}</li>`;
+      }
+      resultsList.innerHTML = libPart + tmdbPart + allLink;
+      focused = -1;
+    }, 250);
   }
 
   // library search results (navbar search, and the app's Library panel)
