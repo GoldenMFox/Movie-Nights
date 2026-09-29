@@ -143,16 +143,21 @@
       <div class="hp-info">${infoHtml(ref, null)}</div>`;
     document.body.append(preview);
 
-    // width: whatever keeps the video 16:9 at that height (never narrower than the
-    // card, never wider than the window); centred on the card, same top and bottom
+    // Normally exactly as tall as the card, the video 16:9 in what the text leaves. But the
+    // video is never smaller than 200px high (poster-only cards are short): then the preview
+    // is a bit taller than the card, centred on it. Never wider / taller than the window.
+    preview.style.width = "380px"; // to measure the text at a typical width
     const infoH = preview.querySelector(".hp-info").offsetHeight + 24; // + room for genres / details arriving later
-    const videoH = Math.max(r.height - infoH, 120);
+    const videoH = Math.max(r.height - infoH, 200);
     const width = Math.round(Math.min(Math.max((videoH * 16) / 9, r.width), window.innerWidth - 24));
+    const height = Math.round(Math.max(r.height, videoH + infoH));
     preview.style.width = `${width}px`;
+    preview.style.height = `${height}px`;
     const left = Math.min(Math.max(r.left + r.width / 2 - width / 2, 12), window.innerWidth - width - 12);
+    const top = Math.min(Math.max(r.top + r.height / 2 - height / 2, 76), window.innerHeight - height - 12);
     preview.style.left = `${left}px`;
-    preview.style.top = `${Math.round(r.top)}px`;
-    preview.style.transformOrigin = `${r.left + r.width / 2 - left}px 50%`;
+    preview.style.top = `${Math.round(top)}px`;
+    preview.style.transformOrigin = `${r.left + r.width / 2 - left}px ${r.top + r.height / 2 - top}px`;
     if (!hidden) requestAnimationFrame(() => preview && (preview.classList.add("show"), trySound()));
 
     preview.addEventListener("mouseleave", (e) => {
