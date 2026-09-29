@@ -81,8 +81,11 @@ your Watchlist, or from your Favorites for a rewatch.
   of TMDB and tap Add. Also from the quick menu or a title page's ⋯ menu (Add to a list).
   A title that isn't in your library yet goes in on your Watchlist (not watched yet). Each list gets a
   row and a place in the full-list switch (with Rename / Delete). Saved with your profile.
-- **X-Ray** (title pages): tagline, release, budget and box office, awards (OMDb), studios,
-  countries, language, keywords, and **where you've seen the cast** in your own library.
+- **X-Ray** (title pages): the tagline as a banner; budget vs box office as two bars with a
+  verdict (Blockbuster 5×+, Hit 2×+, Broke even, Flop); the release date with "2 months ago" /
+  "in 5 days" (series: episodes, last aired); awards in gold (OMDb); studio / network logos;
+  flags of the countries and the original language; keywords; and **where you've seen the
+  cast** in your own library.
 - **Movie Nights Wrapped** (Profile → Watch diary): your year as a story: how many you watched,
   where it started, top genres, busiest month, your best-rated, the actor and director you saw
   most, your average score, and a summary you can share.

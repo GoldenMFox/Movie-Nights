@@ -250,6 +250,15 @@
       return code;
     }
   };
+  // "in 5 days", "today", "3 months ago", "12 years ago"
+  const fromNow = (s) => {
+    const days = Math.round((new Date(`${s}T00:00:00`) - new Date(`${Store.today()}T00:00:00`)) / 86400000);
+    if (days === 0) return "Today";
+    const n = Math.abs(days);
+    const [v, unit] = n < 31 ? [n, "day"] : n < 365 ? [Math.round(n / 30.4), "month"] : [Math.round(n / 365.25), "year"];
+    const text = `${v} ${unit}${v === 1 ? "" : "s"}`;
+    return days > 0 ? `In ${text}` : `${text} ago`;
+  };
   const niceDay = (s) => {
     const x = new Date(`${s}T00:00:00`);
     return isNaN(x) ? s : `${x.getDate()} ${MONTHS[x.getMonth()]} ${x.getFullYear()}`;
@@ -258,19 +267,72 @@
   function xrayPanel(d) {
     const x = d.xray;
     const e = window.Ratings ? Ratings.entry(tmdbRef || Ratings.refOf(Store.get(id) || {})) || {} : {};
-    const facts = [];
-    const fact = (icon, label, value) => value && facts.push(`<div class="xr-fact"><i class="fa-solid ${icon}"></i><div><small>${label}</small><span>${value}</span></div></div>`);
-    fact("fa-calendar-day", d.media === "tv" ? "First aired" : "Released", x.released ? niceDay(x.released) : "");
-    if (x.status && !/^(Released|Ended)$/.test(x.status)) fact("fa-circle-info", "Status", esc(x.status));
-    if (d.media === "tv") fact("fa-list-ol", "Episodes", x.episodes ? `${x.episodes}${x.lastAir ? ` · last aired ${niceDay(x.lastAir)}` : ""}` : "");
-    fact("fa-sack-dollar", "Budget", x.budget ? money(x.budget) : "");
-    const gross = x.revenue ? money(x.revenue) + " worldwide" : e.boxOffice ? `${esc(e.boxOffice)} in the US` : "";
-    fact("fa-ticket", "Box office", gross && x.budget && x.revenue ? `${gross} · ${(x.revenue / x.budget).toFixed(1)}× its budget` : gross);
-    fact("fa-trophy", "Awards", e.awards ? esc(e.awards) : "");
-    fact("fa-tower-broadcast", "Network", esc(x.networks.join(", ")));
-    fact("fa-building", "Made by", esc(x.companies.join(", ")));
-    fact("fa-earth-europe", "Filmed in / from", esc(x.countries.join(", ")));
-    fact("fa-language", "Original language", x.language ? esc(langName(x.language)) : "");
+    const tv = d.media === "tv";
+    const label = (icon, text) => `<span class="xr-label"><i class="fa-solid ${icon}"></i> ${text}</span>`;
+    const cards = [];
+
+    // money: budget vs box office as two bars, and the verdict
+    const budget = x.budget || 0;
+    const gross = x.revenue || 0;
+    if (budget || gross || e.boxOffice) {
+      const max = Math.max(budget, gross) || 1;
+      const ratio = budget && gross ? gross / budget : null;
+      const verdict = ratio == null ? null : ratio >= 5 ? ["Blockbuster", "gold"] : ratio >= 2 ? ["Hit", "green"] : ratio >= 1 ? ["Broke even", "grey"] : ["Flop", "red"];
+      const bar = (name, v, cls) => `<div class="xr-bar-row">
+          <div class="xr-bar-top"><span>${name}</span><b>${money(v)}</b></div>
+          <div class="xr-bar"><i class="${cls}" style="width:${Math.max(3, (v / max) * 100)}%"></i></div>
+        </div>`;
+      cards.push(`<div class="xr-card xr-money">
+          <div class="xr-head">${label("fa-sack-dollar", "Budget & box office")}${
+            verdict ? `<span class="xr-verdict ${verdict[1]}">${verdict[0]} · ${ratio.toFixed(1)}× its budget</span>` : ""
+          }</div>
+          ${budget ? bar("Budget", budget, "budget") : ""}
+          ${gross ? bar("Box office, worldwide", gross, "gross") : e.boxOffice ? `<div class="xr-bar-top"><span>Box office, US</span><b>${esc(e.boxOffice)}</b></div>` : ""}
+        </div>`);
+    }
+
+    // when: the date large, and how long ago / how soon
+    if (x.released) {
+      const status = x.status && !/^(Released|Ended|Returning Series)$/.test(x.status) ? ` · ${esc(x.status)}` : "";
+      cards.push(`<div class="xr-card xr-date">
+          ${label("fa-calendar-day", tv ? "First aired" : "Released")}
+          <div class="xr-big">${niceDay(x.released)}</div>
+          <small>${fromNow(x.released)}${status}</small>
+          ${
+            tv && (x.episodes || x.lastAir)
+              ? `<div class="xr-mini">${x.episodes ? `<span><b>${x.episodes}</b> episodes</span>` : ""}${x.lastAir ? `<span>Last aired <b>${niceDay(x.lastAir)}</b></span>` : ""}</div>`
+              : ""
+          }
+        </div>`);
+    }
+
+    if (e.awards)
+      cards.push(`<div class="xr-card xr-awards">
+          ${label("fa-trophy", "Awards")}
+          <p>${esc(e.awards)}</p>
+        </div>`);
+
+    // studios / networks: their logos (white), or the name when TMDB has no logo
+    const brands = (list) =>
+      list
+        .map((c) =>
+          c.logo
+            ? `<span class="xr-logo" title="${esc(c.name)}"><img src="https://image.tmdb.org/t/p/w185${c.logo}" alt="${esc(c.name)}" loading="lazy" /></span>`
+            : `<span class="xr-chip">${esc(c.name)}</span>`
+        )
+        .join("");
+    if (x.networks.length) cards.push(`<div class="xr-card xr-brands">${label("fa-tower-broadcast", "Network")}<div class="xr-logos">${brands(x.networks)}</div></div>`);
+    if (x.companies.length) cards.push(`<div class="xr-card xr-brands">${label("fa-clapperboard", "Made by")}<div class="xr-logos">${brands(x.companies)}</div></div>`);
+
+    // where from: flags and the original language
+    if (x.countries.length || x.language)
+      cards.push(`<div class="xr-card xr-origin">
+          ${label("fa-earth-europe", "Made in")}
+          <div class="xr-flags">${x.countries
+            .map((c) => `<span class="xr-chip"><img src="https://flagcdn.com/w40/${esc(c.code)}.png" alt="" loading="lazy" />${esc(c.name)}</span>`)
+            .join("")}</div>
+          ${x.language ? `<div class="xr-lang"><i class="fa-solid fa-language"></i> Original language: <b>${esc(langName(x.language))}</b></div>` : ""}
+        </div>`);
 
     const seen = seenBefore
       ? seenBefore.length
@@ -287,7 +349,7 @@
       : '<p class="muted xr-seen-wait"><i class="fa-solid fa-spinner fa-spin"></i> Checking your library…</p>';
 
     return `${x.tagline ? `<blockquote class="xr-tagline">“${esc(x.tagline)}”</blockquote>` : ""}
-      ${facts.length ? `<div class="xr-facts">${facts.join("")}</div>` : ""}
+      ${cards.length ? `<div class="xr-grid">${cards.join("")}</div>` : ""}
       ${castWithIds(d).length ? `<h3 class="xr-sub"><i class="fa-solid fa-user-check"></i> Where you've seen the cast</h3><div class="xr-seen">${seen}</div>` : ""}
       ${x.keywords.length ? `<div class="xr-tags">${x.keywords.map((k) => `<span>${esc(k)}</span>`).join("")}</div>` : ""}`;
   }

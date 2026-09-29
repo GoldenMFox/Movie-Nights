@@ -509,7 +509,7 @@
   }
 
   function writeCache(cache) {
-    Object.keys(cache).forEach((k) => /^v[2-7]:/.test(k) && delete cache[k]); // older formats
+    Object.keys(cache).forEach((k) => /^v[2-8]:/.test(k) && delete cache[k]); // older formats
     const keys = Object.keys(cache);
     if (keys.length > CACHE_LIMIT) {
       keys
@@ -561,7 +561,7 @@
 
   // Full details for a TMDB movie / show (cached for a week)
   async function detailsById(media, id) {
-    const cacheKey = `v8:${media}-${id}`; // v8: franchise (collection) and X-Ray facts
+    const cacheKey = `v9:${media}-${id}`; // v9: X-Ray with logos and country codes
     const cache = readCache();
     if (cache[cacheKey] && Date.now() - cache[cacheKey].savedAt < DETAILS_MAX_AGE) return withRuNames(cache[cacheKey], media, id);
 
@@ -646,9 +646,13 @@
         episodes: d.number_of_episodes || 0,
         language: d.original_language || "",
         languages: (d.spoken_languages || []).map((l) => l.english_name || l.name).filter(Boolean).slice(0, 4),
-        countries: (d.production_countries || d.origin_country || []).map((c) => c.name || c).filter(Boolean).slice(0, 4),
-        companies: (d.production_companies || []).map((c) => c.name).slice(0, 4),
-        networks: (d.networks || []).map((n) => n.name).slice(0, 3),
+        // with their codes (for flags) and logos
+        countries: (d.production_countries || (d.origin_country || []).map((c) => ({ iso_3166_1: c, name: c })))
+          .map((c) => ({ code: (c.iso_3166_1 || "").toLowerCase(), name: c.name || c.iso_3166_1 }))
+          .filter((c) => c.code)
+          .slice(0, 4),
+        companies: (d.production_companies || []).map((c) => ({ name: c.name, logo: c.logo_path || "" })).slice(0, 4),
+        networks: (d.networks || []).map((n) => ({ name: n.name, logo: n.logo_path || "" })).slice(0, 3),
         keywords: (((d.keywords && (d.keywords.keywords || d.keywords.results)) || []).map((k) => k.name)).slice(0, 10),
       },
       savedAt: Date.now(),
@@ -668,7 +672,7 @@
       applyRu(result.recommendations || [], ru.recommendations, media);
       result.ruDone2 = true;
       const cache = readCache();
-      cache[`v8:${media}-${id}`] = result;
+      cache[`v9:${media}-${id}`] = result;
       writeCache(cache);
     } catch (e) {}
     return result;
