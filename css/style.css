@@ -7591,3 +7591,243 @@ body[data-page="home"] main.container {
     font-size: 11px;
   }
 }
+/* ============================== Title page: Seasons (TV) ============================== */
+
+.t-seasons {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 150px;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+}
+
+.t-season {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 8px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  background: var(--glass-bg);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s, border-color 0.2s;
+}
+
+.t-season:hover,
+.t-season:focus-visible {
+  background: var(--glass-bg-hover);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-3px);
+}
+
+.ts-poster {
+  position: relative;
+  display: block;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--surface-2);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+.ts-poster img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  transition: transform 0.4s, filter 0.3s;
+}
+
+.t-season:hover .ts-poster img {
+  transform: scale(1.05);
+  filter: brightness(0.7);
+}
+
+/* season number: a small glass badge */
+.ts-num {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(10, 10, 12, 0.6);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+/* play button: appears on hover (always shown on touch screens) */
+.ts-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font-size: 17px;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.8);
+  transition: opacity 0.25s, transform 0.25s, background 0.25s;
+}
+
+.ts-play i {
+  margin-left: 3px;
+}
+
+.t-season:hover .ts-play,
+.t-season:focus-visible .ts-play {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.t-season:hover .ts-play {
+  background: var(--accent);
+  border-color: transparent;
+}
+
+@media (hover: none) {
+  .ts-play {
+    width: 42px;
+    height: 42px;
+    font-size: 14px;
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.t-season strong {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.t-season > span:last-child {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 700px) {
+  .t-seasons {
+    grid-auto-columns: calc((100% - 28px) / 3);
+    gap: 10px;
+  }
+
+  .t-season {
+    padding: 6px 6px 10px;
+    border-radius: 14px;
+  }
+
+  .ts-poster {
+    border-radius: 10px;
+  }
+
+  .t-season strong {
+    font-size: 12.5px;
+  }
+
+  .t-season > span:last-child {
+    font-size: 11px;
+  }
+}
+/* season card: what plays ("▶ Trailer", "▶ Teaser"…), bottom-left of the poster */
+.ts-tag {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: calc(100% - 16px);
+  padding: 3px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(10, 10, 12, 0.62);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ts-tag i {
+  color: #ff4d3a;
+  font-size: 8px;
+}
+
+.ts-tag.loading i {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+}
+
+.ts-tag.none {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+
+/* a season with no video: dimmed, no play button */
+.t-season.no-video {
+  cursor: default;
+}
+
+.t-season.no-video .ts-poster img {
+  filter: grayscale(0.6) brightness(0.55);
+}
+
+.t-season.no-video .ts-play {
+  display: none;
+}
+
+.t-season.no-video:hover {
+  transform: none;
+}
+
+.t-season.no-video:hover .ts-poster img {
+  transform: none;
+}
+/* Seasons row: same custom scrollbar as the other rows (browser's own bar hidden) */
+html.custom-scrollbars .t-seasons {
+  scrollbar-width: none;
+}
+
+html.custom-scrollbars .t-seasons::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+html.custom-scrollbars .t-seasons.grabbing,
+html.custom-scrollbars .t-seasons.grabbing * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+/* phones / tablets: thin, no arrows */
+.t-seasons {
+  scrollbar-width: thin;
+}

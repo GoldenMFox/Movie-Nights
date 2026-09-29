@@ -9,7 +9,7 @@
 (function () {
   if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
 
-  const ROWS = ".movie-row, .t-cast, .t-media-row";
+  const ROWS = ".movie-row, .t-cast, .t-media-row, .t-seasons";
   document.documentElement.classList.add("custom-scrollbars");
 
   // glide a row towards a position (eases in over a few frames instead of jumping)

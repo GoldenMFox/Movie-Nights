@@ -204,6 +204,33 @@
     return keys;
   }
 
+  // one TV season's videos: [{ key, type }] — trailers / teasers first (Russian HD ones
+  // first while RU is on), then anything else TMDB has for it (clips, bloopers…), best
+  // quality first. Many seasons have few or none. Kept for this visit.
+  const seasonCache = new Map();
+  function seasonVideos(id, n) {
+    const ck = `${id}-${n}-${wantRu() ? "ru" : "en"}`;
+    if (seasonCache.has(ck)) return seasonCache.get(ck);
+    const p = (async () => {
+      const yt = (d) => ((d && d.results) || []).filter((v) => v.site === "YouTube");
+      const [en, ru] = await Promise.all([
+        request(`/tv/${id}/season/${n}/videos`, { include_video_language: "en,null" }),
+        wantRu() ? request(`/tv/${id}/season/${n}/videos`, { language: "ru-RU" }).catch(() => null) : null,
+      ]);
+      const isTrailer = (v) => /Trailer|Teaser/.test(v.type);
+      const list = [
+        ...yt(ru).filter((v) => isTrailer(v) && (v.size || 0) >= 720).sort(byQuality),
+        ...yt(en).filter(isTrailer).sort(byQuality),
+        ...yt(en).filter((v) => !isTrailer(v)).sort((a, b) => (b.size || 0) - (a.size || 0)),
+      ];
+      const seen = new Set();
+      return list.filter((v) => !seen.has(v.key) && seen.add(v.key)).map((v) => ({ key: v.key, type: v.type }));
+    })();
+    p.catch(() => seasonCache.delete(ck));
+    seasonCache.set(ck, p);
+    return p;
+  }
+
   async function ruTitle(media, id) {
     return (await ruInfo(media, id)).title;
   }
@@ -455,7 +482,7 @@
   }
 
   function writeCache(cache) {
-    Object.keys(cache).forEach((k) => /^v[2345]:/.test(k) && delete cache[k]); // older formats
+    Object.keys(cache).forEach((k) => /^v[2-6]:/.test(k) && delete cache[k]); // older formats
     const keys = Object.keys(cache);
     if (keys.length > CACHE_LIMIT) {
       keys
@@ -507,7 +534,7 @@
 
   // Full details for a TMDB movie / show (cached for a week)
   async function detailsById(media, id) {
-    const cacheKey = `v6:${media}-${id}`; // v6: TV trailers from the seasons when the show has none
+    const cacheKey = `v7:${media}-${id}`; // v7: TV seasons listed (Seasons section)
     const cache = readCache();
     if (cache[cacheKey] && Date.now() - cache[cacheKey].savedAt < DETAILS_MAX_AGE) return withRuNames(cache[cacheKey], media, id);
 
@@ -547,6 +574,13 @@
       // the same people with their TMDB ids (for links to their pages)
       directorPeople: (media === "movie" ? crew.filter((c) => c.job === "Director") : d.created_by || []).map((c) => ({ id: c.id, name: c.name })),
       trailer: pickTrailer(d.videos),
+      // TV: the seasons (for the Seasons section: each one's trailer)
+      seasons:
+        media === "tv"
+          ? (d.seasons || [])
+              .filter((s) => s.season_number > 0)
+              .map((s) => ({ n: s.season_number, name: s.name || `Season ${s.season_number}`, poster: s.poster_path || "", year: yearOf(s.air_date), episodes: s.episode_count || 0 }))
+          : [],
       cast: ((d.credits && d.credits.cast) || []).slice(0, 12).map((c) => ({ id: c.id, name: c.name, character: c.character, photo: c.profile_path || "" })),
       tmdbScore: base.score,
       imdbId: d.imdb_id || (d.external_ids && d.external_ids.imdb_id) || null,
@@ -589,7 +623,7 @@
       applyRu(result.recommendations || [], ru.recommendations, media);
       result.ruDone2 = true;
       const cache = readCache();
-      cache[`v6:${media}-${id}`] = result;
+      cache[`v7:${media}-${id}`] = result;
       writeCache(cache);
     } catch (e) {}
     return result;
@@ -700,5 +734,5 @@
     return true;
   }
 
-  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, ruInfo, ruVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
+  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, ruInfo, ruVideos, seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
 })();

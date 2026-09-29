@@ -208,12 +208,64 @@
       `<section class="t-section"><h2 class="t-section-title">${title}${count ? ` <small>${count}</small>` : ""}</h2>${body}</section>`;
 
     let html = "";
+    const seasons = d.seasons || [];
+    if (d.media === "tv" && d.tmdbId && seasons.length > 1) html += block("Seasons", seasons.length, seasonsPanel(d, seasons));
     if (cast.length) html += block("Cast &amp; Crew", 0, castPanel(cast));
     if (loading) return html + '<p class="muted t-empty">Loading more details…</p>';
     if (videos.length || images.length) html += block("Media", 0, mediaPanel(videos, images));
     if (reviews.length) html += block("Reviews", reviews.length, reviewsPanel(reviews, d.tmdbUrl));
     return html;
   }
+  // TV shows: one card per season; tap it for that season's trailer. Each season's videos
+  // are checked in the background: the card then says what plays ("Trailer", "Teaser",
+  // "Bloopers"…), or "No trailer yet" (dimmed) when TMDB has nothing for that season.
+  const seasonVids = new Map(); // "showId-n" -> [{key, type}]
+
+  function seasonTag(list) {
+    if (!list) return '<span class="ts-tag loading"><i class="fa-solid fa-spinner fa-spin"></i></span>';
+    if (!list.length) return '<span class="ts-tag none">No trailer yet</span>';
+    return `<span class="ts-tag"><i class="fa-solid fa-play"></i> ${esc(list[0].type)}</span>`;
+  }
+
+  function seasonsPanel(d, seasons) {
+    const fallback = d.poster || "";
+    setTimeout(() => checkSeasons(d.tmdbId, seasons), 0);
+    return `<div class="t-seasons">${seasons
+      .map((s) => {
+        const list = seasonVids.get(`${d.tmdbId}-${s.n}`);
+        return `<button class="t-season${list && !list.length ? " no-video" : ""}" type="button" data-season="${s.n}" data-show="${d.tmdbId}"
+            data-name="${esc(s.name)}" data-year="${s.year || ""}" aria-label="${esc(s.name)} trailer">
+          <span class="ts-poster">
+            <img src="${Store.poster(s.poster || fallback, "w342")}" alt="" loading="lazy" />
+            <span class="ts-num">${s.n}</span>
+            <span class="ts-play" aria-hidden="true"><i class="fa-solid fa-play"></i></span>
+            ${seasonTag(list)}
+          </span>
+          <strong>${esc(s.name)}</strong>
+          <span>${[s.year, s.episodes ? `${s.episodes} episodes` : ""].filter(Boolean).join(" · ")}</span>
+        </button>`;
+      })
+      .join("")}</div>`;
+  }
+
+  function checkSeasons(show, seasons) {
+    seasons.forEach((s) => {
+      const k = `${show}-${s.n}`;
+      if (seasonVids.has(k)) return;
+      TMDB.seasonVideos(show, s.n)
+        .then((list) => {
+          list = list.filter((v) => !Cards.isBadTrailer(v.key));
+          seasonVids.set(k, list);
+          document.querySelectorAll(`.t-season[data-show="${show}"][data-season="${s.n}"]`).forEach((card) => {
+            card.classList.toggle("no-video", !list.length);
+            const tag = card.querySelector(".ts-tag");
+            if (tag) tag.outerHTML = seasonTag(list);
+          });
+        })
+        .catch(() => {});
+    });
+  }
+
   function castPanel(cast) {
     if (!cast.length) return '<p class="muted t-empty">No cast information yet.</p>';
     return `<div class="t-cast">${cast
@@ -299,6 +351,25 @@
       const p = reviewMore.previousElementSibling;
       p.classList.toggle("clamp");
       reviewMore.textContent = p.classList.contains("clamp") ? "Read more" : "Show less";
+      return;
+    }
+    // a season card: that season's trailer in the pop-up ("Breaking Bad · Season 2")
+    const season = e.target.closest("[data-season]");
+    if (season) {
+      const show = Number(season.dataset.show);
+      const n = Number(season.dataset.season);
+      const known = seasonVids.get(`${show}-${n}`);
+      if (known && !known.length) {
+        toast(`TMDB has no trailer for ${season.dataset.name} yet`);
+        return;
+      }
+      const showName = (heroEl.querySelector(".t-head h1") || {}).firstChild ? heroEl.querySelector(".t-head h1").firstChild.textContent.trim() : "";
+      const load = () => (known ? Promise.resolve(known) : TMDB.seasonVideos(show, n)).then((l) => l.map((v) => v.key));
+      Cards.showTrailer(
+        { title: `${showName} · ${season.dataset.name}`, year: season.dataset.year || "" },
+        () => load().then((k) => k[0] || null),
+        () => load().then((k) => k.slice(1))
+      );
       return;
     }
     const video = e.target.closest("[data-video]");
