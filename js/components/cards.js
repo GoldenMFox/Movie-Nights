@@ -402,7 +402,12 @@
   function buildRating() {
     ratingOverlay = makeOverlay(
       "rating-modal",
-      `<div class="big-star"><i class="fa-solid fa-star"></i><p class="selected-rating"></p></div>
+      `<div class="rate-ring" aria-hidden="true">
+         <div class="rate-ring-inner">
+           <i class="fa-regular fa-star rr-empty"></i>
+           <span class="selected-rating"></span><small class="rr-of">/ 10</small>
+         </div>
+       </div>
        <h3>Rate it</h3>
        <p class="rating-for"></p>
        <div class="stars">${Array.from(
@@ -465,7 +470,10 @@
     function showPicked() {
       paint(picked == null ? 0 : picked, "selected");
       ratingOverlay.querySelector(".selected-rating").textContent = picked == null ? "" : formatRating(picked);
-      ratingOverlay.querySelector(".big-star i").style.transform = `scale(${picked == null ? 1 : 0.8 + picked * 0.04})`;
+      // the ring fills to your score (8.5 -> 85%)
+      const ring = ratingOverlay.querySelector(".rate-ring");
+      ring.style.setProperty("--pct", picked == null ? 0 : picked * 10);
+      ring.classList.toggle("has-value", picked != null);
       ratingOverlay.querySelector(".feedback-message").textContent = picked == null ? "" : FEEDBACK[Math.floor(picked)] || "";
       ratingOverlay.querySelector(".save").disabled = picked == null;
     }
