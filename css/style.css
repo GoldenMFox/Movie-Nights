@@ -9053,8 +9053,8 @@ html.app-ui:root[data-theme="light"] .tab-bar {
 }
 
 /* the phone's own long-press menu (save image / open link) would cover ours */
-.movie-item[data-id] img,
-.movie-item[data-id] a {
+.movie-item img,
+.movie-item a {
   -webkit-touch-callout: none;
 }
 
@@ -9202,7 +9202,7 @@ html.app-ui:root[data-theme="light"] .tab-bar {
 }
 
 /* long-press on a phone opens the quick menu, not text / picture selection */
-.movie-item[data-id],
+.movie-item,
 .quick-modal,
 .qa-card {
   -webkit-user-select: none;

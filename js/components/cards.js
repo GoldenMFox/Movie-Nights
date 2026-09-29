@@ -319,10 +319,32 @@
 
   /* ---------------- quick actions: long-press (phones) or right-click (computers) ---------------- */
 
+  // the title behind a poster: one in your library, or a TMDB result you don't have yet
+  function subjectOf(card) {
+    if (card.dataset.id) {
+      const item = Store.get(card.dataset.id);
+      return item ? { lib: true, item } : null;
+    }
+    const hit = hits.get(card.dataset.tmdb);
+    if (!hit) return null;
+    const lib = inLibrary(hit);
+    return lib ? { lib: true, item: lib } : { lib: false, item: hit, key: card.dataset.tmdb };
+  }
+
+  // the element holding the menu's buttons says which title they're for (the one
+  // listener below runs them: data-id = library, data-tmdb = not in it yet)
+  function markHolder(el, s) {
+    delete el.dataset.id;
+    delete el.dataset.tmdb;
+    if (s.lib) el.dataset.id = s.item.id;
+    else el.dataset.tmdb = s.key;
+  }
+
   let quick;
-  function openQuick(id) {
-    const item = Store.get(id);
-    if (!item) return;
+  function openQuick(card) {
+    const s = subjectOf(card);
+    if (!s) return;
+    const item = s.item;
     if (!quick) {
       quick = makeOverlay("quick-modal", '<div class="qa-body"></div>');
       // any choice closes the menu (the button itself is handled by the listener below)
@@ -330,47 +352,63 @@
     }
     const row = (action, icon, label, extra) =>
       `<button type="button" class="qa-row${extra || ""}" data-action="${action}"><i class="${icon}"></i><span>${label}</span></button>`;
-    quick.querySelector(".qa-body").dataset.id = id;
-    quick.querySelector(".qa-body").innerHTML = `
+    const body = quick.querySelector(".qa-body");
+    markHolder(body, s);
+    const score = s.lib ? (item.rating != null ? ` · ★ ${formatRating(item.rating)}` : "") : item.score ? ` · TMDB ${Number(item.score).toFixed(1)}` : "";
+    body.innerHTML = `
       <div class="qa-head">
         <img src="${Store.poster(posterOf(item), "w154")}" alt="" />
-        <div><strong>${esc(Lang.title(item))}</strong><small>${[item.year, Store.TYPE_LABEL[item.type]].filter(Boolean).join(" · ")}${
-          item.rating != null ? ` · ★ ${formatRating(item.rating)}` : ""
-        }</small></div>
+        <div><strong>${esc(Lang.title(item))}</strong><small>${[item.year, Store.TYPE_LABEL[item.type]].filter(Boolean).join(" · ")}${score}</small></div>
       </div>
-      <div class="qa-list">
-        ${row("watch", `fa-${item.watchlist ? "solid" : "regular"} fa-bookmark`, item.watchlist ? "Remove from Watchlist" : "Add to Watchlist")}
-        ${row("fav", `fa-${item.favorite ? "solid" : "regular"} fa-heart`, item.favorite ? "Remove from Favorites" : "Add to Favorites")}
-        ${row("rate", "fa-solid fa-star", item.rating != null ? "Change your score" : "Rate it")}
-        ${row("trailer", "fa-solid fa-play", "Play trailer")}
-        <a class="qa-row" href="title.html?id=${encodeURIComponent(id)}"><i class="fa-solid fa-circle-info"></i><span>Open details</span></a>
-      </div>
-      <div class="qa-list">${row("remove", "fa-solid fa-trash-can", "Remove from library", " qa-danger")}</div>`;
+      ${
+        s.lib
+          ? `<div class="qa-list">
+              ${row("watch", `fa-${item.watchlist ? "solid" : "regular"} fa-bookmark`, item.watchlist ? "Remove from Watchlist" : "Add to Watchlist")}
+              ${row("fav", `fa-${item.favorite ? "solid" : "regular"} fa-heart`, item.favorite ? "Remove from Favorites" : "Add to Favorites")}
+              ${row("rate", "fa-solid fa-star", item.rating != null ? "Change your score" : "Rate it")}
+              ${row("trailer", "fa-solid fa-play", "Play trailer")}
+              <a class="qa-row" href="title.html?id=${encodeURIComponent(item.id)}"><i class="fa-solid fa-circle-info"></i><span>Open details</span></a>
+            </div>
+            <div class="qa-list">${row("remove", "fa-solid fa-trash-can", "Remove from library", " qa-danger")}</div>`
+          : `<div class="qa-list">
+              ${row("t-watch", "fa-regular fa-bookmark", "Add to Watchlist")}
+              ${row("t-watched", "fa-regular fa-circle-check", "Watched it")}
+              ${row("t-rate", "fa-solid fa-star", "Rate it")}
+              ${row("t-add", "fa-solid fa-plus", "Add to library")}
+              ${row("t-trailer", "fa-solid fa-play", "Play trailer")}
+              <a class="qa-row" href="title.html?tmdb=${encodeURIComponent(s.key)}"><i class="fa-solid fa-circle-info"></i><span>Open details</span></a>
+            </div>`
+      }`;
     open(quick);
   }
 
-  // library cards only (not on the Tier List, which has its own drag and tap)
+  // any poster card (not on the Tier List, which has its own drag and tap)
   const quickCard = (target) => {
-    const el = target.closest && target.closest(".movie-item[data-id]");
+    const el = target.closest && target.closest(".movie-item[data-id], .movie-item[data-tmdb]");
     return el && !el.closest("#tier-app, .quick-modal") ? el : null;
   };
 
   /* computers: right-click opens the menu right on the poster, the same size as it */
 
   let qaCard = null;
-  function posterMenuHtml(item) {
+  function posterMenuHtml(s) {
+    const item = s.item;
     const row = (action, icon, label, cls) =>
       `<button type="button" class="qa-p-row${cls || ""}" data-action="${action}"><i class="${icon}"></i><span>${label}</span></button>`;
-    return `
-      <div class="qa-p-title">${esc(Lang.title(item))}</div>
-      <div class="qa-p-list">
-        ${row("watch", `fa-${item.watchlist ? "solid" : "regular"} fa-bookmark`, item.watchlist ? "On Watchlist" : "Watchlist", item.watchlist ? " on" : "")}
-        ${row("fav", `fa-${item.favorite ? "solid" : "regular"} fa-heart`, item.favorite ? "Favorite" : "Favorite", item.favorite ? " on" : "")}
+    const rows = s.lib
+      ? `${row("watch", `fa-${item.watchlist ? "solid" : "regular"} fa-bookmark`, item.watchlist ? "On Watchlist" : "Watchlist", item.watchlist ? " on" : "")}
+        ${row("fav", `fa-${item.favorite ? "solid" : "regular"} fa-heart`, "Favorite", item.favorite ? " on" : "")}
         ${row("rate", "fa-solid fa-star", item.rating != null ? `Your score ${formatRating(item.rating)}` : "Rate", item.rating != null ? " on" : "")}
         ${row("trailer", "fa-solid fa-play", "Trailer")}
         <a class="qa-p-row" href="title.html?id=${encodeURIComponent(item.id)}"><i class="fa-solid fa-circle-info"></i><span>Details</span></a>
-        ${row("remove", "fa-solid fa-trash-can", "Remove", " danger")}
-      </div>`;
+        ${row("remove", "fa-solid fa-trash-can", "Remove", " danger")}`
+      : `${row("t-watch", "fa-regular fa-bookmark", "Watchlist")}
+        ${row("t-watched", "fa-regular fa-circle-check", "Watched")}
+        ${row("t-rate", "fa-solid fa-star", "Rate")}
+        ${row("t-add", "fa-solid fa-plus", "Add to library")}
+        ${row("t-trailer", "fa-solid fa-play", "Trailer")}
+        <a class="qa-p-row" href="title.html?tmdb=${encodeURIComponent(s.key)}"><i class="fa-solid fa-circle-info"></i><span>Details</span></a>`;
+    return `<div class="qa-p-title">${esc(Lang.title(item))}</div><div class="qa-p-list">${rows}</div>`;
   }
 
   function closePosterMenu() {
@@ -384,8 +422,9 @@
   function openPosterMenu(card) {
     closePosterMenu();
     if (window.Preview) Preview.close();
-    const item = Store.get(card.dataset.id);
-    if (!item) return;
+    const s = subjectOf(card);
+    if (!s) return;
+    const item = s.item;
     // the poster's normal size (it grows a little while hovered), centred where it is
     const pic = card.querySelector(".poster-link") || card;
     const box = pic.getBoundingClientRect();
@@ -393,20 +432,21 @@
     const h = pic.offsetHeight;
     const el = document.createElement("div");
     el.className = `qa-card${h < 250 ? " compact" : ""}`;
-    el.dataset.id = item.id;
+    markHolder(el, s);
     el.setAttribute("role", "menu");
     el.style.left = `${box.left + box.width / 2 - w / 2 + window.scrollX}px`;
     el.style.top = `${box.top + box.height / 2 - h / 2 + window.scrollY}px`;
     el.style.width = `${w}px`;
     el.style.height = `${h}px`;
     el.style.setProperty("--qa-poster", `url("${Store.poster(posterOf(item), "w342")}")`);
-    el.innerHTML = posterMenuHtml(item);
+    el.innerHTML = posterMenuHtml(s);
     document.body.append(el);
     requestAnimationFrame(() => el.classList.add("show"));
     qaCard = el;
   }
 
-  // Watchlist / Favorite switch in place (you see it change); the rest close the menu
+  // Watchlist / Favorite (of a title you have) switch in place, so you see it change; the
+  // rest close the menu
   document.addEventListener("click", (e) => {
     if (!qaCard) return;
     const inside = qaCard.contains(e.target);
@@ -415,9 +455,9 @@
     if (btn && !/^(watch|fav)$/.test(btn.dataset.action || "")) setTimeout(closePosterMenu, 0);
   });
   Store.onChange((id) => {
-    if (!qaCard || (id && id !== qaCard.dataset.id)) return;
+    if (!qaCard || !qaCard.dataset.id || (id && id !== qaCard.dataset.id)) return;
     const item = Store.get(qaCard.dataset.id);
-    if (item) qaCard.innerHTML = posterMenuHtml(item);
+    if (item) qaCard.innerHTML = posterMenuHtml({ lib: true, item });
     else closePosterMenu();
   });
   window.addEventListener("scroll", closePosterMenu, { passive: true, capture: true });
@@ -425,13 +465,19 @@
   document.addEventListener("keydown", (e) => e.key === "Escape" && closePosterMenu());
 
   document.addEventListener("contextmenu", (e) => {
-    if (e.pointerType === "touch") return; // phones: long-press, below
+    // phones: never the phone's own "copy link / download image" menu on a poster
+    // (our menu opens from the long-press, below)
+    if (e.pointerType === "touch" || press || pressed) {
+      if (quickCard(e.target) || (e.target.closest && e.target.closest(".quick-modal"))) e.preventDefault();
+      return;
+    }
     if (qaCard && qaCard.contains(e.target)) return e.preventDefault();
     let card = quickCard(e.target);
     // right-click on the hover preview (it covers the poster): the poster under it
-    const hp = !card && e.target.closest && e.target.closest(".hover-preview[data-id]");
+    const hp = !card && e.target.closest && e.target.closest(".hover-preview[data-id], .hover-preview[data-tmdb]");
     if (hp) {
-      const all = [...document.querySelectorAll(`.movie-item[data-id="${CSS.escape(hp.dataset.id)}"]`)];
+      const attr = hp.dataset.id ? `data-id="${CSS.escape(hp.dataset.id)}"` : `data-tmdb="${CSS.escape(hp.dataset.tmdb)}"`;
+      const all = [...document.querySelectorAll(`.movie-item[${attr}]`)];
       card = all.find((c) => {
         const r = c.getBoundingClientRect();
         return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
@@ -462,7 +508,7 @@
         openedAt = Date.now();
         clearSelection();
         if (navigator.vibrate) navigator.vibrate(10);
-        openQuick(el.dataset.id);
+        openQuick(el);
       }, 500) };
     },
     { passive: true }
