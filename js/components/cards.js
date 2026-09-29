@@ -437,8 +437,22 @@
       return e.clientX - r.left < r.width / 2 ? n - 0.5 : n;
     };
 
+    // the ring (and the number in it) shows a value: while pointing, the one under the
+    // pointer; otherwise your pick
+    const ring = ratingOverlay.querySelector(".rate-ring");
+    const setRing = (v) => {
+      ring.style.setProperty("--pct", v == null ? 0 : v * 10);
+      ring.classList.toggle("has-value", v != null);
+      ratingOverlay.querySelector(".selected-rating").textContent = v == null ? "" : formatRating(v);
+    };
+    ratingOverlay.setRing = setRing;
+
     stars.forEach((star) => {
-      star.addEventListener("pointermove", (e) => paint(valueAt(star, e), "hover"));
+      star.addEventListener("pointermove", (e) => {
+        const v = valueAt(star, e);
+        paint(v, "hover");
+        setRing(v);
+      });
       star.addEventListener("pointerleave", () => paint(0, "hover"));
       star.addEventListener("click", (e) => {
         // keyboard (Enter / Space) has no position: whole star
@@ -446,7 +460,10 @@
         showPicked();
       });
     });
-    ratingOverlay.querySelector(".stars").addEventListener("pointerleave", () => paint(0, "hover"));
+    ratingOverlay.querySelector(".stars").addEventListener("pointerleave", () => {
+      paint(0, "hover");
+      setRing(picked); // back to your pick
+    });
 
     ratingOverlay.querySelector(".save").addEventListener("click", () => {
       if (picked == null) return;
@@ -469,11 +486,7 @@
 
     function showPicked() {
       paint(picked == null ? 0 : picked, "selected");
-      ratingOverlay.querySelector(".selected-rating").textContent = picked == null ? "" : formatRating(picked);
-      // the ring fills to your score (8.5 -> 85%)
-      const ring = ratingOverlay.querySelector(".rate-ring");
-      ring.style.setProperty("--pct", picked == null ? 0 : picked * 10);
-      ring.classList.toggle("has-value", picked != null);
+      setRing(picked); // the ring fills to your score (8.5 -> 85%)
       ratingOverlay.querySelector(".feedback-message").textContent = picked == null ? "" : FEEDBACK[Math.floor(picked)] || "";
       ratingOverlay.querySelector(".save").disabled = picked == null;
     }

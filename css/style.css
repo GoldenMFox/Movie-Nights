@@ -8019,7 +8019,7 @@ html.custom-scrollbars .t-seasons.grabbing * {
   height: 124px;
   margin: 2px auto 14px;
   border-radius: 50%;
-  background: conic-gradient(from -90deg, #ffd95a 0%, #f5a623 calc(var(--pct-anim) * 1%), rgba(255, 255, 255, 0.08) calc(var(--pct-anim) * 1%));
+  background: conic-gradient(from 0deg, #ffd95a 0%, #f5a623 calc(var(--pct-anim) * 1%), rgba(255, 255, 255, 0.08) calc(var(--pct-anim) * 1%));
   transition: --pct-anim 0.45s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
