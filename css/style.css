@@ -7848,3 +7848,202 @@ html.custom-scrollbars .t-seasons.grabbing * {
 #title-main {
   padding-top: 20px;
 }
+/* ============================== Pop-ups (rating, add a title, notices): glass redesign ============================== */
+
+/* the page behind blurs and darkens (the trailer pop-up has its own, slightly stronger) */
+.overlay {
+  background: rgba(6, 6, 8, 0.62);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  backdrop-filter: blur(10px) saturate(140%);
+}
+
+.modal:not(.trailer-modal) {
+  padding: 30px 28px 26px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 26px;
+  background: rgba(24, 24, 28, 0.8);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  backdrop-filter: saturate(180%) blur(24px);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+
+/* round glass close button, an X that turns red (same as the trailer pop-up) */
+.modal:not(.trailer-modal) .modal-close {
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 15px;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.modal:not(.trailer-modal) .modal-close i {
+  font-weight: 900;
+}
+
+.modal:not(.trailer-modal) .modal-close i::before {
+  content: "\f00d";
+}
+
+.modal:not(.trailer-modal) .modal-close:hover {
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+/* ---- rating pop-up ---- */
+
+/* the big star: gold with a soft glow, your score inside */
+.big-star {
+  width: 116px;
+  height: 116px;
+  margin: 4px auto 8px;
+  color: #f5c518;
+  filter: drop-shadow(0 0 24px rgba(245, 197, 24, 0.35));
+}
+
+.big-star i {
+  font-size: 96px;
+}
+
+.big-star .selected-rating {
+  padding-top: 8px;
+  color: #1a1400;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.rating-modal h3 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.rating-modal .rating-for {
+  margin: 0 0 18px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14.5px;
+}
+
+/* the ten stars: soft grey, gold (with a glow) when picked */
+.rating-modal .stars {
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  display: inline-flex;
+}
+
+.rating-modal .star {
+  padding: 2px 5px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.18);
+  font-size: 25px;
+}
+
+.rating-modal .star .star-fill {
+  color: #f5c518;
+  filter: drop-shadow(0 0 6px rgba(245, 197, 24, 0.55));
+}
+
+/* no white box on the first star when the pop-up opens; a soft ring only for keyboard use */
+.rating-modal .star:focus {
+  outline: none;
+}
+
+.rating-modal .star:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.35);
+  outline-offset: 1px;
+}
+
+.rating-modal .half-hint {
+  margin-top: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.rating-modal .feedback-message {
+  min-height: 44px;
+  margin: 12px 0 8px;
+  color: #ffd95a;
+}
+
+/* buttons: Save = white pill (like Trailer), Clear / Skip = glass pill */
+.modal .rating-actions .save {
+  min-width: 170px;
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #111;
+  font-weight: 700;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.modal .rating-actions .save:hover {
+  background: #e9e9e9;
+}
+
+.modal .rating-actions .save:disabled {
+  opacity: 0.35;
+  box-shadow: none;
+}
+
+.rating-modal .rating-actions .btn:not(.save) {
+  padding: 12px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-weight: 600;
+}
+
+.rating-modal .rating-actions .btn:not(.save):hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+@media (max-width: 480px) {
+  .modal:not(.trailer-modal) {
+    padding: 26px 16px 20px;
+    border-radius: 22px;
+  }
+
+  .rating-modal .stars {
+    padding: 8px 6px;
+  }
+
+  .rating-modal .star {
+    padding: 2px 2px;
+    font-size: 22px;
+  }
+}
+/* pop-ups: pill buttons and rounded glass fields (Add a title, notices) */
+.modal:not(.trailer-modal) .btn {
+  border-radius: 999px;
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+.modal:not(.trailer-modal) .input,
+.modal:not(.trailer-modal) .select {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.modal:not(.trailer-modal) .input:focus,
+.modal:not(.trailer-modal) .select:focus {
+  border-color: rgba(255, 255, 255, 0.3);
+  outline: none;
+}
