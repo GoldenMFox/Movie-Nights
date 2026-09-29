@@ -107,6 +107,11 @@
             <a href="profile.html#settings"><i class="fa-solid fa-gear"></i><span>Settings &amp; backup</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="#" class="install-app" hidden><i class="fa-solid fa-mobile-screen"></i><span>Install the app</span><i class="fa-solid fa-chevron-right"></i></a>
             ${langToggle("in-profile")}
+            <label class="menu-switch" title="Title, ratings and buttons under each poster (off: posters only)">
+              <i class="fa-solid fa-table-cells-large"></i><span>Details under posters</span>
+              <input type="checkbox" class="card-details-switch" />
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
             ${accountMenu()}
           </div>
         </div>
@@ -437,6 +442,16 @@
   try {
     if (localStorage.getItem("mn:cardStyle") === "posters") document.documentElement.classList.add("posters-only");
   } catch (e) {}
+  // the switch for it lives in the profile menu (computers only)
+  const detailsSwitch = nav.querySelector(".card-details-switch");
+  detailsSwitch.checked = !document.documentElement.classList.contains("posters-only");
+  detailsSwitch.addEventListener("change", () => {
+    document.documentElement.classList.toggle("posters-only", !detailsSwitch.checked);
+    try {
+      if (detailsSwitch.checked) localStorage.removeItem("mn:cardStyle");
+      else localStorage.setItem("mn:cardStyle", "posters");
+    } catch (e) {}
+  });
 
   // the navbar turns see-through over the top of the page (tablet slideshow) and
   // frosted once you scroll

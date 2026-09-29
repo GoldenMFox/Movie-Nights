@@ -7135,3 +7135,61 @@ html.posters-only:not(.app-ui):not(.tablet) .movie-grid {
 html.posters-only:not(.app-ui):not(.tablet) .movie-row {
   grid-auto-columns: 200px;
 }
+/* profile menu: "Details under posters" switch, same row style as "Movie names" */
+.menu-switch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 4px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.menu-switch > i {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e5e5e5;
+  color: #17181c;
+}
+
+.menu-switch > span:first-of-type {
+  flex: 1;
+}
+
+.menu-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.menu-switch input:checked + .switch-track {
+  background: var(--accent);
+}
+
+.menu-switch input:checked + .switch-track .switch-thumb {
+  transform: translateX(20px);
+}
+
+.menu-switch input:focus-visible + .switch-track {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.menu-switch .switch-track {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* phones and tablets always show posters only: no switch there */
+html.app-ui .menu-switch,
+html.tablet .menu-switch {
+  display: none;
+}
