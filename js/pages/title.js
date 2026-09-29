@@ -131,13 +131,27 @@
     </div>`;
   }
 
+  // "Zach Cregger, Someone Else" -> links to each person's page (by TMDB id when known, else by name)
+  function directorLinks(d) {
+    const people = d.directorPeople || [];
+    return String(d.director)
+      .split(/\s*,\s*/)
+      .filter(Boolean)
+      .map((name) => {
+        const known = people.find((x) => x.name === name);
+        const href = `person.html?${known ? `id=${encodeURIComponent(known.id)}` : `name=${encodeURIComponent(name)}`}`;
+        return `<a class="t-director-link" href="${href}">${esc(name)}</a>`;
+      })
+      .join(", ");
+  }
+
   function aboutHtml(d) {
     if (!d.overview && !d.director) return "";
     const long = d.overview && d.overview.length > 180;
     return `<div class="t-about">
       ${d.overview ? `<p class="t-overview${long && !overviewOpen ? " clamp" : ""}">${esc(d.overview)}</p>` : ""}
       ${long ? `<button class="t-link t-read-more" type="button">${overviewOpen ? "Show less" : "Read more"}</button>` : ""}
-      ${d.director ? `<p class="t-director"><span>${esc(d.directorLabel || "Director")}:</span> ${esc(d.director)}</p>` : ""}
+      ${d.director ? `<p class="t-director"><span>${esc(d.directorLabel || "Director")}:</span> ${directorLinks(d)}</p>` : ""}
     </div>`;
   }
 
