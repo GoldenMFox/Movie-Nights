@@ -255,38 +255,53 @@
     return good.slice(0, count);
   }
 
-  async function fillBecause(item, row) {
-    const sec = rowsEl.querySelector(`[data-row="${row}"]`);
-    const anime = item.type === "anime";
-    try {
-      const ref = await Watch.refOf(item);
-      if (!ref) throw new Error("not on TMDB");
-      const [media, id] = ref.split("-");
-      const d = await TMDB.detailsById(media, Number(id));
-      // what TMDB recommends for it, minus what you already have; anime only in the anime row
-      const recs = ((d && d.recommendations) || []).filter((h) => h.poster && !Cards.inLibrary(h) && (h.type === "anime") === anime);
-      if (recs.length < 4) throw new Error("too few");
-      sec.querySelector(".movie-row").innerHTML = recs.map(Cards.tmdbCard).join("");
-    } catch (e) {
-      sec.remove();
+  // well-known titles TMDB recommends for one of yours (js/services/tmdb.js), minus what you
+  // already have, what another row shows, and anime outside the anime row (and the reverse)
+  async function recsFor(item, anime, shown) {
+    const ref = await Watch.refOf(item);
+    if (!ref) return [];
+    const [media, id] = ref.split("-");
+    const list = await TMDB.knownRecommendations(media, Number(id));
+    return list.filter((h) => (h.type === "anime") === anime && !Cards.inLibrary(h) && !shown.has(`${h.mediaType}-${h.tmdbId}`));
+  }
+
+  // fill the rows one by one; a title of yours that doesn't lead to at least 6 well-known
+  // picks makes way for the next one (a row with none left disappears)
+  async function fillBecause(pool, rows, anime) {
+    const shown = new Set();
+    for (const row of rows) {
+      const sec = rowsEl.querySelector(`[data-row="${row}"]`);
+      let done = false;
+      while (pool.length && !done) {
+        const item = pool.shift();
+        try {
+          const recs = await recsFor(item, anime, shown);
+          if (recs.length < 6) continue;
+          sec.querySelector(".row-head h2").textContent = `Because you liked ${Lang.title(item)}`;
+          sec.querySelector(".movie-row").innerHTML = recs.slice(0, 20).map(Cards.tmdbCard).join("");
+          recs.forEach((h) => shown.add(`${h.mediaType}-${h.tmdbId}`));
+          done = true;
+        } catch (e) {}
+      }
+      if (!done) sec.remove();
     }
   }
 
   function renderLive() {
     hero.innerHTML = '<div class="hero-slide active skeleton"></div>';
-    const seeds = becauseSeeds(false, 2);
-    const animeSeed = becauseSeeds(true, 1)[0];
-    const because = (s, row) => rowShell(row, `Because you liked ${Lang.title(s)}`, "");
+    // up to 6 of your titles to try for the two movie / show rows, 3 for the anime one
+    const seeds = becauseSeeds(false, 6);
+    const animeSeeds = becauseSeeds(true, 3);
+    const movieRows = seeds.slice(0, 2).map((s, n) => ({ row: `because-${n}`, s }));
+    const because = ({ row, s }) => rowShell(row, `Because you liked ${Lang.title(s)}`, "");
     // movies / shows: right before the anime rows; anime: under them (the last ones)
     rowsEl.innerHTML =
       top10Shell() +
-      LIVE_ROWS.map(
-        (r) => (r.cat === "anime" ? seeds.map((s, n) => because(s, `because-${n}`)).join("") : "") + rowShell(r.cat, r.title, `discover.html?cat=${r.cat}`)
-      ).join("") +
-      (animeSeed ? because(animeSeed, "because-anime") : "");
+      LIVE_ROWS.map((r) => (r.cat === "anime" ? movieRows.map(because).join("") : "") + rowShell(r.cat, r.title, `discover.html?cat=${r.cat}`)).join("") +
+      (animeSeeds.length ? because({ row: "because-anime", s: animeSeeds[0] }) : "");
     fillTop10(top10Media);
-    seeds.forEach((s, n) => fillBecause(s, `because-${n}`));
-    if (animeSeed) fillBecause(animeSeed, "because-anime");
+    if (movieRows.length) fillBecause(seeds, movieRows.map((r) => r.row), false);
+    if (animeSeeds.length) fillBecause(animeSeeds, ["because-anime"], true);
 
     LIVE_ROWS.forEach(async (r) => {
       const row = rowsEl.querySelector(`[data-row="${r.cat}"] .movie-row`);

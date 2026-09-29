@@ -862,5 +862,25 @@
     return result;
   }
 
-  window.TMDB = { collection, findByImdb, findFilm, providersFor, providerCatalog, nextUp, enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos, seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
+  // "Because you liked …" (Home): TMDB's recommendations for a title, well-known ones only
+  // (enough votes that most people have heard of them), two pages deep, kept a week
+  const KNOWN_VOTES = { movie: 2000, tv: 500 };
+  async function knownRecommendations(media, id) {
+    const cache = readCache();
+    const key = `rec3:${media}-${id}`; // rec3: best-known first
+    if (cache[key] && Date.now() - cache[key].savedAt < DETAILS_MAX_AGE) return cache[key].results;
+    const pages = await Promise.all([1, 2].map((page) => request(`/${media}/${id}/recommendations`, { page }).catch(() => ({ results: [] }))));
+    const seen = new Set();
+    const results = pages
+      .flatMap((p) => p.results || [])
+      .filter((r) => r.poster_path && (r.vote_count || 0) >= KNOWN_VOTES[r.media_type === "tv" ? "tv" : "movie"])
+      .filter((r) => !seen.has(`${r.media_type}-${r.id}`) && seen.add(`${r.media_type}-${r.id}`))
+      .sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0)) // the best-known first
+      .map((r) => simplify(r, r.media_type || media));
+    cache[key] = { results, savedAt: Date.now() };
+    writeCache(cache);
+    return results;
+  }
+
+  window.TMDB = { knownRecommendations, collection, findByImdb, findFilm, providersFor, providerCatalog, nextUp, enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos, seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
 })();
