@@ -1,7 +1,10 @@
 /*
- * Browse pages (Movies, TV Shows, Anime, Favorites, Watchlist):
+ * Browse pages (Movies, TV Shows, Anime, Watchlist):
  * search, sort and filter the list, and load cards in batches so the page
  * stays fast even with hundreds of posters.
+ *
+ * The Watchlist page holds two lists, Plan to watch and Favorites: a row of each on
+ * top, and "See all" opens the full list below them (with a switch between the two).
  */
 (function () {
   const { esc } = UI;
@@ -15,21 +18,31 @@
     return;
   }
 
-  const PAGE = {
-    movie: { base: (i) => i.type === "movie", chips: "status" },
-    tv: { base: (i) => i.type === "tv", chips: "status" },
-    anime: { base: (i) => i.type === "anime", chips: "status" },
-    favorites: {
+  const LISTS = {
+    watch: {
+      label: "Plan to watch",
+      icon: "fa-bookmark",
+      base: (i) => i.watchlist,
+      chips: "type",
+      empty: "Nothing planned yet. Tap the bookmark on any title to save it for later.",
+    },
+    fav: {
+      label: "Favorites",
+      icon: "fa-heart",
       base: (i) => i.favorite,
       chips: "type",
       empty: "No favorites yet. Tap the heart on any title to add it here.",
     },
-    watchlist: {
-      base: (i) => i.watchlist,
-      chips: "type",
-      empty: "Your watchlist is empty. Tap the bookmark on any title to save it for later.",
-    },
-  }[page];
+  };
+  const isLists = page === "watchlist";
+  const startParams = new URLSearchParams(location.search);
+  let PAGE = isLists
+    ? LISTS[startParams.get("list")] || LISTS.watch
+    : {
+        movie: { base: (i) => i.type === "movie", chips: "status" },
+        tv: { base: (i) => i.type === "tv", chips: "status" },
+        anime: { base: (i) => i.type === "anime", chips: "status" },
+      }[page];
 
   const STATUS_CHIPS = [
     { id: "all", label: "All", test: () => true },
@@ -73,10 +86,11 @@
     to: params.get("to") || "",
     min: params.get("min") || "",
     genre: params.get("genre") || "",
+    list: isLists && LISTS[params.get("list")] ? params.get("list") : "",
   };
   let shown = BATCH;
 
-  root.innerHTML = `
+  const listHtml = `
     <form class="glass-search list-search" role="search">
       <i class="fa-solid fa-magnifying-glass gs-icon" aria-hidden="true"></i>
       <input type="search" name="q" placeholder="Search this list…" aria-label="Search this list" value="${esc(state.q)}" autocomplete="off" />
@@ -115,6 +129,31 @@
     <div class="empty-state" hidden></div>
     <div class="load-more"><button class="btn" type="button" hidden>Show more</button></div>`;
 
+  // Watchlist page: a row per list, then the full list (opened by "See all")
+  root.innerHTML = isLists
+    ? `${Object.keys(LISTS)
+        .map(
+          (k) => `<section class="row-section wl-row" data-list="${k}">
+            <div class="row-head"><h2><i class="fa-solid ${LISTS[k].icon}"></i> ${LISTS[k].label}</h2>
+              <a href="?list=${k}" class="wl-see" data-see="${k}"></a></div>
+            <div class="movie-row"></div>
+            <p class="wl-row-empty" hidden>${esc(LISTS[k].empty)}</p>
+          </section>`
+        )
+        .join("")}
+      <section class="wl-panel"${state.list ? "" : " hidden"}>
+        <h2 class="wl-title">All titles</h2>
+        <div class="wl-switch" role="group" aria-label="Which list">
+          ${Object.keys(LISTS)
+            .map((k) => `<button type="button" data-list-switch="${k}"><i class="fa-solid ${LISTS[k].icon}"></i> ${LISTS[k].label}<span class="count"></span></button>`)
+            .join("")}
+          <button type="button" class="wl-close" aria-label="Close the full list" title="Close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        ${listHtml}
+      </section>`
+    : listHtml;
+  const panel = root.querySelector(".wl-panel");
+
   const grid = root.querySelector(".movie-grid");
   const chipsBox = root.querySelector(".chips");
   const countEl = root.querySelector(".result-count");
@@ -123,7 +162,7 @@
   const genreSel = root.querySelector('[name="genre"]');
 
   const filtersInUse = () => !!(state.sort !== "default" || state.min || state.from || state.to || state.genre);
-  const tools = UI.foldTools(document.querySelector(".page-title"), {
+  const tools = UI.foldTools(isLists ? root.querySelector(".wl-title") : document.querySelector(".page-title"), {
     search: root.querySelector(".list-search"),
     filters: root.querySelector(".list-filters"),
     openSearch: !!state.q,
@@ -172,7 +211,42 @@
       names.map((g) => `<option value="${esc(g)}"${g === state.genre ? " selected" : ""}>${esc(g)} (${counts[g] || 0})</option>`).join("");
   }
 
+  // Watchlist page: the two rows (newest first) and the switch above the full list
+  function renderRows() {
+    const all = Store.all();
+    root.querySelectorAll(".wl-row").forEach((sec) => {
+      const k = sec.dataset.list;
+      const row = sec.querySelector(".movie-row");
+      const scroll = row.scrollLeft;
+      const items = all.filter(LISTS[k].base).sort((a, b) => b.order - a.order);
+      row.innerHTML = items.slice(0, 20).map(Cards.card).join("");
+      row.hidden = !items.length;
+      row.scrollLeft = scroll;
+      sec.querySelector(".wl-row-empty").hidden = !!items.length;
+      const see = sec.querySelector(".wl-see");
+      see.hidden = !items.length;
+      see.innerHTML = `See all ${items.length} <i class="fa-solid fa-arrow-down"></i>`;
+    });
+    root.querySelectorAll("[data-list-switch]").forEach((b) => {
+      const k = b.dataset.listSwitch;
+      b.classList.toggle("active", LISTS[k] === PAGE);
+      b.setAttribute("aria-pressed", LISTS[k] === PAGE);
+      b.querySelector(".count").textContent = all.filter(LISTS[k].base).length;
+    });
+  }
+
+  // open the full list (or switch it) and bring it into view
+  function openList(k, scroll) {
+    PAGE = LISTS[k];
+    const q = root.querySelector('[name="q"]');
+    if (q) q.value = "";
+    set({ list: k, chip: "all", q: "", genre: "" });
+    panel.hidden = false;
+    if (scroll) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function render() {
+    if (isLists) renderRows();
     const items = filtered();
     const total = baseList().length;
     renderChips();
@@ -201,6 +275,7 @@
     if (state.to) p.set("to", state.to);
     if (state.min) p.set("min", state.min);
     if (state.genre) p.set("genre", state.genre);
+    if (state.list) p.set("list", state.list);
     const qs = p.toString();
     history.replaceState(null, "", qs ? `?${qs}` : location.pathname);
   }
@@ -238,6 +313,18 @@
     const chip = e.target.closest("[data-chip]");
     if (chip) set({ chip: chip.dataset.chip });
     if (e.target.closest(".reset, .reset-inline")) reset();
+    const see = e.target.closest("[data-see]");
+    if (see) {
+      e.preventDefault();
+      openList(see.dataset.see, true);
+    }
+    const sw = e.target.closest("[data-list-switch]");
+    if (sw) openList(sw.dataset.listSwitch, false);
+    if (e.target.closest(".wl-close")) {
+      panel.hidden = true;
+      set({ list: "" });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   });
 
   moreBtn.addEventListener("click", () => {
@@ -262,4 +349,6 @@
   Store.onChange(() => render());
 
   render();
+  // opened straight on a list (e.g. from Favorites in the menu): show it
+  if (isLists && state.list) setTimeout(() => panel.scrollIntoView({ block: "start" }), 50);
 })();

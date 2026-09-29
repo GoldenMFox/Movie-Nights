@@ -12,7 +12,6 @@
     { id: "movie", href: "movies.html", label: "Movies", icon: "fa-solid fa-film" },
     { id: "tv", href: "tv-shows.html", label: "TV Shows", icon: "fa-solid fa-tv" },
     { id: "anime", href: "anime.html", label: "Anime", icon: "fa-solid fa-clapperboard" },
-    { id: "favorites", href: "favorites.html", label: "Favorites", icon: "fa-solid fa-heart" },
     { id: "watchlist", href: "watchlist.html", label: "Watchlist", icon: "fa-solid fa-bookmark" },
     { id: "tiers", href: "tier-list.html", label: "Tier List", icon: "fa-solid fa-ranking-star" },
   ];
@@ -107,7 +106,6 @@
               </div>
             </div>
             <hr />
-            <a href="favorites.html" class="tablet-link"><i class="fa-solid fa-heart"></i><span>Favorites</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="tier-list.html" class="tablet-link"><i class="fa-solid fa-ranking-star"></i><span>Tier List</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="profile.html"><i class="fa-solid fa-user"></i><span>Profile &amp; stats</span><i class="fa-solid fa-chevron-right"></i></a>
             <a href="#" data-action="add-title" class="owner-only"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
@@ -409,7 +407,7 @@
       </nav>
       <nav class="footer-col" aria-label="My lists">
         <h3>My lists</h3>
-        <ul>${PAGES.slice(5).map(footLink).join("")}${footLink({ href: "profile.html", label: "Profile &amp; stats", icon: "fa-solid fa-user" })}</ul>
+        <ul>${PAGES.slice(5, 6).map(footLink).join("")}${footLink({ href: "watchlist.html?list=fav", label: "Favorites", icon: "fa-solid fa-heart" })}${PAGES.slice(6).map(footLink).join("")}${footLink({ href: "profile.html", label: "Profile &amp; stats", icon: "fa-solid fa-user" })}</ul>
       </nav>
     </div>
     <div class="footer-bottom">
@@ -524,7 +522,7 @@
   // and these five tabs sit at the bottom in a floating pill, like a native app.
   // Search and Library open panels that slide up from the bottom.
   if (appUi) {
-    const LIBRARY_PAGES = ["movie", "tv", "anime", "favorites", "tiers"];
+    const LIBRARY_PAGES = ["movie", "tv", "anime", "tiers"];
     const TABS = [
       { id: "home", href: "index.html", label: "Home", icon: "fa-house", on: ["home"] },
       { id: "discover", href: "discover.html", label: "Discover", icon: "fa-compass", on: ["discover"] },
@@ -677,7 +675,7 @@
       { href: "movies.html", label: "Movies", icon: "fa-film", n: count((i) => i.type === "movie") },
       { href: "tv-shows.html", label: "TV Shows", icon: "fa-tv", n: count((i) => i.type === "tv") },
       { href: "anime.html", label: "Anime", icon: "fa-clapperboard", n: count((i) => i.type === "anime") },
-      { href: "favorites.html", label: "Favorites", icon: "fa-heart", n: count((i) => i.favorite) },
+      { href: "watchlist.html?list=fav", label: "Favorites", icon: "fa-heart", n: count((i) => i.favorite) },
       { href: "tier-list.html", label: "Tier List", icon: "fa-ranking-star", n: null },
     ];
     makeSheet(

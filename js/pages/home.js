@@ -267,8 +267,8 @@
 
   function myRows(all) {
     const rows = [
-      { title: "Up next on your watchlist", items: all.filter((i) => i.watchlist), link: "watchlist.html" },
-      { title: "Your favorites", items: all.filter((i) => i.favorite), link: "favorites.html" },
+      { title: "Up next on your watchlist", items: all.filter((i) => i.watchlist), link: "watchlist.html?list=watch" },
+      { title: "Your favorites", items: all.filter((i) => i.favorite), link: "watchlist.html?list=fav" },
       { title: "Recently added", items: all.filter((i) => i.isNew).reverse(), link: null },
     ];
     if (!live) {
@@ -294,7 +294,7 @@
       ["Movies", count((i) => i.type === "movie"), "movies.html"],
       ["TV Shows", count((i) => i.type === "tv"), "tv-shows.html"],
       ["Anime", count((i) => i.type === "anime"), "anime.html"],
-      ["Favorites", count((i) => i.favorite), "favorites.html"],
+      ["Favorites", count((i) => i.favorite), "watchlist.html?list=fav"],
       ["Watchlist", count((i) => i.watchlist), "watchlist.html"],
       ["My average", avg ? avg.toFixed(1) : "–", "profile.html"],
     ];

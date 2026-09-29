@@ -45,7 +45,7 @@ It updates by itself whenever the site is published.
 | `discover.html` | Browse and search **all** movies, TV shows and anime on TMDB (trending, popular, in cinemas, coming soon, top rated, anime), or browse by genre. Search forgives typos ("forest gump" finds Forrest Gump) and hides shorts / posterless uploads. Unreleased titles get a "Coming soon · date" label (the cinema date in Romania). Add anything to your library or watchlist |
 | `index.html` | Home, live from TMDB: this week's trending titles in the slideshow, **Top 10 today** (movies / TV shows switch), then rows for in cinemas, coming soon, popular and top rated movies / TV / anime. At the bottom, "Your Movie Nights": your stats, watchlist, favorites and a "What should I watch?" button. (Without a TMDB key it shows your own list instead.) |
 | `movies.html`, `tv-shows.html`, `anime.html` | Full lists with search, genre, sort, rating and year filters |
-| `favorites.html`, `watchlist.html` | Everything you've hearted or bookmarked |
+| `watchlist.html` | Two rows, **Plan to watch** and **Favorites**; "See all" opens the full list below them, with a switch between the two, search and filters. (`favorites.html` just forwards here.) |
 | `title.html?id=...` | Details for one title: your score, trailer, where to watch, overview, **Seasons** (TV: each season's trailer), cast, media, reviews, "more like this" |
 | `person.html?id=...` | An actor / crew member (tap a cast card or the director's name): photo, bio, facts, best known for, full filmography with a role filter |
 | `tier-list.html` | Drag posters into S / A / B / C / D tiers |

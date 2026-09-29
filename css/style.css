@@ -8179,3 +8179,122 @@ html:not(.is-owner) .owner-only {
     padding-left: 52px;
   }
 }
+
+/* ============================== Watchlist page: Plan to watch + Favorites ============================== */
+
+.wl-row:first-child {
+  margin-top: 8px;
+}
+
+.wl-row .row-head h2 i {
+  margin-right: 6px;
+  font-size: 0.8em;
+  color: var(--accent-hover);
+}
+
+.wl-row .row-head .wl-see {
+  cursor: pointer;
+}
+
+.wl-row-empty {
+  margin: 0;
+  padding: 26px 20px;
+  border: 1px dashed var(--glass-border);
+  border-radius: 16px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* the full list, under the two rows */
+.wl-panel {
+  margin-top: 40px;
+  padding-top: 28px;
+  border-top: 1px solid var(--glass-border);
+  scroll-margin-top: 90px;
+  animation: wl-in 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes wl-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.wl-panel .page-head {
+  margin-top: 0;
+}
+
+.wl-title {
+  font-size: 24px;
+}
+
+.wl-switch {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 18px;
+  padding: 5px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+
+.wl-switch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--glass-muted);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.25s, color 0.25s;
+}
+
+.wl-switch button:hover {
+  color: var(--glass-text);
+}
+
+.wl-switch button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.wl-switch .count {
+  opacity: 0.7;
+  font-size: 0.9em;
+}
+
+.wl-switch .wl-close {
+  width: 40px;
+  padding: 0;
+  justify-content: center;
+}
+
+@media (max-width: 520px) {
+  .wl-switch {
+    gap: 2px;
+  }
+
+  .wl-switch button {
+    gap: 6px;
+    height: 38px;
+    padding: 0 12px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .wl-switch .wl-close {
+    width: 38px;
+  }
+}
