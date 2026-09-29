@@ -41,22 +41,19 @@
   const avatar = pic(acct);
 
   // sign in / "Who's watching?" / sign out
+  // (someone who already signed in on this device before stays one tap away under "Who's watching?")
   function accountMenu() {
     if (!window.Cloud || !Cloud.enabled) return "";
     const others = Cloud.accounts().filter((a) => !acct || a.uid !== acct.uid);
     const row = (attrs, icon, label) => `<a href="#" ${attrs}>${icon}<span>${label}</span><i class="fa-solid fa-chevron-right"></i></a>`;
     const who = others.length
-      ? `<div class="menu-label">Who's watching?</div>${others
+      ? `<div class="menu-label">Who's watching?</div><div class="menu-group">${others
           .map((a) => row(`data-cloud-switch="${esc(a.uid)}"`, `<img class="acct-pic" src="${esc(pic(a))}" alt="" referrerpolicy="no-referrer" />`, esc(a.name)))
-          .join("")}`
+          .join("")}</div>`
       : "";
     return acct
-      ? `<hr />${who}${row('data-cloud="add"', '<i class="fa-solid fa-user-plus"></i>', "Add a profile")}${row(
-          'data-cloud="sign-out"',
-          '<i class="fa-solid fa-right-from-bracket"></i>',
-          "Sign out"
-        )}`
-      : `<hr />${who}${row('data-cloud="add"', '<i class="fa-brands fa-google"></i>', "Sign in")}`;
+      ? `${who}<div class="menu-group">${row('data-cloud="sign-out" class="menu-danger"', '<i class="fa-solid fa-right-from-bracket"></i>', "Sign out")}</div>`
+      : `${who}<div class="menu-group">${row('data-cloud="add" class="menu-signin"', '<i class="fa-brands fa-google"></i>', "Sign in with Google")}</div>`;
   }
 
   /* ---------------- navbar ---------------- */
@@ -102,15 +99,16 @@
               <img src="${esc(avatar)}" alt="" referrerpolicy="no-referrer" />
               <div>
                 <h2>${esc(profile.name)}</h2>
-                ${acct ? '<small class="sync-status"></small>' : '<small class="sync-status">Not signed in</small>'}
+                ${acct ? '<small class="sync-status"></small>' : '<small class="sync-status"><i class="fa-regular fa-circle-user"></i> Not signed in</small>'}
               </div>
             </div>
-            <hr />
-            <a href="tier-list.html" class="tablet-link"><i class="fa-solid fa-ranking-star"></i><span>Tier List</span><i class="fa-solid fa-chevron-right"></i></a>
-            <a href="profile.html"><i class="fa-solid fa-user"></i><span>Profile &amp; stats</span><i class="fa-solid fa-chevron-right"></i></a>
-            <a href="#" data-action="add-title" class="owner-only"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
-            <a href="profile.html#settings"><i class="fa-solid fa-gear"></i><span>Settings &amp; backup</span><i class="fa-solid fa-chevron-right"></i></a>
-            <a href="#" class="install-app" hidden><i class="fa-solid fa-mobile-screen"></i><span>Install the app</span><i class="fa-solid fa-chevron-right"></i></a>
+            <div class="menu-group">
+              <a href="tier-list.html" class="tablet-link"><i class="fa-solid fa-ranking-star"></i><span>Tier List</span><i class="fa-solid fa-chevron-right"></i></a>
+              <a href="profile.html"><i class="fa-solid fa-user"></i><span>Profile &amp; stats</span><i class="fa-solid fa-chevron-right"></i></a>
+              <a href="#" data-action="add-title" class="owner-only"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
+              <a href="profile.html#settings"><i class="fa-solid fa-gear"></i><span>Settings &amp; backup</span><i class="fa-solid fa-chevron-right"></i></a>
+              <a href="#" class="install-app" hidden><i class="fa-solid fa-mobile-screen"></i><span>Install the app</span><i class="fa-solid fa-chevron-right"></i></a>
+            </div>
             <div class="menu-prefs">
               ${langToggle("in-profile")}
               <label class="menu-switch" title="Title, ratings and buttons under each poster (off: posters only)">

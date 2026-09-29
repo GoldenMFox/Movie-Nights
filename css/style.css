@@ -8298,3 +8298,161 @@ html:not(.is-owner) .owner-only {
     width: 38px;
   }
 }
+
+/* ============================== Profile menu: glass redesign ============================== */
+
+.profile-menu {
+  width: 292px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 26px;
+  background: rgba(20, 20, 24, 0.78);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+  backdrop-filter: blur(28px) saturate(170%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transform: translateY(-8px) scale(0.98);
+  transform-origin: top right;
+  transition: opacity 0.22s, transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.profile.open .profile-menu {
+  transform: none;
+}
+
+/* you: photo with a soft red ring, name, sync pill */
+.profile-menu .user-info {
+  padding: 10px 0 14px;
+}
+
+.profile-menu .user-info img {
+  width: 76px;
+  height: 76px;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 0 0 5px rgba(144, 13, 9, 0.28), 0 10px 28px rgba(0, 0, 0, 0.5);
+}
+
+.profile-menu .user-info h2 {
+  margin-top: 14px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.profile-menu .sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.profile-menu .sync-status:empty {
+  display: none;
+}
+
+.profile-menu hr {
+  display: none;
+}
+
+/* rows grouped in glass capsules, like the preferences block */
+.profile-menu .menu-group {
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.profile-menu .menu-group a {
+  display: flex;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.profile-menu .menu-group a[hidden],
+.profile-menu .menu-group a.tablet-link {
+  display: none;
+}
+
+@media (max-width: 1000px) {
+  html.tablet .profile-menu .menu-group a.tablet-link {
+    display: flex;
+  }
+}
+
+.profile-menu .menu-group a:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.profile-menu .menu-group a:hover span {
+  font-weight: 500;
+}
+
+.profile-menu .menu-group a i:first-child {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+}
+
+.profile-menu .menu-group a .fa-chevron-right {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 11px;
+  transition: transform 0.3s, color 0.2s;
+}
+
+.profile-menu .menu-group a:hover .fa-chevron-right {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.profile-menu .menu-group a .acct-pic {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.profile-menu .menu-label {
+  padding: 12px 10px 0;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+/* Sign out: a quiet red */
+.profile-menu .menu-group a.menu-danger {
+  color: #ff8a84;
+}
+
+.profile-menu .menu-group a.menu-danger i:first-child {
+  border-color: rgba(185, 34, 34, 0.35);
+  background: rgba(185, 34, 34, 0.16);
+  color: #ff6b63;
+}
+
+.profile-menu .menu-group a.menu-danger:hover {
+  background: rgba(185, 34, 34, 0.14);
+}
+
+/* Sign in: lit red, like the site's main buttons */
+.profile-menu .menu-group a.menu-signin i:first-child {
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(144, 13, 9, 0.45);
+}
