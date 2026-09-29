@@ -432,6 +432,12 @@
   const appUi = (standalone || touchOnly) && !tablet;
   if (appUi) document.documentElement.classList.add("app-ui");
 
+  // Settings → "Show details under posters" off: computers show posters only too (phones
+  // and tablets always do)
+  try {
+    if (localStorage.getItem("mn:cardStyle") === "posters") document.documentElement.classList.add("posters-only");
+  } catch (e) {}
+
   // the navbar turns see-through over the top of the page (tablet slideshow) and
   // frosted once you scroll
   const onScroll = () => document.documentElement.classList.toggle("scrolled", window.scrollY > 30);

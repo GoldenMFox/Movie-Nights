@@ -7032,3 +7032,106 @@ html.tablet .top10-num {
     font-size: 104px;
   }
 }
+/* ============================== Settings: on / off switch ============================== */
+
+.setting-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  background: var(--glass-bg);
+}
+
+.setting-toggle strong {
+  display: block;
+  font-size: 14.5px;
+}
+
+.setting-toggle small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-track {
+  display: block;
+  width: 48px;
+  height: 28px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  transition: background 0.25s;
+}
+
+:root[data-theme="light"] .switch-track {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.switch-thumb {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.switch input:checked + .switch-track {
+  background: var(--accent);
+}
+
+.switch input:checked + .switch-track .switch-thumb {
+  transform: translateX(20px);
+}
+
+.switch input:focus-visible + .switch-track {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* ============================== Computers: "posters only" card style ============================== */
+/* (same look as phones and tablets; the hover preview still gives the buttons) */
+
+html.posters-only .movie-item {
+  border: 0;
+  border-radius: 16px;
+  background: none;
+  box-shadow: none;
+}
+
+html.posters-only .movie-item .movie-info {
+  display: none;
+}
+
+html.posters-only .poster-link {
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* posters are shorter without the details: a few more per row */
+html.posters-only:not(.app-ui):not(.tablet) .movie-grid {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+html.posters-only:not(.app-ui):not(.tablet) .movie-row {
+  grid-auto-columns: 200px;
+}

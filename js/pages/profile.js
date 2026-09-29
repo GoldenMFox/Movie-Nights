@@ -26,6 +26,17 @@
             <label class="field">Theme
               <select class="select" name="theme"><option value="dark">Dark</option><option value="light">Light</option></select>
             </label>
+            <div class="setting-toggle">
+              <div>
+                <strong>Show details under posters</strong>
+                <small>Title, ratings and buttons under each poster on computers. Turn off to see posters only,
+                  like on phones and tablets.</small>
+              </div>
+              <label class="switch" aria-label="Show details under posters">
+                <input type="checkbox" name="cardDetails" />
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+              </label>
+            </div>
             <label class="field">TMDB API key (optional)
               <input class="input" name="tmdb" type="password" autocomplete="off" placeholder="Paste your key or read access token" />
             </label>
@@ -191,6 +202,18 @@
     try {
       localStorage.setItem("mn:theme", themeSel.value);
     } catch (e) {}
+  });
+
+  // card style on computers: full cards (default) or posters only
+  const detailsBox = $('[name="cardDetails"]');
+  detailsBox.checked = !document.documentElement.classList.contains("posters-only");
+  detailsBox.addEventListener("change", () => {
+    document.documentElement.classList.toggle("posters-only", !detailsBox.checked);
+    try {
+      if (detailsBox.checked) localStorage.removeItem("mn:cardStyle");
+      else localStorage.setItem("mn:cardStyle", "posters");
+    } catch (e) {}
+    toast(detailsBox.checked ? "Cards show their details again" : "Posters only");
   });
 
   const keyInput = $('[name="tmdb"]');
