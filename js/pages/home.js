@@ -151,7 +151,7 @@
 
   // lists are kept for 30 minutes, so going back to Home is instant
   async function cachedList(cat) {
-    const key = `mn:home2:${cat}:${Lang.get()}`;
+    const key = `mn:home3:${cat}:${Lang.get()}`;
     try {
       const c = JSON.parse(sessionStorage.getItem(key) || "null");
       if (c && Date.now() - c.at < CACHE_MINUTES * 60000) return c.results;
@@ -211,7 +211,7 @@
 
   async function fillTop10(media) {
     const row = rowsEl.querySelector(".top10-row");
-    const key = `mn:home2:top10-${media}:${Lang.get()}`;
+    const key = `mn:home3:top10-${media}:${Lang.get()}`;
     try {
       let results = null;
       try {

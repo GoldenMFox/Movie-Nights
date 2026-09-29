@@ -57,7 +57,15 @@
     "popular-movies": { label: "Popular movies", path: "/movie/popular", media: "movie" },
     // worldwide lists (only the release dates on the labels are Romania's)
     "now-playing": { label: "In cinemas", path: "/movie/now_playing", media: "movie" },
-    upcoming: { label: "Coming soon", path: "/movie/upcoming", media: "movie" },
+    // films whose cinema release is still ahead, most anticipated first (TMDB's own
+    // "upcoming" list is mostly films already out); the date is filled in by list()
+    upcoming: {
+      label: "Coming soon",
+      path: "/discover/movie",
+      media: "movie",
+      params: { sort_by: "popularity.desc", with_release_type: "2|3" },
+      future: true,
+    },
     // TMDB's own "top rated" lists let in titles with only a few hundred votes,
     // so these ask for well-known titles only (thousands of votes)
     "top-movies": {
@@ -324,9 +332,16 @@
   // One page of a Discover category
   async function list(category, page) {
     const c = CATEGORIES[category];
-    const [data, ru] = await requestWithRu(c.path, Object.assign({ page: page || 1 }, c.params || {}));
+    const today = new Date().toISOString().slice(0, 10);
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const params = Object.assign({ page: page || 1 }, c.params || {}, c.future ? { "primary_release_date.gte": tomorrow } : {});
+    const [data, ru] = await requestWithRu(c.path, params);
+    // "now playing" is a date window that reaches a little into the future, and a film can
+    // be out in one country and not another: coming soon = not out yet, in cinemas = out
+    const byDate = (r) =>
+      category === "upcoming" ? !!r.release_date && r.release_date > today : category === "now-playing" ? !r.release_date || r.release_date <= today : true;
     return {
-      results: applyRu(data.results.filter((r) => c.media || isTitle(r)).map((r) => simplify(r, c.media)), ru, c.media),
+      results: applyRu(data.results.filter((r) => (c.media || isTitle(r)) && byDate(r)).map((r) => simplify(r, c.media)), ru, c.media),
       totalPages: Math.min(data.total_pages || 1, 500),
     };
   }
