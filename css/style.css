@@ -6308,3 +6308,33 @@ button.p-lib-line:hover .p-lib-arrow {
     font-size: 13px;
   }
 }
+/* same card height as before the glass redesign (lower part 120px on computers, 97px on phones) */
+.movie-info {
+  gap: 4px;
+  padding: 12px 14px 10px;
+}
+
+.movie-meta .year {
+  padding: 1px 8px;
+}
+
+.action-circle {
+  margin-top: 3px;
+  padding-top: 8px;
+}
+
+@media (max-width: 700px) {
+  .movie-info {
+    gap: 3px;
+    padding: 8px 9px 7px;
+  }
+
+  .movie-meta .year {
+    padding: 0 6px;
+  }
+
+  .action-circle {
+    margin-top: 2px;
+    padding-top: 6px;
+  }
+}
