@@ -147,21 +147,53 @@
 
   // "Coming soon · Dec 15" on titles that aren't out yet (only here on Discover). Not on
   // the "Coming soon" list itself, where every title would have it.
+  // Movies use their release date in Romania (MN_CONFIG.RELEASE_COUNTRY), looked up for
+  // recent and upcoming ones; until it arrives (or if Romania has none) the worldwide date.
   const today = () => new Date().toISOString().slice(0, 10);
+  const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+
+  function soonLabel(card, date) {
+    const old = card.querySelector(".soon-label");
+    if (old) old.remove();
+    const img = card.querySelector(".poster-link .movie-poster");
+    if (!img || !date || date <= today()) return;
+    const when = new Date(`${date}T00:00:00Z`).toLocaleDateString("en", {
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+      ...(date.slice(0, 4) !== today().slice(0, 4) ? { year: "numeric" } : {}),
+    });
+    img.insertAdjacentHTML(
+      "afterend",
+      `<span class="soon-label" title="In cinemas in ${esc(TMDB.COUNTRY === "RO" ? "Romania" : TMDB.COUNTRY)} from ${esc(when)}"><i class="fa-regular fa-clock"></i> Coming soon · ${esc(when)}</span>`
+    );
+  }
+
   function markComingSoon(results) {
     if (!state.q && !state.genre && state.cat === "upcoming") return;
     const cards = [...grid.children].slice(-results.length); // one card per result, just added
+    const lookups = [];
     results.forEach((r, i) => {
-      const img = cards[i] && cards[i].querySelector(".poster-link .movie-poster");
-      if (!img || !r.released || r.released <= today()) return;
-      const when = new Date(`${r.released}T00:00:00Z`).toLocaleDateString("en", {
-        month: "short",
-        day: "numeric",
-        timeZone: "UTC",
-        ...(r.released.slice(0, 4) !== today().slice(0, 4) ? { year: "numeric" } : {}),
-      });
-      img.insertAdjacentHTML("afterend", `<span class="soon-label" title="Comes out ${esc(when)}"><i class="fa-regular fa-clock"></i> Coming soon · ${esc(when)}</span>`);
+      const card = cards[i];
+      if (!card) return;
+      if (r.mediaType !== "movie") return soonLabel(card, r.released);
+      const known = TMDB.knownLocalDate(r.tmdbId);
+      soonLabel(card, known || r.released);
+      // anything from the last ~7 months or later can still be ahead in Romania
+      if (known == null && (!r.released || r.released >= daysAgo(210))) lookups.push([card, r]);
     });
+    // a few at a time
+    const next = async () => {
+      const job = lookups.shift();
+      if (!job) return;
+      const [card, r] = job;
+      try {
+        const local = await TMDB.localDate(r.tmdbId);
+        if (card.isConnected) soonLabel(card, local || r.released);
+      } catch (e) {}
+      return next();
+    };
+    for (let k = 0; k < 4; k++) next();
   }
 
   async function load(reset) {

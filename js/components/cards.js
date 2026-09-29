@@ -525,7 +525,10 @@
   // Store.isRecent needs the release date; titles only keep their year. Look it up on
   // TMDB for this and last year's titles (a few dozen at most), once, and remember it.
   // Unreleased titles and ones TMDB had no date for are checked again after a week.
-  const RELEASES = "mn:releases";
+  const RELEASES = "mn:releases3"; // 3: movies use the cinema date in your country
+  try {
+    ["mn:releases", "mn:releases2"].forEach((k) => localStorage.removeItem(k)); // earlier versions
+  } catch (e) {}
   async function lookUpReleases() {
     if (!window.TMDB || !TMDB.enabled() || !window.Ratings) return;
     const saved = Store.read(RELEASES, {});

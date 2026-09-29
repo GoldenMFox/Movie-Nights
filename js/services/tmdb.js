@@ -55,8 +55,9 @@
   const CATEGORIES = {
     trending: { label: "Trending this week", path: "/trending/all/week" },
     "popular-movies": { label: "Popular movies", path: "/movie/popular", media: "movie" },
-    "now-playing": { label: "In cinemas", path: "/movie/now_playing", media: "movie" },
-    upcoming: { label: "Coming soon", path: "/movie/upcoming", media: "movie" },
+    // in cinemas / coming to cinemas in your country (MN_CONFIG.RELEASE_COUNTRY), with its dates
+    "now-playing": { label: "In cinemas", path: "/movie/now_playing", media: "movie", params: { region: ((window.MN_CONFIG || {}).RELEASE_COUNTRY || "RO").toUpperCase() } },
+    upcoming: { label: "Coming soon", path: "/movie/upcoming", media: "movie", params: { region: ((window.MN_CONFIG || {}).RELEASE_COUNTRY || "RO").toUpperCase() } },
     // TMDB's own "top rated" lists let in titles with only a few hundred votes,
     // so these ask for well-known titles only (thousands of votes)
     "top-movies": {
@@ -342,8 +343,57 @@
       genres: genreNames((d.genres || []).map((g) => g.id), media),
     };
   }
-  // the exact release / first air date, "2026-05-01" (for the NEW label on cards)
+  /* ---------------- release dates in your country (Romania) ---------------- */
+
+  const COUNTRY = ((window.MN_CONFIG || {}).RELEASE_COUNTRY || "RO").toUpperCase();
+  const LOCAL_DATES = "mn:localDates2"; // { movieId: { d: "2026-10-03" | "", at } }, "" = no cinema date there
+  try {
+    localStorage.removeItem("mn:localDates");
+  } catch (e) {}
+
+  // TMDB release types: 1 premiere, 2 limited, 3 cinemas, 4 digital, 5 physical, 6 TV.
+  // Only the cinema release counts: a festival premiere isn't "out", and a country's
+  // TV / digital dates are often a local broadcast years later (streaming films come
+  // out everywhere on their worldwide date, which is used when there's no cinema date).
+  function countryDate(list) {
+    const entry = (list || []).find((r) => r.iso_3166_1 === COUNTRY);
+    if (!entry) return "";
+    return (
+      entry.release_dates
+        .filter((x) => (x.type === 2 || x.type === 3) && x.release_date)
+        .map((x) => x.release_date.slice(0, 10))
+        .sort()[0] || ""
+    );
+  }
+
+  // a movie's release date in your country ("" if it has none there): remembered, and
+  // checked again after a few days while it isn't out yet
+  async function localDate(id) {
+    const saved = Store.read(LOCAL_DATES, {});
+    const s = saved[id];
+    const today = new Date().toISOString().slice(0, 10);
+    if (s && (Date.now() - s.at < 3 * 86400000 || (s.d && s.d <= today))) return s.d;
+    const d = await request(`/movie/${id}/release_dates`);
+    const date = countryDate(d.results);
+    const fresh = Store.read(LOCAL_DATES, {});
+    fresh[id] = { d: date, at: Date.now() };
+    const keys = Object.keys(fresh);
+    if (keys.length > 800) keys.sort((a, b) => fresh[a].at - fresh[b].at).slice(0, keys.length - 800).forEach((k) => delete fresh[k]);
+    Store.write(LOCAL_DATES, fresh);
+    return date;
+  }
+  const knownLocalDate = (id) => {
+    const s = Store.read(LOCAL_DATES, {})[id];
+    return s ? s.d : null;
+  };
+
+  // the release date that counts for you: movies in your country (worldwide date when
+  // the country has none on TMDB), TV shows their first air date
   async function releaseDate(media, id) {
+    if (media === "movie") {
+      const local = await localDate(id);
+      if (local) return local;
+    }
     const d = await request(`/${media}/${id}`);
     return d.release_date || d.first_air_date || "";
   }
@@ -597,5 +647,5 @@
     return true;
   }
 
-  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, list, byGenre, details, detailsById, basic, releaseDate, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
+  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, list, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
 })();

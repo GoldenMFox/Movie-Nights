@@ -136,11 +136,12 @@
 
   // A new release: came out in the last 6 months (not upcoming ones). Needs the exact
   // release date, which js/components/cards.js looks up on TMDB for this and last
-  // year's titles and keeps in mn:releases ({ id: { d: "2026-05-01", at } }).
+  // year's titles (movies: the date in your country, MN_CONFIG.RELEASE_COUNTRY) and
+  // keeps in mn:releases3 ({ id: { d: "2026-05-01", at } }).
   // So the NEW label goes away by itself as titles get older.
   const RECENT_DAYS = 183;
   function releaseOf(item) {
-    const r = read("mn:releases", {})[item.id];
+    const r = read("mn:releases3", {})[item.id];
     return r ? r.d : null; // null = not looked up yet, "" = TMDB has no date
   }
   function isRecent(item) {

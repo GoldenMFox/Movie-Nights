@@ -34,5 +34,8 @@ window.MN_CONFIG = {
   // iPhone / iPad sign-in without a pop-up (js/core/cloud.js). The "Web client" ID from
   // Google Cloud console -> APIs & Services -> Credentials (Firebase created it). That
   // client needs this site's index.html as an "Authorized redirect URI". Empty = use the pop-up.
+  // Release dates (Discover's "Coming soon" label, the NEW label, the In cinemas / Coming soon
+  // lists) are the ones for this country (TMDB country code). Movies only: TV shows air worldwide.
+  RELEASE_COUNTRY: "RO",
   GOOGLE_CLIENT_ID: "206066875468-4h7ejupakg0jocqtg47pmdipodbet1s7.apps.googleusercontent.com",
 };
