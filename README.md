@@ -1,4 +1,4 @@
-﻿# Movie Nights
+# Movie Nights
 
 A personal list of the movies, TV shows and anime we've watched: rated, ranked, and saved for later.
 
@@ -15,7 +15,7 @@ trailers inside a page opened straight from a file. Through the launcher, traile
 the pop-up.
 
 It also works on GitHub Pages (trailers included): push the folder, then in the repo go to
-**Settings â†’ Pages â†’ Deploy from branch**.
+**Settings → Pages → Deploy from branch**.
 
 ## Publishing
 
@@ -30,9 +30,9 @@ part of the site's files (they live in each person's account), so publishing nev
 
 Open **https://goldenmfox.github.io/Movie-Nights/** on your phone, then:
 
-- **Android** (Chrome, Brave, Edge): profile menu (your picture, top right) â†’ **Install the app**,
-  or the browser menu â†’ **Install app** / **Add to Home screen**.
-- **iPhone / iPad** (Safari): the **Share** button â†’ **Add to Home Screen**.
+- **Android** (Chrome, Brave, Edge): profile menu (your picture, top right) → **Install the app**,
+  or the browser menu → **Install app** / **Add to Home screen**.
+- **iPhone / iPad** (Safari): the **Share** button → **Add to Home Screen**.
 
 It opens full screen with its own icon, has a back button in the top left, and your own
 list still opens without internet (Discover, trending and trailers need a connection).
@@ -42,14 +42,14 @@ It updates by itself whenever the site is published.
 
 | Page | What it does |
 | --- | --- |
-| `discover.html` | Browse and search **all** movies, TV shows and anime on TMDB (trending, popular, in cinemas, coming soon, top rated, anime), or browse by genre. Search forgives typos ("forest gump" finds Forrest Gump) and hides shorts / posterless uploads. Unreleased titles get a "Coming soon Â· date" label (the cinema date in Romania). Add anything to your library or watchlist |
+| `discover.html` | Browse and search **all** movies, TV shows and anime on TMDB (trending, popular, in cinemas, coming soon, top rated, anime), or browse by genre. Search forgives typos ("forest gump" finds Forrest Gump) and hides shorts / posterless uploads. Unreleased titles get a "Coming soon · date" label (the cinema date in Romania). Add anything to your library or watchlist |
 | `index.html` | Home, live from TMDB: this week's trending titles in the slideshow, **Top 10 today** (movies / TV shows switch), then rows for in cinemas, coming soon, popular and top rated movies / TV / anime. At the bottom, "Your Movie Nights": your stats, watchlist, favorites and a "What should I watch?" button. (Without a TMDB key it shows your own list instead.) |
 | `movies.html`, `tv-shows.html`, `anime.html` | Full lists with search, genre, sort, rating and year filters |
 | `watchlist.html` | **Coming up** (release dates of movies you're waiting for, new seasons / episodes of your shows), then two rows, **Plan to watch** and **Favorites**; "See all" opens the full list below them, with a switch between the two, search, filters and **On my services**. (`favorites.html` just forwards here.) |
 | `title.html?id=...` | Details for one title: your score, **Watched on** (change the date), trailer, where to watch, overview, **Seasons** (TV: each season's trailer), cast, media, reviews, "more like this" |
 | `person.html?id=...` | An actor / crew member (tap a cast card or the director's name): photo, bio, facts, best known for, full filmography with a role filter |
 | `tier-list.html` | Drag posters into S / A / B / C / D tiers |
-| `profile.html` | Your stats, **Watch diary** (watched this year / month, a chart of the last 12 months, "a year ago you watchedâ€¦"), settings (theme, **your streaming services**), **Import** from IMDb / Letterboxd, backup. The owner also sees the TMDB / OMDb settings and **Members** |
+| `profile.html` | Your stats, **Watch diary** (watched this year / month, a chart of the last 12 months, "a year ago you watched…"), settings (theme, **your streaming services**), **Import** from IMDb / Letterboxd, backup. The owner also sees the TMDB / OMDb settings and **Members** |
 
 The navbar search (or `/` on any page) searches your library and all of TMDB.
 
@@ -59,8 +59,9 @@ your Watchlist, or from your Favorites for a rewatch.
 
 **Borrowed from Netflix, HBO Max, Plex and Prime Video:**
 
-- **Because you liked â€¦** (Home): two rows of TMDB recommendations for two of your best-rated
-  titles (8+ or favorites), different ones each visit, without what you already have.
+- **Because you liked …** (Home): two rows near the top for two of your best-rated movies /
+  shows (8+ or favorites), and one for an anime under the anime rows. TMDB recommendations,
+  different each visit, without what you already have; anime only in the anime row.
 - **Match %** ("92% match", `js/services/taste.js`): how much you'll probably like a title
   you haven't rated, from how you rate its genres against your own average, nudged by its
   TMDB score. Shows after 5 rated titles, in the hover preview, on title pages, in the quick
@@ -68,13 +69,13 @@ your Watchlist, or from your Favorites for a rewatch.
 - **Remind me** (titles not out yet: bell on the card, title page, quick menu): puts it in
   **Coming up** on the Watchlist page without adding it to anything. Saved with your profile;
   drops off a month after release.
-- **Franchises** (title pages): "Harry Potter Collection Â· You've seen 2 of 8", every film in it.
+- **Franchises** (title pages): "Harry Potter Collection · You've seen 2 of 8", every film in it.
 - **Your own lists** ("Halloween marathon", "Date night"): **New list** on the Watchlist page,
-  add titles from the quick menu or a title page's â‹¯ menu (Add to a list). Each list gets a
+  add titles from the quick menu or a title page's ⋯ menu (Add to a list). Each list gets a
   row and a place in the full-list switch (with Rename / Delete). Saved with your profile.
 - **X-Ray** (title pages): tagline, release, budget and box office, awards (OMDb), studios,
   countries, language, keywords, and **where you've seen the cast** in your own library.
-- **Movie Nights Wrapped** (Profile â†’ Watch diary): your year as a story: how many you watched,
+- **Movie Nights Wrapped** (Profile → Watch diary): your year as a story: how many you watched,
   where it started, top genres, busiest month, your best-rated, the actor and director you saw
   most, your average score, and a summary you can share.
 
@@ -83,13 +84,13 @@ your Watchlist, or from your Favorites for a rewatch.
 
 **Import** (Profile): the `.csv` exports of IMDb (Your ratings, Your watchlist; matched on TMDB
 by IMDb id) and Letterboxd (ratings / watched / diary / watchlist.csv; matched by name + year,
-stars Ã— 2 = score). You see what was found before anything is added, and titles you already
+stars × 2 = score). You see what was found before anything is added, and titles you already
 have keep your own score.
 
 **Watch diary**: the day you rate a title or press Watched is saved as the day you watched it
 (`watchedAt`); change it on the title page. Imports bring their dates.
 
-**Streaming services**: pick yours in Profile â†’ Settings (saved with your profile, so they
+**Streaming services**: pick yours in Profile → Settings (saved with your profile, so they
 follow you). Availability comes from TMDB / JustWatch for `RELEASE_COUNTRY` (Romania) and is
 kept for a week in `mn:providers`; release dates / next episodes are kept for a day in `mn:nextUp`
 (`js/services/watch.js`).
@@ -146,7 +147,7 @@ On the site:
   seconds) that puts the title back exactly as it was, with its score, lists and tier.
 
 Changes are saved in the browser straight away and synced to your account.
-**Profile â†’ Backup**: download / restore a file copy, or delete your library.
+**Profile → Backup**: download / restore a file copy, or delete your library.
 
 ## TMDB and IMDb ratings
 
@@ -160,7 +161,7 @@ window.MN_CONFIG = {
 ```
 
 **The rating next to yours** is the IMDb rating. Title pages also show the Rotten
-Tomatoes Tomatometer (ðŸ…, green splat under 60%) when the title has one.
+Tomatoes Tomatometer (🍅, green splat under 60%) when the title has one.
 
 The free OMDb key allows 1,000 lookups a day, so the site:
 
@@ -171,9 +172,9 @@ The free OMDb key allows 1,000 lookups a day, so the site:
 - keeps TMDB scores on Discover cards (TMDB has no daily limit). Opening a title
   from Discover shows its IMDb rating.
 
-Profile â†’ Settings shows how many OMDb lookups were used today.
+Profile → Settings shows how many OMDb lookups were used today.
 
-A TMDB key pasted in **Profile â†’ Settings** is stored only in that browser and overrides
+A TMDB key pasted in **Profile → Settings** is stored only in that browser and overrides
 the one in `config.js`. Without keys the site still works, just without Discover and the
 outside ratings.
 
@@ -182,13 +183,13 @@ outside ratings.
 
 ## Sign in and sync (Firebase)
 
-Profile menu â†’ **Sign in** (Google). Your ratings, favorites, watchlist, added titles,
+Profile menu → **Sign in** (Google). Your ratings, favorites, watchlist, added titles,
 tiers and profile are saved to your account and follow you to every device.
 
 - Every allowed person starts with an **empty** library and sees only their own.
 - The **owner** is whoever the security rules allow to list all users (the site checks
   that on sign-in, so it can't be faked). The owner also gets **Add a title**, the TMDB /
-  OMDb settings and **Profile â†’ Members**: everyone who signed in, with their photo,
+  OMDb settings and **Profile → Members**: everyone who signed in, with their photo,
   last sync and how many titles / rated / watchlist they have (never their ratings).
 - The owner's old library (it used to be public, from `data/library.js`) moved into the
   owner's account the first time they signed in after the change.
@@ -204,49 +205,49 @@ and is meant to be public; the security rules protect the data.
 
 ```
 Movie-Nights-NEW/
-â”œâ”€â”€ index.html, discover.html, movies.html, tv-shows.html, anime.html,
-â”‚   favorites.html, watchlist.html, title.html, person.html, tier-list.html, profile.html
-â”‚                              the pages (kept at the top so the links and the app work)
-â”œâ”€â”€ manifest.webmanifest       installed-app name, icons and colours
-â”œâ”€â”€ sw.js                      service worker: offline support + app updates
-â”œâ”€â”€ css/
-â”‚   â””â”€â”€ style.css              all styles (dark + light theme)
-â”œâ”€â”€ data/
-â”‚   â””â”€â”€ library.js             a local list (only used without sign-in)
-â”œâ”€â”€ js/
-â”‚   â”œâ”€â”€ config.js              TMDB, OMDb and Firebase keys / settings
-â”‚   â”œâ”€â”€ core/                  loaded on every page
-â”‚   â”‚   â”œâ”€â”€ store.js           your library (kept in the browser, synced by cloud.js)
-â”‚   â”‚   â”œâ”€â”€ cloud.js           Google sign-in, sync, profiles, owner + Members
-â”‚   â”‚   â”œâ”€â”€ lang.js            EN / RU movie names, typo-tolerant name matching
-â”‚   â”‚   â””â”€â”€ layout.js          navbar, footer, search, profile menu, dark mode
-â”‚   â”œâ”€â”€ services/              talking to outside services
-â”‚   â”‚   â”œâ”€â”€ tmdb.js            TMDB (details, trailers, cast, Discover)
-â”‚   â”‚   â”œâ”€â”€ ratings.js         IMDb via OMDb (daily budget) with TMDB fallback
-â”‚   â”‚   â”œâ”€â”€ watch.js           your streaming services, what's coming, reminders
-â”‚   â”‚   â””â”€â”€ taste.js           match % from your own scores
-â”‚   â”œâ”€â”€ components/            pieces used by several pages
-â”‚   â”‚   â”œâ”€â”€ cards.js           poster cards, rating pop-up, trailer pop-up
-â”‚   â”‚   â”œâ”€â”€ add-title.js       "Add a title" form
-â”‚   â”‚   â”œâ”€â”€ preview.js         hover a poster: Netflix-style trailer preview (computers)
-â”‚   â”‚   â”œâ”€â”€ scrollbars.js      slim scrollbars with a hand cursor under the rows (computers)
-â”‚   â”‚   â”œâ”€â”€ picker.js          "What should I watch?" pop-up
-â”‚   â”‚   â”œâ”€â”€ import.js          import from IMDb / Letterboxd (Profile)
-â”‚   â”‚   â””â”€â”€ wrapped.js         Movie Nights Wrapped (Profile)
-â”‚   â””â”€â”€ pages/                 one script per page
-â”‚       â”œâ”€â”€ home.js, discover.js, browse.js (movies / TV / anime / favorites / watchlist)
-â”‚       â””â”€â”€ title.js, person.js, tier-list.js, profile.js
-â”œâ”€â”€ images/
-â”‚   â”œâ”€â”€ brand/                 logo, favicon
-â”‚   â”œâ”€â”€ icons/                 installed-app icons
-â”‚   â””â”€â”€ placeholders/          user icon (signed out), missing poster / photo
-â”œâ”€â”€ docs/
-â”‚   â””â”€â”€ firestore.rules        copy of the database security rules
-â”œâ”€â”€ tools/
-â”‚   â”œâ”€â”€ serve.ps1              tiny local web server (used by Start Movie Nights.bat)
-â”‚   â””â”€â”€ publish.ps1            commit + push to GitHub (used by Publish to GitHub.bat)
-â”œâ”€â”€ Start Movie Nights.bat     double-click to open the site locally
-â””â”€â”€ Publish to GitHub.bat      double-click to publish your changes
+├── index.html, discover.html, movies.html, tv-shows.html, anime.html,
+│   favorites.html, watchlist.html, title.html, person.html, tier-list.html, profile.html
+│                              the pages (kept at the top so the links and the app work)
+├── manifest.webmanifest       installed-app name, icons and colours
+├── sw.js                      service worker: offline support + app updates
+├── css/
+│   └── style.css              all styles (dark + light theme)
+├── data/
+│   └── library.js             a local list (only used without sign-in)
+├── js/
+│   ├── config.js              TMDB, OMDb and Firebase keys / settings
+│   ├── core/                  loaded on every page
+│   │   ├── store.js           your library (kept in the browser, synced by cloud.js)
+│   │   ├── cloud.js           Google sign-in, sync, profiles, owner + Members
+│   │   ├── lang.js            EN / RU movie names, typo-tolerant name matching
+│   │   └── layout.js          navbar, footer, search, profile menu, dark mode
+│   ├── services/              talking to outside services
+│   │   ├── tmdb.js            TMDB (details, trailers, cast, Discover)
+│   │   ├── ratings.js         IMDb via OMDb (daily budget) with TMDB fallback
+│   │   ├── watch.js           your streaming services, what's coming, reminders
+│   │   └── taste.js           match % from your own scores
+│   ├── components/            pieces used by several pages
+│   │   ├── cards.js           poster cards, rating pop-up, trailer pop-up
+│   │   ├── add-title.js       "Add a title" form
+│   │   ├── preview.js         hover a poster: Netflix-style trailer preview (computers)
+│   │   ├── scrollbars.js      slim scrollbars with a hand cursor under the rows (computers)
+│   │   ├── picker.js          "What should I watch?" pop-up
+│   │   ├── import.js          import from IMDb / Letterboxd (Profile)
+│   │   └── wrapped.js         Movie Nights Wrapped (Profile)
+│   └── pages/                 one script per page
+│       ├── home.js, discover.js, browse.js (movies / TV / anime / favorites / watchlist)
+│       └── title.js, person.js, tier-list.js, profile.js
+├── images/
+│   ├── brand/                 logo, favicon
+│   ├── icons/                 installed-app icons
+│   └── placeholders/          user icon (signed out), missing poster / photo
+├── docs/
+│   └── firestore.rules        copy of the database security rules
+├── tools/
+│   ├── serve.ps1              tiny local web server (used by Start Movie Nights.bat)
+│   └── publish.ps1            commit + push to GitHub (used by Publish to GitHub.bat)
+├── Start Movie Nights.bat     double-click to open the site locally
+└── Publish to GitHub.bat      double-click to publish your changes
 ```
 
 Every page loads the scripts in this order: `data/library.js`, `js/config.js`, `js/core/*`
@@ -254,4 +255,4 @@ Every page loads the scripts in this order: `data/library.js`, `js/config.js`, `
 
 ---
 
-Â© 2023 to today, Movie Nights by Mirzac Nicolae
+© 2023 to today, Movie Nights by Mirzac Nicolae
