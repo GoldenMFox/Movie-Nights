@@ -148,6 +148,7 @@
       backdrop: r.backdrop_path || "",
       overview: r.overview || "",
       score: r.vote_average ? Math.round(r.vote_average * 10) / 10 : null,
+      popularity: r.popularity || 0,
       genres: genreNames(genres, media),
     };
   }
@@ -240,11 +241,16 @@
     return genres.includes(ANIMATION) && (r.original_language === "ja" || (r.origin_country || []).includes("JP"));
   }
 
+  // Search results worth showing: they need a poster, and some sign anyone knows them
+  // (a vote on TMDB, or a little popularity). That drops the flood of 7-minute shorts,
+  // student films and fan uploads; well-known titles, even unreleased ones, stay.
+  const worthShowing = (r) => !!r.poster_path && ((r.vote_count || 0) >= 1 || (r.popularity || 0) >= 1.5);
+
   // Search with a type filter, for the Discover page: "all" | "movie" | "tv" | "anime"
   async function searchIn(query, type, page) {
     if (type === "movie" || type === "tv") {
       const [data, ru] = await requestWithRu(`/search/${type}`, { query, page });
-      return { results: applyRu(data.results.map((r) => simplify(r, type)), ru, type), totalPages: data.total_pages || 1 };
+      return { results: applyRu(data.results.filter(worthShowing).map((r) => simplify(r, type)), ru, type), totalPages: data.total_pages || 1 };
     }
     if (type === "anime") {
       // anime can be a series or a film: search both, keep Japanese animation,
@@ -253,7 +259,7 @@
       const results = tv.results
         .map((r) => [r, "tv"])
         .concat(movie.results.map((r) => [r, "movie"]))
-        .filter(([r]) => isAnime(r))
+        .filter(([r]) => isAnime(r) && worthShowing(r))
         .sort(([a], [b]) => (b.popularity || 0) - (a.popularity || 0))
         .map(([r, media]) => simplify(r, media));
       applyRu(results, tvRu, "tv");
@@ -261,7 +267,7 @@
       return { results, totalPages: Math.max(tv.total_pages || 1, movie.total_pages || 1) };
     }
     const [data, ru] = await requestWithRu("/search/multi", { query, page });
-    return { results: applyRu(data.results.filter(isTitle).map((r) => simplify(r)), ru), totalPages: data.total_pages || 1 };
+    return { results: applyRu(data.results.filter((r) => isTitle(r) && worthShowing(r)).map((r) => simplify(r)), ru), totalPages: data.total_pages || 1 };
   }
 
   // Typo-tolerant search: TMDB only finds exact words, so when nothing it returns is close
@@ -274,10 +280,11 @@
 
     const typed = Lang.words(query);
     const phrase = typed.join(" ");
-    const hasExact = first.results.some((r) => [r.title, r.titleRu].some((n) => n && Lang.words(n).join(" ").includes(phrase)));
+    const exact = first.results.filter((r) => [r.title, r.titleRu].some((n) => n && Lang.words(n).join(" ").includes(phrase)));
     // (few results also get a second try: "interstelar" exactly matches an obscure film,
-    // but you most likely meant Interstellar)
-    if ((hasExact && first.results.length >= 5) || !typed.some((w) => w.length >= 5)) return first;
+    // but you most likely meant Interstellar; a well-known exact match needs no second try)
+    const knownExact = exact.some((r) => (r.popularity || 0) >= 5);
+    if ((exact.length && (first.results.length >= 5 || knownExact)) || !typed.some((w) => w.length >= 5)) return first;
 
     // shorter versions: long words cut by 2 letters; then just the longest word, cut
     const cut = (w) => (w.length >= 5 ? w.slice(0, Math.max(4, w.length - 2)) : w);
