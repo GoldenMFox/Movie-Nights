@@ -184,6 +184,25 @@
     const d = await request(`/${media}/${id}`, { language: "ru-RU" });
     return { title: d.title || d.name || "", poster: d.poster_path || "" };
   }
+  // Russian trailers / teasers of a title (YouTube keys, trailers first), for when RU is on.
+  // Remembered for two weeks (mn:ruVideos).
+  async function ruVideos(media, id) {
+    const key = `${media}-${id}`;
+    const cache = Store.read("mn:ruVideos", {});
+    if (cache[key] && Date.now() - cache[key].at < 14 * 86400000) return cache[key].keys;
+    const d = await request(`/${media}/${id}/videos`, { language: "ru-RU" });
+    const keys = (d.results || [])
+      .filter((v) => v.site === "YouTube" && /Trailer|Teaser/.test(v.type))
+      .sort((a, b) => (b.type === "Trailer") - (a.type === "Trailer") || (b.official === true) - (a.official === true))
+      .map((v) => v.key);
+    const fresh = Store.read("mn:ruVideos", {});
+    fresh[key] = { keys, at: Date.now() };
+    const all = Object.keys(fresh);
+    if (all.length > 400) all.sort((a, b) => fresh[a].at - fresh[b].at).slice(0, all.length - 400).forEach((k) => delete fresh[k]);
+    Store.write("mn:ruVideos", fresh);
+    return keys;
+  }
+
   async function ruTitle(media, id) {
     return (await ruInfo(media, id)).title;
   }
@@ -663,5 +682,5 @@
     return true;
   }
 
-  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, ruInfo, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
+  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, ruInfo, ruVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
 })();

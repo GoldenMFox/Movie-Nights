@@ -530,6 +530,15 @@
 
   let trailerRun = null; // { item, key, tried: Set, nextAlt(), frame }
 
+  // "movie-157336" for a TMDB result or a library title (null when it isn't matched on TMDB)
+  function titleRefOf(x) {
+    if (!x) return null;
+    if (x.mediaType && x.tmdbId) return `${x.mediaType}-${x.tmdbId}`;
+    if (x.tmdbMedia && x.tmdbId) return `${x.tmdbMedia}-${x.tmdbId}`;
+    const r = x.id && window.Ratings ? Ratings.refOf(x) : null;
+    return r && r !== "none" ? r : null;
+  }
+
   // Always plays inside the pop-up, never sends you away from the site.
   // item: {title, year, trailer?}; loadKey: async fallback that asks TMDB;
   // loadVideos (optional): async list of other video keys to try if YouTube refuses one
@@ -551,9 +560,28 @@
     body.innerHTML = trailerMessage("fa-solid fa-spinner fa-spin", "Looking for the trailer…");
     open(trailerOverlay);
 
-    const run = { item, key: null, first: item.trailer || null, tried: new Set(), alts: null };
+    const run = { item, key: null, first: item.trailer || null, tried: new Set(), alts: null, ruAlts: [] };
     trailerRun = run;
+
+    // RU on: the Russian (dubbed) trailers first, then the usual ones
+    const ref = ruOn() && window.TMDB && TMDB.enabled() ? titleRefOf(item) : null;
+    if (ref) {
+      try {
+        const [media, tmdbId] = ref.split("-");
+        const ru = (await TMDB.ruVideos(media, Number(tmdbId))).filter((k) => !isBadTrailer(k));
+        if (ru.length) {
+          key = ru[0];
+          run.ruAlts = ru.slice(1);
+          run.ru = true;
+        }
+      } catch (e) {}
+    }
+
     run.nextAlt = async () => {
+      while (run.ruAlts.length) {
+        const k = run.ruAlts.shift();
+        if (k && !run.tried.has(k) && !isBadTrailer(k)) return k;
+      }
       if (!run.alts) {
         try {
           run.alts = loadVideos && window.TMDB && TMDB.enabled() ? await loadVideos() : [];
@@ -596,8 +624,6 @@
     const body = trailerOverlay.querySelector(".trailer-body");
     body.innerHTML = embed(key);
     run.frame = body.querySelector("iframe");
-    trailerOverlay.querySelector(".trailer-foot").innerHTML = `<a class="tf-link" href="https://www.youtube.com/watch?v=${encodeURIComponent(key)}" target="_blank" rel="noopener">
-      <i class="fa-brands fa-youtube"></i> Open on YouTube <i class="fa-solid fa-arrow-up-right-from-square"></i></a>`;
     // ask the player to report back (errors, playing)
     run.frame.addEventListener("load", () => {
       try {
@@ -620,7 +646,8 @@
     // it plays: a library title remembers this video
     if ((state === 1 || state === 3) && !run.ok) {
       run.ok = true;
-      if (run.item && run.item.id && Store.get(run.item.id) && run.item.trailer !== run.key) Store.update(run.item.id, { trailer: run.key });
+      // (a Russian trailer isn't saved: the library keeps the original one)
+      if (!run.ru && run.item && run.item.id && Store.get(run.item.id) && run.item.trailer !== run.key) Store.update(run.item.id, { trailer: run.key });
     }
     // refused (embedding off, removed, private…): the next video, or a link to YouTube
     if (data.event === "onError") {

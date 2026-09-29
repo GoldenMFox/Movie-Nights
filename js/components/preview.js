@@ -168,13 +168,21 @@
       close();
     });
 
-    details(ref).then((d) => {
+    details(ref).then(async (d) => {
       if (!preview || previewRef !== ref) return;
       preview.querySelector(".hp-info").innerHTML = infoHtml(ref, d);
       if (d && d.backdrop && !b.backdrop) preview.querySelector(".hp-backdrop").src = Store.img(d.backdrop, "w780");
+      // RU on: the Russian (dubbed) trailers first
+      let ru = [];
+      if (Lang.isRu() && d && d.tmdbId && (d.mediaType || d.media)) {
+        try {
+          ru = await TMDB.ruVideos(d.mediaType || d.media, d.tmdbId);
+        } catch (e) {}
+        if (!preview || previewRef !== ref) return;
+      }
       // the trailer, then TMDB's other videos in case YouTube refuses one here
       // (videos known to be blocked are skipped)
-      const keys = [d && d.key, ...((d && d.videos) || []).map((v) => v.key)].filter(
+      const keys = [...ru, d && d.key, ...((d && d.videos) || []).map((v) => v.key)].filter(
         (k, i, all) => k && all.indexOf(k) === i && !Cards.isBadTrailer(k)
       );
       preview.videoQueue = keys.slice(1);
