@@ -62,36 +62,6 @@
           )}
 
           ${card(
-            "backup",
-            "fa-floppy-disk",
-            "Backup",
-            `<p class="sv-note sv-lead">Your library is saved in your account and synced to every device you sign in on. A backup is an extra copy you keep yourself.</p>
-            <div class="sv-buttons">
-              <button class="btn export-backup" type="button"><i class="fa-solid fa-file-export"></i> Download backup</button>
-              <label class="btn"><i class="fa-solid fa-file-import"></i> Restore backup
-                <input type="file" accept=".json,application/json" class="import-file" hidden />
-              </label>
-            </div>
-            <div class="sv-danger">
-              ${row("fa-trash-can", "Delete my library", "Every title, score, list and tier. There's no undo.", '<button class="btn btn-danger reset-all" type="button">Delete</button>')}
-            </div>`,
-            guest ? " hidden" : ""
-          )}
-        </div>
-
-        <div class="sv-col">
-          ${card("import", "fa-file-import", "Import", '<div class="import-panel"></div>', guest ? " hidden" : "")}
-
-          ${card(
-            "members",
-            "fa-users",
-            "Members",
-            `<div class="member-list"><p class="sv-note">Loading…</p></div>
-            <p class="sv-note">Everyone who has signed in: you see how big their library is, never their ratings. To let someone in, add their Google email to the rules in the Firebase console (Firestore → Rules).</p>`,
-            ` data-owner${guest ? " hidden" : ""}`
-          )}
-
-          ${card(
             "keys",
             "fa-key",
             "TMDB & IMDb",
@@ -106,6 +76,36 @@
             <div class="omdb-status sv-meter"></div>
             <p class="sv-note">Free at themoviedb.org → Settings → API. A key typed here is stored only in this browser and overrides the one in <code>js/config.js</code>.</p>`,
             " data-owner"
+          )}
+        </div>
+
+        <div class="sv-col">
+          ${card(
+            "members",
+            "fa-users",
+            "Members",
+            `<div class="member-list"><p class="sv-note">Loading…</p></div>
+            <p class="sv-note">Everyone who has signed in: you see how big their library is, never their ratings. To let someone in, add their Google email to the rules in the Firebase console (Firestore → Rules).</p>`,
+            ` data-owner${guest ? " hidden" : ""}`
+          )}
+
+          ${card("import", "fa-file-import", "Import", '<div class="import-panel"></div>', guest ? " hidden" : "")}
+
+          ${card(
+            "backup",
+            "fa-floppy-disk",
+            "Backup",
+            `<p class="sv-note sv-lead">Your library is saved in your account and synced to every device you sign in on. A backup is an extra copy you keep yourself.</p>
+            <div class="sv-buttons">
+              <button class="btn export-backup" type="button"><i class="fa-solid fa-file-export"></i> Download backup</button>
+              <label class="btn"><i class="fa-solid fa-file-import"></i> Restore backup
+                <input type="file" accept=".json,application/json" class="import-file" hidden />
+              </label>
+            </div>
+            <div class="sv-danger">
+              ${row("fa-trash-can", "Delete my library", "Every title, score, list and tier. There's no undo.", '<button class="btn btn-danger reset-all" type="button">Delete</button>')}
+            </div>`,
+            guest ? " hidden" : ""
           )}
         </div>
       </div>
