@@ -378,7 +378,8 @@
     if (!ref) return;
     // back on the poster whose preview is already open: nothing to do
     if (preview && previewRef && cacheKey(previewRef) === cacheKey(ref)) return;
-    const allowed = () => hoverCard === card && card.isConnected && !document.querySelector(".overlay.active"); // not while a pop-up is open
+    // not while a pop-up or a poster's right-click menu is open
+    const allowed = () => hoverCard === card && card.isConnected && !document.querySelector(".overlay.active, .qa-card");
     preloadTimer = setTimeout(() => allowed() && open(card, true), PRELOAD);
     timer = setTimeout(() => {
       if (!allowed()) return;
@@ -406,6 +407,7 @@
   window.addEventListener("blur", stop);
   document.addEventListener("visibilitychange", () => document.hidden && stop());
   document.addEventListener("keydown", (e) => e.key === "Escape" && stop());
+  window.Preview = { close: stop };
 
   // favorite / watchlist / rating changed: redraw the buttons (a TMDB title you just added
   // becomes a library title)

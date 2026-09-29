@@ -355,11 +355,91 @@
     return el && !el.closest("#tier-app, .quick-modal") ? el : null;
   };
 
+  /* computers: right-click opens the menu right on the poster, the same size as it */
+
+  let qaCard = null;
+  function posterMenuHtml(item) {
+    const row = (action, icon, label, cls) =>
+      `<button type="button" class="qa-p-row${cls || ""}" data-action="${action}"><i class="${icon}"></i><span>${label}</span></button>`;
+    return `
+      <div class="qa-p-title">${esc(Lang.title(item))}</div>
+      <div class="qa-p-list">
+        ${row("watch", `fa-${item.watchlist ? "solid" : "regular"} fa-bookmark`, item.watchlist ? "On Watchlist" : "Watchlist", item.watchlist ? " on" : "")}
+        ${row("fav", `fa-${item.favorite ? "solid" : "regular"} fa-heart`, item.favorite ? "Favorite" : "Favorite", item.favorite ? " on" : "")}
+        ${row("rate", "fa-solid fa-star", item.rating != null ? `Your score ${formatRating(item.rating)}` : "Rate", item.rating != null ? " on" : "")}
+        ${row("trailer", "fa-solid fa-play", "Trailer")}
+        <a class="qa-p-row" href="title.html?id=${encodeURIComponent(item.id)}"><i class="fa-solid fa-circle-info"></i><span>Details</span></a>
+        ${row("remove", "fa-solid fa-trash-can", "Remove", " danger")}
+      </div>`;
+  }
+
+  function closePosterMenu() {
+    if (!qaCard) return;
+    const el = qaCard;
+    qaCard = null;
+    el.classList.remove("show");
+    setTimeout(() => el.remove(), 180);
+  }
+
+  function openPosterMenu(card) {
+    closePosterMenu();
+    if (window.Preview) Preview.close();
+    const item = Store.get(card.dataset.id);
+    if (!item) return;
+    // the poster's normal size (it grows a little while hovered), centred where it is
+    const pic = card.querySelector(".poster-link") || card;
+    const box = pic.getBoundingClientRect();
+    const w = pic.offsetWidth;
+    const h = pic.offsetHeight;
+    const el = document.createElement("div");
+    el.className = `qa-card${h < 250 ? " compact" : ""}`;
+    el.dataset.id = item.id;
+    el.setAttribute("role", "menu");
+    el.style.left = `${box.left + box.width / 2 - w / 2 + window.scrollX}px`;
+    el.style.top = `${box.top + box.height / 2 - h / 2 + window.scrollY}px`;
+    el.style.width = `${w}px`;
+    el.style.height = `${h}px`;
+    el.style.setProperty("--qa-poster", `url("${Store.poster(posterOf(item), "w342")}")`);
+    el.innerHTML = posterMenuHtml(item);
+    document.body.append(el);
+    requestAnimationFrame(() => el.classList.add("show"));
+    qaCard = el;
+  }
+
+  // Watchlist / Favorite switch in place (you see it change); the rest close the menu
+  document.addEventListener("click", (e) => {
+    if (!qaCard) return;
+    const inside = qaCard.contains(e.target);
+    const btn = inside && e.target.closest("[data-action], a");
+    if (!inside) return closePosterMenu();
+    if (btn && !/^(watch|fav)$/.test(btn.dataset.action || "")) setTimeout(closePosterMenu, 0);
+  });
+  Store.onChange((id) => {
+    if (!qaCard || (id && id !== qaCard.dataset.id)) return;
+    const item = Store.get(qaCard.dataset.id);
+    if (item) qaCard.innerHTML = posterMenuHtml(item);
+    else closePosterMenu();
+  });
+  window.addEventListener("scroll", closePosterMenu, { passive: true, capture: true });
+  window.addEventListener("resize", closePosterMenu);
+  document.addEventListener("keydown", (e) => e.key === "Escape" && closePosterMenu());
+
   document.addEventListener("contextmenu", (e) => {
-    const el = quickCard(e.target);
-    if (!el || e.pointerType === "touch") return;
+    if (e.pointerType === "touch") return; // phones: long-press, below
+    if (qaCard && qaCard.contains(e.target)) return e.preventDefault();
+    let card = quickCard(e.target);
+    // right-click on the hover preview (it covers the poster): the poster under it
+    const hp = !card && e.target.closest && e.target.closest(".hover-preview[data-id]");
+    if (hp) {
+      const all = [...document.querySelectorAll(`.movie-item[data-id="${CSS.escape(hp.dataset.id)}"]`)];
+      card = all.find((c) => {
+        const r = c.getBoundingClientRect();
+        return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      }) || all[0];
+    }
+    if (!card) return closePosterMenu();
     e.preventDefault();
-    openQuick(el.dataset.id);
+    openPosterMenu(card);
   });
 
   // hold a poster for half a second (without scrolling)

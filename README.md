@@ -117,8 +117,9 @@ On the site:
 - **Watchlist, Watched, Rate** on any title (from Discover, search or a title page) adds it
   to your library. **Favorite** with the heart.
 - **Add a title** by hand (profile menu): owner only.
-- **Quick actions on any poster in your library**: long-press it (phones / iPad) or right-click
-  it (computers) for Watchlist, Favorite, Rate, Trailer, Open and **Remove from library**.
+- **Quick actions on any poster in your library**: right-click it (computers: the menu opens
+  on the poster itself, the same size) or long-press it (phones / iPad: a sheet from the
+  bottom) for Watchlist, Favorite, Rate, Trailer, Details and **Remove from library**.
   On computers the hover preview also has a trash button, and title pages have Remove too.
 - Removing never asks "are you sure?": the message that follows has an **Undo** button (a few
   seconds) that puts the title back exactly as it was, with its score, lists and tier.
