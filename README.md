@@ -104,7 +104,8 @@ In the **profile menu**:
   On narrow computer windows it's the EN | RU switch in the side menu.
 - **Poster details** (computers): off = posters only, like on phones and tablets.
 - **Match %** (computers): off = no match on the posters or in the hover preview (title
-  pages keep it).
+  pages keep it). Only with Poster details on: with posters only it's greyed out and the
+  match always shows in the hover preview.
 
 Trailers play in the best quality available; if YouTube blocks one on other sites, the next one plays.
 

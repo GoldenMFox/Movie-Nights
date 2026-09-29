@@ -475,11 +475,14 @@
     } catch (e) {}
   });
 
-  // "Match %" off: no match on the posters or in the hover preview (title pages keep it)
+  // "Match %" off: no match on the posters or in the hover preview (title pages keep it).
+  // Only with Poster details on: with posters only, the match is just in the hover preview,
+  // and it stays there (the switch is greyed out)
   try {
     if (localStorage.getItem("mn:showMatch") === "off") document.documentElement.classList.add("no-match");
   } catch (e) {}
   const matchSwitch = nav.querySelector(".match-switch");
+  const matchRow = matchSwitch.closest(".menu-switch");
   matchSwitch.checked = !document.documentElement.classList.contains("no-match");
   matchSwitch.addEventListener("change", () => {
     document.documentElement.classList.toggle("no-match", !matchSwitch.checked);
@@ -488,6 +491,18 @@
       else localStorage.setItem("mn:showMatch", "off");
     } catch (e) {}
   });
+  function syncMatchSwitch() {
+    const usable = detailsSwitch.checked;
+    matchSwitch.disabled = !usable;
+    // posters only: shown as on (the hover preview has it); back to your choice with details on
+    matchSwitch.checked = usable ? !document.documentElement.classList.contains("no-match") : true;
+    matchRow.classList.toggle("disabled", !usable);
+    matchRow.title = usable
+      ? "How much you'll probably like each title (86%), on the posters and in the hover preview"
+      : "With posters only, the match shows in the hover preview. Turn on Poster details to switch it off.";
+  }
+  syncMatchSwitch();
+  detailsSwitch.addEventListener("change", syncMatchSwitch);
 
   // the navbar turns see-through over the top of the page (tablet slideshow) and
   // frosted once you scroll

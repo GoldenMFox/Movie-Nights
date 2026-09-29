@@ -9256,11 +9256,22 @@ html.tablet .match-pill {
   display: none;
 }
 
-/* "Match %" switched off in the profile menu: not on posters, not in the hover preview */
-html.no-match .match-pill,
-html.no-match .hover-preview .match,
-html.no-match .hover-preview .match + .dot {
+/* "Match %" switched off in the profile menu: not on posters, not in the hover preview.
+   Only with Poster details on: with posters only the hover preview always keeps it */
+html.no-match:not(.posters-only) .match-pill,
+html.no-match:not(.posters-only) .hover-preview .match,
+html.no-match:not(.posters-only) .hover-preview .match + .dot {
   display: none;
+}
+
+/* a switch that can't be used right now (Match % while Poster details is off) */
+.menu-switch.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.menu-switch.disabled .switch-track {
+  pointer-events: none;
 }
 
 :root[data-theme="light"] .match {
