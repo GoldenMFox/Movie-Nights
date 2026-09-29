@@ -200,13 +200,10 @@ label.field {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--nav);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .nav-bar {
   position: relative;
-  height: 64px;
   max-width: 1550px; /* same width as the page content, so the navbar lines up with it */
   margin: 0 auto;
   padding: 0 30px;
@@ -298,7 +295,6 @@ label.field {
 .nav-tools {
   display: flex;
   align-items: center;
-  gap: 6px;
 }
 
 .icon-btn {
@@ -422,16 +418,12 @@ label.field {
   background: none;
   border: 0;
   padding: 0;
-  margin-left: 8px;
   cursor: pointer;
 }
 
 .user-pic {
-  width: 36px;
-  height: 36px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #2e2e2e;
   cursor: pointer;
   display: block;
   padding: 0;
@@ -442,22 +434,14 @@ label.field {
   position: absolute;
   right: 0;
   top: calc(100% + 12px);
-  width: 270px;
-  background: #17181cfb;
-  border-radius: 18px;
-  padding: 18px;
   color: #fff;
-  box-shadow: var(--shadow);
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-6px);
-  transition: opacity 0.2s, transform 0.2s;
 }
 
 .profile.open .profile-menu {
   opacity: 1;
   pointer-events: auto;
-  transform: none;
 }
 
 .profile-menu .user-info {
@@ -465,14 +449,11 @@ label.field {
 }
 
 .profile-menu .user-info img {
-  width: 80px;
-  height: 80px;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .profile-menu .user-info h2 {
-  font-size: 18px;
   margin: 10px 0 0;
 }
 
@@ -520,14 +501,6 @@ label.field {
   transform: translateX(4px);
 }
 
-/* account sync */
-.profile-menu .sync-status {
-  display: block;
-  margin-top: 4px;
-  color: #aaa;
-  font-size: 12px;
-}
-
 .profile-menu .sync-status[data-status="synced"] i {
   color: #4caf7a;
 }
@@ -538,11 +511,7 @@ label.field {
 }
 
 .profile-menu .menu-label {
-  padding: 4px 4px 2px;
-  color: #aaa;
-  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.3px;
   text-transform: uppercase;
 }
 
@@ -624,7 +593,6 @@ label.field {
 
 .movie-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 18px;
 }
 
@@ -632,9 +600,7 @@ label.field {
   position: relative;
   display: flex;
   flex-direction: column;
-  background: var(--card);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
   transition: transform 0.2s, box-shadow 0.2s;
 }
@@ -671,7 +637,6 @@ label.field {
   display: block;
   position: relative;
   aspect-ratio: 2 / 3;
-  border-radius: var(--radius) var(--radius) 0 0;
   overflow: hidden;
   background: var(--surface-2);
 }
@@ -696,16 +661,7 @@ label.field {
 
 .new-label {
   position: absolute;
-  top: 8px;
-  right: 8px;
   z-index: 2;
-  padding: 2px 7px;
-  border-radius: 4px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
 }
 
 .badges {
@@ -733,7 +689,6 @@ label.field {
 }
 
 .movie-info {
-  padding: 10px 14px 14px;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -743,9 +698,6 @@ label.field {
 
 .movie-title {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -759,8 +711,6 @@ label.field {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 4px;
-  font-size: 14px;
   color: var(--text-muted);
 }
 
@@ -776,9 +726,6 @@ label.field {
 /* action buttons with tooltips (same look as the original site) */
 .action-circle {
   display: flex;
-  justify-content: center;
-  gap: 14px;
-  margin-top: 14px;
 }
 
 .action-circle .icon {
@@ -790,19 +737,12 @@ label.field {
   border: 0;
   padding: 0;
   cursor: pointer;
-  color: #fff;
 }
 
 .action-circle .icon .bubble {
-  width: 40px;
-  height: 40px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #101010;
-  box-shadow: 0 8px 10px rgba(0, 0, 0, 0.3);
-  font-size: 18px;
-  transition: 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .action-circle .tooltip {
@@ -833,7 +773,6 @@ label.field {
 
 .action-circle .icon:hover .tooltip,
 .action-circle .icon:focus-visible .tooltip {
-  top: -48px;
   opacity: 1;
 }
 
@@ -938,20 +877,8 @@ label.field {
   padding: 6px 14px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
   font-size: 13px;
   cursor: pointer;
-}
-
-.chip:hover {
-  border-color: var(--text-muted);
-}
-
-.chip.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
 }
 
 .chip .count {
@@ -987,8 +914,6 @@ label.field {
 
 .hero {
   position: relative;
-  aspect-ratio: 16 / 7;
-  max-height: 620px;
   width: 100%;
   border-radius: 14px;
   overflow: hidden;
@@ -1017,7 +942,6 @@ label.field {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent 55%);
 }
 
 .hero-caption {
@@ -1026,12 +950,6 @@ label.field {
   bottom: 28px;
   z-index: 2;
   color: #fff;
-  max-width: 70%;
-}
-
-.hero-caption h2 {
-  font-size: clamp(20px, 3.4vw, 42px);
-  margin: 0 0 8px;
 }
 
 .hero-caption p {
@@ -1047,15 +965,8 @@ label.field {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 0;
-  background: rgba(0, 0, 0, 0.45);
   color: #fff;
   cursor: pointer;
-  font-size: 18px;
-}
-
-.hero-arrow:hover {
-  background: rgba(0, 0, 0, 0.7);
 }
 
 .hero-arrow.prev {
@@ -1072,21 +983,12 @@ label.field {
   bottom: 24px;
   z-index: 3;
   display: flex;
-  gap: 8px;
 }
 
 .hero-dots button {
-  width: 28px;
-  height: 4px;
   border: 0;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.45);
   cursor: pointer;
   padding: 0;
-}
-
-.hero-dots button.active {
-  background: #fff;
 }
 
 .stat-strip {
@@ -1157,7 +1059,6 @@ a.stat-tile:hover {
 .movie-row {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 210px;
   gap: 16px;
   overflow-x: auto;
   padding: 56px 6px 14px;
@@ -1204,7 +1105,6 @@ a.stat-tile:hover {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgba(0, 0, 0, 0.65);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
@@ -1316,14 +1216,12 @@ a.stat-tile:hover {
   border: 0;
   padding: 0 6px;
   font-size: 24px;
-  color: #666;
   cursor: pointer;
   transition: color 0.2s, transform 0.2s;
 }
 
 .star.selected,
 .star.hover {
-  color: gold;
   transform: scale(1.1);
 }
 
@@ -1342,19 +1240,10 @@ a.stat-tile:hover {
 }
 
 .modal .rating-actions .save {
-  background: gold;
   border-color: gold;
-  color: #111;
-  font-weight: 700;
-  min-width: 160px;
-}
-
-.modal .rating-actions .save:hover {
-  background: #dfa906;
 }
 
 .modal .rating-actions .save:disabled {
-  opacity: 0.4;
   cursor: not-allowed;
 }
 
@@ -1364,17 +1253,7 @@ a.stat-tile:hover {
   border-color: #444;
 }
 
-/* trailer */
-.trailer-modal {
-  max-width: 1000px;
-  padding: 0;
-  background: #000;
-  overflow: hidden;
-}
-
 .trailer-head {
-  padding: 12px 56px 12px 18px;
-  background: #141414;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -1389,30 +1268,18 @@ a.stat-tile:hover {
   background: #000;
 }
 
-.trailer-modal .modal-close {
-  top: 6px;
-  z-index: 2;
-}
-
 .trailer-message {
   aspect-ratio: 16 / 9;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
   padding: 24px;
   text-align: center;
-  color: #ccc;
 }
 
 .trailer-message i {
   font-size: 40px;
-  color: #777;
-}
-
-.trailer-message a {
-  color: #fff;
 }
 
 .trailer-note {
@@ -1548,7 +1415,6 @@ a.stat-tile:hover {
 .t-backdrop img {
   object-fit: cover;
   object-position: center 20%;
-  opacity: 0.5;
 }
 
 .t-backdrop::after {
@@ -1569,7 +1435,6 @@ a.stat-tile:hover {
   gap: 40px;
   align-items: start;
   padding-top: 40px;
-  padding-bottom: 40px;
 }
 
 .t-poster {
@@ -1587,11 +1452,6 @@ a.stat-tile:hover {
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6);
 }
 
-.t-head h1 .year {
-  font-weight: 300;
-  color: #ccc;
-}
-
 .t-meta,
 .t-genres {
   display: flex;
@@ -1605,10 +1465,6 @@ a.stat-tile:hover {
 .t-genres {
   margin-top: 10px;
   gap: 6px 10px;
-}
-
-.t-meta .dot {
-  color: #888;
 }
 
 .t-score,
@@ -1636,11 +1492,7 @@ a.stat-tile:hover {
 }
 
 .t-cert {
-  border: 1px solid #aaa;
-  border-radius: 4px;
   padding: 0 6px;
-  font-size: 13px;
-  color: #eee;
 }
 
 .t-providers {
@@ -1663,7 +1515,6 @@ a.stat-tile:hover {
   display: block;
   width: 36px;
   height: 36px;
-  border-radius: 9px;
   background: #fff;
 }
 
@@ -1683,18 +1534,8 @@ a.stat-tile:hover {
 /* title page's big red Trailer button only (Discover cards reuse the class name) */
 .btn.t-trailer {
   width: 100%;
-  padding: 13px;
   border: 0;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #e50914, #b20710);
-  box-shadow: 0 6px 20px rgba(229, 9, 20, 0.35);
-  color: #fff;
-  font-size: 16px;
   font-weight: 600;
-}
-
-.btn.t-trailer:hover {
-  filter: brightness(1.1);
 }
 
 .t-actions {
@@ -1705,22 +1546,10 @@ a.stat-tile:hover {
 
 .t-actions .btn {
   justify-content: center;
-  padding: 11px 6px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.14);
   color: #fff;
   font-size: 15px;
   white-space: nowrap;
-}
-
-.t-actions .btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.t-actions .btn.is-on {
-  background: rgba(229, 9, 20, 0.28);
-  border-color: rgba(229, 9, 20, 0.6);
 }
 
 .t-actions .btn.is-rated i {
@@ -1734,7 +1563,6 @@ a.stat-tile:hover {
 
 .t-overview {
   margin: 0;
-  color: #e6e6e6;
   font-size: 15px;
   line-height: 1.6;
 }
@@ -1765,12 +1593,7 @@ a.stat-tile:hover {
 
 .t-director {
   margin: 12px 0 0;
-  color: #ccc;
   font-size: 14px;
-}
-
-.t-director span {
-  color: #999;
 }
 
 /* ⋮ menu */
@@ -1822,19 +1645,11 @@ a.stat-tile:hover {
   font-size: 24px;
 }
 
-/* Cast & Crew, Media, Reviews: one section under the other */
-.t-section {
-  margin-top: 30px;
-}
-
 .t-section-title {
   display: flex;
   align-items: baseline;
   gap: 8px;
   margin: 0 0 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border);
-  font-size: 20px;
 }
 
 .t-section-title small {
@@ -1849,7 +1664,6 @@ a.stat-tile:hover {
 .t-cast {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 150px;
   gap: 12px;
   overflow-x: auto;
   padding-bottom: 10px;
@@ -1859,20 +1673,10 @@ a.stat-tile:hover {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 14px 10px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
   text-align: center;
 }
 
 .t-person img {
-  width: 72px;
-  height: 72px;
-  margin-bottom: 6px;
-  border-radius: 50%;
-  object-fit: cover;
   background: var(--surface-2);
 }
 
@@ -1941,7 +1745,6 @@ a.stat-tile:hover {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.65);
   color: #fff;
   font-size: 16px;
   transform: translate(-50%, -50%);
@@ -1968,13 +1771,6 @@ a.stat-tile:hover {
 .t-reviews {
   display: grid;
   gap: 12px;
-}
-
-.t-review {
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
 }
 
 .t-review header {
@@ -2648,23 +2444,9 @@ a.stat-tile:hover {
   font-weight: 400;
 }
 
-.tmdb-tag {
-  display: inline-block;
-  margin-right: 4px;
-  padding: 1px 4px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, #90cea1, #01b4e4);
-  color: #0d253f;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.3px;
-  line-height: 1.3;
-}
-
 .movie-meta .year {
   white-space: nowrap;
 }
-
 
 @media (max-width: 700px) {
   .movie-meta .ratings {
@@ -2692,10 +2474,6 @@ a.stat-tile:hover {
   line-height: 1.3;
 }
 
-
-
-
-
 @media (max-width: 700px) {
   .imdb-tag {
     font-size: 8px;
@@ -2717,19 +2495,8 @@ a.stat-tile:hover {
   background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.25) 60%, transparent), linear-gradient(to right, rgba(0, 0, 0, 0.6), transparent 60%);
 }
 
-.hero-caption {
-  max-width: min(620px, 80%);
-}
-
 .hero-kicker {
-  display: inline-block;
   margin-bottom: 8px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--accent);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
 }
 
 .hero-score {
@@ -2757,7 +2524,6 @@ a.stat-tile:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
 }
 
 .hero-buttons .btn:not(.btn-primary) {
@@ -2765,11 +2531,6 @@ a.stat-tile:hover {
   border-color: rgba(255, 255, 255, 0.25);
   color: #fff;
   backdrop-filter: blur(4px);
-}
-
-.hero-owned {
-  font-size: 14px;
-  color: #9be29b;
 }
 
 .skeleton {
@@ -3859,7 +3620,6 @@ a.stat-tile:hover {
     background: rgba(255, 255, 255, 0.12);
   }
 
-
   /* Library panel: slides up from the bottom */
   html.app-ui .app-sheet {
     display: block;
@@ -4149,7 +3909,6 @@ a.stat-tile:hover {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 10px;
-  margin-bottom: 12px;
   color: rgba(255, 255, 255, 0.85);
   font-size: 14.5px;
   font-weight: 500;
@@ -4465,7 +4224,6 @@ a.stat-tile:hover {
 
 .hp-video {
   position: relative;
-  aspect-ratio: 16 / 9;
   overflow: hidden;
   background: #000;
   cursor: pointer;
@@ -4486,7 +4244,6 @@ a.stat-tile:hover {
 .hp-frame {
   opacity: 0;
   pointer-events: none;
-  transform: scale(1.4);
   transition: opacity 0.5s ease;
 }
 
@@ -4668,7 +4425,6 @@ a.stat-tile:hover {
   left: 50%;
   width: auto;
   height: auto;
-  transform: translate(-50%, -50%) scale(1.4);
 }
 
 /* built early (while the trailer loads) but not shown yet: invisible and click-through */
@@ -4881,7 +4637,6 @@ html.app-ui .app-sheet.open {
 }
 
 .t-person {
-  padding: 18px 10px 16px;
   border: 1px solid var(--glass-border);
   border-radius: 18px;
   background: var(--glass-bg);
@@ -4891,12 +4646,6 @@ html.app-ui .app-sheet.open {
 .t-person:hover {
   background: var(--glass-bg-hover);
   transform: translateY(-2px);
-}
-
-.t-person img {
-  width: 78px;
-  height: 78px;
-  box-shadow: 0 0 0 2px var(--glass-border), 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 
 .t-thumb,
@@ -4928,24 +4677,16 @@ html.app-ui .app-sheet.open {
   overflow-wrap: anywhere;
 }
 
-/* cast photos: portrait cards (the TMDB photos are 2:3), so faces aren't cropped by a circle */
-.t-cast {
-  grid-auto-columns: 160px;
-}
-
 .t-person {
   gap: 2px;
   padding: 8px 8px 14px;
 }
 
 .t-person img {
-  width: 100%;
   height: auto;
-  aspect-ratio: 2 / 3;
   margin-bottom: 10px;
   border-radius: 12px;
   object-fit: cover;
-  object-position: center 20%;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 
@@ -4983,12 +4724,6 @@ html.app-ui .app-sheet.open {
   }
 }
 
-/* cast photos: square (face kept in view: the crop sits near the top of the photo) */
-.t-person img {
-  aspect-ratio: 1 / 1;
-  object-position: center 18%;
-}
-
 /* cast cards: the whole card (photo + name) has the poster's 2:3 shape;
    the photo fills whatever the name / role leave */
 .t-person {
@@ -5008,7 +4743,6 @@ html.app-ui .app-sheet.open {
 .t-person strong,
 .t-person span {
   flex-shrink: 0;
-  display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -5042,13 +4776,6 @@ html.app-ui .app-sheet.open {
 .sheet-panel {
   scrollbar-width: thin; /* Firefox */
   scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
-}
-
-.movie-row:hover,
-.t-cast:hover,
-.t-media-row:hover,
-.tier-pool:hover {
-  scrollbar-color: rgba(128, 128, 128, 0.6) transparent;
 }
 
 /* Chrome / Edge / Brave / Safari */
@@ -6066,13 +5793,10 @@ button.p-lib-line:hover .p-lib-arrow {
 /* Discover: "Coming soon · Dec 15" on titles that aren't out yet */
 .soon-label {
   position: absolute;
-  left: 8px;
-  bottom: 8px;
   z-index: 2;
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  max-width: calc(100% - 16px);
   padding: 4px 10px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
@@ -6167,11 +5891,6 @@ button.p-lib-line:hover .p-lib-arrow {
   border-radius: 16px 16px 0 0;
 }
 
-.movie-info {
-  gap: 6px;
-  padding: 12px 14px 12px;
-}
-
 .movie-title {
   text-align: center;
   font-size: 15.5px;
@@ -6197,7 +5916,6 @@ button.p-lib-line:hover .p-lib-arrow {
 }
 
 .movie-meta .year {
-  padding: 2px 8px;
   border: 1px solid var(--glass-border);
   border-radius: 999px;
   background: var(--glass-bg);
@@ -6210,8 +5928,6 @@ button.p-lib-line:hover .p-lib-arrow {
 .action-circle {
   justify-content: space-between;
   gap: 6px;
-  margin-top: 6px;
-  padding-top: 11px;
   border-top: 1px solid var(--glass-border);
 }
 
@@ -6493,10 +6209,9 @@ html.tablet .lang-toggle.in-profile {
   display: flex;
 }
 
-/* upright iPad: Favorites and Tier List move into the profile menu, the dark-mode
-   button hides (the bar has room for six links) */
+/* upright iPad: Tier List moves into the profile menu, the dark-mode button hides
+   (the bar has room for six links) */
 @media (max-width: 1000px) {
-  html.tablet .nav-links li:has(> a[href="favorites.html"]),
   html.tablet .nav-links li:has(> a[href="tier-list.html"]) {
     display: none;
   }
@@ -6661,55 +6376,10 @@ html.app-ui .movie-item:focus-within {
   transform: none;
 }
 
-/* 3 posters across on a phone, rows show a little more than 3 */
-html.app-ui .movie-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-html.app-ui .movie-row {
-  grid-auto-columns: calc((100% - 20px) / 3.3);
-  gap: 10px;
-}
-
-/* smaller labels on the small posters */
-html.app-ui .movie-item .badges {
-  top: 6px;
-  left: 6px;
-}
-
-html.app-ui .movie-item .badges span {
-  width: 22px;
-  height: 22px;
-  font-size: 10px;
-}
-
-html.app-ui .movie-item .badges .type-badge {
-  padding: 0 6px;
-  font-size: 9.5px;
-}
-
-html.app-ui .new-label {
-  top: 6px;
-  right: 6px;
-  gap: 4px;
-  padding: 2px 6px 2px 5px;
-  font-size: 8.5px;
-}
-
-html.app-ui .new-label::before {
-  width: 6px;
-  height: 6px;
-}
-
 html.app-ui .soon-label {
   top: auto;
   right: auto;
-  left: 6px;
-  bottom: 6px;
   max-width: calc(100% - 12px);
-  padding: 2px 7px;
-  font-size: 9px;
 }
 
 /* wider phones / small tablets in phone mode: 4 across */
@@ -6726,18 +6396,9 @@ html.app-ui .soon-label {
 html.app-ui .soon-label .soon-word {
   display: none;
 }
-/* phones: exactly 3 posters across in the home rows (a little bigger), and the "Film" / "TV"
-   tag is a pill that fits its text (not squeezed into a circle) */
-html.app-ui .movie-row {
-  grid-auto-columns: calc((100% - 20px) / 3);
-}
 
 html.app-ui .movie-item .badges .type-badge {
-  width: auto;
-  height: 20px;
-  padding: 0 7px;
   border-radius: 999px;
-  font-size: 9.5px;
   letter-spacing: 0.3px;
 }
 
@@ -6845,7 +6506,6 @@ html.app-ui .poster-link {
 html .movie-row.top10-row {
   grid-auto-columns: max-content;
   gap: 18px;
-  align-items: end;
   padding-top: 6px;
   padding-bottom: 14px;
 }
@@ -6853,7 +6513,6 @@ html .movie-row.top10-row {
 .top10-item {
   position: relative;
   display: flex;
-  align-items: flex-end;
   text-decoration: none;
   transition: transform 0.25s;
 }
@@ -6868,11 +6527,9 @@ html .movie-row.top10-row {
 .top10-num {
   position: relative;
   z-index: 0;
-  margin-right: -28px;
   color: #0b0b0c;
   font-size: 190px;
   font-weight: 900;
-  line-height: 0.78;
   letter-spacing: -0.06em;
   -webkit-text-stroke: 3px rgba(255, 255, 255, 0.9);
   text-shadow: 0 0 26px rgba(229, 9, 20, 0.55), 6px 6px 0 rgba(229, 9, 20, 0.35);
@@ -6913,7 +6570,6 @@ html .movie-row.top10-row {
 /* tablets */
 html.tablet .top10-num {
   font-size: 160px;
-  margin-right: -24px;
 }
 
 html.tablet .top10-item img {
@@ -6959,14 +6615,6 @@ html.tablet .top10-item img {
 .movie-row.top10-row,
 html .movie-row.top10-row {
   margin-top: 0;
-}
-/* numbers mostly visible, the poster only just overlaps them */
-.top10-num {
-  margin-right: -12px;
-}
-
-html.tablet .top10-num {
-  margin-right: -10px;
 }
 
 @media (max-width: 700px) {
@@ -7387,9 +7035,6 @@ body[data-page="home"] main.container {
   min-width: 0;
   margin: 0;
   overflow: hidden;
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -7870,11 +7515,6 @@ html.custom-scrollbars .t-seasons.grabbing * {
   font-size: 25px;
 }
 
-.rating-modal .star .star-fill {
-  color: #f5c518;
-  filter: drop-shadow(0 0 6px rgba(245, 197, 24, 0.55));
-}
-
 /* no white box on the first star when the pop-up opens; a soft ring only for keyboard use */
 .rating-modal .star:focus {
   outline: none;
@@ -7893,7 +7533,6 @@ html.custom-scrollbars .t-seasons.grabbing * {
 .rating-modal .feedback-message {
   min-height: 44px;
   margin: 12px 0 8px;
-  color: #ffd95a;
 }
 
 /* buttons: Save = white pill (like Trailer), Clear / Skip = glass pill */
@@ -9181,4 +8820,78 @@ html:not(.is-owner) .owner-only {
   height: auto;
   opacity: 1;
   pointer-events: auto;
+}
+
+/* ============================== Light theme ==============================
+   The page goes light; the "chrome" (navbar, menus, search, pop-ups, phone tab bar,
+   title header) stays dark, like Netflix / Apple TV. Here it's made solid enough that
+   the light page doesn't show through it as grey. */
+
+:root[data-theme="light"] .site-nav::before {
+  background: rgba(14, 14, 16, 0.95);
+}
+
+:root[data-theme="light"] .profile-menu,
+:root[data-theme="light"] .search-panel {
+  background: rgba(20, 20, 24, 0.97);
+}
+
+:root[data-theme="light"] .modal:not(.trailer-modal) {
+  background: rgba(22, 22, 26, 0.97);
+}
+
+:root[data-theme="light"] .overlay {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+:root[data-theme="light"] .sheet-panel {
+  background: rgba(20, 20, 24, 0.97);
+}
+
+html.app-ui:root[data-theme="light"] .tab-bar {
+  background: rgba(20, 20, 24, 0.94);
+}
+
+:root[data-theme="light"] .toast {
+  background: #17181c;
+}
+
+/* page pieces that were drawn white-on-dark */
+:root[data-theme="light"] .member {
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+:root[data-theme="light"] .panel {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .welcome {
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(185, 34, 34, 0.1), transparent 60%),
+    var(--surface);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="light"] .welcome-step,
+:root[data-theme="light"] .coming-item,
+:root[data-theme="light"] .imp-summary div,
+:root[data-theme="light"] .diary-tiles div,
+:root[data-theme="light"] .svc-chip,
+:root[data-theme="light"] .svc-opt {
+  background: var(--surface);
+}
+
+:root[data-theme="light"] .coming-item.soon small,
+:root[data-theme="light"] .imp-bad,
+:root[data-theme="light"] .imp-error {
+  color: #b92222;
+}
+
+:root[data-theme="light"] .imp-done {
+  color: #1d7a45 !important;
+}
+
+:root[data-theme="light"] .svc-opt.on {
+  background: rgba(185, 34, 34, 0.1);
 }
