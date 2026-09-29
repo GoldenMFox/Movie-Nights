@@ -6345,8 +6345,10 @@ button.p-lib-line:hover .p-lib-arrow {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
 
+/* grid pages always use the full width of the screen: the cards stretch to fill each row
+   (more cards per row on big screens) */
 .container:has(.movie-grid) {
-  max-width: 1650px;
+  max-width: none;
 }
 
 .movie-row {
