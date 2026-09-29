@@ -6119,3 +6119,192 @@ button.p-lib-line:hover .p-lib-arrow {
     bottom: auto;
   }
 }
+/* ============================== Cards: glass lower part (title, ratings, buttons) ============================== */
+/* (the mouse spotlight, .movie-item::before, stays as it is) */
+
+.movie-item {
+  border-color: var(--glass-border);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)), var(--card);
+}
+
+.poster-link {
+  border-radius: 16px 16px 0 0;
+}
+
+.movie-info {
+  gap: 6px;
+  padding: 12px 14px 12px;
+}
+
+.movie-title {
+  text-align: left;
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.movie-title a {
+  color: var(--text);
+  transition: color 0.2s;
+}
+
+.movie-title a:hover {
+  color: #fff;
+  text-decoration: underline;
+  text-decoration-color: var(--accent-hover);
+  text-underline-offset: 3px;
+}
+
+.movie-meta {
+  margin-top: 0;
+  font-size: 13px;
+}
+
+.movie-meta .year {
+  padding: 2px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  color: var(--glass-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* buttons: a row of frosted-glass circles under a hairline */
+.action-circle {
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 11px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.action-circle .icon {
+  color: var(--glass-text);
+}
+
+.action-circle .icon .bubble {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  box-shadow: none;
+  font-size: 15px;
+  transition: background 0.25s, border-color 0.25s, transform 0.25s cubic-bezier(0.68, -0.55, 0.265, 1.55), color 0.25s;
+}
+
+.action-circle .icon:hover .bubble,
+.action-circle .icon:focus-visible .bubble {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: var(--glass-bg-hover);
+  transform: translateY(-3px);
+}
+
+/* each button lights up in its own colour on hover */
+.action-circle .fav:hover i,
+.action-circle .fav.on:hover i {
+  color: #ff4d57;
+}
+
+.action-circle .rate:hover i,
+.action-circle .t-rate:hover i {
+  color: var(--gold);
+}
+
+.action-circle .t-add:hover i {
+  color: #3fb950;
+}
+
+.action-circle .trailer:hover i,
+.action-circle .t-trailer:hover i {
+  color: #ff3b3b;
+}
+
+/* already on: a soft tint of that colour */
+.action-circle .fav.on .bubble {
+  border-color: rgba(229, 9, 20, 0.35);
+  background: rgba(229, 9, 20, 0.14);
+}
+
+.action-circle .rate.on .bubble {
+  border-color: rgba(245, 197, 24, 0.35);
+  background: rgba(245, 197, 24, 0.12);
+}
+
+.action-circle .watch.on .bubble {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* tooltip: dark glass pill instead of a coloured one */
+.action-circle .tooltip,
+.action-circle .icon:hover .tooltip,
+.action-circle .icon:focus-visible .tooltip {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(18, 18, 22, 0.92);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.action-circle .tooltip::before {
+  display: none;
+}
+
+.action-circle .icon:hover .tooltip,
+.action-circle .icon:focus-visible .tooltip {
+  top: -44px;
+}
+
+/* light theme */
+:root[data-theme="light"] .movie-item {
+  background: #fff;
+}
+
+:root[data-theme="light"] .movie-title a:hover {
+  color: var(--text);
+}
+
+:root[data-theme="light"] .action-circle .icon:hover .bubble {
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 700px) {
+  .movie-item {
+    border-radius: 14px;
+  }
+
+  .poster-link {
+    border-radius: 14px 14px 0 0;
+  }
+
+  .movie-info {
+    gap: 5px;
+    padding: 9px 9px 10px;
+  }
+
+  .movie-title {
+    font-size: 13.5px;
+  }
+
+  .movie-meta .year {
+    padding: 1px 6px;
+    font-size: 10.5px;
+  }
+
+  .action-circle {
+    gap: 2px;
+    margin-top: 4px;
+    padding-top: 8px;
+  }
+
+  .action-circle .icon .bubble {
+    width: 31px;
+    height: 31px;
+    font-size: 13px;
+  }
+}
