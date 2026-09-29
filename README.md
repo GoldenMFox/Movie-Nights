@@ -194,4 +194,4 @@ Every page loads the scripts in this order: `data/library.js`, `js/config.js`, `
 
 ---
 
-© 2023 to today, Movie Nights by Mirzac Nicolae & Alexandru Donoaga
+© 2023 to today, Movie Nights by Mirzac Nicolae

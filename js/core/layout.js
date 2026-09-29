@@ -391,26 +391,33 @@
   const footer = document.createElement("footer");
   footer.className = "site-footer";
   const year = new Date().getFullYear();
+  const footLink = (p) => `<li><a href="${p.href}"><i class="${p.icon}"></i><span>${p.label}</span></a></li>`;
   footer.innerHTML = `
-    <div class="footer-inner">
-      <div>
-        <a href="index.html"><img src="images/brand/logo.png" alt="Movie Nights" /></a>
-        <p>Movie Nights: a personal list of the movies, TV shows and anime we've watched,
-        rated and ranked, plus everything still waiting on the watchlist.</p>
+    <div class="footer-card">
+      <div class="footer-brand">
+        <a class="footer-logo" href="index.html"><img src="images/brand/logo.png" alt="Movie Nights" /></a>
+        <p>A personal list of the movies, TV shows and anime we've watched, rated and ranked,
+          plus everything still waiting on the watchlist.</p>
+        <div class="footer-cta">
+          <a class="footer-btn primary" href="discover.html"><i class="fa-solid fa-compass"></i> Discover something new</a>
+          <a class="footer-btn" href="watchlist.html"><i class="fa-solid fa-bookmark"></i> My watchlist</a>
+        </div>
       </div>
-      <div>
+      <nav class="footer-col" aria-label="Browse">
         <h3>Browse</h3>
-        <ul>${PAGES.slice(0, 5).map((p) => `<li><a href="${p.href}">${p.label}</a></li>`).join("")}</ul>
-      </div>
-      <div>
+        <ul>${PAGES.slice(0, 5).map(footLink).join("")}</ul>
+      </nav>
+      <nav class="footer-col" aria-label="My lists">
         <h3>My lists</h3>
-        <ul>
-          ${PAGES.slice(5).map((p) => `<li><a href="${p.href}">${p.label}</a></li>`).join("")}
-          <li><a href="profile.html">Profile &amp; stats</a></li>
-        </ul>
-      </div>
+        <ul>${PAGES.slice(5).map(footLink).join("")}${footLink({ href: "profile.html", label: "Profile &amp; stats", icon: "fa-solid fa-user" })}</ul>
+      </nav>
     </div>
-    <div class="copyright">&copy; 2023&ndash;${year} Movie Nights by Mirzac Nicolae &amp; Alexandru Donoaga</div>`;
+    <div class="footer-bottom">
+      <span>&copy; 2023&ndash;${year} Movie Nights by Mirzac Nicolae</span>
+      <span class="footer-credit">Movie data and images from <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">TMDB</a></span>
+      <button class="footer-top" type="button" aria-label="Back to top" title="Back to top"><i class="fa-solid fa-arrow-up"></i></button>
+    </div>`;
+  footer.querySelector(".footer-top").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   document.body.append(footer);
 
   /* ---------------- installed app (PWA) ---------------- */
