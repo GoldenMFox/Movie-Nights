@@ -7831,3 +7831,15 @@ html.custom-scrollbars .t-seasons.grabbing * {
 .t-seasons {
   scrollbar-width: thin;
 }
+/* title page: less empty space between the top part and the first section (Seasons / Cast) */
+.t-hero-inner {
+  padding-bottom: 16px;
+}
+
+#title-main .t-sections > .t-section:first-child {
+  margin-top: 0;
+}
+
+#title-main {
+  padding-top: 20px;
+}
