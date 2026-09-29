@@ -13,8 +13,9 @@
 //   - Documents must have exactly the fields the site sends, with size limits.
 //   - Nothing can be deleted from the site, and everything else is denied.
 //
-// To add a person: put their Gmail address in member() below.
-// Replace WIFE_EMAIL / FRIEND_EMAIL with real addresses before publishing.
+// To add a person: put their Gmail address in member() in the Firebase console.
+// This public copy uses placeholders (OWNER_EMAIL, WIFE_EMAIL, FRIEND_EMAIL) so no real
+// email address is published; the real addresses live only in the Firebase console.
 
 rules_version = '2';
 service cloud.firestore {
@@ -30,13 +31,13 @@ service cloud.firestore {
 
     function owner() {
       return signedInWithGoogle()
-        && request.auth.token.email == 'niku.mirzak1@gmail.com';
+        && request.auth.token.email == 'OWNER_EMAIL';
     }
 
     function member() {
       return signedInWithGoogle()
         && request.auth.token.email in [
-          'niku.mirzak1@gmail.com',
+          'OWNER_EMAIL',
           'WIFE_EMAIL',
           'FRIEND_EMAIL'
         ];
