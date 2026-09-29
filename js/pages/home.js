@@ -241,26 +241,30 @@
 
   /* ---------------- "Because you liked …" (like Netflix): from your best-rated titles ---------------- */
 
-  // two of your favorites / 8+ titles, different ones each visit
-  function becauseSeeds() {
+  // some of your favorites / 8+ titles, different ones each visit: movies and shows for the
+  // two rows at the top, anime for the one under the anime rows
+  function becauseSeeds(anime, count) {
     if (Store.guest || !window.Watch) return [];
-    const good = Store.all().filter((i) => (typeof i.rating === "number" ? i.rating >= 8 : i.favorite));
+    const good = Store.all().filter(
+      (i) => (i.type === "anime") === anime && (typeof i.rating === "number" ? i.rating >= 8 : i.favorite)
+    );
     for (let i = good.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [good[i], good[j]] = [good[j], good[i]];
     }
-    return good.slice(0, 2);
+    return good.slice(0, count);
   }
 
-  async function fillBecause(item, n) {
-    const sec = rowsEl.querySelector(`[data-row="because-${n}"]`);
+  async function fillBecause(item, row) {
+    const sec = rowsEl.querySelector(`[data-row="${row}"]`);
+    const anime = item.type === "anime";
     try {
       const ref = await Watch.refOf(item);
       if (!ref) throw new Error("not on TMDB");
       const [media, id] = ref.split("-");
       const d = await TMDB.detailsById(media, Number(id));
-      // what TMDB recommends for it, minus what you already have
-      const recs = ((d && d.recommendations) || []).filter((h) => h.poster && !Cards.inLibrary(h));
+      // what TMDB recommends for it, minus what you already have; anime only in the anime row
+      const recs = ((d && d.recommendations) || []).filter((h) => h.poster && !Cards.inLibrary(h) && (h.type === "anime") === anime);
       if (recs.length < 4) throw new Error("too few");
       sec.querySelector(".movie-row").innerHTML = recs.map(Cards.tmdbCard).join("");
     } catch (e) {
@@ -270,13 +274,17 @@
 
   function renderLive() {
     hero.innerHTML = '<div class="hero-slide active skeleton"></div>';
-    const seeds = becauseSeeds();
+    const seeds = becauseSeeds(false, 2);
+    const animeSeed = becauseSeeds(true, 1)[0];
+    const because = (s, row) => rowShell(row, `Because you liked ${Lang.title(s)}`, "");
     rowsEl.innerHTML =
       top10Shell() +
-      seeds.map((s, n) => rowShell(`because-${n}`, `Because you liked ${Lang.title(s)}`, "")).join("") +
-      LIVE_ROWS.map((r) => rowShell(r.cat, r.title, `discover.html?cat=${r.cat}`)).join("");
+      seeds.map((s, n) => because(s, `because-${n}`)).join("") +
+      LIVE_ROWS.map((r) => rowShell(r.cat, r.title, `discover.html?cat=${r.cat}`)).join("") +
+      (animeSeed ? because(animeSeed, "because-anime") : ""); // under the anime rows (the last ones)
     fillTop10(top10Media);
-    seeds.forEach(fillBecause);
+    seeds.forEach((s, n) => fillBecause(s, `because-${n}`));
+    if (animeSeed) fillBecause(animeSeed, "because-anime");
 
     LIVE_ROWS.forEach(async (r) => {
       const row = rowsEl.querySelector(`[data-row="${r.cat}"] .movie-row`);
