@@ -6781,3 +6781,165 @@ html.app-ui .movie-item,
 html.app-ui .poster-link {
   border-radius: 16px;
 }
+/* ============================== Home: Top 10 today (movies / TV) ============================== */
+
+.top10-head h2 {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  line-height: 1;
+}
+
+/* "TOP 10": big outlined letters with a red glow */
+.top10-word {
+  color: transparent;
+  font-size: clamp(38px, 5vw, 64px);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  -webkit-text-stroke: 2px rgba(255, 255, 255, 0.92);
+  text-shadow: 0 0 22px rgba(229, 9, 20, 0.45);
+}
+
+.top10-sub {
+  padding-bottom: 6px;
+  font-size: clamp(16px, 1.6vw, 22px);
+  font-weight: 800;
+}
+
+.movie-row.top10-row,
+html .movie-row.top10-row {
+  grid-auto-columns: max-content;
+  gap: 18px;
+  align-items: end;
+  padding-top: 6px;
+  padding-bottom: 14px;
+}
+
+.top10-item {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  text-decoration: none;
+  transition: transform 0.25s;
+}
+
+.top10-item.skeleton {
+  width: 260px;
+  height: 255px;
+  border-radius: 16px;
+}
+
+/* the number: huge, outlined, half hidden behind the poster */
+.top10-num {
+  position: relative;
+  z-index: 0;
+  margin-right: -28px;
+  color: #0b0b0c;
+  font-size: 190px;
+  font-weight: 900;
+  line-height: 0.78;
+  letter-spacing: -0.06em;
+  -webkit-text-stroke: 3px rgba(255, 255, 255, 0.9);
+  text-shadow: 0 0 26px rgba(229, 9, 20, 0.55), 6px 6px 0 rgba(229, 9, 20, 0.35);
+  user-select: none;
+  transition: -webkit-text-stroke-color 0.25s, text-shadow 0.25s;
+}
+
+.top10-item img {
+  position: relative;
+  z-index: 1;
+  width: 170px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: var(--surface-2);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.top10-item:hover {
+  transform: translateY(-4px);
+}
+
+.top10-item:hover .top10-num {
+  -webkit-text-stroke-color: #ff3b3b;
+  text-shadow: 0 0 34px rgba(229, 9, 20, 0.85), 6px 6px 0 rgba(229, 9, 20, 0.5);
+}
+
+:root[data-theme="light"] .top10-word {
+  -webkit-text-stroke-color: #17181c;
+}
+
+:root[data-theme="light"] .top10-num {
+  color: var(--bg);
+  -webkit-text-stroke-color: #17181c;
+}
+
+/* tablets */
+html.tablet .top10-num {
+  font-size: 160px;
+  margin-right: -24px;
+}
+
+html.tablet .top10-item img {
+  width: 150px;
+}
+
+/* phones: about two per screen */
+@media (max-width: 700px) {
+  .top10-head h2 {
+    gap: 10px;
+  }
+
+  .top10-word {
+    -webkit-text-stroke-width: 1.5px;
+  }
+
+  .top10-sub {
+    padding-bottom: 3px;
+  }
+
+  .movie-row.top10-row,
+  html .movie-row.top10-row {
+    gap: 12px;
+  }
+
+  .top10-num {
+    margin-right: -18px;
+    font-size: 118px;
+    -webkit-text-stroke-width: 2px;
+  }
+
+  .top10-item img {
+    width: 34vw;
+    max-width: 150px;
+    border-radius: 14px;
+  }
+
+  .top10-item.skeleton {
+    width: 44vw;
+    height: 51vw;
+  }
+}
+.movie-row.top10-row,
+html .movie-row.top10-row {
+  margin-top: 0;
+}
+/* numbers mostly visible, the poster only just overlaps them */
+.top10-num {
+  margin-right: -12px;
+}
+
+html.tablet .top10-num {
+  margin-right: -10px;
+}
+
+@media (max-width: 700px) {
+  .top10-num {
+    margin-right: -8px;
+  }
+}
+.movie-row.top10-row,
+html .movie-row.top10-row {
+  overflow-y: hidden;
+}

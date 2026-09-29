@@ -163,6 +163,50 @@
     return results;
   }
 
+  /* ---------------- Top 10 today (movies, TV shows): big numbers next to the posters ---------------- */
+
+  const TOP10 = [
+    { media: "movie", sub: "Movies today" },
+    { media: "tv", sub: "TV shows today" },
+  ];
+
+  function top10Shell(t) {
+    return `<section class="row-section top10" data-row="top10-${t.media}">
+      <div class="row-head top10-head"><h2><span class="top10-word">TOP 10</span><span class="top10-sub">${t.sub}</span></h2></div>
+      <div class="movie-row top10-row">${'<div class="top10-item skeleton"></div>'.repeat(5)}</div>
+    </section>`;
+  }
+
+  function top10Item(hit, i) {
+    const lib = Cards.inLibrary(hit);
+    const url = lib ? `title.html?id=${encodeURIComponent(lib.id)}` : `title.html?tmdb=${hit.mediaType}-${hit.tmdbId}`;
+    return `<a class="top10-item" href="${url}" title="#${i + 1} · ${esc(Lang.title(hit))}">
+      <span class="top10-num" aria-hidden="true">${i + 1}</span>
+      <img src="${Store.poster(hit.poster, "w342")}" alt="${esc(Lang.title(hit))}" loading="lazy" decoding="async" />
+    </a>`;
+  }
+
+  async function fillTop10(t) {
+    const row = rowsEl.querySelector(`[data-row="top10-${t.media}"] .top10-row`);
+    const key = `mn:home:top10-${t.media}:${Lang.get()}`;
+    try {
+      let results = null;
+      try {
+        const c = JSON.parse(sessionStorage.getItem(key) || "null");
+        if (c && Date.now() - c.at < CACHE_MINUTES * 60000) results = c.results;
+      } catch (e) {}
+      if (!results) {
+        results = await TMDB.top10(t.media);
+        try {
+          sessionStorage.setItem(key, JSON.stringify({ at: Date.now(), results }));
+        } catch (e) {}
+      }
+      row.innerHTML = results.map(top10Item).join("");
+    } catch (e) {
+      row.closest(".top10").remove();
+    }
+  }
+
   function rowShell(id, title, link) {
     return `<section class="row-section" data-row="${id}">
       <div class="row-head"><h2>${esc(title)}</h2>${link ? `<a href="${link}">See all <i class="fa-solid fa-arrow-right"></i></a>` : ""}</div>
@@ -172,7 +216,8 @@
 
   function renderLive() {
     hero.innerHTML = '<div class="hero-slide active skeleton"></div>';
-    rowsEl.innerHTML = LIVE_ROWS.map((r) => rowShell(r.cat, r.title, `discover.html?cat=${r.cat}`)).join("");
+    rowsEl.innerHTML = TOP10.map(top10Shell).join("") + LIVE_ROWS.map((r) => rowShell(r.cat, r.title, `discover.html?cat=${r.cat}`)).join("");
+    TOP10.forEach(fillTop10);
 
     LIVE_ROWS.forEach(async (r) => {
       const row = rowsEl.querySelector(`[data-row="${r.cat}"] .movie-row`);

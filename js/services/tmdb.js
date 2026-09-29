@@ -272,6 +272,16 @@
     };
   }
 
+  // Today's top 10 movies or TV shows (TMDB's daily trending list), for the home page
+  async function top10(media) {
+    const [data, ru] = await requestWithRu(`/trending/${media}/day`, {});
+    return applyRu(
+      data.results.filter((r) => r.poster_path).map((r) => simplify(r, media)),
+      ru,
+      media
+    ).slice(0, 10);
+  }
+
   // Browse by genre (Discover page): type "movie" | "tv" | "anime", sort "popular" | "top" | "new"
   async function byGenre(type, genre, sort, page) {
     const media = type === "movie" ? "movie" : "tv";
@@ -647,5 +657,5 @@
     return true;
   }
 
-  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, list, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
+  window.TMDB = { enabled, keySource, search, searchIn, searchSmart, ruTitle, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
 })();
