@@ -3722,55 +3722,61 @@ a.stat-tile:hover {
 @media (max-width: 900px) {
   /* top: the logo on the left and your profile picture on the right; search and the
      page links live in the tab bar */
-  html.standalone .nav-bar > :not(.nav-logo):not(.nav-tools),
-  html.standalone .nav-tools > :not(.profile) {
+  html.app-ui .nav-bar > :not(.nav-logo):not(.nav-tools),
+  html.app-ui .nav-tools > :not(.profile) {
     display: none;
   }
 
-  html.standalone .nav-tools {
+  html.app-ui .nav-tools {
     margin-left: auto;
   }
 
   /* EN / RU is in the profile menu here (there's no side menu in the app) */
-  html.standalone .lang-toggle.in-profile {
+  html.app-ui .lang-toggle.in-profile {
     display: flex;
   }
 
   /* the page's own search / filter icons go to the other end of the title row */
-  html.standalone .page-tools {
+  html.app-ui .page-tools {
     margin-left: auto;
   }
 
-  html.standalone .site-nav {
+  html.app-ui .site-nav {
     padding-top: env(safe-area-inset-top); /* clear of the iPhone status bar / notch */
   }
 
-  html.standalone .nav-bar {
+  html.app-ui .nav-bar {
     height: 56px;
     justify-content: flex-start;
   }
 
-  html.standalone .nav-bar > .nav-logo img {
+  html.app-ui .nav-bar > .nav-logo img {
     height: 19px;
   }
 
-  html.standalone body {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  /* gap under the tab bar: on iPhones with a home bar it sits just above that bar
+     (34px safe area - 12px = 22px from the edge), elsewhere 10px */
+  html.app-ui {
+    --tab-gap: max(10px, calc(env(safe-area-inset-bottom) - 12px));
   }
 
-  html.standalone .toast {
-    bottom: calc(100px + env(safe-area-inset-bottom));
+  html.app-ui body {
+    padding-bottom: calc(84px + var(--tab-gap));
+  }
+
+  html.app-ui .toast {
+    bottom: calc(80px + var(--tab-gap));
   }
 
   /* floating frosted-glass pill, icon above the label; the current tab sits in its own
      lighter pill (like Netflix) */
-  html.standalone .tab-bar {
+  html.app-ui .tab-bar {
     display: flex;
     gap: 4px;
     position: fixed;
     left: 14px;
     right: 14px;
-    bottom: calc(12px + env(safe-area-inset-bottom));
+    bottom: var(--tab-gap);
     z-index: 150;
     max-width: 520px;
     margin: 0 auto;
@@ -3835,7 +3841,7 @@ a.stat-tile:hover {
   }
 
   /* Library panel: slides up from the bottom */
-  html.standalone .app-sheet {
+  html.app-ui .app-sheet {
     display: block;
     position: fixed;
     inset: 0;
@@ -3866,7 +3872,7 @@ a.stat-tile:hover {
     bottom: 0;
     max-height: 82vh;
     overflow-y: auto;
-    padding: 10px 18px calc(104px + env(safe-area-inset-bottom));
+    padding: 10px 18px calc(92px + var(--tab-gap));
     border-radius: 24px 24px 0 0;
     background: rgba(20, 20, 24, 0.88);
     -webkit-backdrop-filter: saturate(180%) blur(24px);
@@ -4630,25 +4636,25 @@ a.stat-tile:hover {
 
 /* phone app tab bar: a touch darker */
 @media (max-width: 900px) {
-  html.standalone .tab-bar {
+  html.app-ui .tab-bar {
     background: rgba(24, 24, 28, 0.8);
   }
 }
 
 /* an open panel (Library / Search) takes taps; a closed one lets them through */
-html.standalone .app-sheet.open {
+html.app-ui .app-sheet.open {
   pointer-events: auto;
 }
 
 @media (max-width: 900px) {
   /* Tier List "Move to…" bar: sit above the tab bar, not behind it */
-  html.standalone .tier-selected-bar {
-    bottom: calc(96px + env(safe-area-inset-bottom));
+  html.app-ui .tier-selected-bar {
+    bottom: calc(80px + var(--tab-gap));
   }
 
   /* when the page scrolls to something (e.g. a focused field), keep it clear of the tab bar */
-  html.standalone {
-    scroll-padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  html.app-ui {
+    scroll-padding-bottom: calc(88px + var(--tab-gap));
   }
 }
 

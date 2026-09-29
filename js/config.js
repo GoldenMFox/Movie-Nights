@@ -31,4 +31,8 @@ window.MN_CONFIG = {
     messagingSenderId: "206066875468",
     appId: "1:206066875468:web:5252d0414c71d9f2b188e9",
   },
+  // iPhone / iPad sign-in without a pop-up (js/core/cloud.js). The "Web client" ID from
+  // Google Cloud console -> APIs & Services -> Credentials (Firebase created it). That
+  // client needs this site's index.html as an "Authorized redirect URI". Empty = use the pop-up.
+  GOOGLE_CLIENT_ID: "206066875468-4h7ejupakg0jocqtg47pmdipodbet1s7.apps.googleusercontent.com",
 };

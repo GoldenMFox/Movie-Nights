@@ -374,6 +374,11 @@
   })();
   const standalone = previewApp || window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   if (standalone) document.documentElement.classList.add("standalone");
+  // the phone layout (tab bar at the bottom) is used by the installed app and by phones /
+  // tablets in the browser: decided by touch, not by pixel counts, so every phone gets it
+  const touchOnly = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  const appUi = standalone || touchOnly;
+  if (appUi) document.documentElement.classList.add("app-ui");
 
   // the installed app has no browser back button, so the navbar gets one
   const backBtn = nav.querySelector(".nav-back");
@@ -414,11 +419,11 @@
 
   /* ---------------- installed app on a phone: tab bar at the bottom ---------------- */
 
-  // Only in the installed app (Home Screen), and only at phone / small tablet width (CSS):
+  // In the installed app and on touch phones / tablets, only at phone / small tablet width (CSS):
   // the top bar keeps just the logo and your profile picture (with the full profile menu),
   // and these five tabs sit at the bottom in a floating pill, like a native app.
   // Search and Library open panels that slide up from the bottom.
-  if (standalone) {
+  if (appUi) {
     const LIBRARY_PAGES = ["movie", "tv", "anime", "favorites", "tiers"];
     const TABS = [
       { id: "home", href: "index.html", label: "Home", icon: "fa-house", on: ["home"] },

@@ -397,10 +397,72 @@
   const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 
+  /* iPhone / iPad: sign in by going to Google's page and coming back (no pop-up).
+     iOS keeps Firebase's pop-up from reporting back (it can't reach its helper page on
+     firebaseapp.com, especially in the Home Screen app), so there we ask Google for the
+     sign-in ourselves and hand the answer to Firebase. Needs MN_CONFIG.GOOGLE_CLIENT_ID
+     and this site's index.html listed as a redirect URI on that Google client. */
+  const CLIENT_ID = (window.MN_CONFIG || {}).GOOGLE_CLIENT_ID || "";
+  const OAUTH = "mn:oauth";
+  const useRedirect = () => !!CLIENT_ID && isIos;
+  const redirectUri = () => new URL("index.html", location.href).href.split(/[?#]/)[0];
+  const random = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
+
+  const sha256 = async (s) =>
+    Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s))), (b) => b.toString(16).padStart(2, "0")).join("");
+
+  // Google gets the hashed nonce; Firebase gets the raw one and checks they match
+  async function startRedirect() {
+    const raw = random();
+    const nonce = await sha256(raw);
+    const state = random();
+    write(OAUTH, { raw, nonce, state, back: location.href.split("#")[0], at: Date.now() });
+    const p = new URLSearchParams({
+      client_id: CLIENT_ID,
+      redirect_uri: redirectUri(),
+      response_type: "id_token",
+      scope: "openid email profile",
+      prompt: "select_account",
+      nonce,
+      state,
+    });
+    location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${p}`);
+  }
+
+  // back from Google: "#id_token=…&state=…" (or "#error=…").
+  // true when signing in went through and the page is reloading
+  async function finishRedirect() {
+    const pending = read(OAUTH, null);
+    const hash = new URLSearchParams(location.hash.slice(1));
+    if (!pending || !(hash.has("id_token") || hash.has("error"))) return false;
+    drop(OAUTH);
+    history.replaceState(null, "", location.pathname + location.search);
+    if (hash.get("state") !== pending.state || Date.now() - pending.at > 15 * 60 * 1000) return false;
+    if (hash.has("error")) {
+      if (hash.get("error") !== "access_denied") notice("fa-solid fa-triangle-exclamation", "Couldn't sign in", UI.esc(hash.get("error_description") || hash.get("error")));
+      return false;
+    }
+    const idToken = hash.get("id_token");
+    let app;
+    try {
+      const claims = JSON.parse(decodeURIComponent(escape(atob(idToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")))));
+      if (claims.nonce !== pending.nonce) throw new Error("The sign-in answer didn't match. Please try again.");
+      toast("Signing in…");
+      app = await appFor(`acct-${Date.now().toString(36)}`);
+      const cred = new firebase.auth.OAuthProvider("google.com").credential({ idToken, rawNonce: pending.raw });
+      const { user } = await app.auth().signInWithCredential(cred);
+      await welcome(app, user, pending.back);
+      return true;
+    } catch (err) {
+      await failed(app, err);
+      return false;
+    }
+  }
+
   async function signIn() {
     if (!enabled) return;
+    if (useRedirect()) return startRedirect();
     let app;
-    let email = "";
     try {
       let popup;
       if (readyApp) {
@@ -417,13 +479,22 @@
         popup = app.auth().signInWithPopup(provider);
       }
       const { user } = await popup;
-      email = user.email || "";
+      await welcome(app, user);
+    } catch (err) {
+      await failed(app, err);
+    }
+  }
+
+  // signed in with Google: load (or create) this person's library, then reload the page
+  async function welcome(app, user, back) {
+    try {
       await flush(); // finish uploading the current profile's changes before switching
 
       const known = accounts().find((a) => a.uid === user.uid);
       if (known) {
         await app.delete();
-        return known.uid === (account && account.uid) ? null : switchTo(known.uid);
+        if (known.uid === (account && account.uid)) return back && location.replace(back);
+        return switchTo(known.uid, back);
       }
 
       const acct = { uid: user.uid, name: user.displayName || user.email, email: user.email, photo: user.photoURL || "", app: app.name };
@@ -460,53 +531,60 @@
         Store.replaceData(data);
         write(K.syncAt, at);
       }
-      location.reload();
+      if (back) location.replace(back);
+      else location.reload();
     } catch (err) {
-      if (app) {
-        try {
-          await app.auth().signOut();
-          await app.delete();
-        } catch (e) {}
-      }
-      console.warn("Sign in:", err);
-      if (err.code === "auth/cancelled-popup-request") return;
-      if (err.code === "auth/popup-closed-by-user") {
-        // on a computer that just means "closed the window"; on iPhone / iPad it's often
-        // iOS losing the Google window, so explain what to try
-        if (isIos || standalone) {
-          notice(
-            "fa-solid fa-mobile-screen",
-            "Sign-in didn't finish",
-            standalone
-              ? `The Google window closed before signing in finished. Apps added to the Home Screen on iPhone / iPad
-                 sometimes lose that window.<br><br>Try again, and if it still doesn't work, open the site in <strong>Safari</strong>,
-                 sign in there, then use it from Safari.`
-              : `The Google window closed before signing in finished.<br><br>Try again. If it keeps happening, check
-                 <strong>Settings → Safari → Block Pop-ups</strong> is off for a moment, or that Private Browsing is off.`
-          );
-        }
-        return;
-      }
-      const esc = UI.esc;
-      if (err.status === 403 && /has not been used|disabled/i.test(err.message)) {
-        notice("fa-solid fa-database", "Sign-in isn't ready yet", "The database hasn't been set up yet (Firebase console → Firestore → Create database).");
-      } else if (err.status === 403) {
+      err.email = user.email || "";
+      throw err;
+    }
+  }
+
+  async function failed(app, err) {
+    const email = err.email || "";
+    if (app) {
+      try {
+        await app.auth().signOut();
+        await app.delete();
+      } catch (e) {}
+    }
+    console.warn("Sign in:", err);
+    if (err.code === "auth/cancelled-popup-request") return;
+    if (err.code === "auth/popup-closed-by-user") {
+      // on a computer that just means "closed the window"; on iPhone / iPad it's often
+      // iOS losing the Google window, so explain what to try
+      if (isIos || standalone) {
         notice(
-          "fa-solid fa-user-lock",
-          "This account can't sign in",
-          `${email ? `<strong>${esc(email)}</strong> isn't` : "This Google account isn't"} on the Movie Nights guest list.
-           Only people added by ${esc(ownerName())} can sign in.<br><br>
-           Ask ${esc(ownerName())} to add your Gmail address, then try again. You can still browse the site without signing in.`
+          "fa-solid fa-mobile-screen",
+          "Sign-in didn't finish",
+          standalone
+            ? `The Google window closed before signing in finished. Apps added to the Home Screen on iPhone / iPad
+               sometimes lose that window.<br><br>Try again, and if it still doesn't work, open the site in <strong>Safari</strong>,
+               sign in there, then use it from Safari.`
+            : `The Google window closed before signing in finished.<br><br>Try again. If it keeps happening, check
+               <strong>Settings → Safari → Block Pop-ups</strong> is off for a moment, or that Private Browsing is off.`
         );
-      } else if (err.code === "auth/popup-blocked") {
-        notice("fa-solid fa-window-restore", "Sign-in window blocked", "Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again.");
-      } else if (err.code === "auth/unauthorized-domain") {
-        notice("fa-solid fa-globe", "Sign-in isn't allowed here", "This web address isn't allowed to use sign-in yet (Firebase → Authentication → Settings → Authorized domains).");
-      } else if (err.code === "auth/network-request-failed" || err instanceof TypeError) {
-        notice("fa-solid fa-wifi", "No connection", "Couldn't reach Google. Check your internet connection and try again.");
-      } else {
-        notice("fa-solid fa-triangle-exclamation", "Couldn't sign in", esc(err.message || "Something went wrong. Please try again."));
       }
+      return;
+    }
+    const esc = UI.esc;
+    if (err.status === 403 && /has not been used|disabled/i.test(err.message)) {
+      notice("fa-solid fa-database", "Sign-in isn't ready yet", "The database hasn't been set up yet (Firebase console → Firestore → Create database).");
+    } else if (err.status === 403) {
+      notice(
+        "fa-solid fa-user-lock",
+        "This account can't sign in",
+        `${email ? `<strong>${esc(email)}</strong> isn't` : "This Google account isn't"} on the Movie Nights guest list.
+         Only people added by ${esc(ownerName())} can sign in.<br><br>
+         Ask ${esc(ownerName())} to add your Gmail address, then try again. You can still browse the site without signing in.`
+      );
+    } else if (err.code === "auth/popup-blocked") {
+      notice("fa-solid fa-window-restore", "Sign-in window blocked", "Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again.");
+    } else if (err.code === "auth/unauthorized-domain") {
+      notice("fa-solid fa-globe", "Sign-in isn't allowed here", "This web address isn't allowed to use sign-in yet (Firebase → Authentication → Settings → Authorized domains).");
+    } else if (err.code === "auth/network-request-failed" || err instanceof TypeError) {
+      notice("fa-solid fa-wifi", "No connection", "Couldn't reach Google. Check your internet connection and try again.");
+    } else {
+      notice("fa-solid fa-triangle-exclamation", "Couldn't sign in", esc(err.message || "Something went wrong. Please try again."));
     }
   }
 
@@ -516,7 +594,7 @@
     else await pushing;
   }
 
-  async function switchTo(uid) {
+  async function switchTo(uid, back) {
     const acct = accounts().find((a) => a.uid === uid);
     if (!acct || (account && account.uid === uid)) return;
     toast(`Switching to ${first(acct.name)}…`);
@@ -526,7 +604,8 @@
       remember(acct);
       Store.replaceData(remote ? dataOf(remote) : {});
       write(K.syncAt, remote ? remote.updatedAt : 0);
-      location.reload();
+      if (typeof back === "string") location.replace(back);
+      else location.reload();
     } catch (err) {
       if (err.signedOut) {
         write(K.accounts, accounts().filter((a) => a.uid !== uid));
@@ -553,7 +632,10 @@
 
   if (enabled) {
     if (account) Store.onSave(schedulePush);
-    document.addEventListener("DOMContentLoaded", () => (account ? start() : refreshPublic()));
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (await finishRedirect()) return;
+      account ? start() : refreshPublic();
+    });
   }
 
   window.Cloud = {
