@@ -7905,16 +7905,39 @@ html:not(.is-owner) .owner-only {
 
 .ad-results {
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* as wide as the pop-up, never as its longest title */
   gap: 4px;
   max-height: 55vh;
-  margin-top: 10px;
+  margin: 10px -6px 0 0;
+  padding-right: 6px;
+  overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.ad-results::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ad-results::-webkit-scrollbar-button {
+  display: none;
+}
+
+.ad-results::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.ad-results::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .ad-row {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
   padding: 6px;
   border-radius: 12px;
   transition: background 0.2s;
@@ -7952,6 +7975,7 @@ html:not(.is-owner) .owner-only {
 
 .adder-modal .ad-btn {
   flex: none;
+  white-space: nowrap;
   padding: 7px 14px;
   border-color: rgba(255, 255, 255, 0.14);
   border-radius: 999px;
