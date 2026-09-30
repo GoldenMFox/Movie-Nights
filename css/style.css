@@ -13331,10 +13331,11 @@ html.fade-watched #home-rows .movie-item[data-seen]:hover .movie-info {
 
 /* ============================== Profile picture: a character (Settings) ============================== */
 
-/* your picture is round everywhere; a character's photo (portrait) is framed on the face */
+/* your picture is round everywhere; a character's photo (a tall portrait) shows from its top edge,
+   so the head has room above it and the face sits in the middle of the circle */
 img[data-my-pic] {
   object-fit: cover;
-  object-position: 50% 18%;
+  object-position: 50% 0%;
 }
 
 /* Profile page: your picture is a button (a camera badge; it lifts a little on hover) */
@@ -13511,7 +13512,7 @@ img[data-my-pic] {
   border: 3px solid transparent;
   border-radius: 50%;
   object-fit: cover;
-  object-position: 50% 18%;
+  object-position: 50% 0%;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
   transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
