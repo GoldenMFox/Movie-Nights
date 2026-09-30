@@ -1210,7 +1210,7 @@
             <button type="button" class="cal-nav" data-step="1" aria-label="${view === "days" ? "Next month" : "Next year"}"${nextOff ? " disabled" : ""}><i class="fa-solid fa-chevron-right"></i></button>
           </span>
         </div>
-        <div class="cal-body cal-${view}">${body}</div>
+        <div class="cal-body cal-view-${view}">${body}</div>
         <div class="cal-foot">
           <button type="button" class="cal-chip" data-day="${today}"${after(today) ? " disabled" : ""}>Today</button>
           <button type="button" class="cal-chip" data-day="${yesterday}"${after(yesterday) ? " disabled" : ""}>Yesterday</button>
@@ -1273,7 +1273,8 @@
           } else year += step;
         }
         paint();
-        calEl.querySelector(b.dataset.step ? `[data-step="${b.dataset.step}"]` : ".cal-title").focus({ preventScroll: true });
+        // (keyboard: stay on the button you used; a tap or click: no focus ring)
+        if (!e.detail) calEl.querySelector(b.dataset.step ? `[data-step="${b.dataset.step}"]` : ".cal-title").focus({ preventScroll: true });
       };
       paint();
       place();
