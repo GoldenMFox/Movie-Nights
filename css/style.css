@@ -17340,3 +17340,9 @@ a.by-card:hover .by-blur {
     justify-content: space-between;
   }
 }
+
+/* (a budget that is a sliver of the gross, e.g. a classic that made 100× its cost, still shows
+   as a small striped marker at the start of the bar; the exact cost is written under it) */
+.bo-budget {
+  width: max(var(--b), 10px);
+}
