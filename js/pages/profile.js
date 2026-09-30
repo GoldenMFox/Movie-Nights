@@ -126,7 +126,8 @@
   //  - Movie & TV cast: characters grouped by title (the actor's TMDB photo, named after the
   //    character), or search any movie / show and pick from its cast
   //  - Superheroes, Harry Potter, Star Wars, Game of Thrones, Rick and Morty, Disney: pictures
-  //    of the characters themselves, from free fan-made character databases
+  //    of the characters themselves, from free fan-made character databases (Superheroes: the
+  //    Marvel and DC movie fan wikis)
   // Saved with your profile (so it follows your account): { path, character, title, actor }
   // for a TMDB photo, { url, character, title } for the others.
   const AVATAR_TITLES = [
@@ -140,8 +141,46 @@
   const googlePhoto = () => !!(window.Cloud && Cloud.account() && Cloud.account().photo);
   const getJson = (url) => fetch(url).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`error ${r.status}`))));
 
-  // the best-known heroes first, then everyone else A to Z
-  const TOP_HEROES = ["Iron Man", "Captain America", "Thor", "Hulk", "Black Widow", "Spider-Man", "Black Panther", "Doctor Strange", "Wolverine", "Deadpool", "Scarlet Witch", "Vision", "Hawkeye", "Thanos", "Loki", "Groot", "Rocket Raccoon", "Star-Lord", "Venom", "Batman", "Superman", "Wonder Woman", "Joker", "Harley Quinn", "Flash", "Aquaman", "Green Lantern", "Catwoman", "Cyborg", "Robin"];
+  // Superheroes: the movie versions, from the fan wikis of the Marvel and DC films (the picture
+  // at the top of each character's page). [name shown, wiki page] - best-known first
+  const HERO_WIKIS = [
+    {
+      host: "marvelcinematicuniverse.fandom.com",
+      title: "Marvel",
+      names: ["Iron Man", "Captain America", "Thor", "Hulk", ["Black Widow", "Natasha Romanoff"], "Spider-Man", ["Black Panther", "T'Challa"], "Doctor Strange", ["Scarlet Witch", "Wanda Maximoff"], "Vision", "Hawkeye", "Thanos", "Loki", "Groot", ["Rocket", "Rocket Raccoon"], "Star-Lord", "Gamora", ["Drax", "Drax the Destroyer"], "Nebula", "Mantis", "Deadpool", "Wolverine", "Ant-Man", "Wasp", "Captain Marvel", "Falcon", "Winter Soldier", "War Machine", "Nick Fury", "Shang-Chi", "Ultron", "Hela", ["Killmonger", "Erik Killmonger"], "Valkyrie", "Wong", "Ms. Marvel", "Moon Knight", "She-Hulk", "Kate Bishop", "Yelena Belova", "Kang the Conqueror", "Peggy Carter", "Happy Hogan", "Pepper Potts", "Red Skull", "Agatha Harkness"],
+    },
+    {
+      host: "dcextendeduniverse.fandom.com",
+      title: "DC",
+      names: ["Batman", "Superman", "Wonder Woman", "Joker", "Harley Quinn", "Flash", "Aquaman", "Cyborg", "Shazam", "Black Adam", "Lex Luthor", ["General Zod", "Zod"], "Darkseid", "Steppenwolf", "Deathstroke", "Peacemaker", "Bloodsport", "King Shark", "Mera", "Riddler", "Alfred Pennyworth", "Martian Manhunter", "Blue Beetle", "Amanda Waller", "Enchantress", "Deadshot", "Rick Flag", "Ratcatcher 2", "Polka-Dot Man"],
+    },
+  ];
+  const wikiApi = (host, params) => getJson(`https://${host}/api.php?action=query&prop=pageimages&pithumbsize=400&redirects=1&format=json&origin=*&${params}`);
+  // a wiki's listed characters, in order (up to 50 pages per question)
+  async function wikiLoad(w) {
+    const names = w.names.map((n) => (Array.isArray(n) ? n : [n, n]));
+    const pics = {};
+    for (let i = 0; i < names.length; i += 50) {
+      const d = await wikiApi(w.host, `titles=${encodeURIComponent(names.slice(i, i + 50).map((n) => n[1]).join("|"))}`);
+      const from = {}; // wiki's page -> the name asked for
+      ((d.query && d.query.normalized) || []).concat((d.query && d.query.redirects) || []).forEach((r) => (from[r.to] = r.from));
+      Object.values((d.query && d.query.pages) || {}).forEach((p) => {
+        let asked = p.title;
+        while (from[asked]) asked = from[asked];
+        if (p.thumbnail) pics[asked] = p.thumbnail.source;
+      });
+    }
+    return names.filter((n) => pics[n[1]]).map(([name, page]) => ({ name, img: pics[page], title: w.title }));
+  }
+  // anyone else on the wikis: character pages with a picture (not actors, films, or the
+  // "Groot/Zombie Outbreak"-style alternate versions)
+  async function wikiFind(w, q) {
+    const d = await wikiApi(w.host, `prop=pageimages|categories&cllimit=max&generator=search&gsrnamespace=0&gsrlimit=20&gsrsearch=${encodeURIComponent(q)}`);
+    return Object.values((d.query && d.query.pages) || {})
+      .filter((p) => p.thumbnail && !/[/(]/.test(p.title) && (p.categories || []).some((c) => / Characters$/.test(c.title)))
+      .sort((a, b) => a.index - b.index)
+      .map((p) => ({ name: p.title, img: p.thumbnail.source, title: w.title }));
+  }
   // Disney has no "best-known first" order: these are looked up by name
   const TOP_DISNEY = ["Mickey Mouse", "Minnie Mouse", "Donald Duck", "Goofy", "Simba", "Elsa", "Anna", "Olaf", "Moana", "Stitch", "Woody", "Buzz Lightyear", "Ariel", "Aladdin", "Genie", "Belle", "Cinderella", "Mulan", "Rapunzel", "Nemo", "Dory", "Winnie the Pooh", "Baloo", "Pumbaa", "Timon", "Maui", "Jack Sparrow", "Hercules"];
   const disneyPick = (list, name) => (list || []).find((c) => c.imageUrl && c.name.toLowerCase() === name.toLowerCase()) || (list || []).find((c) => c.imageUrl);
@@ -154,14 +193,14 @@
     heroes: {
       label: "Superheroes",
       load: async () => {
-        const all = await getJson("https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/all.json");
-        const rank = (h) => (TOP_HEROES.includes(h.name) ? TOP_HEROES.indexOf(h.name) : 999);
-        const seen = new Set();
-        return all
-          .filter((h) => h.images && h.images.md && !seen.has(h.name) && seen.add(h.name))
-          .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
-          .map((h) => ({ name: h.name, img: h.images.md, title: (h.biography && h.biography.publisher) || "Superheroes" }));
+        const [marvel, dc] = await Promise.all(HERO_WIKIS.map((w) => wikiLoad(w).catch(() => [])));
+        if (!marvel.length && !dc.length) throw new Error("no answer");
+        // Marvel and DC taking turns, so both show up at the top
+        const out = [];
+        for (let i = 0; i < Math.max(marvel.length, dc.length); i++) out.push(...[marvel[i], dc[i]].filter(Boolean));
+        return out;
       },
+      find: async (q) => [].concat(...(await Promise.all(HERO_WIKIS.map((w) => wikiFind(w, q).catch(() => []))))),
     },
     hp: {
       label: "Harry Potter",
