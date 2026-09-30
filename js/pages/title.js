@@ -856,15 +856,14 @@
   // the watch diary: the day you watched it (change it, or add it to an older rating)
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   function watchedOnHtml(item) {
-    const input = `<input type="date" class="twd-input" max="${Store.today()}" value="${esc(item.watchedAt || "")}" aria-label="The day you watched it" />`;
     if (item.watchedAt) {
       const d = new Date(`${item.watchedAt}T00:00:00`);
       return `<div class="t-watched-on"><i class="fa-regular fa-calendar-check"></i> Watched on ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}
-        <button type="button" class="twd-edit">Change</button>${input}</div>`;
+        <button type="button" class="twd-edit">Change</button></div>`;
     }
     if (item.rating == null) return "";
     return `<div class="t-watched-on"><i class="fa-regular fa-calendar"></i>
-      <button type="button" class="twd-edit">When did you watch it?</button>${input}</div>`;
+      <button type="button" class="twd-edit">When did you watch it?</button></div>`;
   }
 
   function renderLibrary() {
@@ -1051,22 +1050,15 @@
   }
 
   function initLibrary() {
-    // "Watched on …": the date picker opens from the Change button
-    document.addEventListener("click", (e) => {
+    // "Watched on …": the site's date picker opens from the Change button
+    document.addEventListener("click", async (e) => {
       const btn = e.target.closest(".twd-edit");
       if (!btn) return;
-      const input = btn.parentElement.querySelector(".twd-input");
-      try {
-        input.showPicker();
-      } catch (err) {
-        input.classList.add("show"); // older browsers: show the date field itself
-        input.focus();
-      }
-    });
-    document.addEventListener("change", (e) => {
-      if (!e.target.classList.contains("twd-input") || !e.target.value) return;
-      Store.update(id, { watchedAt: e.target.value });
-      toast("Watch date saved");
+      const item = Store.get(id);
+      const day = await UI.pickDate(btn, { value: item.watchedAt || "", max: Store.today(), title: "The day you watched it", clear: true });
+      if (day === null || day === (item.watchedAt || "")) return;
+      Store.update(id, { watchedAt: day || null });
+      toast(day ? "Watch date saved" : "Watch date removed");
     });
 
     document.addEventListener("click", (e) => {

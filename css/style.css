@@ -8613,24 +8613,6 @@ html:not(.is-owner) .owner-only {
   cursor: pointer;
 }
 
-.twd-input {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.twd-input.show {
-  position: static;
-  width: auto;
-  height: auto;
-  opacity: 1;
-  pointer-events: auto;
-}
-
 /* ============================== Light theme ==============================
    The page goes light; the "chrome" (navbar, menus, search, pop-ups, phone tab bar,
    title header) stays dark, like Netflix / Apple TV. Here it's made solid enough that
@@ -14194,4 +14176,271 @@ html.mv-lock {
 html:not(.ext-ratings) .movie-item[data-id] .ratings .ext-score,
 html.ext-ratings .movie-item[data-id] .ratings .score.mine {
   display: none;
+}
+
+/* ---------- the site's date picker (UI.pickDate): dark glass like the menus, red for your day ---------- */
+.cal-pop {
+  position: fixed;
+  z-index: 3100;
+  width: 312px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  background: rgba(24, 24, 28, 0.9);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  color: #fff;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top left;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+
+.cal-pop.open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+.cal-pop button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.cal-pop button:disabled {
+  cursor: default;
+}
+
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.cal-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  transition: background-color 0.2s ease;
+}
+
+.cal-title i {
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+.cal-title:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.cal-arrows {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.cal-nav {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+  transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.cal-nav:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.cal-nav:disabled {
+  opacity: 0.3;
+}
+
+.cal-week,
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.cal-week span {
+  padding: 4px 0 8px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.cal-day {
+  position: relative;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.cal-day:hover:not(:disabled):not(.on) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cal-day:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+.cal-day:disabled {
+  color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* today: a small red dot under the number */
+.cal-day.today::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translateX(-50%);
+}
+
+.cal-day.on {
+  background: var(--accent);
+  box-shadow: 0 6px 18px rgba(144, 13, 9, 0.5);
+}
+
+.cal-day.on::after {
+  background: #fff;
+}
+
+.cal-months {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.cal-month {
+  padding: 14px 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.cal-month:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cal-month.on {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.cal-month:disabled {
+  opacity: 0.3;
+}
+
+.cal-body {
+  animation: cal-in 0.2s ease both;
+}
+
+@keyframes cal-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.cal-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cal-chip {
+  padding: 7px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.cal-chip:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.cal-chip:disabled {
+  opacity: 0.35;
+}
+
+.cal-clear {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.cal-clear i {
+  margin-right: 4px;
+  font-size: 11px;
+}
+
+.cal-pop :focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+}
+
+/* phones: a sheet at the bottom */
+.cal-pop.sheet {
+  left: 8px;
+  right: 8px;
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  top: auto;
+  width: auto;
+  padding: 18px;
+  border-radius: 26px;
+  transform: translateY(24px);
+  transform-origin: bottom center;
+}
+
+.cal-pop.sheet.open {
+  transform: none;
+}
+
+.cal-pop.sheet .cal-day {
+  font-size: 16px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cal-pop,
+  .cal-body {
+    transition: none;
+    animation: none;
+  }
 }

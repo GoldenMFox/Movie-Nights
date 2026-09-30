@@ -1148,5 +1148,143 @@
   // (a character picked on another device: make its framed picture here)
   frameMyPic().then((made) => made && paintMyPic());
 
-  window.UI = { esc, toast, download, PAGES, foldTools, signInPrompt, needSignIn, welcome, confirm: confirmBox, ask, paintMyPic, frameMyPic };
+  /* ---------------- the site's own date picker (instead of the browser's) ----------------
+     UI.pickDate(anchor, { value: "2026-09-12", max: "2026-09-30", title, clear })
+       -> Promise: "YYYY-MM-DD" when a day is picked, "" for Clear, null when closed.
+     A dark glass pop-over under the button (a sheet at the bottom on phones): the month with
+     arrows, tap its name to jump by month / year, Today / Yesterday shortcuts. */
+  const CAL_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const parseYmd = (s) => (/^\d{4}-\d{2}-\d{2}$/.test(s || "") ? new Date(`${s}T00:00:00`) : null);
+  let calEl = null;
+  let calDone = null;
+
+  function pickDate(anchor, opts = {}) {
+    if (calDone) calDone(null);
+    const today = ymd(new Date());
+    const max = opts.max || "";
+    const picked = opts.value || "";
+    const start = parseYmd(picked) || parseYmd(max) || new Date();
+    let year = start.getFullYear();
+    let month = start.getMonth();
+    let view = "days"; // or "months"
+    if (!calEl) {
+      calEl = document.createElement("div");
+      calEl.className = "cal-pop";
+      calEl.setAttribute("role", "dialog");
+      calEl.setAttribute("aria-modal", "true");
+      document.body.appendChild(calEl);
+    }
+    calEl.setAttribute("aria-label", opts.title || "Pick a day");
+    const after = (s) => max && s > max;
+
+    function paint() {
+      let body;
+      if (view === "days") {
+        const first = new Date(year, month, 1);
+        const lead = (first.getDay() + 6) % 7; // weeks start on Monday
+        const days = new Date(year, month + 1, 0).getDate();
+        const cells = [];
+        for (let i = 0; i < lead; i++) cells.push('<span class="cal-gap"></span>');
+        for (let d = 1; d <= days; d++) {
+          const s = ymd(new Date(year, month, d));
+          const cls = ["cal-day", s === picked ? "on" : "", s === today ? "today" : ""].filter(Boolean).join(" ");
+          cells.push(`<button type="button" class="${cls}" data-day="${s}"${after(s) ? " disabled" : ""}${s === picked ? ' aria-pressed="true"' : ""}>${d}</button>`);
+        }
+        body = `<div class="cal-week">${["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((w) => `<span>${w}</span>`).join("")}</div><div class="cal-grid">${cells.join("")}</div>`;
+      } else {
+        const maxD = parseYmd(max);
+        body = `<div class="cal-months">${CAL_MONTHS.map((m, n) => {
+          const off = maxD && (year > maxD.getFullYear() || (year === maxD.getFullYear() && n > maxD.getMonth()));
+          return `<button type="button" class="cal-month${n === month ? " on" : ""}" data-month="${n}"${off ? " disabled" : ""}>${m.slice(0, 3)}</button>`;
+        }).join("")}</div>`;
+      }
+      const maxD = parseYmd(max);
+      const nextOff = maxD && (view === "days" ? new Date(year, month + 1, 1) > maxD : year >= maxD.getFullYear());
+      const yesterday = ymd(new Date(Date.now() - 86400000));
+      calEl.innerHTML = `
+        <div class="cal-head">
+          <button type="button" class="cal-title" aria-label="${view === "days" ? "Pick a month" : "Back to the days"}">${view === "days" ? `${CAL_MONTHS[month]} ${year}` : year} <i class="fa-solid fa-chevron-${view === "days" ? "down" : "up"}"></i></button>
+          <span class="cal-arrows">
+            <button type="button" class="cal-nav" data-step="-1" aria-label="${view === "days" ? "Previous month" : "Previous year"}"><i class="fa-solid fa-chevron-left"></i></button>
+            <button type="button" class="cal-nav" data-step="1" aria-label="${view === "days" ? "Next month" : "Next year"}"${nextOff ? " disabled" : ""}><i class="fa-solid fa-chevron-right"></i></button>
+          </span>
+        </div>
+        <div class="cal-body cal-${view}">${body}</div>
+        <div class="cal-foot">
+          <button type="button" class="cal-chip" data-day="${today}"${after(today) ? " disabled" : ""}>Today</button>
+          <button type="button" class="cal-chip" data-day="${yesterday}"${after(yesterday) ? " disabled" : ""}>Yesterday</button>
+          ${opts.clear && picked ? '<button type="button" class="cal-chip cal-clear"><i class="fa-solid fa-xmark"></i> Clear</button>' : ""}
+        </div>`;
+    }
+
+    function place() {
+      if (window.matchMedia("(max-width: 600px)").matches) {
+        calEl.classList.add("sheet");
+        calEl.style.left = calEl.style.top = "";
+        return;
+      }
+      calEl.classList.remove("sheet");
+      const r = anchor.getBoundingClientRect();
+      const w = calEl.offsetWidth;
+      const h = calEl.offsetHeight;
+      const left = Math.min(Math.max(12, r.left), window.innerWidth - w - 12);
+      const below = r.bottom + 10;
+      const top = below + h > window.innerHeight - 12 && r.top - h - 10 > 12 ? r.top - h - 10 : below;
+      calEl.style.left = `${left}px`;
+      calEl.style.top = `${top}px`;
+    }
+
+    return new Promise((resolve) => {
+      const finish = (v) => {
+        calDone = null;
+        calEl.classList.remove("open");
+        document.removeEventListener("pointerdown", outside, true);
+        document.removeEventListener("keydown", keys, true);
+        window.removeEventListener("resize", place);
+        window.removeEventListener("scroll", onScroll, true);
+        if (anchor && anchor.focus) anchor.focus({ preventScroll: true });
+        resolve(v);
+      };
+      const outside = (e) => !calEl.contains(e.target) && !anchor.contains(e.target) && finish(null);
+      const keys = (e) => {
+        if (e.key === "Escape") {
+          e.stopPropagation();
+          finish(null);
+        }
+      };
+      const onScroll = (e) => !calEl.contains(e.target) && place();
+      calDone = finish;
+      calEl.onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b || b.disabled) return;
+        if (b.dataset.day) return finish(b.dataset.day);
+        if (b.classList.contains("cal-clear")) return finish("");
+        if (b.classList.contains("cal-title")) view = view === "days" ? "months" : "days";
+        else if (b.dataset.month) {
+          month = Number(b.dataset.month);
+          view = "days";
+        } else if (b.dataset.step) {
+          const step = Number(b.dataset.step);
+          if (view === "days") {
+            month += step;
+            if (month < 0) (month = 11), year--;
+            if (month > 11) (month = 0), year++;
+          } else year += step;
+        }
+        paint();
+        calEl.querySelector(b.dataset.step ? `[data-step="${b.dataset.step}"]` : ".cal-title").focus({ preventScroll: true });
+      };
+      paint();
+      place();
+      requestAnimationFrame(() => calEl.classList.add("open"));
+      (calEl.querySelector(".cal-day.on") || calEl.querySelector(".cal-day.today") || calEl.querySelector(".cal-title")).focus({ preventScroll: true });
+      document.addEventListener("pointerdown", outside, true);
+      document.addEventListener("keydown", keys, true);
+      window.addEventListener("resize", place);
+      window.addEventListener("scroll", onScroll, true);
+    });
+  }
+
+  window.UI = { esc, toast, download, PAGES, foldTools, signInPrompt, needSignIn, welcome, confirm: confirmBox, ask, paintMyPic, frameMyPic, pickDate };
 })();
