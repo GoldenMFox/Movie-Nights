@@ -187,9 +187,13 @@
   // the sections are redrawn when something changes: keep each sideways row where you
   // scrolled it. rowScrolls() reads them, rowScrolls(saved) puts them back
   function rowScrolls(saved) {
-    const rows = [...mainEl.querySelectorAll(".movie-row, .t-cast, .t-media-row")];
-    if (!saved) return rows.map((r) => r.scrollLeft);
-    rows.forEach((r, n) => saved[n] && (r.scrollLeft = saved[n]));
+    const rows = [...mainEl.querySelectorAll(".movie-row, .t-cast, .t-media-row, .md-list")];
+    if (!saved) return rows.map((r) => [r.scrollLeft, r.scrollTop]);
+    rows.forEach((r, n) => {
+      if (!saved[n]) return;
+      r.scrollLeft = saved[n][0];
+      r.scrollTop = saved[n][1];
+    });
   }
 
   /* ---------------- franchise (like HBO Max's collections) ---------------- */
@@ -524,20 +528,132 @@
       .join("")}</div>`;
   }
 
+  // Media: Videos / Images (the site's pill switch; the tab stays picked while you're here)
+  //  - Videos: the best one big (trailers come first), the rest as a playlist beside it
+  //  - Images: a mosaic (the first still big); tap one for the full-screen viewer
+  let mediaTab = "videos";
+  let mediaImages = []; // for the viewer
+  const MOSAIC = 7; // shown (5 on phones)
+  const MOSAIC_PHONE = 5;
+  const ytThumb = (key, size) => `https://i.ytimg.com/vi/${encodeURIComponent(key)}/${size}.jpg`;
   function mediaPanel(videos, images) {
     if (!videos.length && !images.length) return '<p class="muted t-empty">No videos or images yet.</p>';
-    return `
-      ${videos.length ? `<h3 class="t-sub">Videos</h3><div class="t-media-row">${videos
-        .map(
-          (v) => `<button class="t-video" data-video="${esc(v.key)}" data-name="${esc(v.name)}" type="button">
-            <span class="t-thumb"><img src="https://i.ytimg.com/vi/${encodeURIComponent(v.key)}/mqdefault.jpg" alt="" loading="lazy" /><i class="fa-solid fa-play"></i></span>
-            <strong>${esc(v.name)}</strong><span>${esc(v.type)}</span>
-          </button>`
-        )
-        .join("")}</div>` : ""}
-      ${images.length ? `<h3 class="t-sub">Images</h3><div class="t-media-row">${images
-        .map((p) => `<a class="t-still" href="${Store.img(p, "original")}" target="_blank" rel="noopener"><img src="${Store.img(p, "w500")}" alt="" loading="lazy" /></a>`)
-        .join("")}</div>` : ""}`;
+    mediaImages = images;
+    const tab = !videos.length ? "images" : !images.length ? "videos" : mediaTab;
+    const [top, ...rest] = videos;
+    const switcher =
+      videos.length && images.length
+        ? `<div class="top10-switch md-switch" role="tablist" aria-label="Media">
+            <button class="top10-tab${tab === "videos" ? " active" : ""}" type="button" role="tab" aria-selected="${tab === "videos"}" data-md="videos"><i class="fa-solid fa-play"></i> Videos <small>${videos.length}</small></button>
+            <button class="top10-tab${tab === "images" ? " active" : ""}" type="button" role="tab" aria-selected="${tab === "images"}" data-md="images"><i class="fa-regular fa-image"></i> Images <small>${images.length}</small></button>
+          </div>`
+        : "";
+    const videosPane = top
+      ? `<div class="md-pane md-videos" data-pane="videos"${tab === "videos" ? "" : " hidden"}>
+          <button class="md-feature" type="button" data-video="${esc(top.key)}" data-name="${esc(top.name)}">
+            <img src="${ytThumb(top.key, "hqdefault")}" alt="" loading="lazy" />
+            <span class="md-shade"></span>
+            <span class="md-play" aria-hidden="true"><i class="fa-solid fa-play"></i></span>
+            <span class="md-info"><span class="md-type">${esc(top.type)}</span><strong>${esc(top.name)}</strong></span>
+          </button>
+          ${
+            rest.length
+              ? `<div class="md-list" aria-label="More videos">${rest
+                  .map(
+                    (v) => `<button class="md-item" type="button" data-video="${esc(v.key)}" data-name="${esc(v.name)}">
+                      <span class="md-thumb"><img src="${ytThumb(v.key, "mqdefault")}" alt="" loading="lazy" /><i class="fa-solid fa-play"></i></span>
+                      <span class="md-text"><strong>${esc(v.name)}</strong><small>${esc(v.type)}</small></span>
+                    </button>`
+                  )
+                  .join("")}</div>`
+              : ""
+          }
+        </div>`
+      : "";
+    const extra = images.length - MOSAIC;
+    const imagesPane = images.length
+      ? `<div class="md-pane" data-pane="images"${tab === "images" ? "" : " hidden"}>
+          <div class="md-mosaic n${Math.min(images.length, MOSAIC)}">${images
+            .slice(0, MOSAIC)
+            .map(
+              (p, n) => `<button class="md-shot" type="button" data-shot="${n}" aria-label="Image ${n + 1} of ${images.length}">
+                <img src="${Store.img(p, n ? "w500" : "w780")}" alt="" loading="lazy" />
+                ${n === MOSAIC - 1 && extra > 0 ? `<span class="md-more">+${extra}</span>` : ""}
+                ${n === MOSAIC_PHONE - 1 && images.length > MOSAIC_PHONE ? `<span class="md-more md-more-phone">+${images.length - MOSAIC_PHONE}</span>` : ""}
+              </button>`
+            )
+            .join("")}</div>
+        </div>`
+      : "";
+    return switcher + videosPane + imagesPane;
+  }
+
+  // a video taken down from YouTube only has its grey 120 × 90 placeholder picture: left out
+  mainEl.addEventListener(
+    "load",
+    (e) => {
+      const img = e.target;
+      if (img.tagName === "IMG" && img.closest(".md-item") && img.naturalWidth === 120) img.closest(".md-item").remove();
+    },
+    true
+  );
+
+  // the full-screen image viewer: arrows / swipe / keyboard, the count, Esc or tap outside to close
+  let viewer = null;
+  let viewerAt = 0;
+  function showShot(n) {
+    viewerAt = (n + mediaImages.length) % mediaImages.length;
+    const img = viewer.querySelector(".mv-img");
+    img.classList.remove("in");
+    img.src = Store.img(mediaImages[viewerAt], "w1280");
+    requestAnimationFrame(() => img.classList.add("in"));
+    viewer.querySelector(".mv-count").textContent = `${viewerAt + 1} / ${mediaImages.length}`;
+    viewer.querySelector(".mv-full").href = Store.img(mediaImages[viewerAt], "original");
+    // (the next one is fetched ahead)
+    new Image().src = Store.img(mediaImages[(viewerAt + 1) % mediaImages.length], "w1280");
+  }
+  function openViewer(n) {
+    if (!viewer) {
+      viewer = document.createElement("div");
+      viewer.className = "md-viewer";
+      viewer.setAttribute("role", "dialog");
+      viewer.setAttribute("aria-modal", "true");
+      viewer.setAttribute("aria-label", "Images");
+      viewer.innerHTML = `
+        <img class="mv-img" alt="" />
+        <button class="mv-btn mv-close" type="button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+        <button class="mv-btn mv-prev" type="button" aria-label="Previous image"><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="mv-btn mv-next" type="button" aria-label="Next image"><i class="fa-solid fa-chevron-right"></i></button>
+        <div class="mv-bar"><span class="mv-count"></span><a class="mv-full" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i> Full size</a></div>`;
+      document.body.appendChild(viewer);
+      viewer.addEventListener("click", (e) => {
+        if (e.target.closest(".mv-prev")) showShot(viewerAt - 1);
+        else if (e.target.closest(".mv-next")) showShot(viewerAt + 1);
+        else if (e.target.closest(".mv-close") || e.target === viewer) closeViewer();
+      });
+      let x0 = null;
+      viewer.addEventListener("touchstart", (e) => (x0 = e.touches[0].clientX), { passive: true });
+      viewer.addEventListener("touchend", (e) => {
+        const dx = x0 == null ? 0 : e.changedTouches[0].clientX - x0;
+        if (Math.abs(dx) > 50) showShot(viewerAt + (dx < 0 ? 1 : -1));
+        x0 = null;
+      });
+      document.addEventListener("keydown", (e) => {
+        if (!viewer.classList.contains("open")) return;
+        if (e.key === "Escape") closeViewer();
+        else if (e.key === "ArrowLeft") showShot(viewerAt - 1);
+        else if (e.key === "ArrowRight") showShot(viewerAt + 1);
+      });
+    }
+    viewer.querySelectorAll(".mv-prev, .mv-next").forEach((b) => (b.hidden = mediaImages.length < 2));
+    showShot(n);
+    document.documentElement.classList.add("mv-lock");
+    requestAnimationFrame(() => viewer.classList.add("open"));
+    viewer.querySelector(".mv-close").focus({ preventScroll: true });
+  }
+  function closeViewer() {
+    viewer.classList.remove("open");
+    document.documentElement.classList.remove("mv-lock");
   }
 
   // the newest 3 reviews; "See more reviews" shows the rest (stays open while you're on the page)
@@ -710,6 +826,25 @@
       );
       return;
     }
+    const mdTab = e.target.closest("[data-md]");
+    if (mdTab) {
+      mediaTab = mdTab.dataset.md;
+      const sec = mdTab.closest(".t-section");
+      sec.querySelectorAll("[data-md]").forEach((b) => {
+        b.classList.toggle("active", b === mdTab);
+        b.setAttribute("aria-selected", b === mdTab);
+      });
+      sec.querySelectorAll(".md-pane").forEach((p) => {
+        p.hidden = p.dataset.pane !== mediaTab;
+        if (!p.hidden) {
+          p.classList.remove("md-in");
+          requestAnimationFrame(() => p.classList.add("md-in"));
+        }
+      });
+      return;
+    }
+    const shot = e.target.closest("[data-shot]");
+    if (shot) return openViewer(Number(shot.dataset.shot));
     const video = e.target.closest("[data-video]");
     if (video) Cards.showTrailer({ title: video.dataset.name, trailer: video.dataset.video }, () => null);
   });
