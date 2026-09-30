@@ -44,13 +44,13 @@ It updates by itself whenever the site is published.
 | --- | --- |
 | `discover.html` | Browse and search **all** movies, TV shows and anime on TMDB (trending, popular, in cinemas, coming soon, top rated, anime), or browse by genre. Search forgives typos ("forest gump" finds Forrest Gump) and hides shorts / posterless uploads. Unreleased titles get a "Coming soon · date" label (the cinema date in Romania). Add anything to your library or watchlist |
 | `index.html` | Home, live from TMDB: this week's trending titles in the slideshow, **Top 10 today** (movies / TV shows switch), then rows for in cinemas, coming soon, popular and top rated movies / TV / anime. At the bottom, "Your Movie Nights": your stats, watchlist, favorites and a "What should I watch?" button. (Without a TMDB key it shows your own list instead.) |
-| `movies.html`, `tv-shows.html`, `anime.html` | Full lists with search, genre, sort, rating and year filters |
+| `movies.html`, `tv-shows.html`, `anime.html` | Full lists with search, genre, sort, rating and year filters, and chips (All, **Watched**, Rated, Not rated, Favorites, Watchlist, New releases) |
 | `watchlist.html` | **Coming up** (release dates of movies you're waiting for, new seasons / episodes of your shows), then two rows, **Plan to watch** and **Favorites**; "See all" opens the full list below them, with a switch between the two, search, filters and **On my services**. (`favorites.html` just forwards here.) |
-| `title.html?id=...` | Details for one title (in your library = watched: no Watchlist button; still on the Watchlist: **On Watchlist** + **Watched**): your score, **Watched on** (change the date), trailer, where to watch, overview, **Seasons** (TV: each season's trailer), cast, media, reviews, "more like this" |
+| `title.html?id=...` | Details for one title (in your library = watched: no Watchlist button; still on the Watchlist: **On Watchlist** + **Watched**): your score, **Watched on** (change the date), trailer, where to watch, overview, **Your progress** (shows: the episode you're at), **Your notes**, **Seasons** (TV: each season's trailer), cast, media, reviews, "more like this" (your titles sharing the most genres) |
 | `person.html?id=...` | An actor / crew member (tap a cast card or the director's name): photo, bio, facts, best known for, full filmography with a role filter |
-| `tier-list.html` | Drag posters into S / A / B / C / D tiers |
+| `tier-list.html` | Rank what you've watched from S to D: drag posters from the **unranked tray** at the bottom of the screen (phones: tap a poster, then a tier), **Quick rank** (one poster at a time, keys S A B C D, Skip, Undo) and **Fill from my ratings** (10 → S, 9 → A, 8 → B, 7 → C, below → D, with Undo). Only watched titles: not the ones only on your Watchlist |
 | `profile.html` | Your name, stats, **Watch diary** (watched this year / month, a chart of the last 12 months, "a year ago you watched…", **Wrapped**) and charts |
-| `settings.html` | Theme, **your streaming services**, **Import** from IMDb / Letterboxd, backup. The owner also sees **Members** and the TMDB / OMDb settings |
+| `settings.html` | Theme, **your country** and **your streaming services**, **Import** from IMDb / Letterboxd, backup. The owner also sees **Members** and the TMDB / OMDb settings (marked Admin only) |
 
 The navbar search (or `/` on any page) searches your library and all of TMDB.
 
@@ -105,10 +105,24 @@ have keep your own score.
 **Watch diary**: the day you rate a title or press Watched is saved as the day you watched it
 (`watchedAt`); change it on the title page. Imports bring their dates.
 
-**Streaming services**: pick yours in Settings (saved with your profile, so they
-follow you). Availability comes from TMDB / JustWatch for `RELEASE_COUNTRY` (Romania) and is
-kept for a week in `mn:providers`; release dates / next episodes are kept for a day in `mn:nextUp`
-(`js/services/watch.js`).
+**Your country and streaming services**: pick them in Settings (saved with your profile, so they
+follow you). The country decides "Where to watch" on title pages, "On my services", age ratings and
+the cinema dates on labels (until you pick one: `RELEASE_COUNTRY` in `js/config.js`, Romania).
+Availability comes from TMDB / JustWatch and is kept for a week in `mn:providers`; release dates /
+next episodes are kept for a day in `mn:nextUp` (`js/services/watch.js`). When something in
+Coming up is out today, the Watchlist link and tab get a red number.
+
+**Continue watching** (shows): on a show's page, **I'm watching it** starts tracking; then
+**Watched S2 E6** moves you on (also in the quick menu), or pick the season / episode. Shows in
+progress get an "S2 · E5" badge and a **Continue watching** row at the top of "Your Movie Nights".
+The last episode finishes the show (off the Watchlist, into the diary, "rate it?"); a new season
+on TMDB picks it up again.
+
+**Your notes**: a note on any title in your library (title page), saved as you type.
+
+**Sync**: several tabs stay in step, and when two devices both changed things before syncing
+(e.g. the phone offline), both sets of changes are kept (`js/core/cloud.js`). TMDB details are
+cached in the browser's database (IndexedDB), a week each.
 
 In the **profile menu**:
 
