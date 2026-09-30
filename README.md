@@ -135,6 +135,14 @@ on TMDB picks it up again.
 
 **Your notes**: a note on any title in your library (title page), saved as you type.
 
+**Movie trivia** (title page, for what you've watched; and offered right after you mark a title
+Watched): 10 questions from TMDB (who directed it, who played whom, the year, the running time or
+seasons, the box office and budget, the franchise, where it was made, the studio or network, the
+composer, the tagline, the director's and the star's other films), four answers each, 20 seconds a
+question (keys 1–4 / A–D). Then your score and a rank: 📼 Casual Viewer, 🎬 Film Fan, 🍿 Movie Buff
+(7+), 🎓 Cinephile (9), 🏆 Film Genius (10), with Play again and Share. Your best per title is saved
+with your profile; 7 or more counts for the **Movie Buff** achievement (`js/components/trivia.js`).
+
 **Sync**: several tabs stay in step, and when two devices both changed things before syncing
 (e.g. the phone offline), both sets of changes are kept (`js/core/cloud.js`). TMDB details are
 cached in the browser's database (IndexedDB), a week each.
@@ -284,7 +292,8 @@ Movie-Nights-NEW/
 │   │   ├── picker.js          "What should I watch?" pop-up
 │   │   ├── import.js          import from IMDb / Letterboxd (Settings)
 │   │   ├── wrapped.js         Movie Nights Wrapped (Profile)
-│   │   └── achievements.js    challenges & achievements (Profile)
+│   │   ├── achievements.js    challenges & achievements (Profile)
+│   │   └── trivia.js          movie trivia (title page)
 │   └── pages/                 one script per page
 │       ├── home.js, discover.js, browse.js (movies / TV / anime / favorites / watchlist)
 │       └── title.js, person.js, tier-list.js, profile.js, settings.js

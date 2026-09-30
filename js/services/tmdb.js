@@ -1141,6 +1141,23 @@
     return f;
   }
 
+  // Trivia (js/components/trivia.js): a title's whole cast and crew ({ cast: [names], crew:
+  // [{ name, job }] }), and a title's tagline. Kept for this visit only.
+  const triviaMem = new Map();
+  function remembered(key, fn) {
+    if (!triviaMem.has(key)) triviaMem.set(key, fn().catch((e) => (triviaMem.delete(key), Promise.reject(e))));
+    return triviaMem.get(key);
+  }
+  const credits = (media, id) =>
+    remembered(`c:${media}-${id}`, async () => {
+      const d = await request(`/${media}/${id}/${media === "tv" ? "aggregate_credits" : "credits"}`);
+      return {
+        cast: (d.cast || []).map((c) => c.name),
+        crew: (d.crew || []).flatMap((c) => (c.jobs ? c.jobs.map((j) => ({ name: c.name, job: j.job })) : [{ name: c.name, job: c.job }])),
+      };
+    });
+  const tagline = (media, id) => remembered(`t:${media}-${id}`, async () => (await request(`/${media}/${id}`)).tagline || "");
+
   // "What should I watch?" → Discover: well-liked titles for a mood (js/components/picker.js).
   // type "movie" | "tv" | "anime"; genres: any of these names (with need: all of need, and
   // the first of genres); without: none of these;
@@ -1186,7 +1203,7 @@
   }
 
   window.TMDB = {
-    facts, moodPicks, boxOffice, boxOfficeOf, franchiseBoxOffice, searchCollections, yearTop, directorBoxOffice, searchDirectors,
+    facts, credits, tagline, moodPicks, boxOffice, boxOfficeOf, franchiseBoxOffice, searchCollections, yearTop, directorBoxOffice, searchDirectors,
     knownRecommendations, collection, findByImdb, findFilm, providersFor, providerCatalog, nextUp, enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos,
     seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, findMatch, person, findPerson, test, CATEGORIES,
     genreNames, genresFor, country, countryName, sameCountry, regions, clearCache,

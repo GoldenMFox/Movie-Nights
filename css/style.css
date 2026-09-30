@@ -19358,3 +19358,445 @@ html.sm-lock {
     animation: none;
   }
 }
+
+/* ============================== Movie trivia (title page card + the quiz pop-up) ============================== */
+
+.tq-card-in {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.tq-card-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: radial-gradient(circle at 30% 25%, rgba(229, 9, 20, 0.45), rgba(229, 9, 20, 0.12));
+  font-size: 26px;
+}
+
+.tq-card-in > div {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tq-card-in small {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.tq-card-in .btn {
+  flex: none;
+  border-radius: 999px;
+}
+
+.trivia-modal {
+  max-width: 560px;
+  overflow: hidden;
+}
+
+.tq-intro,
+.tq-end {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.tq-poster {
+  width: 110px;
+  aspect-ratio: 2 / 3;
+  border-radius: 14px;
+  object-fit: cover;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.55);
+  transform: rotate(-3deg);
+}
+
+.tq-intro h3,
+.tq-end h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.tq-intro h3 span {
+  color: var(--accent-hover);
+}
+
+.tq-intro p,
+.tq-end p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.tq-best b {
+  color: #fff;
+}
+
+.tq-best.new {
+  color: #7fd6a2;
+  font-weight: 600;
+}
+
+.tq-intro .btn,
+.tq-end .btn {
+  border-radius: 999px;
+}
+
+.tq-start {
+  min-width: 200px;
+  margin-top: 6px;
+}
+
+.tq-sorry {
+  margin-top: 6px;
+}
+
+/* a question */
+.tq-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-right: 48px;
+}
+
+.tq-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.tq-dots span {
+  width: 18px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  transition: background 0.3s, width 0.3s;
+}
+
+.tq-dots .now {
+  width: 26px;
+  background: #fff;
+}
+
+.tq-dots .ok {
+  background: #46d369;
+}
+
+.tq-dots .no {
+  background: var(--accent);
+}
+
+.tq-score {
+  color: var(--gold, #f5c518);
+  font-weight: 800;
+}
+
+.tq-time {
+  height: 4px;
+  margin: 14px 0 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tq-time i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f5c518, var(--accent));
+  transform-origin: left;
+  animation: tq-time var(--t) linear forwards;
+}
+
+.tq-time.stop i {
+  animation-play-state: paused;
+}
+
+@keyframes tq-time {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.tq-count {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.trivia-modal .tq-q {
+  margin: 6px 0 16px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+  animation: wl-in 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.tq-q b {
+  color: var(--accent-hover);
+}
+
+.tq-opts {
+  display: grid;
+  gap: 8px;
+}
+
+.tq-opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  animation: wl-in 0.35s cubic-bezier(0.32, 0.72, 0, 1) backwards;
+  animation-delay: var(--d);
+}
+
+.tq-opt:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tq-opt:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.tq-opt b {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 13px;
+}
+
+.tq-opt:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.tq-opt.right {
+  border-color: rgba(70, 211, 105, 0.8);
+  background: rgba(70, 211, 105, 0.18);
+  opacity: 1;
+  animation: tq-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tq-opt.right b {
+  background: #46d369;
+  color: #06220f;
+}
+
+.tq-opt.wrong {
+  border-color: rgba(229, 9, 20, 0.8);
+  background: rgba(229, 9, 20, 0.2);
+  opacity: 1;
+  animation: tq-shake 0.4s;
+}
+
+.tq-opt.wrong b {
+  background: var(--accent);
+}
+
+@keyframes tq-pop {
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+@keyframes tq-shake {
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+
+.tq-after {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  margin-top: 14px;
+}
+
+.tq-after:empty {
+  visibility: hidden;
+}
+
+.tq-verdict {
+  margin: 0;
+  font-weight: 700;
+}
+
+.tq-verdict.ok {
+  color: #7fd6a2;
+}
+
+.tq-verdict.no {
+  color: #ff8a84;
+}
+
+.tq-verdict small {
+  display: block;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+.tq-after .btn {
+  flex: none;
+  border-radius: 999px;
+}
+
+/* the score */
+.tq-ring {
+  display: grid;
+  place-items: center;
+  width: 150px;
+  height: 150px;
+  margin: 6px 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent) var(--p), rgba(255, 255, 255, 0.1) 0);
+}
+
+.great .tq-ring {
+  background: conic-gradient(#f5c518 var(--p), rgba(255, 255, 255, 0.1) 0);
+  box-shadow: 0 0 40px rgba(245, 197, 24, 0.3);
+}
+
+.tq-ring > span {
+  display: grid;
+  place-items: center;
+  width: calc(100% - 16px);
+  height: calc(100% - 16px);
+  border-radius: 50%;
+  background: #1b1b20;
+  line-height: 1;
+}
+
+.tq-ring b {
+  font-size: 52px;
+  font-weight: 900;
+}
+
+.tq-ring small {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 15px;
+}
+
+.tq-rank-icon {
+  display: inline-block;
+  animation: tq-pop 0.6s 0.4s both;
+}
+
+.tq-ach {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid rgba(245, 197, 24, 0.4);
+  border-radius: 999px;
+  background: rgba(245, 197, 24, 0.12);
+}
+
+.tq-end-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.trivia-modal .tq-end-buttons .btn:not(.btn-primary) {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.tq-confetti {
+  position: absolute;
+  inset: -30px 0 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.tq-confetti i {
+  position: absolute;
+  top: -10px;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  animation: tq-fall var(--t) var(--d) ease-in forwards;
+}
+
+@keyframes tq-fall {
+  to {
+    transform: translate(var(--x), 520px) rotate(540deg);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .tq-card-in {
+    flex-wrap: wrap;
+  }
+
+  .tq-card-in .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tq-dots span {
+    width: 12px;
+  }
+
+  .tq-dots .now {
+    width: 18px;
+  }
+
+  .tq-q {
+    font-size: 18px;
+  }
+
+  .tq-opt {
+    min-height: 48px;
+    font-size: 14.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tq-opt,
+  .tq-q,
+  .tq-opt.right,
+  .tq-opt.wrong,
+  .tq-rank-icon {
+    animation: none;
+  }
+}

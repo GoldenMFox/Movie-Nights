@@ -12,7 +12,7 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v118";
+const VERSION = "v119";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [
@@ -51,6 +51,7 @@ const APP_FILES = [
   "js/components/import.js",
   "js/components/wrapped.js",
   "js/components/achievements.js",
+  "js/components/trivia.js",
   "js/pages/browse.js",
   "js/pages/home.js",
   "js/pages/discover.js",

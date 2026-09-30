@@ -923,7 +923,7 @@
     const noteEl = mainEl.querySelector(".tn-text");
     const typing = noteEl && document.activeElement === noteEl ? { v: noteEl.value, a: noteEl.selectionStart, b: noteEl.selectionEnd } : null;
     mainEl.innerHTML = `
-      <div class="t-yours">${progressHtml(item, d)}${notesHtml(item)}</div>
+      <div class="t-yours">${progressHtml(item, d)}${notesHtml(item)}${triviaHtml(item)}</div>
       <div class="t-sections">${sectionsHtml(d, loading)}</div>
       ${becauseRow === null ? "" : becauseRow || recommendationsHtml(extra)}
       ${similar.length ? `<h2 class="section-title">More like this in your library</h2><div class="movie-row">${similar.map(Cards.card).join("")}</div>` : ""}
@@ -1053,7 +1053,55 @@
     count.classList.toggle("full", el.value.length >= NOTE_MAX);
   }
 
+  /* ---------------- yours: trivia (js/components/trivia.js), for what you've watched ---------------- */
+
+  const seenIt = (i) => !!i && (i.rating != null || !!i.watchedAt || !i.watchlist);
+  function triviaHtml(item) {
+    if (!window.Trivia || !TMDB.enabled() || !seenIt(item)) return "";
+    const b = Trivia.best(item);
+    const r = b != null ? Trivia.rankOf(b) : null;
+    return `<div class="xr-card tq-card">
+        <span class="xr-label"><i class="fa-solid fa-brain"></i> Trivia</span>
+        <div class="tq-card-in">
+          <span class="tq-card-icon" aria-hidden="true">${r ? r[1] : "🧠"}</span>
+          <div><b>${r ? `Your best: ${b}/${Trivia.COUNT}` : "How well do you know it?"}</b>
+          <small>${r ? r[2] : `${Trivia.COUNT} quick questions. 7 or more makes you a Movie Buff.`}</small></div>
+          <button class="btn btn-primary tq-play" type="button"><i class="fa-solid fa-play"></i> ${r ? "Play again" : "Play"}</button>
+        </div>
+      </div>`;
+  }
+  // just marked Watched: offer the trivia once the rating pop-up is closed
+  function offerTrivia() {
+    if (!window.Trivia || !TMDB.enabled()) return;
+    let tries = 0;
+    const wait = setInterval(() => {
+      if (document.querySelector(".overlay.active") && ++tries < 120) return;
+      clearInterval(wait);
+      const item = Store.get(id);
+      if (item && tries < 120) toast("Seen it? Test yourself: 10 quick questions", { label: "Play trivia", run: () => Trivia.open(Store.get(id)) });
+    }, 500);
+  }
+
   function initYours() {
+    document.addEventListener("click", (e) => e.target.closest(".tq-play") && Trivia.open(Store.get(id)));
+    document.addEventListener("mn:trivia", () => renderLibrary());
+    let wasSeen = seenIt(Store.get(id));
+    Store.onChange((changedId) => {
+      if (changedId && changedId !== id) return;
+      const now = seenIt(Store.get(id));
+      if (now && !wasSeen) offerTrivia();
+      wasSeen = now;
+    });
+    // marked Watched on its TMDB page (which then opens this one)
+    try {
+      const flag = sessionStorage.getItem("mn:triviaOffer");
+      const item = Store.get(id);
+      if (flag && item && flag === `${item.tmdbMedia}-${item.tmdbId}`) {
+        sessionStorage.removeItem("mn:triviaOffer");
+        offerTrivia();
+      }
+    } catch (e) {}
+
     const setProgress = (patch) => {
       const item = Store.get(id);
       if (!item) return;
@@ -1268,6 +1316,13 @@
     // once it's added, show the normal library page (but not while a pop-up is open,
     // e.g. the rating you're about to give it)
     document.addEventListener("click", () => setTimeout(() => !document.querySelector(".overlay.active") && goToLibrary(), 400));
+    // Watched here: its library page offers the trivia
+    heroEl.addEventListener("click", (e) => {
+      if (!e.target.closest('[data-action="t-watched"]')) return;
+      try {
+        sessionStorage.setItem("mn:triviaOffer", tmdbRef);
+      } catch (err) {}
+    });
     document.addEventListener("keydown", (e) => e.key === "Escape" && setTimeout(goToLibrary, 400));
   }
 
