@@ -89,8 +89,15 @@
     return typeof d.value === "number" ? d.value : -1;
   };
 
+  // when a title went on the list you're looking at (Watchlist / Favorites; before these were
+  // recorded: when it joined your library), and its release date (or its year)
+  const addedAt = (i) => (state.list === "fav" ? i.favoriteAt : state.list === "watch" ? i.watchlistAt : 0) || 0;
+  const releasedAt = (i) => Store.releaseOf(i) || (i.year ? `${i.year}-07-01` : "");
+
   const SORTS = {
     default: { label: "My order", fn: (a, b) => a.order - b.order },
+    added: { label: "Recently added", fn: (a, b) => addedAt(b) - addedAt(a) || b.order - a.order },
+    released: { label: "Newest releases", fn: (a, b) => releasedAt(b).localeCompare(releasedAt(a)) || b.order - a.order },
     "rating-desc": { label: "My rating: high to low", fn: (a, b) => (b.rating ?? -1) - (a.rating ?? -1) || a.order - b.order },
     "rating-asc": { label: "My rating: low to high", fn: (a, b) => (a.rating ?? 99) - (b.rating ?? 99) || a.order - b.order },
     "outside-desc": { label: "IMDb rating: high to low", fn: (a, b) => outside(b) - outside(a) || a.order - b.order },
@@ -324,6 +331,39 @@
     });
   }
 
+  // Plan to watch and Favorites: "Recently added" (when it went on that list) or "Newest"
+  // (release date), a switch on each row, remembered (mn:wlSort). "See all" opens the full list
+  // in the same order.
+  const ORDER_ROWS = ["watch", "fav"];
+  let rowSort = Store.read("mn:wlSort", {});
+  const sortOf = (row) => (rowSort[row] === "released" ? "released" : "added");
+  const orderFn = (row) => {
+    const at = row === "fav" ? (i) => i.favoriteAt || 0 : (i) => i.watchlistAt || 0;
+    return sortOf(row) === "released"
+      ? (a, b) => releasedAt(b).localeCompare(releasedAt(a)) || b.order - a.order
+      : (a, b) => at(b) - at(a) || b.order - a.order;
+  };
+  function paintSort(sw) {
+    const on = sortOf(sw.dataset.sortRow);
+    sw.querySelectorAll("[data-order]").forEach((b) => {
+      b.classList.toggle("active", b.dataset.order === on);
+      b.setAttribute("aria-pressed", b.dataset.order === on);
+    });
+  }
+  if (isLists)
+    root.addEventListener("click", (e) => {
+      const b = e.target.closest(".wl-sort [data-order]");
+      if (!b) return;
+      const row = b.closest(".wl-sort").dataset.sortRow;
+      if (sortOf(row) === b.dataset.order) return;
+      if (b.dataset.order === "added") delete rowSort[row];
+      else rowSort[row] = b.dataset.order;
+      Store.write("mn:wlSort", rowSort);
+      const sec = b.closest(".wl-row");
+      sec.dataset.resort = "1"; // (the row starts at the beginning, its posters settle in)
+      renderRows();
+    });
+
   // after a switch, the row's posters (or Coming up's titles) settle in, one after another
   function settle(box) {
     [...box.children].slice(0, 12).forEach((c, n) => {
@@ -371,8 +411,15 @@
         const custom = LISTS[k].custom;
         const addBtn = (cls, label) =>
           custom ? `<button type="button" class="${cls}" data-add-to="${esc(custom)}"><i class="fa-solid fa-plus"></i> ${label}</button>` : "";
+        const sortSwitch = ORDER_ROWS.includes(k)
+          ? `<div class="top10-switch wl-sort" role="group" aria-label="Order" data-sort-row="${esc(k)}">
+              <button type="button" class="top10-tab" data-order="added" title="Recently added to this list"><i class="fa-regular fa-clock"></i><span class="wl-sort-l"> Recently added</span><span class="wl-sort-s"> Added</span></button>
+              <button type="button" class="top10-tab" data-order="released" title="Newest releases first"><i class="fa-solid fa-film"></i><span class="wl-sort-l"> Newest releases</span><span class="wl-sort-s"> Newest</span></button>
+            </div>`
+          : "";
         sec.innerHTML = `<div class="row-head"><h2><i class="fa-solid ${LISTS[k].icon}"></i> <span class="wl-name"></span></h2>
             <div class="top10-switch wl-type" role="group" aria-label="Show" data-type-row="${esc(k)}"></div>
+            ${sortSwitch}
             <span class="wl-row-tools">${addBtn("wl-add", "Add titles")}<a href="?list=${encodeURIComponent(k)}" class="wl-see" data-see="${esc(k)}"></a></span></div>
           <div class="movie-row"></div>
           <div class="wl-row-empty" hidden><span></span>${addBtn("btn btn-primary wl-add-big", "Add titles")}</div>`;
@@ -394,10 +441,13 @@
       const order = LISTS[k].order;
       const inList = all.filter(LISTS[k].base);
       paintTypes(sec.querySelector(".wl-type"), inList);
+      const sortSw = sec.querySelector(".wl-sort");
+      if (sortSw) paintSort(sortSw);
       const items = inList
         .filter(ofType(typeOf(k)))
-        .sort(order ? (a, b) => order.indexOf(a.id) - order.indexOf(b.id) : (a, b) => b.order - a.order);
-      const typeChanged = row.dataset.type != null && row.dataset.type !== typeOf(k);
+        .sort(order ? (a, b) => order.indexOf(a.id) - order.indexOf(b.id) : ORDER_ROWS.includes(k) ? orderFn(k) : (a, b) => b.order - a.order);
+      const typeChanged = (row.dataset.type != null && row.dataset.type !== typeOf(k)) || sec.dataset.resort === "1";
+      delete sec.dataset.resort;
       row.dataset.type = typeOf(k);
       row.innerHTML = items.slice(0, 20).map(Cards.card).join("");
       row.hidden = !items.length;
@@ -447,8 +497,15 @@
     PAGE = LISTS[k];
     const q = root.querySelector('[name="q"]');
     if (q) q.value = "";
-    // (on the type picked on that row: Movies there = Movies here)
-    set({ list: k, chip: typeOf(k), q: "", genre: "" });
+    // (on the type picked on that row: Movies there = Movies here; Plan to watch / Favorites in
+    // the order picked there too)
+    const patch = { list: k, chip: typeOf(k), q: "", genre: "" };
+    if (ORDER_ROWS.includes(k)) {
+      patch.sort = sortOf(k);
+      const sortSel = root.querySelector('[name="sort"]');
+      if (sortSel) sortSel.value = patch.sort;
+    }
+    set(patch);
     panel.hidden = false;
     if (scroll) panel.scrollIntoView({ behavior: "smooth", block: "start" });
   }

@@ -17827,3 +17827,43 @@ html.sm-lock {
 .sm-pop.open {
   transition: opacity 0.18s ease, transform 0.2s ease, visibility 0s;
 }
+
+/* Watchlist page: Plan to watch / Favorites in the order they were added, or newest releases first */
+.wl-sort {
+  margin: 0 4px 0 auto;
+}
+
+.wl-sort .top10-tab {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.wl-sort .top10-tab i {
+  margin-right: 2px;
+  font-size: 11.5px;
+}
+
+.wl-sort-s {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  /* phones: under the title, beside the type switch, the short labels */
+  .wl-sort {
+    order: 4;
+    margin: 0 0 0 auto;
+  }
+
+  .wl-sort .top10-tab {
+    padding: 6px 10px;
+    font-size: 12.5px;
+  }
+
+  .wl-sort-l {
+    display: none;
+  }
+
+  .wl-sort-s {
+    display: inline;
+  }
+}

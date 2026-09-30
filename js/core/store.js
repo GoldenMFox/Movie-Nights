@@ -109,6 +109,9 @@
     // putting a title you already rated back on the Watchlist (to watch it again) is allowed
     if (patch.watchlist === true && before && typeof before.rating === "number") patch = Object.assign({}, patch, { rewatch: true });
     if (patch.watchlist === false) patch = Object.assign({}, patch, { rewatch: undefined });
+    // when it went on the Watchlist / into Favorites (the Watchlist page's "Recently added")
+    if (patch.watchlist === true && !(before && before.watchlist)) patch = Object.assign({}, patch, { watchlistAt: Date.now() });
+    if (patch.favorite === true && !(before && before.favorite)) patch = Object.assign({}, patch, { favoriteAt: Date.now() });
     const current = Object.assign({}, overrides[id] || {}, patch);
     Object.keys(current).forEach((k) => current[k] === undefined && delete current[k]);
     overrides[id] = current;
@@ -170,6 +173,8 @@
   function entryFor(item) {
     const id = idFor(item.title, item.year);
     const entry = Object.assign({ id, isNew: true }, item);
+    if (entry.watchlist && !entry.watchlistAt) entry.watchlistAt = Date.now();
+    if (entry.favorite && !entry.favoriteAt) entry.favoriteAt = Date.now();
     if (typeof entry.rating === "number") {
       entry.watchlist = false; // rated = watched
       if (!entry.watchedAt) entry.watchedAt = today();
@@ -424,6 +429,7 @@
     all,
     get,
     isRecent,
+    releaseOf,
     update,
     toggle,
     add,
