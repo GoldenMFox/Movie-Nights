@@ -14556,3 +14556,91 @@ html.ext-ratings .movie-item[data-id] .ratings .score.mine {
 .tn-state.ok {
   color: #46c46e;
 }
+
+/* ---------- notes: fold / unfold from the header (the first line shows while folded) ---------- */
+.tn-toggle {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tn-toggle .xr-label {
+  flex-shrink: 0;
+}
+
+.tn-preview {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.tn-card.folded .tn-preview {
+  opacity: 1;
+}
+
+.tn-toggle .tn-state {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.tn-chev {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-size: 12px;
+  transition: transform 0.3s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.tn-toggle:hover .tn-chev {
+  background: var(--glass-bg-hover);
+  color: var(--text);
+}
+
+.tn-card.folded .tn-chev {
+  transform: rotate(-90deg);
+}
+
+.tn-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
+}
+
+.tn-body > div {
+  min-height: 0;
+  overflow: hidden;
+  margin: -4px;
+  padding: 4px;
+}
+
+.tn-card.folded .tn-body {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tn-body,
+  .tn-chev {
+    transition: none;
+  }
+}
+
+/* (folded: just the header, not as tall as the card beside it) */
+.tn-card.folded {
+  align-self: start;
+}

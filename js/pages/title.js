@@ -1021,15 +1021,25 @@
       .map(([icon, l]) => `<button type="button" class="tn-prompt" data-prompt="${esc(l)}"><i class="fa-solid ${icon}"></i> ${esc(l)}</button>`)
       .join("");
   }
+  // (folded or not: the header opens / closes it; remembered in this browser, open at first)
+  let notesFolded = Store.read("mn:notesFolded", false);
   function notesHtml(item) {
     const note = item.note || "";
-    return `<div class="xr-card tn-card${note ? " has-note" : ""}">
-        <div class="xr-head"><span class="xr-label"><i class="fa-solid fa-pen-to-square"></i> Your notes</span><small class="tn-state">${esc(noteState(item))}</small></div>
-        <textarea class="tn-text" rows="2" maxlength="${NOTE_MAX}" aria-label="Your notes" placeholder="What did you think? Who recommended it? A favourite scene…">${esc(note)}</textarea>
-        <div class="tn-foot">
-          <div class="tn-prompts">${notePrompts(note)}</div>
-          <small class="tn-count" hidden></small>
-        </div>
+    const preview = note.split("\n").find((l) => l.trim()) || "";
+    return `<div class="xr-card tn-card${note ? " has-note" : ""}${notesFolded ? " folded" : ""}">
+        <button type="button" class="xr-head tn-toggle" aria-expanded="${!notesFolded}" aria-controls="tn-body">
+          <span class="xr-label"><i class="fa-solid fa-pen-to-square"></i> Your notes</span>
+          <span class="tn-preview">${esc(preview)}</span>
+          <small class="tn-state">${esc(noteState(item))}</small>
+          <i class="fa-solid fa-chevron-down tn-chev" aria-hidden="true"></i>
+        </button>
+        <div class="tn-body" id="tn-body"><div>
+          <textarea class="tn-text" rows="2" maxlength="${NOTE_MAX}" aria-label="Your notes" placeholder="What did you think? Who recommended it? A favourite scene…"${notesFolded ? " tabindex=\"-1\"" : ""}>${esc(note)}</textarea>
+          <div class="tn-foot">
+            <div class="tn-prompts">${notePrompts(note)}</div>
+            <small class="tn-count" hidden></small>
+          </div>
+        </div></div>
       </div>`;
   }
   // (the box as tall as its text, up to a limit; the counter near the limit)
@@ -1109,6 +1119,25 @@
       if (e.target.classList && e.target.classList.contains("tn-text") && e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         e.target.blur();
+      }
+    });
+    // fold / unfold (opening it puts you in the box)
+    document.addEventListener("click", (e) => {
+      const t = e.target.closest(".tn-toggle");
+      if (!t) return;
+      const card = t.closest(".tn-card");
+      notesFolded = !card.classList.contains("folded");
+      Store.write("mn:notesFolded", notesFolded);
+      card.classList.toggle("folded", notesFolded);
+      t.setAttribute("aria-expanded", !notesFolded);
+      const el = card.querySelector(".tn-text");
+      if (notesFolded) {
+        el.setAttribute("tabindex", "-1");
+        el.blur();
+      } else {
+        el.removeAttribute("tabindex");
+        fitNote(el);
+        if (!el.value) setTimeout(() => el.focus({ preventScroll: true }), 250);
       }
     });
     // a prompt: starts its line at the end of the note, the cursor after it
