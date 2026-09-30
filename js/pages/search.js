@@ -317,7 +317,10 @@
       emptyEl.hidden = false;
       emptyEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><p>${esc(e.message || "Something went wrong")}. Try again in a moment.</p>`;
     }
-    if (my === run) setLoading(false);
+    if (my === run) {
+      setLoading(false);
+      fillRows();
+    }
   }
 
   async function discoverPages(my) {
@@ -386,6 +389,22 @@
     moreBtn.hidden = true;
     if (!list.length) empty();
   }
+
+  // only whole rows while there are more to load: the posters left over wait (hidden) for
+  // "Load more", which shows them first
+  function fillRows() {
+    const items = [...grid.querySelectorAll(".movie-item")];
+    items.forEach((i) => i.classList.remove("as-held"));
+    if (moreBtn.hidden) return;
+    const cols = getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length || 1;
+    const extra = items.length % cols;
+    if (extra && items.length > cols) items.slice(-extra).forEach((i) => i.classList.add("as-held"));
+  }
+  let resizing;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizing);
+    resizing = setTimeout(fillRows, 150);
+  });
 
   function empty() {
     emptyEl.hidden = false;

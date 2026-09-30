@@ -20576,3 +20576,8 @@ html.sm-lock {
   border-radius: 999px;
   white-space: nowrap;
 }
+
+/* Advanced search: posters that would start a half row wait for "Load more" */
+.movie-grid .as-held {
+  display: none !important;
+}
