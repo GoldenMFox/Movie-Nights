@@ -13642,3 +13642,54 @@ img[data-my-pic] {
   -webkit-mask-image: none;
   mask-image: none;
 }
+
+/* ---------- reviews: 2 lines each ("Read more" when longer), your like / dislike ---------- */
+.t-review p.clamp {
+  -webkit-line-clamp: 2;
+}
+
+.t-review p {
+  margin-bottom: 8px;
+}
+
+.t-review-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
+}
+
+.t-votes {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.t-vote {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.2s, background-color 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.t-vote:hover {
+  color: var(--text);
+  background: var(--glass-bg);
+}
+
+.t-vote:active {
+  transform: scale(0.9);
+}
+
+.t-vote.on {
+  color: #fff;
+  border-color: var(--accent);
+  background: var(--accent);
+}

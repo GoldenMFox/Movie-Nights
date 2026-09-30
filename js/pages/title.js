@@ -542,6 +542,28 @@
 
   // the newest 3 reviews; "See more reviews" shows the rest (stays open while you're on the page)
   const REVIEWS_SHOWN = 3;
+  // your like / dislike on a review (kept in this browser): { key: 1 | -1 }
+  const VOTES_KEY = "mn:reviewVotes";
+  const reviewKey = (r) => r.url || `${r.author}|${r.date}`;
+  const voteButtons = (key) => {
+    const v = Store.read(VOTES_KEY, {})[key] || 0;
+    return `<span class="t-votes" data-review="${esc(key)}">
+        <button class="t-vote${v === 1 ? " on" : ""}" type="button" data-vote="1" aria-pressed="${v === 1}" aria-label="Like this review"><i class="fa-${v === 1 ? "solid" : "regular"} fa-thumbs-up"></i></button>
+        <button class="t-vote${v === -1 ? " on" : ""}" type="button" data-vote="-1" aria-pressed="${v === -1}" aria-label="Dislike this review"><i class="fa-${v === -1 ? "solid" : "regular"} fa-thumbs-down"></i></button>
+      </span>`;
+  };
+  // "Read more" only on reviews longer than the 2 lines they show
+  function fitReviews() {
+    mainEl.querySelectorAll(".t-review:not([hidden]) p.clamp").forEach((p) => {
+      p.closest(".t-review").querySelector(".t-review-more").hidden = p.scrollHeight <= p.clientHeight + 2;
+    });
+  }
+  new MutationObserver(() => requestAnimationFrame(fitReviews)).observe(mainEl, { childList: true, subtree: true });
+  let fitTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(fitTimer);
+    fitTimer = setTimeout(fitReviews, 200);
+  });
   let reviewsOpen = false;
   function reviewsPanel(reviews, tmdbUrl) {
     if (!reviews.length) return '<p class="muted t-empty">No reviews yet.</p>';
@@ -551,7 +573,10 @@
         (r, n) => `<article class="t-review"${n >= REVIEWS_SHOWN && !reviewsOpen ? " hidden" : ""}>
           <header><strong>${esc(r.author)}</strong>${r.rating != null ? `<span class="t-review-score"><i class="fa-solid fa-star"></i> ${r.rating} / 10</span>` : ""}<small>${esc(r.date)}</small></header>
           <p class="clamp">${esc(r.text)}</p>
-          <button class="t-link t-review-more" type="button">Read more</button>
+          <footer class="t-review-foot">
+            <button class="t-link t-review-more" type="button">Read more</button>
+            ${voteButtons(reviewKey(r))}
+          </footer>
         </article>`
       )
       .join("")}</div>
@@ -626,12 +651,24 @@
       reviewsOpen = !reviewsOpen;
       const list = allReviews.closest("p").previousElementSibling;
       [...list.children].forEach((a, n) => (a.hidden = n >= REVIEWS_SHOWN && !reviewsOpen));
+      fitReviews();
       allReviews.textContent = reviewsOpen ? "Show fewer reviews" : `See more reviews (${list.children.length - REVIEWS_SHOWN})`;
+      return;
+    }
+    const vote = e.target.closest(".t-vote");
+    if (vote) {
+      const box = vote.closest(".t-votes");
+      const votes = Store.read(VOTES_KEY, {});
+      const v = Number(vote.dataset.vote);
+      if (votes[box.dataset.review] === v) delete votes[box.dataset.review];
+      else votes[box.dataset.review] = v;
+      Store.write(VOTES_KEY, votes);
+      box.outerHTML = voteButtons(box.dataset.review);
       return;
     }
     const reviewMore = e.target.closest(".t-review-more");
     if (reviewMore) {
-      const p = reviewMore.previousElementSibling;
+      const p = reviewMore.closest(".t-review").querySelector("p");
       p.classList.toggle("clamp");
       reviewMore.textContent = p.classList.contains("clamp") ? "Read more" : "Show less";
       return;
