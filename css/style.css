@@ -17566,3 +17566,38 @@ html:not(.app-ui) .profile-menu .menu-group a.bo-menu-link {
     padding: 0 16px;
   }
 }
+
+/* ---------- phones: a chip row (Discover categories, Movies / TV / Anime filters) is one line that
+   scrolls sideways, edge to edge; an edge fades only where there are more chips that way ---------- */
+@media (max-width: 700px) {
+  .chips:not(.bo-genres):not(.sk-chips) {
+    position: relative;
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-left: -10px;
+    margin-right: -10px;
+    padding: 2px 10px 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, var(--chips-l, transparent), #000 18px, #000 calc(100% - 28px), var(--chips-r, transparent));
+    mask-image: linear-gradient(90deg, var(--chips-l, transparent), #000 18px, #000 calc(100% - 28px), var(--chips-r, transparent));
+  }
+
+  .chips:not(.bo-genres):not(.sk-chips)::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chips:not(.bo-genres):not(.sk-chips) > .chip {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .chips.at-start {
+    --chips-l: #000;
+  }
+
+  .chips.at-end {
+    --chips-r: #000;
+  }
+}

@@ -262,7 +262,10 @@
 
   function renderChips() {
     const list = baseList();
-    // only the chips are redrawn: the red pill stays, so it can glide
+    // only the chips are redrawn: the red pill stays, so it can glide. (On phones the row
+    // scrolls sideways: it stays where it was, then the picked chip glides into view.)
+    const scrolled = chipsBox.scrollLeft;
+    const first = !chipsBox.querySelector(".chip");
     chipsBox.querySelectorAll(".chip").forEach((c) => c.remove());
     chipsBox.insertAdjacentHTML("beforeend", CHIPS.map((c) => {
       const n = list.filter(c.test).length;
@@ -270,7 +273,9 @@
       return `<button class="chip${c.id === state.chip ? " active" : ""}" data-chip="${c.id}" aria-pressed="${c.id === state.chip}">
         ${c.label}<span class="count">${n}</span></button>`;
     }).join(""));
+    chipsBox.scrollLeft = scrolled;
     movePill();
+    if (UI.chipIntoView) UI.chipIntoView(chipsBox, !first);
   }
 
   // genres that appear in this list, with how many titles have each

@@ -779,6 +779,44 @@
     );
   }
 
+  /* ---------------- chip rows that scroll sideways (phones) ----------------
+     The picked chip is brought into view (on opening a page and when you tap one), and each
+     row knows its ends (.at-start / .at-end), so the fade shows only where there's more. */
+  function chipEdges(row) {
+    row.classList.toggle("at-start", row.scrollLeft < 4);
+    row.classList.toggle("at-end", row.scrollLeft + row.clientWidth >= row.scrollWidth - 4);
+  }
+  function chipIntoView(row, smooth, index) {
+    // (the tapped chip by its place in the row: the page may mark it active a moment later)
+    const on = index != null ? row.querySelectorAll(".chip")[index] : row.querySelector(".chip.active");
+    if (on && row.scrollWidth > row.clientWidth) {
+      const left = on.offsetLeft - row.clientWidth / 2 + on.offsetWidth / 2;
+      row.scrollTo({ left: Math.max(0, left), behavior: smooth ? "smooth" : "auto" });
+    }
+    chipEdges(row);
+  }
+  const allChipRows = (smooth) => document.querySelectorAll(".chips").forEach((row) => chipIntoView(row, smooth));
+  // (caught on the way down, before the page's own handler: a page may redraw its chips on the
+  // tap, and the tapped chip isn't in the page any more by the time the click bubbles up)
+  document.addEventListener(
+    "click",
+    (e) => {
+      const chip = e.target.closest && e.target.closest(".chips .chip");
+      const row = chip && chip.closest(".chips");
+      if (!row) return;
+      const index = [...row.querySelectorAll(".chip")].indexOf(chip);
+      setTimeout(() => chipIntoView(row, true, index), 60);
+    },
+    true
+  );
+  // (scroll doesn't bubble: caught on the way down)
+  document.addEventListener("scroll", (e) => e.target.classList && e.target.classList.contains("chips") && chipEdges(e.target), true);
+  window.addEventListener("load", () => {
+    allChipRows(false);
+    setTimeout(() => allChipRows(false), 700); // (rows a page fills in a moment later)
+  });
+  window.addEventListener("resize", () => document.querySelectorAll(".chips").forEach(chipEdges));
+
   /* ---------------- pill switches: the red pill glides to the picked option ---------------- */
 
   // Every switch made of pill buttons (Home's Top 10 Movies / TV, the theme in Settings, the
@@ -1289,5 +1327,5 @@
     });
   }
 
-  window.UI = { esc, toast, download, PAGES, foldTools, signInPrompt, needSignIn, welcome, confirm: confirmBox, ask, paintMyPic, frameMyPic, pickDate };
+  window.UI = { esc, toast, download, PAGES, foldTools, signInPrompt, needSignIn, welcome, confirm: confirmBox, ask, paintMyPic, frameMyPic, pickDate, chipIntoView };
 })();
