@@ -232,6 +232,7 @@
   let totalPages = 1;
   let total = 0;
   let shown = new Set();
+  let showUpTo = 0; // how many posters may show (grows with each load)
   let typing = null;
 
   const later = () => {
@@ -302,6 +303,7 @@
       totalPages = 1;
       total = 0;
       shown = new Set();
+      showUpTo = 0;
       grid.innerHTML = "";
       emptyEl.hidden = true;
       noteEl.hidden = true;
@@ -328,9 +330,12 @@
     const dirSet = movie() && f.director ? await directed(f.director.id) : null;
     if (my !== run) return;
     const narrowed = !!dirSet;
+    // a load: about 20 posters and two more rows, in whole rows (the ones held back last time count too)
+    showUpTo += perLoad();
+    const want = showUpTo - grid.querySelectorAll(".movie-item").length;
     let added = 0;
     let tries = 0;
-    while (added < 20 && page < totalPages && tries < (narrowed ? 10 : 1)) {
+    while (added < want && page < totalPages && tries < (narrowed ? 10 : 3)) {
       page++;
       tries++;
       const r = await TMDB.discover(f.type, Object.assign({ page }, p));
@@ -392,13 +397,18 @@
 
   // only whole rows while there are more to load: the posters left over wait (hidden) for
   // "Load more", which shows them first
+  const colsNow = () => getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length || 1;
+  // posters a load shows: 20 and two more rows, rounded down to whole rows (6 across: 30)
+  const perLoad = () => Math.floor((20 + 2 * colsNow()) / colsNow()) * colsNow();
   function fillRows() {
     const items = [...grid.querySelectorAll(".movie-item")];
     items.forEach((i) => i.classList.remove("as-held"));
-    if (moreBtn.hidden) return;
-    const cols = getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length || 1;
-    const extra = items.length % cols;
-    if (extra && items.length > cols) items.slice(-extra).forEach((i) => i.classList.add("as-held"));
+    const cols = colsNow();
+    // (nothing more to load: everything that came, even a last short row)
+    const cap = moreBtn.hidden && items.length <= showUpTo ? items.length : Math.floor(Math.min(items.length, showUpTo) / cols) * cols;
+    if (!cap) return;
+    items.slice(cap).forEach((i) => i.classList.add("as-held"));
+    if (items.length > cap) moreBtn.hidden = false;
   }
   let resizing;
   window.addEventListener("resize", () => {
