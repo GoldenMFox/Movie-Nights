@@ -18732,3 +18732,199 @@ html.sm-lock {
     animation: none;
   }
 }
+
+/* ============================== Wrapped: decades, countries, director, runtimes, fun facts ============================== */
+
+.wr-card.wr-decades { --c1: #0fa3b1; --c2: #0b3c49; --c3: #2a5bd7; background: radial-gradient(120% 80% at 100% 0%, #0fa3b1, transparent 60%), radial-gradient(120% 80% at 0% 100%, #0b3c49, transparent 60%), #061216; }
+.wr-card.wr-countries { --c1: #1f9d6b; --c2: #0b3c49; --c3: #f5c518; background: radial-gradient(120% 80% at 0% 0%, #1f9d6b, transparent 60%), radial-gradient(120% 80% at 100% 100%, #0b3c49, transparent 60%), #07120e; }
+.wr-card.wr-director { --c1: #e0393e; --c2: #3a0d5c; --c3: #f5c518; background: radial-gradient(120% 80% at 100% 0%, #b92222, transparent 60%), radial-gradient(120% 80% at 0% 100%, #3a0d5c, transparent 60%), #12090d; }
+.wr-card.wr-runtime { --c1: #ff7a1a; --c2: #2a5bd7; --c3: #e0393e; background: radial-gradient(120% 80% at 0% 0%, #ff7a1a, transparent 60%), radial-gradient(120% 80% at 100% 100%, #1b2f6b, transparent 60%), #120b08; }
+.wr-card.wr-facts { --c1: #9b2fae; --c2: #e0393e; --c3: #f5c518; background: radial-gradient(120% 80% at 100% 0%, #9b2fae, transparent 60%), radial-gradient(120% 80% at 0% 100%, #7a1010, transparent 60%), #110a14; }
+
+/* decades: the count sits on each column */
+.wr-cols-dec {
+  gap: 8px;
+  height: 170px;
+}
+
+.wr-cols-dec b {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+}
+
+.wr-cols-dec .on b {
+  color: #fff;
+}
+
+.wr-cols-dec span {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* countries: a flag before the name */
+.wr-flags .wr-bar {
+  grid-template-columns: 140px 1fr 28px;
+}
+
+.wr-flags .wr-bar span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.wr-flags img {
+  flex: none;
+  width: 22px;
+  height: 15px;
+  border-radius: 3px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+/* a director's films, a row of small posters */
+.wr-strip {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.wr-strip img {
+  width: 52px;
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+}
+
+.wr-strip img:nth-child(odd) {
+  transform: rotate(-3deg);
+}
+
+.wr-strip img:nth-child(even) {
+  transform: rotate(3deg) translateY(4px);
+}
+
+/* the runners-up: small faces with their count */
+.wr-faces {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.wr-faces span {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  width: 64px;
+}
+
+.wr-faces img,
+.wr-faces span > i {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+}
+
+.wr-faces b {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.wr-faces small {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+/* fun facts */
+.wr-facts-list {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.wr-facts-list li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.wr-facts-list span {
+  flex: none;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.wr-facts-list p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+/* the summary: six numbers */
+.wr-grid-6 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.wr-grid-6 div {
+  justify-content: center;
+  min-width: 0;
+  padding: 10px 12px;
+}
+
+.wr-grid-6 b {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 18px;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+.wr-grid-6 .wr-t b {
+  font-size: 15px;
+}
+
+.wr-grid-6 span {
+  font-size: 12px;
+}
+
+@media (max-width: 420px) {
+  .wr-flags .wr-bar {
+    grid-template-columns: 138px 1fr 24px;
+  }
+
+  .wr-faces {
+    gap: 8px;
+  }
+}
+
+.wr-nw {
+  white-space: nowrap;
+}

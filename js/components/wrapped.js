@@ -27,46 +27,83 @@
     return h || m ? (h ? +h[1] * 60 : 0) + (m ? +m[1] : 0) : 0;
   };
 
-  // everything the cards need; cast / directors come from TMDB (cached) for up to 60 titles
+  // everything the cards need. Runtimes, directors, cast, countries and languages come from
+  // the titles' film facts (js/services/facts.js: asked once, then kept)
+  const RUNTIME_BINS = [
+    ["Under 1h30", 0, 89],
+    ["1h30 – 2h", 90, 119],
+    ["2h – 2h30", 120, 149],
+    ["2h30 and up", 150, Infinity],
+  ];
+  const hm = (m) => `${m >= 60 ? `${Math.floor(m / 60)}h ` : ""}${m % 60 ? `${m % 60}min` : ""}`.trim();
+
   async function collect(year, progress) {
     const list = Store.all()
       .filter((i) => String(i.watchedAt || "").startsWith(String(year)))
       .sort((a, b) => a.watchedAt.localeCompare(b.watchedAt));
+    const facts = window.Facts ? await Facts.forItems(list, progress) : new Map();
+    const fx = (i) => facts.get(i.id) || null;
+
     const actors = {};
     const directors = {};
+    const countries = {};
+    const decades = {};
+    const days = {};
+    const films = []; // movies with a known runtime: { item, m }
     let mins = 0;
-    let n = 0;
-    for (const item of list.slice(0, 60)) {
-      let d = null;
-      try {
-        d = window.TMDB && TMDB.enabled() ? await TMDB.details(item) : null;
-      } catch (e) {}
-      progress(++n, Math.min(list.length, 60));
-      if (item.type === "movie") mins += minutes(item.runtime || (d && d.runtime));
-      ((d && d.cast) || []).slice(0, 6).forEach((c) => {
-        const a = (actors[c.name] = actors[c.name] || { name: c.name, photo: c.photo, titles: [] });
-        a.titles.push(Lang.title(item));
+    let foreign = 0;
+    let known = 0; // titles with facts
+    list.forEach((item) => {
+      const f = fx(item);
+      if (f) known++;
+      days[item.watchedAt] = (days[item.watchedAt] || 0) + 1;
+      const year = item.year || (f && f.y);
+      if (year) decades[Math.floor(year / 10) * 10] = (decades[Math.floor(year / 10) * 10] || 0) + 1;
+      if (item.type === "movie" || (item.type === "anime" && item.tmdbMedia === "movie")) {
+        const m = minutes(item.runtime) || (f && f.r) || 0;
+        if (m) {
+          mins += m;
+          films.push({ item, m });
+        }
+      }
+      if (!f) return;
+      if (f.l && f.l !== "en") foreign++;
+      (f.k || []).forEach((c) => (countries[c] = (countries[c] || 0) + 1));
+      (f.c || []).slice(0, 6).forEach(([id, name, photo]) => {
+        const a = (actors[id] = actors[id] || { name, photo, items: [] });
+        a.items.push(item);
       });
-      String((d && d.director) || item.director || "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .forEach((name) => ((directors[name] = directors[name] || []).push(Lang.title(item))));
-    }
+      if (item.type === "movie")
+        (f.d || []).forEach(([id, name, photo]) => {
+          const d = (directors[id] = directors[id] || { name, photo, items: [] });
+          d.items.push(item);
+        });
+    });
+
     const genres = {};
     list.forEach((i) => (i.genres || []).forEach((g) => (genres[g] = (genres[g] || 0) + 1)));
     const months = new Array(12).fill(0);
     list.forEach((i) => months[Number(i.watchedAt.slice(5, 7)) - 1]++);
     const rated = list.filter((i) => typeof i.rating === "number");
     const top = rated.slice().sort((a, b) => b.rating - a.rating || b.watchedAt.localeCompare(a.watchedAt))[0];
-    const actor = Object.values(actors).sort((a, b) => b.titles.length - a.titles.length)[0];
-    const director = Object.entries(directors).sort((a, b) => b[1].length - a[1].length)[0];
+    const byCount = (o) => Object.values(o).sort((a, b) => b.items.length - a.items.length);
+    const actorList = byCount(actors).filter((a) => a.items.length > 1);
+    const directorList = byCount(directors).filter((d) => d.items.length > 1);
+    const decadeList = Object.entries(decades)
+      .map(([d, c]) => [Number(d), c])
+      .sort((a, b) => a[0] - b[0]);
+    const byLength = films.slice().sort((a, b) => b.m - a.m);
+    const bigDay = Object.entries(days).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0];
+    const withYear = list.filter((i) => i.year);
     return {
       year,
       list,
       count: list.length,
+      known,
       byType: { movie: list.filter((i) => i.type === "movie").length, tv: list.filter((i) => i.type === "tv").length, anime: list.filter((i) => i.type === "anime").length },
+      mins,
       hours: Math.round(mins / 60),
+      days: mins / 1440,
       genres: Object.entries(genres).sort((a, b) => b[1] - a[1]).slice(0, 5),
       months,
       busiest: months.indexOf(Math.max(...months)),
@@ -74,8 +111,20 @@
       avg: rated.length ? rated.reduce((s, i) => s + i.rating, 0) / rated.length : null,
       tens: rated.filter((i) => i.rating === 10).length,
       first: list[0],
-      actor: actor && actor.titles.length > 1 ? actor : null,
-      director: director && director[1].length > 1 ? { name: director[0], titles: director[1] } : null,
+      actors: actorList.slice(0, 5),
+      actor: actorList[0] || null,
+      directors: directorList.slice(0, 5),
+      director: directorList[0] || null,
+      countries: Object.entries(countries).sort((a, b) => b[1] - a[1]),
+      decades: decadeList,
+      topDecade: decadeList.slice().sort((a, b) => b[1] - a[1])[0] || null,
+      runtimes: RUNTIME_BINS.map(([label, lo, hi]) => ({ label, n: films.filter((f) => f.m >= lo && f.m <= hi).length })),
+      longest: byLength[0] || null,
+      shortest: byLength.length > 1 ? byLength[byLength.length - 1] : null,
+      avgRuntime: films.length ? Math.round(mins / films.length) : 0,
+      foreign,
+      oldest: withYear.slice().sort((a, b) => a.year - b.year)[0] || null,
+      bigDay: bigDay && bigDay[1] > 1 ? { date: bigDay[0], n: bigDay[1] } : null,
     };
   }
 
@@ -122,7 +171,11 @@
         ]
           .filter(Boolean)
           .join("")}</div>`)}
-        ${w.hours >= 5 ? a(4, `That's about <b>${count(w.hours)} hours</b> of movies`, "p", "wr-note") : ""}`,
+        ${
+          w.hours >= 5
+            ? a(4, `That's <b>${count(w.hours)} hours</b> of movies${w.days >= 1 ? `: <b>${count(w.days, 1)} days</b> worth, back to back` : ""}`, "p", "wr-note")
+            : ""
+        }`,
     });
 
     if (w.first)
@@ -175,16 +228,100 @@
           ${a(3, `<i class="fa-solid fa-star"></i> ${count(w.top.rating, w.top.rating % 1 ? 1 : 0)}`, "div", "wr-score")}`,
       });
 
-    if (w.actor)
+    // how old your titles were: a column per decade
+    if (w.decades.length >= 2) {
+      const max = Math.max(...w.decades.map((d) => d[1]));
+      out.push({
+        cls: "wr-decades",
+        html: `${a(0, "Your favorite decade", "small")}
+          ${a(1, `${w.topDecade[0]}s`, "h2", "wr-glow")}
+          ${a(2, `${count(w.topDecade[1])} of your titles are from then`, "p")}
+          <div class="wr-cols wr-cols-dec" style="--n:${w.decades.length}">${w.decades
+            .map(
+              ([d, c], n) => `<div class="${d === w.topDecade[0] ? "on" : ""}"><b>${c}</b><i style="--h:${(c / max) * 100}%;--d:${400 + n * 70}ms"></i><span>'${String(d).slice(2)}</span></div>`
+            )
+            .join("")}</div>
+          ${w.oldest && w.oldest.year < w.year - 15 ? a(4, `The oldest: <b>${esc(Lang.title(w.oldest))}</b> (${w.oldest.year})`, "p", "wr-note") : ""}`,
+      });
+    }
+
+    // where your titles were made
+    if (w.countries.length) {
+      const max = w.countries[0][1];
+      const pct = w.known ? Math.round((w.foreign / w.known) * 100) : 0;
+      out.push({
+        cls: "wr-countries",
+        html: `${a(0, "Your year took you to", "small")}
+          ${a(1, count(w.countries.length), "div", "wr-big")}
+          ${a(2, `countr${w.countries.length === 1 ? "y" : "ies"}`, "h3")}
+          <div class="wr-bars wr-flags">${w.countries
+            .slice(0, 5)
+            .map(
+              ([code, c], n) => `<div class="wr-bar wr-a" style="--d:${(n + 3) * 140}ms">
+                <span><img src="https://flagcdn.com/w40/${esc(code.toLowerCase())}.png" alt="" onerror="this.remove()" />${esc(TMDB.countryName(code))}</span>
+                <div><i style="--w:${(c / max) * 100}%;--d:${(n + 4) * 140}ms"></i></div><b>${c}</b></div>`
+            )
+            .join("")}</div>
+          ${pct >= 5 ? a(9, `<b>${pct}%</b> of it wasn't in English`, "p", "wr-note") : ""}`,
+      });
+    }
+
+    const faces = (list) =>
+      `<div class="wr-faces">${list
+        .map(
+          (p) => `<span>${p.photo ? `<img src="${Store.img(p.photo, "w185")}" alt="" />` : '<i class="fa-solid fa-user"></i>'}<b>${esc(p.name)}</b><small>${p.items.length}</small></span>`
+        )
+        .join("")}</div>`;
+
+    if (w.director)
+      out.push({
+        cls: "wr-director",
+        bg: blurred(w.director.items[0]),
+        html: `${a(0, "Your favorite director", "small")}
+          ${w.director.photo ? a(1, `<img class="wr-face" src="${Store.img(w.director.photo, "w300")}" alt="" />`, "div", "wr-pop wr-ring") : ""}
+          ${a(2, esc(w.director.name), "h2")}
+          ${a(3, `<b>${count(w.director.items.length)}</b> of your films this year`, "p")}
+          ${a(4, `<div class="wr-strip">${w.director.items.slice(0, 5).map((i) => `<img src="${Store.poster(Cards.posterOf(i), "w185")}" alt="" />`).join("")}</div>`)}
+          ${w.directors.length > 1 ? a(5, `Then ${faces(w.directors.slice(1, 4))}`, "div", "wr-note") : ""}`,
+      });
+
+    if (w.actor) {
+      const films = w.actor.items.every((i) => i.type === "movie");
       out.push({
         cls: "wr-actor",
         html: `${a(0, "The face of your year", "small")}
           ${w.actor.photo ? a(1, `<img class="wr-face" src="${Store.img(w.actor.photo, "w300")}" alt="" />`, "div", "wr-pop wr-ring") : ""}
           ${a(2, esc(w.actor.name), "h2")}
-          ${a(3, `In <b>${w.actor.titles.length}</b> of your titles`, "p")}
-          ${a(4, `<div class="wr-pills">${w.actor.titles.slice(0, 3).map((t) => `<span>${esc(t)}</span>`).join("")}</div>`)}
-          ${w.director ? a(5, `And your director: <b>${esc(w.director.name)}</b> (${w.director.titles.length} titles)`, "p", "wr-note") : ""}`,
+          ${a(3, `You watched <b>${count(w.actor.items.length)}</b> ${films ? "movies" : "titles"} starring ${esc(w.actor.name.split(" ")[0])}`, "p")}
+          ${a(4, `<div class="wr-pills">${w.actor.items.slice(0, 3).map((i) => `<span>${esc(Lang.title(i))}</span>`).join("")}</div>`)}
+          ${w.actors.length > 1 ? a(5, `Also on your screen ${faces(w.actors.slice(1, 5))}`, "div", "wr-note") : ""}`,
       });
+    }
+
+    // how long your movies were
+    if (w.longest && w.runtimes.reduce((s, b) => s + b.n, 0) >= 3) {
+      const max = Math.max(...w.runtimes.map((b) => b.n));
+      out.push({
+        cls: "wr-runtime",
+        html: `${a(0, "Your movies ran", "small")}
+          ${a(1, hm(w.avgRuntime), "h2", "wr-glow")}
+          ${a(2, "on average", "p")}
+          <div class="wr-bars">${w.runtimes
+            .map(
+              (b, n) => `<div class="wr-bar wr-a" style="--d:${(n + 3) * 140}ms">
+                <span>${b.label}</span><div><i style="--w:${max ? (b.n / max) * 100 : 0}%;--d:${(n + 4) * 140}ms"></i></div><b>${b.n}</b></div>`
+            )
+            .join("")}</div>
+          ${a(
+            8,
+            `Longest: <b>${esc(Lang.title(w.longest.item))}</b> <span class="wr-nw">(${hm(w.longest.m)})</span>${
+              w.shortest ? `<br />Shortest: <b>${esc(Lang.title(w.shortest.item))}</b> <span class="wr-nw">(${hm(w.shortest.m)})</span>` : ""
+            }`,
+            "p",
+            "wr-note"
+          )}`,
+      });
+    }
 
     if (w.avg != null)
       out.push({
@@ -196,20 +333,46 @@
           ${w.tens ? a(4, `<span class="wr-tens">${"★".repeat(Math.min(w.tens, 5))}</span> ${w.tens} perfect 10${w.tens === 1 ? "" : "s"}`, "p", "wr-note") : ""}`,
       });
 
+    // fun facts: the best few that apply
+    const day = (d) => `${new Date(`${d}T00:00:00`).getDate()} ${MONTHS[Number(d.slice(5, 7)) - 1]}`;
+    const facts = [
+      w.days >= 0.5 && ["⏱️", `<b>${w.days.toFixed(1)} days</b> worth of movies, back to back`],
+      w.actor && ["🎭", `You watched <b>${w.actor.items.length}</b> titles starring <b>${esc(w.actor.name)}</b>`],
+      w.director && ["🎬", `<b>${w.director.items.length}</b> films by <b>${esc(w.director.name)}</b>`],
+      w.bigDay && ["🔥", `Your biggest day: <b>${w.bigDay.n} titles</b> on ${day(w.bigDay.date)}`],
+      w.oldest && w.oldest.year < w.year - 25 && ["📼", `Your oldest: <b>${esc(Lang.title(w.oldest))}</b>, from ${w.oldest.year}`],
+      w.foreign >= 2 && ["🌍", `<b>${w.foreign}</b> titles not in English`],
+      w.tens && ["⭐", `<b>${w.tens}</b> perfect 10${w.tens === 1 ? "" : "s"}`],
+      w.longest && w.longest.m >= 150 && ["🍿", `Your longest sit: <b>${esc(Lang.title(w.longest.item))}</b>, ${hm(w.longest.m)}`],
+    ]
+      .filter(Boolean)
+      .slice(0, 5);
+    if (facts.length >= 3)
+      out.push({
+        cls: "wr-facts",
+        html: `${a(0, "Fun facts", "small")}
+          ${a(1, "Your year, by the numbers", "h2")}
+          <ul class="wr-facts-list">${facts
+            .map(([e, t], n) => `<li class="wr-a" style="--d:${(n + 2) * 170}ms"><span aria-hidden="true">${e}</span><p>${t}</p></li>`)
+            .join("")}</ul>`,
+      });
+
     out.push({
       cls: "wr-sum",
       bg: wall(),
       confetti: true,
       html: `${a(0, "Movie Nights Wrapped", "small")}
         ${a(1, `<span class="wr-year">${w.year}</span>`)}
-        <div class="wr-grid">
+        <div class="wr-grid wr-grid-6">
           ${a(2, `<b>${count(w.count)}</b><span>watched</span>`)}
-          ${a(3, `<b>${w.genres.length ? esc(w.genres[0][0]) : "–"}</b><span>top genre</span>`)}
-          ${a(4, `<b>${w.avg != null ? count(w.avg, 1) : "–"}</b><span>average score</span>`)}
-          ${a(5, `<b>${MONTHS[w.busiest].slice(0, 3)}</b><span>busiest month</span>`)}
+          ${a(3, `<b>${w.hours ? count(w.hours) : "–"}</b><span>hours of movies</span>`)}
+          ${a(4, `<b>${w.avg != null ? count(w.avg, 1) : "–"}</b><span>average rating</span>`)}
+          ${a(5, `<b>${w.countries.length ? count(w.countries.length) : "–"}</b><span>countries</span>`)}
+          ${a(6, `<b>${w.genres.length ? esc(w.genres[0][0]) : "–"}</b><span>top genre</span>`, "div", "wr-t")}
+          ${a(7, `<b>${w.director ? esc(w.director.name) : "–"}</b><span>favorite director</span>`, "div", "wr-t")}
         </div>
-        ${w.top ? a(6, `Best of the year: <b>${esc(Lang.title(w.top))}</b>`, "p") : ""}
-        ${a(7, `<div class="wr-actions">
+        ${w.top ? a(8, `Best of the year: <b>${esc(Lang.title(w.top))}</b>`, "p") : ""}
+        ${a(9, `<div class="wr-actions">
             <button class="btn wr-replay" type="button"><i class="fa-solid fa-rotate-left"></i> Replay</button>
             <button class="btn btn-primary wr-share" type="button"><i class="fa-solid fa-share-nodes"></i> Share</button>
           </div>`)}`,

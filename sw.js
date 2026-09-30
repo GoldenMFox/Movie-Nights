@@ -12,7 +12,7 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v116";
+const VERSION = "v117";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [
@@ -42,6 +42,7 @@ const APP_FILES = [
   "js/services/ratings.js",
   "js/services/watch.js",
   "js/services/taste.js",
+  "js/services/facts.js",
   "js/components/cards.js",
   "js/components/add-title.js",
   "js/components/preview.js",

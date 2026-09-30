@@ -96,9 +96,15 @@ remembered (`mn:picker`).
   "in 5 days" (series: episodes, last aired); awards in gold (OMDb); studio / network logos;
   flags of the countries and the original language; and **where you've seen the cast**: a card
   per person (who they play here, and small posters of your titles they're in).
-- **Movie Nights Wrapped** (Profile → Watch diary): your year as a story: how many you watched,
-  where it started, top genres, busiest month, your best-rated, the actor and director you saw
-  most, your average score, and a summary you can share. Plays by itself like Instagram stories
+- **Movie Nights Wrapped** (Profile → Watch diary): your year as a story: how many you watched
+  (and the hours: "3.6 days worth of movies"), where it started, top genres, busiest month, your
+  best-rated, your favorite decade (a column per decade, the oldest title), the countries your
+  titles came from (flags, how much wasn't in English), your favorite director (their films,
+  the runners-up), the face of your year ("You watched 4 movies starring Mark", the others),
+  how long your movies ran (average, a bar per length, the longest and shortest), your average
+  score, fun facts, and a summary you can share: watched, hours, average rating, countries,
+  top genre, favorite director. Runtimes, directors, cast and countries come from each title's
+  film facts (`js/services/facts.js`: asked from TMDB once, then kept for half a year). Plays by itself like Instagram stories
   (tap right / left, hold to pause, ← → and Space on a computer); lines slide in, numbers count
   up, bars grow, colours drift behind, a wall of your year's posters scrolls on the intro and
   summary, and the summary ends with confetti and Replay.
@@ -268,7 +274,8 @@ Movie-Nights-NEW/
 │   │   ├── tmdb.js            TMDB (details, trailers, cast, Discover)
 │   │   ├── ratings.js         IMDb via OMDb (daily budget) with TMDB fallback
 │   │   ├── watch.js           your streaming services, what's coming, reminders
-│   │   └── taste.js           match % from your own scores
+│   │   ├── taste.js           match % from your own scores
+│   │   └── facts.js           film facts (runtime, directors, cast, countries) for stats
 │   ├── components/            pieces used by several pages
 │   │   ├── cards.js           poster cards, rating pop-up, trailer pop-up
 │   │   ├── add-title.js       "Add a title" form

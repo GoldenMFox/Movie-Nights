@@ -1099,6 +1099,48 @@
     return film;
   }
 
+  /* Film facts: the few things stats need about a title (Wrapped, achievements, trivia), light
+     to ask for and kept long, all in one cache record ("facts": { "movie-603": {...} }):
+     r runtime (minutes; a series: one episode), e episodes (series), y year, l language,
+     k countries ["US", "GB"], g genres, d directors (a series: its creators) and c the top
+     cast as [id, name, photo(, character)], f the franchise [id, name], b budget, v revenue,
+     s TMDB score, at when asked. Asked again after half a year. */
+  const FACTS_AGE = 180 * 86400000;
+  let factsMap = null;
+  let factsSave = null;
+  async function factsAll() {
+    if (!factsMap) factsMap = (await cacheGet("facts")) || {};
+    return factsMap;
+  }
+  async function facts(media, id) {
+    const map = await factsAll();
+    const ref = `${media}-${id}`;
+    const had = map[ref];
+    if (had && Date.now() - had.at < FACTS_AGE) return had;
+    const d = await request(`/${media}/${id}`, { append_to_response: "credits" });
+    const crew = (d.credits && d.credits.crew) || [];
+    const people = (list) => list.map((p) => [p.id, p.name, p.profile_path || ""]);
+    const f = {
+      r: (media === "movie" ? d.runtime : (d.episode_run_time || [])[0]) || 0,
+      e: media === "tv" ? d.number_of_episodes || 0 : 0,
+      y: yearOf(d.release_date || d.first_air_date),
+      l: d.original_language || "",
+      k: media === "movie" ? (d.production_countries || []).map((c) => c.iso_3166_1) : d.origin_country || [],
+      g: genreNames((d.genres || []).map((g) => g.id), media),
+      d: people((media === "movie" ? crew.filter((c) => c.job === "Director") : d.created_by || []).slice(0, 3)),
+      c: ((d.credits && d.credits.cast) || []).slice(0, 10).map((p) => [p.id, p.name, p.profile_path || "", p.character || ""]),
+      f: d.belongs_to_collection ? [d.belongs_to_collection.id, d.belongs_to_collection.name] : null,
+      b: d.budget || 0,
+      v: d.revenue || 0,
+      s: d.vote_average ? Math.round(d.vote_average * 10) / 10 : null,
+      at: Date.now(),
+    };
+    map[ref] = f;
+    clearTimeout(factsSave);
+    factsSave = setTimeout(() => cacheSet("facts", factsMap), 600);
+    return f;
+  }
+
   // "What should I watch?" → Discover: well-liked titles for a mood (js/components/picker.js).
   // type "movie" | "tv" | "anime"; genres: any of these names (with need: all of need, and
   // the first of genres); without: none of these;
@@ -1144,7 +1186,7 @@
   }
 
   window.TMDB = {
-    moodPicks, boxOffice, boxOfficeOf, franchiseBoxOffice, searchCollections, yearTop, directorBoxOffice, searchDirectors,
+    facts, moodPicks, boxOffice, boxOfficeOf, franchiseBoxOffice, searchCollections, yearTop, directorBoxOffice, searchDirectors,
     knownRecommendations, collection, findByImdb, findFilm, providersFor, providerCatalog, nextUp, enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos,
     seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, findMatch, person, findPerson, test, CATEGORIES,
     genreNames, genresFor, country, countryName, sameCountry, regions, clearCache,
