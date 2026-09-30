@@ -17565,3 +17565,35 @@ html:not(.app-ui) .profile-menu .menu-group a.bo-menu-link {
     margin: 6px 0 0;
   }
 }
+
+/* (phones: the years on the first row; the year picker and the Inflation chip side by side
+   on the second, the chip only as wide as it needs) */
+@media (max-width: 700px) {
+  .bo-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .bo-controls .bo-scope {
+    grid-column: 1 / -1;
+  }
+
+  .bo-controls .glass-select {
+    grid-column: 1;
+    min-width: 0;
+  }
+
+  .bo-controls .glass-select select {
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .bo-controls .bo-infl {
+    grid-column: 2;
+    width: auto;
+    flex: none;
+    padding: 0 16px;
+  }
+}
