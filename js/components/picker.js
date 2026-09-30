@@ -313,15 +313,17 @@
     go.disabled = true;
     go.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Thinking…</span>';
     let found;
+    let rated = [];
     try {
       found = choice.from === "discover" ? await fromDiscover() : await fromLibrary();
+      rated = found.list.map((x) => Object.assign(x, rate(x.item))).sort((a, b) => b.s - a.s);
+      if (choice.from === "discover") rated = await checkRuntimes(rated);
     } catch (e) {
       found = { list: [], error: true };
     } finally {
       go.disabled = false;
       go.innerHTML = label;
     }
-    const rated = found.list.map((x) => Object.assign(x, rate(x.item))).sort((a, b) => b.s - a.s);
     // "New shortlist": others first, when there are enough
     const last = new Set(shortlist.map((x) => x.item.id || `${x.item.mediaType}-${x.item.tmdbId}`));
     const others = again ? rated.filter((x) => !last.has(x.item.id || `${x.item.mediaType}-${x.item.tmdbId}`)) : rated;
@@ -340,6 +342,26 @@
     shortlist = ranked.slice(0, SIZE);
     shortlist.forEach((x) => x.hit && seen.add(`${x.hit.mediaType}-${x.hit.tmdbId}`));
     show(found, rated.length);
+  }
+
+  // Discover: the movies' real runtimes, from their TMDB pages (TMDB's own "under 1h45" filter
+  // goes by another number: The Thing, 1h49, got through it). Only the first few are looked
+  // up, enough for a shortlist; the ones too long for the evening drop out.
+  async function checkRuntimes(rated) {
+    const limit = typeof TIMES[choice.time] === "number" ? TIMES[choice.time] : null;
+    const films = rated.filter((x) => x.item.mediaType === "movie");
+    const drop = new Set();
+    let ok = 0;
+    for (let n = 0; n < films.length && ok < SIZE; n += SIZE) {
+      const batch = films.slice(n, n + SIZE);
+      const mins = await Promise.all(batch.map((x) => TMDB.detailsById("movie", x.item.tmdbId).then((d) => (d ? minutes(d.runtime) : null), () => null)));
+      batch.forEach((x, k) => {
+        x.mins = mins[k];
+        if (limit && (mins[k] == null || mins[k] > limit)) drop.add(x);
+        else ok++;
+      });
+    }
+    return rated.filter((x) => !drop.has(x));
   }
 
   function tagsHtml() {
