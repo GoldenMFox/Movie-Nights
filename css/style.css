@@ -13282,3 +13282,13 @@ html .modal .menu-switch:not([hidden]) {
     transition: none !important;
   }
 }
+
+/* Wide screens: theme / search / profile sit at the right edge of the window (the navbar
+   itself stays as wide as the page, so the menu in the middle doesn't move). The shift is
+   the empty space beside the page, less a little room for the scrollbar. */
+@media (min-width: 1331px) {
+  html:not(.app-ui):not(.tablet) .nav-tools {
+    position: relative;
+    left: max(0px, calc((100vw - 1550px) / 2 - 6px));
+  }
+}
