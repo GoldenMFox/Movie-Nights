@@ -319,11 +319,11 @@
       b.classList.toggle("active", active);
       b.setAttribute("aria-pressed", active);
     });
-    requestAnimationFrame(() => movePill(sw));
+    requestAnimationFrame(() => moveTypePill(sw));
   }
 
   // the red pill behind the picked type
-  function movePill(sw) {
+  function moveTypePill(sw) {
     const on = sw.querySelector(".top10-tab.active");
     const pill = sw.querySelector(".wl-pill");
     if (!on || !pill || !on.offsetWidth) return;
@@ -331,7 +331,7 @@
     pill.style.width = `${on.offsetWidth}px`;
     if (sw.classList.contains("no-glide")) requestAnimationFrame(() => sw.classList.remove("no-glide"));
   }
-  if (isLists) window.addEventListener("resize", () => root.querySelectorAll(".wl-type").forEach(movePill));
+  if (isLists) window.addEventListener("resize", () => root.querySelectorAll(".wl-type").forEach(moveTypePill));
 
   // after a switch, the row's posters (or Coming up's titles) settle in, one after another
   function settle(box) {
