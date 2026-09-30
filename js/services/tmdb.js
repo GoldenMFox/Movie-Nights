@@ -964,6 +964,68 @@
     return results;
   }
 
+  /* ---------------- Box Office page ----------------
+     TMDB's worldwide gross ("revenue") and budget, in US dollars, not adjusted for inflation.
+     A film's two numbers: all of them in one cached record ("bo:films", { id: [budget, gross, at] }),
+     so a big library doesn't push the title pages out of the cache. New films (under a year)
+     are asked again after 3 days (their gross still grows), older ones after a month. */
+  let boFilms = null;
+  let boSave = null;
+  async function boMap() {
+    if (!boFilms) boFilms = (await cacheGet("bo:films")) || {};
+    return boFilms;
+  }
+  function boStore() {
+    clearTimeout(boSave);
+    boSave = setTimeout(() => cacheSet("bo:films", boFilms), 400);
+  }
+  // { budget, revenue } of one film (0 = TMDB doesn't know)
+  async function boxOfficeOf(id, released) {
+    const map = await boMap();
+    const had = map[id];
+    const fresh = released && Date.now() - new Date(released).getTime() < 365 * 86400000 ? 3 * 86400000 : 30 * 86400000;
+    if (had && Date.now() - had[2] < fresh) return { budget: had[0], revenue: had[1] };
+    const d = await request(`/movie/${id}`);
+    map[id] = [d.budget || 0, d.revenue || 0, Date.now()];
+    boStore();
+    return { budget: d.budget || 0, revenue: d.revenue || 0 };
+  }
+  // a few at a time
+  async function mapLimit(list, n, fn) {
+    const out = new Array(list.length);
+    let next = 0;
+    await Promise.all(
+      Array.from({ length: Math.min(n, list.length) }, async () => {
+        while (next < list.length) {
+          const i = next++;
+          out[i] = await fn(list[i], i);
+        }
+      })
+    );
+    return out;
+  }
+  // the highest-grossing films worldwide: all time, or of one year, of one genre ("Action").
+  // 20 a page with their budget and gross (kept a day)
+  async function boxOffice({ year, genre, page } = {}) {
+    const g = genre && GENRES.find((x) => x[0] === genre);
+    const key = `bo:list:${year || "all"}:${g ? g[1] : "all"}:${page || 1}:${wantRu() ? "ru" : "en"}`;
+    const cached = await cacheGet(key);
+    if (cached && Date.now() - cached.savedAt < 86400000) return cached;
+    const [d, ru] = await requestWithRu("/discover/movie", {
+      sort_by: "revenue.desc",
+      primary_release_year: year || "",
+      with_genres: g ? g[1] : "",
+      page: page || 1,
+    });
+    const films = await mapLimit(d.results || [], 5, async (r) => {
+      const n = await boxOfficeOf(r.id, r.release_date).catch(() => null);
+      return n && n.revenue > 0 ? Object.assign(simplify(r, "movie"), n) : null;
+    });
+    const result = { results: applyRu(films.filter(Boolean), ru, "movie"), totalPages: Math.min(d.total_pages || 1, 25), savedAt: Date.now() };
+    cacheSet(key, result);
+    return result;
+  }
+
   // every country TMDB has streaming data for: [{ code, name }] (Settings → Streaming), kept a month
   async function regions() {
     const saved = Store.read("mn:regions", null);
@@ -975,6 +1037,7 @@
   }
 
   window.TMDB = {
+    boxOffice, boxOfficeOf,
     knownRecommendations, collection, findByImdb, findFilm, providersFor, providerCatalog, nextUp, enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos,
     seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, findMatch, person, findPerson, test, CATEGORIES,
     genreNames, genresFor, country, countryName, sameCountry, regions, clearCache,

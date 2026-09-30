@@ -308,6 +308,7 @@
           }</div>
           ${budget ? bar("Budget", budget, "budget") : ""}
           ${gross ? bar("Box office, worldwide", gross, "gross") : e.boxOffice ? `<div class="xr-bar-top"><span>Box office, US</span><b>${esc(e.boxOffice)}</b></div>` : ""}
+          ${gross && !tv && x.released ? `<a class="xr-money-link" href="box-office.html?year=${x.released.slice(0, 4)}"><i class="fa-solid fa-ranking-star"></i> The box office chart of ${x.released.slice(0, 4)} <i class="fa-solid fa-chevron-right"></i></a>` : ""}
         </div>`);
     }
 

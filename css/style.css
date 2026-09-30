@@ -14644,3 +14644,552 @@ html.ext-ratings .movie-item[data-id] .ratings .score.mine {
 .tn-card.folded {
   align-self: start;
 }
+
+/* ============================== Box Office page ============================== */
+.bo-lead {
+  margin: -12px 0 22px;
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+.bo-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.bo-controls .top10-switch {
+  margin: 0;
+}
+
+.bo-controls .glass-select select {
+  min-width: 120px;
+}
+
+/* the #1 */
+.bo-top {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  min-height: 340px;
+  padding: 28px;
+  border: 1px solid var(--glass-border);
+  border-radius: 26px;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+  isolation: isolate;
+}
+
+.bo-top.skeleton {
+  display: block;
+  background: var(--glass-bg);
+}
+
+.bo-top-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-position: center 25%;
+  background-size: cover;
+  transform: scale(1.02);
+  transition: transform 1.2s ease;
+}
+
+.bo-top:hover .bo-top-bg {
+  transform: scale(1.06);
+}
+
+.bo-top-shade {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(to top, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.35) 55%, rgba(0, 0, 0, 0.1)),
+    linear-gradient(to right, rgba(0, 0, 0, 0.6), transparent 60%);
+}
+
+.bo-top-poster {
+  flex-shrink: 0;
+  width: 150px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+}
+
+.bo-top-info {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bo-top-rank {
+  justify-self: start;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bo-top-rank i {
+  margin-right: 4px;
+  color: var(--gold);
+}
+
+.bo-top-title {
+  font-size: clamp(24px, 3.4vw, 38px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.bo-top-title small {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.55em;
+  font-weight: 600;
+}
+
+.bo-top-gross {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 15px;
+}
+
+.bo-top-gross b {
+  margin-right: 6px;
+  color: #fff;
+  font-size: clamp(34px, 5vw, 56px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-top-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+}
+
+/* four numbers */
+.bo-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 16px 0 34px;
+}
+
+.bo-stat {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-height: 118px;
+  color: var(--text);
+  text-decoration: none;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+a.bo-stat:hover {
+  transform: translateY(-2px);
+  border-color: rgba(229, 9, 20, 0.35);
+}
+
+.bo-stat b {
+  margin-top: 4px;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-stat small {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.bo-stat.skeleton {
+  background: var(--glass-bg);
+}
+
+/* the chart */
+.bo-chart {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bo-row {
+  display: grid;
+  grid-template-columns: 44px 56px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px 10px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  background: var(--glass-bg);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.45s ease var(--d, 0ms), transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) var(--d, 0ms), background-color 0.2s ease;
+}
+
+.bo-row.in {
+  opacity: 1;
+  transform: none;
+}
+
+.bo-row:hover {
+  background: var(--glass-bg-hover);
+}
+
+.bo-row.skeleton {
+  height: 104px;
+  opacity: 1;
+  transform: none;
+}
+
+.bo-rank {
+  color: var(--text-muted);
+  font-size: 22px;
+  font-weight: 900;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-rank.top1 {
+  color: var(--gold);
+}
+
+.bo-rank.top2 {
+  color: #c9ced6;
+}
+
+.bo-rank.top3 {
+  color: #d08a52;
+}
+
+.bo-poster img {
+  display: block;
+  width: 56px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.bo-main {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.bo-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+.bo-name a {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.bo-name a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.bo-name small {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.bo-mine {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(229, 9, 20, 0.14);
+  color: var(--accent-hover);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.bo-mine i {
+  font-size: 10px;
+}
+
+/* the gross as a bar (the #1 fills it), the budget the darker part inside it */
+.bo-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--glass-bg-hover);
+  overflow: hidden;
+}
+
+.bo-fill {
+  position: relative;
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  transition: width 1s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--d, 0ms) + 150ms);
+}
+
+.bo-row.in .bo-fill {
+  width: var(--w);
+}
+
+.bo-budget {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--b);
+  background: rgba(0, 0, 0, 0.45);
+  border-right: 2px solid rgba(255, 255, 255, 0.55);
+}
+
+.bo-nums {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  text-align: right;
+}
+
+.bo-nums b {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-nums small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.bo-nums .xr-verdict {
+  margin-top: 3px;
+  padding: 3px 10px;
+  font-size: 11.5px;
+}
+
+.bo-more {
+  display: flex;
+  justify-content: center;
+  margin: 18px 0 8px;
+}
+
+.bo-more .btn {
+  border-radius: 999px;
+  padding: 11px 22px;
+  font-weight: 700;
+}
+
+.bo-none,
+.bo-empty {
+  padding: 40px 20px;
+  border: 1px dashed var(--glass-border);
+  border-radius: 18px;
+  color: var(--text-muted);
+  text-align: center;
+  list-style: none;
+}
+
+.bo-empty i {
+  font-size: 28px;
+}
+
+/* your box office */
+.bo-yours {
+  margin-top: 44px;
+}
+
+.bo-yours .section-title i {
+  margin-right: 6px;
+  color: var(--accent-hover);
+}
+
+.bo-progress {
+  color: var(--text-muted);
+}
+
+.bo-yours-hero {
+  display: grid;
+  gap: 6px;
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(229, 9, 20, 0.22), transparent 60%),
+    var(--glass-bg);
+}
+
+.bo-yours-hero b {
+  font-size: clamp(36px, 5vw, 52px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.bo-yours-hero small {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.bo-yours .bo-stats {
+  margin-top: 12px;
+}
+
+.bo-note {
+  margin: 36px 0 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.bo-note i {
+  margin-right: 4px;
+}
+
+/* the budget card on a title page links here */
+.xr-money-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.xr-money-link:hover {
+  color: var(--text);
+}
+
+@media (max-width: 700px) {
+  .bo-controls .top10-switch {
+    width: 100%;
+  }
+
+  .bo-controls .top10-switch .top10-tab {
+    flex: 1;
+  }
+
+  .bo-controls .glass-select {
+    flex: 1;
+  }
+
+  .bo-top {
+    min-height: 300px;
+    padding: 18px;
+    gap: 14px;
+  }
+
+  .bo-top-poster {
+    width: 88px;
+  }
+
+  .bo-row {
+    grid-template-columns: 26px 44px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .bo-rank,
+  .bo-poster {
+    grid-row: span 2;
+  }
+
+  .bo-rank {
+    font-size: 16px;
+  }
+
+  .bo-poster img {
+    width: 44px;
+  }
+
+  .bo-nums {
+    grid-column: 3;
+    grid-auto-flow: column;
+    align-items: center;
+    justify-content: start;
+    justify-items: start;
+    gap: 10px;
+    text-align: left;
+  }
+
+  .bo-nums b {
+    font-size: 16px;
+  }
+
+  .bo-nums .xr-verdict {
+    margin: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bo-row,
+  .bo-fill,
+  .bo-top-bg {
+    transition: none;
+  }
+}
+
+/* (box office: the bars all end in the same place; the four numbers 4 across, 2 on smaller screens) */
+.bo-row {
+  grid-template-columns: 44px 56px minmax(0, 1fr) 150px;
+}
+
+.bo-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.bo-budget {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+@media (max-width: 1000px) {
+  .bo-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .bo-row {
+    grid-template-columns: 26px 44px minmax(0, 1fr);
+  }
+
+  .bo-stat b {
+    font-size: 22px;
+  }
+}
+
+/* (box office, phones: the numbers on one line that wraps between them, never inside them) */
+.bo-nums > *,
+.bo-top-meta .xr-verdict {
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .bo-nums {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+  }
+}

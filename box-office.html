@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Box Office &middot; Movie Nights</title>
+    <meta name="description" content="The highest-grossing films worldwide: all time, by year and by genre, with their budgets." />
+    <link rel="icon" href="images/brand/favicon.png" type="image/png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#17181c" />
+    <link rel="apple-touch-icon" href="images/icons/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Movie Nights" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <script>
+      try {
+        if (localStorage.getItem("mn:theme") === "light") document.documentElement.dataset.theme = "light";
+      } catch (e) {}
+    </script>
+  </head>
+  <body data-page="boxoffice">
+    <main class="container bo-page">
+      <h1 class="page-title">Box Office</h1>
+      <p class="bo-lead">The highest-grossing films in the world, with what they cost to make.</p>
+      <div id="bo-app"></div>
+    </main>
+    <script src="data/library.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/core/store.js"></script>
+    <script src="js/core/cloud.js"></script>
+    <script src="js/core/lang.js"></script>
+    <script src="js/core/layout.js"></script>
+    <script src="js/services/tmdb.js"></script>
+    <script src="js/services/ratings.js"></script>
+    <script src="js/components/cards.js"></script>
+    <script src="js/components/add-title.js"></script>
+    <script src="js/components/preview.js"></script>
+    <script src="js/components/scrollbars.js"></script>
+    <script src="js/services/watch.js"></script>
+    <script src="js/services/taste.js"></script>
+    <script src="js/components/picker.js"></script>
+    <script src="js/pages/box-office.js"></script>
+  </body>
+</html>
