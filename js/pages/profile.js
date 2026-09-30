@@ -9,7 +9,7 @@
 (function () {
   const { esc, toast } = UI;
   const root = document.getElementById("profile-app");
-  const photo = (window.Cloud && Cloud.account() && Cloud.account().photo) || "images/placeholders/user.svg";
+  const photo = Store.myPhoto() || "images/placeholders/user.svg"; // (the character you picked, or your Google photo)
   const label = (icon, text) => `<span class="xr-label"><i class="fa-solid ${icon}"></i> ${text}</span>`;
 
   root.innerHTML = `
@@ -17,7 +17,7 @@
       <header class="pv-hero">
         <div class="pv-backdrop" aria-hidden="true"></div>
         <div class="pv-hero-inner">
-          <div class="pv-avatar"><img src="${esc(photo)}" alt="" referrerpolicy="no-referrer" /></div>
+          <div class="pv-avatar"><img src="${esc(photo)}" data-my-pic alt="" referrerpolicy="no-referrer" /></div>
           <div class="pv-who">
             <span class="hero-kicker"><i class="fa-solid fa-user"></i> Your profile</span>
             <h1 class="p-name"></h1>

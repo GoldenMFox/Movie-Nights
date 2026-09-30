@@ -282,6 +282,14 @@
     write(KEYS.profile, Object.assign(getProfile(), patch));
   }
 
+  // your picture: the character you picked (Settings → Profile picture, saved with your
+  // profile: { path, character, title, actor }), else your Google photo ("" = none)
+  function myPhoto() {
+    const av = account ? getProfile().avatar : null;
+    if (av && av.path) return img(av.path, "w185");
+    return (account && account.photo) || "";
+  }
+
   /* ---------- your own lists ("Halloween marathon", "Date night"…), saved with your profile ---------- */
 
   // [{ id, name, items: [library ids] }]
@@ -419,6 +427,7 @@
     setTiers,
     getProfile,
     setProfile,
+    myPhoto,
     lists,
     createList,
     renameList,

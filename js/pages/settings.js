@@ -28,7 +28,7 @@
   root.innerHTML = `
     <div class="sv">
       <a class="sv-account" href="profile.html">
-        <img src="${esc((acct && acct.photo) || "images/placeholders/user.svg")}" alt="" referrerpolicy="no-referrer" />
+        <img src="${esc(Store.myPhoto() || "images/placeholders/user.svg")}" data-my-pic alt="" referrerpolicy="no-referrer" />
         <span class="sv-name"><strong>${esc(profile.name)}</strong><small>${guest ? "Not signed in" : acct ? "Signed in with Google" : "Your profile"}</small></span>
         <span class="btn sv-account-btn">Profile &amp; stats <i class="fa-solid fa-arrow-right"></i></span>
       </a>
@@ -37,6 +37,24 @@
 
       <div class="sv-grid">
         <div class="sv-col">
+          ${
+            guest
+              ? ""
+              : card(
+                  "avatar",
+                  "fa-user-astronaut",
+                  "Profile picture",
+                  `<div class="av-now">
+                    <img class="av-now-pic" data-my-pic src="${esc(Store.myPhoto() || "images/placeholders/user.svg")}" alt="" referrerpolicy="no-referrer" />
+                    <span class="sv-name"><strong class="av-now-name"></strong><small class="av-now-sub"></small></span>
+                  </div>
+                  <div class="sv-buttons">
+                    <button class="btn btn-primary av-choose" type="button"><i class="fa-solid fa-masks-theater"></i> Choose a character</button>
+                    <button class="btn av-reset" type="button" hidden><i class="fa-brands fa-google"></i> Use my Google photo</button>
+                  </div>`
+                )
+          }
+
           ${card(
             "appearance",
             "fa-palette",
@@ -361,6 +379,150 @@
   /* ---------------- import (js/components/import.js) ---------------- */
 
   if (!guest && window.Importer) Importer.mount($("#import .import-panel"));
+
+  /* ---------------- profile picture: a character from a movie or show ---------------- */
+
+  // Like picking a Netflix avatar: characters grouped by title (the actor's TMDB photo, named
+  // after the character), or search any movie / show and pick from its cast. Saved with your
+  // profile (so it follows your account): { path, character, title, actor }.
+  const AVATAR_TITLES = [
+    ["tv", 1396], ["movie", 155], ["tv", 66732], ["movie", 671], ["tv", 1399], ["movie", 299534],
+    ["tv", 1668], ["movie", 603], ["tv", 2316], ["movie", 11], ["tv", 100088], ["movie", 22],
+    ["tv", 60574], ["movie", 680], ["tv", 119051], ["movie", 238], ["tv", 76479], ["movie", 245891],
+    ["tv", 93405], ["movie", 346698], ["tv", 19885], ["movie", 693134],
+  ];
+  // "Walter White / Heisenberg" -> "Walter White"; "Hermione Granger (voice)" -> "Hermione Granger"
+  const charName = (c) => String(c.character || "").split(/\s+\/\s+/)[0].replace(/\s*\((voice|uncredited)\)/gi, "").trim() || c.name;
+
+  function paintAvatarCard() {
+    if (guest) return;
+    const av = Store.getProfile().avatar;
+    $(".av-now-name").textContent = av ? av.character : acct && acct.photo ? "Your Google photo" : "No picture yet";
+    $(".av-now-sub").textContent = av ? `${av.title} · ${av.actor}` : "Pick a character from a movie or show";
+    $(".av-reset").hidden = !av;
+  }
+
+  function setAvatar(av) {
+    Store.setProfile({ avatar: av || undefined });
+    UI.paintMyPic();
+    paintAvatarCard();
+    if (avOverlay) avOverlay.querySelectorAll(".av-pick").forEach((b) => b.classList.toggle("on", !!av && b.dataset.avPath === av.path));
+  }
+
+  // one title's characters (up to max)
+  function avGroup(d, max) {
+    const cur = (Store.getProfile().avatar || {}).path;
+    const cast = (d.cast || []).filter((c) => c.photo).slice(0, max);
+    if (!cast.length) return "";
+    const title = Lang.title(d);
+    return `<section class="av-group">
+        <h4>${esc(title)}${d.year ? ` <small>${d.year}</small>` : ""}</h4>
+        <div class="av-grid">${cast
+          .map(
+            (c) => `<button type="button" class="av-pick${c.photo === cur ? " on" : ""}" data-av-path="${esc(c.photo)}"
+                data-av-character="${esc(charName(c))}" data-av-actor="${esc(c.name)}" data-av-title="${esc(title)}" title="${esc(charName(c))} · ${esc(c.name)}">
+              <img src="${Store.img(c.photo, "w185")}" alt="" loading="lazy" />
+              <span>${esc(charName(c))}</span>
+            </button>`
+          )
+          .join("")}</div>
+      </section>`;
+  }
+
+  let avOverlay = null;
+  let avTyping;
+  function openAvatars() {
+    if (!avOverlay) {
+      avOverlay = Cards.makeOverlay(
+        "avatar-modal",
+        `<div class="pk-icon"><i class="fa-solid fa-user-astronaut"></i></div>
+         <h3>Choose your profile picture</h3>
+         <p class="pk-sub">A character from a movie or show you love.</p>
+         <form class="glass-search av-search" role="search">
+           <i class="fa-solid fa-magnifying-glass gs-icon" aria-hidden="true"></i>
+           <input type="search" name="q" placeholder="Search a movie or show for its cast…" aria-label="Search a movie or show" autocomplete="off" />
+         </form>
+         <div class="av-found" hidden></div>
+         <div class="av-picked"></div>
+         <div class="av-groups"></div>`
+      );
+      // the popular titles, each filled in as it arrives (TMDB answers are kept a week)
+      const box = avOverlay.querySelector(".av-groups");
+      box.innerHTML = AVATAR_TITLES.map((_, n) => `<div class="av-slot" data-n="${n}"><div class="av-skel"></div></div>`).join("");
+      AVATAR_TITLES.forEach(([media, id], n) =>
+        TMDB.detailsById(media, id)
+          .then((d) => (box.querySelector(`[data-n="${n}"]`).outerHTML = avGroup(d, 6) || ""))
+          .catch(() => box.querySelector(`[data-n="${n}"]`).remove())
+      );
+
+      // search: titles first, then that title's whole cast on top
+      const input = avOverlay.querySelector('[name="q"]');
+      const found = avOverlay.querySelector(".av-found");
+      const search = async () => {
+        const q = input.value.trim();
+        if (!q) return (found.hidden = true);
+        found.hidden = false;
+        found.innerHTML = '<p class="sv-note"><i class="fa-solid fa-spinner fa-spin"></i> Searching…</p>';
+        try {
+          const { results } = await TMDB.searchSmart(q, "all", 1);
+          if (input.value.trim() !== q) return;
+          const hits = results.filter((h) => h.poster).slice(0, 8);
+          found.innerHTML = hits.length
+            ? hits
+                .map(
+                  (h) => `<button type="button" class="av-title" data-av-ref="${h.mediaType}-${h.tmdbId}">
+                    <img src="${Store.poster(h.poster, "w92")}" alt="" loading="lazy" /><span>${esc(Lang.title(h))}${h.year ? ` <small>${h.year}</small>` : ""}</span></button>`
+                )
+                .join("")
+            : '<p class="sv-note">Nothing found. Try another spelling.</p>';
+        } catch (e) {
+          found.innerHTML = `<p class="sv-note">Couldn't search: ${esc(e.message)}</p>`;
+        }
+      };
+      avOverlay.querySelector(".av-search").addEventListener("submit", (e) => {
+        e.preventDefault();
+        clearTimeout(avTyping);
+        search();
+      });
+      input.addEventListener("input", () => {
+        clearTimeout(avTyping);
+        avTyping = setTimeout(search, 350);
+      });
+
+      avOverlay.addEventListener("click", async (e) => {
+        const t = e.target.closest("[data-av-ref]");
+        if (t) {
+          const [media, id] = t.dataset.avRef.split("-");
+          const picked = avOverlay.querySelector(".av-picked");
+          picked.innerHTML = '<div class="av-skel"></div>';
+          try {
+            const d = await TMDB.detailsById(media, Number(id));
+            picked.innerHTML = avGroup(d, 12) || '<p class="sv-note">TMDB has no cast photos for this one.</p>';
+          } catch (err) {
+            picked.innerHTML = `<p class="sv-note">Couldn't load the cast: ${esc(err.message)}</p>`;
+          }
+          found.hidden = true;
+          picked.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          return;
+        }
+        const b = e.target.closest("[data-av-path]");
+        if (!b) return;
+        setAvatar({ path: b.dataset.avPath, character: b.dataset.avCharacter, title: b.dataset.avTitle, actor: b.dataset.avActor });
+        toast(`You're ${b.dataset.avCharacter} now`);
+        setTimeout(() => Cards.closeModal(avOverlay), 350);
+      });
+    }
+    Cards.openModal(avOverlay);
+  }
+
+  if (!guest) {
+    paintAvatarCard();
+    $(".av-choose").addEventListener("click", () => (TMDB.enabled() ? openAvatars() : toast("Choosing a character needs TMDB")));
+    $(".av-reset").addEventListener("click", () => {
+      setAvatar(null);
+      toast("Back to your Google photo");
+    });
+  }
 
   /* ---------------- members (owner only) ---------------- */
 

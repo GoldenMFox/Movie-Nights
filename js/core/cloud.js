@@ -176,7 +176,8 @@
     await api(`users/${acct.uid}`, {
       method: "PATCH",
       tok,
-      body: toDoc({ data: text, name: acct.name, photo: acct.photo || "", base: acct.base, updatedAt: at }),
+      // (your picture: the character you picked, else your Google photo; shown in Members)
+      body: toDoc({ data: text, name: acct.name, photo: (acct === account ? Store.myPhoto() : acct.photo) || "", base: acct.base, updatedAt: at }),
     });
     return at;
   }

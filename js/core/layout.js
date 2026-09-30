@@ -37,7 +37,9 @@
   const USER_ICON = "images/placeholders/user.svg";
   const acct = window.Cloud && Cloud.account();
   const pic = (a) => (a && a.photo) || USER_ICON;
-  const avatar = pic(acct);
+  // yours: the character you picked in Settings, or your Google photo (marked data-my-pic,
+  // so a new pick shows everywhere at once: UI.paintMyPic())
+  const avatar = Store.myPhoto() || USER_ICON;
 
   // sign in / "Who's watching?" / sign out
   // (someone who already signed in on this device before stays one tap away under "Who's watching?")
@@ -91,11 +93,11 @@
         </div>
         <div class="profile">
           <button class="user-pic-btn" aria-label="Profile menu">
-            <img src="${esc(avatar)}" class="user-pic" alt="" referrerpolicy="no-referrer" />
+            <img src="${esc(avatar)}" class="user-pic" data-my-pic alt="" referrerpolicy="no-referrer" />
           </button>
           <div class="profile-menu">
             <div class="user-info">
-              <img src="${esc(avatar)}" alt="" referrerpolicy="no-referrer" />
+              <img src="${esc(avatar)}" data-my-pic alt="" referrerpolicy="no-referrer" />
               <div>
                 <h2>${esc(profile.name)}</h2>
                 ${acct ? '<small class="sync-status"></small>' : '<small class="sync-status"><i class="fa-regular fa-circle-user"></i> Not signed in</small>'}
@@ -1043,5 +1045,11 @@
     setTimeout(() => box.classList.add("open"), 0);
   }
 
-  window.UI = { esc, toast, download, PAGES, foldTools, signInPrompt, needSignIn, welcome, confirm: confirmBox, ask };
+  // show your (new) picture everywhere it's on the page
+  function paintMyPic() {
+    const src = Store.myPhoto() || USER_ICON;
+    document.querySelectorAll("img[data-my-pic]").forEach((i) => (i.src = src));
+  }
+
+  window.UI = { esc, toast, download, PAGES, foldTools, signInPrompt, needSignIn, welcome, confirm: confirmBox, ask, paintMyPic };
 })();
