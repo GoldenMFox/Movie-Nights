@@ -19758,27 +19758,55 @@ html.sm-lock {
 }
 
 /* ============================== Title page: Soundtrack (Apple Music previews) ============================== */
-/* the cover with a record behind it that slides out and spins while a preview plays, the
-   album's facts, and the tracks: a play button on the number, a thin progress line under
-   the one playing, and three bouncing bars beside it */
+/* one glass card over the album's blurred cover: the album on the left (the cover with a
+   record behind it that slides out and spins while a preview plays, the facts, the buttons,
+   what's playing now), the tracks on the right in their own scrolling list */
 
-.st-switch {
-  margin-bottom: 14px;
+.st-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  gap: 26px;
+  padding: 24px;
+  overflow: hidden;
+  overflow: clip; /* (hidden could still be scrolled by the browser) */
+  border: 1px solid var(--glass-border);
+  border-radius: 26px;
+  background: #121215;
+  color: #fff;
+  isolation: isolate;
 }
 
-.st-album {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  margin-bottom: 14px;
+.st-card::before {
+  content: "";
+  position: absolute;
+  inset: -40px;
+  z-index: -2;
+  background: var(--art) center / cover no-repeat;
+  filter: blur(40px) saturate(1.4);
+  opacity: 0.55;
+  transform: scale(1.15);
+}
+
+.st-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(100deg, rgba(12, 12, 14, 0.55), rgba(12, 12, 14, 0.82) 45%, rgba(12, 12, 14, 0.9));
+}
+
+.st-side {
+  display: grid;
+  align-content: start;
+  gap: 16px;
 }
 
 .st-cover {
   position: relative;
-  flex: none;
-  width: 170px;
-  height: 170px;
-  margin-right: 34px;
+  width: min(100%, 230px);
+  aspect-ratio: 1;
+  margin-right: 40px;
 }
 
 .st-cover img {
@@ -19787,21 +19815,21 @@ html.sm-lock {
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 12px;
+  border-radius: 14px;
   object-fit: cover;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.55);
 }
 
 .st-vinyl {
   position: absolute;
-  top: 6px;
-  left: 6px;
-  width: calc(100% - 12px);
-  height: calc(100% - 12px);
+  top: 5%;
+  left: 5%;
+  width: 90%;
+  height: 90%;
   border-radius: 50%;
   background: repeating-radial-gradient(circle, #1a1a1e 0 2px, #0c0c0e 2px 4px);
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-  translate: 16px 0;
+  translate: 14px 0;
   transition: translate 0.6s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
@@ -19823,18 +19851,15 @@ html.sm-lock {
 }
 
 .t-sound:hover .st-vinyl {
-  translate: 26px 0;
+  translate: 24px 0;
 }
 
 .t-sound.is-playing .st-vinyl {
-  translate: 46px 0;
+  translate: 40px 0;
   animation: st-spin 2.2s linear infinite;
 }
 
 @keyframes st-spin {
-  from {
-    rotate: 0deg;
-  }
   to {
     rotate: 360deg;
   }
@@ -19842,12 +19867,12 @@ html.sm-lock {
 
 .st-info {
   display: grid;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
 }
 
 .st-info small {
-  color: var(--accent-hover);
+  color: #ff6b6b;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -19855,58 +19880,162 @@ html.sm-lock {
 }
 
 .st-info h3 {
-  margin: 0;
-  font-size: 22px;
+  margin: 2px 0 0;
+  font-size: 24px;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .st-info p {
   margin: 0;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.st-info .st-meta {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13.5px;
+}
+
+.st-switch {
+  justify-self: start;
+  margin-top: 10px;
 }
 
 .st-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .st-buttons .btn {
   border-radius: 999px;
 }
 
-.st-tracks {
+.st-card .st-apple {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* now playing */
+.st-now {
   display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(229, 9, 20, 0.35);
+  border-radius: 14px;
+  background: rgba(229, 9, 20, 0.12);
+  animation: wl-in 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.st-now[hidden] {
+  display: none;
+}
+
+.st-now-name {
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.st-now-bar {
+  grid-column: 1 / -1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.st-now-bar i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.25s linear;
+}
+
+.st-bars {
+  display: flex;
+  align-items: flex-end;
   gap: 2px;
+  width: 14px;
+  height: 14px;
+}
+
+.st-bars i {
+  flex: 1;
+  height: 30%;
+  border-radius: 1px;
+  background: #ff6b6b;
+  animation: st-bar 0.9s ease-in-out infinite;
+}
+
+.st-bars i:nth-child(2) {
+  animation-delay: -0.3s;
+}
+
+.st-bars i:nth-child(3) {
+  animation-delay: -0.6s;
+}
+
+.st-now.paused .st-bars i {
+  animation-play-state: paused;
+}
+
+@keyframes st-bar {
+  50% {
+    height: 100%;
+  }
+}
+
+/* the tracks: their own scrolling list */
+.st-tracks {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  max-height: 420px;
   margin: 0;
-  padding: 0;
+  padding: 0 6px 0 0;
+  overflow-y: auto;
   list-style: none;
-  counter-reset: none;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+  /* (a soft fade at the bottom: there is more below) */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent);
+  padding-bottom: 28px;
 }
 
 .st-track {
   position: relative;
   display: grid;
-  grid-template-columns: 40px 1fr auto auto;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 6px 12px 6px 6px;
+  min-height: 48px;
+  padding: 4px 12px 4px 4px;
   overflow: hidden;
   border-radius: 12px;
   transition: background 0.2s;
 }
 
 .st-track:hover {
-  background: var(--glass-bg);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .st-track.on {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  background: rgba(229, 9, 20, 0.18);
 }
 
-/* the preview's progress, a thin line along the bottom */
 .st-track.on::after {
   content: "";
   position: absolute;
@@ -19918,21 +20047,17 @@ html.sm-lock {
   transition: width 0.25s linear;
 }
 
-.st-more {
-  display: none;
-}
-
 .st-play {
   position: relative;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: none;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.55);
   font: inherit;
   cursor: pointer;
 }
@@ -19940,12 +20065,12 @@ html.sm-lock {
 .st-play i {
   position: absolute;
   opacity: 0;
-  font-size: 12px;
+  font-size: 11px;
   transition: opacity 0.15s;
 }
 
 .st-n {
-  font-size: 13.5px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
   transition: opacity 0.15s;
 }
@@ -19983,86 +20108,50 @@ html.sm-lock {
 }
 
 .st-track.on .st-name b {
-  color: var(--accent-hover);
+  color: #ff8a84;
 }
 
 .st-name small {
   overflow: hidden;
-  color: var(--text-muted);
-  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .no-preview .st-name b {
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .st-track time {
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.5);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
-/* three bars that bounce on the track that's playing */
-.st-bars {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  width: 14px;
-  height: 14px;
-  opacity: 0;
-}
-
-.st-track.on:not(.paused) .st-bars {
-  opacity: 1;
-}
-
-.st-bars i {
-  flex: 1;
-  height: 30%;
-  border-radius: 1px;
-  background: var(--accent-hover);
-}
-
-.st-track.on:not(.paused) .st-bars i {
-  animation: st-bar 0.9s ease-in-out infinite;
-}
-
-.st-bars i:nth-child(2) {
-  animation-delay: -0.3s !important;
-}
-
-.st-bars i:nth-child(3) {
-  animation-delay: -0.6s !important;
-}
-
-@keyframes st-bar {
-  50% {
-    height: 100%;
-  }
-}
-
-.st-show {
-  margin-top: 8px;
-  border-radius: 999px;
-}
-
 .st-note {
-  margin: 12px 0 0;
+  margin: 10px 0 0;
   color: var(--text-muted);
   font-size: 12px;
 }
 
-@media (max-width: 600px) {
-  .st-album {
-    gap: 14px;
+@media (max-width: 760px) {
+  .st-card {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 16px;
+    border-radius: 22px;
+  }
+
+  .st-side {
+    grid-template-columns: 120px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px 30px;
   }
 
   .st-cover {
-    width: 112px;
-    height: 112px;
-    margin-right: 18px;
+    width: 120px;
+    margin-right: 0;
   }
 
   .t-sound.is-playing .st-vinyl {
@@ -20070,11 +20159,11 @@ html.sm-lock {
   }
 
   .t-sound:hover .st-vinyl {
-    translate: 16px 0;
+    translate: 14px 0;
   }
 
   .st-info h3 {
-    font-size: 17px;
+    font-size: 18px;
   }
 
   .st-buttons .btn {
@@ -20082,8 +20171,15 @@ html.sm-lock {
     font-size: 13.5px;
   }
 
+  .st-now {
+    grid-column: 1 / -1;
+  }
+
+  .st-tracks {
+    max-height: 360px;
+  }
+
   .st-track {
-    grid-template-columns: 36px 1fr auto auto;
     gap: 8px;
     padding-right: 6px;
   }
@@ -20091,7 +20187,7 @@ html.sm-lock {
 
 @media (prefers-reduced-motion: reduce) {
   .t-sound.is-playing .st-vinyl,
-  .st-track.on:not(.paused) .st-bars i {
+  .st-bars i {
     animation: none;
   }
 }

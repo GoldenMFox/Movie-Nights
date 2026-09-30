@@ -14,9 +14,7 @@
 (function () {
   const { esc } = UI;
   const API = "https://itunes.apple.com";
-  const SHOWN = 8; // tracks before "Show all"
   const cache = new Map(); // key -> { albums: [...], pick: index } | "none"
-  const open = new Set(); // keys with every track shown
 
   const norm = (s) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g, "");
   const keyOf = (d) => (d && d.tmdbId ? `${d.media || d.mediaType}-${d.tmdbId}` : null);
@@ -153,6 +151,18 @@
       });
       const all = sec.querySelector(".st-all");
       if (all) all.innerHTML = on && !audio.paused ? '<i class="fa-solid fa-pause"></i> Pause' : '<i class="fa-solid fa-play"></i> Play previews';
+      // now playing: the track, under the album
+      const now = sec.querySelector(".st-now");
+      if (now) {
+        const row = on && sec.querySelectorAll(".st-name")[playing.n];
+        now.hidden = !row;
+        now.classList.toggle("paused", !!(on && audio.paused));
+        if (row) now.querySelector(".st-now-name").textContent = row.querySelector("b").textContent;
+      }
+      // (the track playing stays in view in the list)
+      const cur = on && sec.querySelectorAll(".st-track")[playing.n];
+      const box = sec.querySelector("ol.st-tracks");
+      if (cur && box && (cur.offsetTop < box.scrollTop || cur.offsetTop + cur.offsetHeight > box.scrollTop + box.clientHeight)) box.scrollTop = cur.offsetTop - box.clientHeight / 3;
     });
   }
 
@@ -173,6 +183,8 @@
   audio.addEventListener("timeupdate", () => {
     const row = rowEls()[playing ? playing.n : -1];
     if (row && audio.duration) row.style.setProperty("--p", `${(audio.currentTime / audio.duration) * 100}%`);
+    const bar = playing && document.querySelector(`.t-sound[data-st="${playing.key}"] .st-now-bar i`);
+    if (bar && audio.duration) bar.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
   });
   audio.addEventListener("play", paintPlayer);
   audio.addEventListener("pause", paintPlayer);
@@ -199,20 +211,27 @@
 
   /* ---------------- the section ---------------- */
 
+  // a track's name without the tags every row repeats: "(Instrumental)", "(From …)"
+  const cleanName = (s) =>
+    String(s || "")
+      .replace(/\s*[([](instrumental|score|original[^)\]]*|from [^)\]]*|soundtrack version|film version)[)\]]\s*$/i, "")
+      .trim() || s;
+  // the track's artist only when it isn't the album's ("James Horner & Orchestra" for James Horner: no)
+  const otherArtist = (t, album) => t.artist && !sameArtists(t.artist, album.artist) && !norm(t.artist).startsWith(norm(album.artist.split(/[&,]/)[0]));
+
   function bodyHtml(key, data) {
     if (!data) return '<p class="muted t-empty st-loading"><i class="fa-solid fa-compact-disc fa-spin"></i> Looking for the soundtrack…</p>';
     const album = data.albums[data.pick];
     const list = album.tracks;
     const total = list ? list.reduce((s, t) => s + t.ms, 0) : 0;
-    const all = open.has(key) || (list && list.length <= SHOWN + 2);
     const switcher =
       data.albums.length > 1
         ? `<div class="top10-switch st-switch" role="tablist" aria-label="Albums">${data.albums
             .map((a, n) => `<button class="top10-tab${n === data.pick ? " active" : ""}" type="button" role="tab" aria-selected="${n === data.pick}" data-st-album="${n}">${esc(a.kind)}</button>`)
             .join("")}</div>`
         : "";
-    return `${switcher}
-      <div class="st-album">
+    return `<div class="st-card" style="--art:url('${esc(art(album.art, 300))}')">
+      <div class="st-side">
         <div class="st-cover">
           <span class="st-vinyl" aria-hidden="true" style="--art:url('${esc(art(album.art, 200))}')"></span>
           <img src="${esc(art(album.art, 600))}" alt="" loading="lazy" />
@@ -220,29 +239,31 @@
         <div class="st-info">
           <small>${esc(album.kind === "Score" ? "Score" : "Soundtrack")}${album.year ? ` · ${esc(album.year)}` : ""}</small>
           <h3 title="${esc(album.name)}">${esc(baseName(album.name) || album.name)}</h3>
-          <p>${esc(album.artist)}${list ? ` · ${list.length} tracks${total ? ` · ${Math.round(total / 60000)} min` : ""}` : ""}</p>
+          <p>${esc(album.artist)}</p>
+          <p class="st-meta">${list ? `${list.length} tracks${total ? ` · ${Math.round(total / 60000)} min` : ""}` : ""}</p>
+          ${switcher}
           <div class="st-buttons">
             <button class="btn btn-primary st-all" type="button"${list && list.some((t) => t.preview) ? "" : " disabled"}><i class="fa-solid fa-play"></i> Play previews</button>
-            <a class="btn st-apple" href="${esc(album.url)}" target="_blank" rel="noopener"><i class="fa-brands fa-apple"></i> Apple Music</a>
+            <a class="btn st-apple" href="${esc(album.url)}" target="_blank" rel="noopener" aria-label="Open on Apple Music" title="Open on Apple Music"><i class="fa-brands fa-apple"></i> Music</a>
           </div>
+          <div class="st-now" hidden><span class="st-bars" aria-hidden="true"><i></i><i></i><i></i></span><span class="st-now-name"></span><span class="st-now-bar"><i></i></span></div>
         </div>
       </div>
       ${
         list
           ? `<ol class="st-tracks">${list
               .map(
-                (t, n) => `<li class="st-track${!all && n >= SHOWN ? " st-more" : ""}${t.preview ? "" : " no-preview"}">
+                (t, n) => `<li class="st-track${t.preview ? "" : " no-preview"}">
                   <button class="st-play" type="button" data-st-track="${n}" aria-label="Play ${esc(t.name)}"${t.preview ? "" : " disabled"}><span class="st-n">${n + 1}</span><i class="fa-solid fa-play"></i></button>
-                  <span class="st-name"><b>${esc(t.name)}</b>${t.artist && sameArtists(t.artist, album.artist) ? "" : `<small>${esc(t.artist)}</small>`}</span>
-                  <span class="st-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+                  <span class="st-name" title="${esc(t.name)}"><b>${esc(cleanName(t.name))}</b>${otherArtist(t, album) ? `<small>${esc(t.artist)}</small>` : ""}</span>
                   <time>${t.ms ? mmss(t.ms) : ""}</time>
                 </li>`
               )
-              .join("")}</ol>
-            ${!all ? `<button class="btn st-show" type="button"><i class="fa-solid fa-chevron-down"></i> Show all ${list.length} tracks</button>` : ""}`
-          : '<p class="muted t-empty"><i class="fa-solid fa-spinner fa-spin"></i> Loading the tracks…</p>'
+              .join("")}</ol>`
+          : '<p class="muted t-empty st-tracks"><i class="fa-solid fa-spinner fa-spin"></i> Loading the tracks…</p>'
       }
-      <p class="st-note"><i class="fa-solid fa-circle-info"></i> 30-second previews from Apple Music</p>`;
+    </div>
+    <p class="st-note"><i class="fa-solid fa-circle-info"></i> 30-second previews from Apple Music</p>`;
   }
 
   function html(d) {
@@ -331,10 +352,6 @@
         return;
       }
       return play(key, album, 0);
-    }
-    if (e.target.closest(".st-show")) {
-      open.add(key);
-      repaint(key);
     }
   });
 
