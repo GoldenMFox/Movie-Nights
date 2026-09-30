@@ -16,12 +16,7 @@
   const { esc } = UI;
   const DELAY = 800; // ms of resting on a poster before the preview appears
   const PRELOAD = 300; // the preview is built (invisible) and the trailer starts loading this early
-  const REVEAL = 250; // after it starts playing, a moment before it fades in
-  // YouTube shows its title and play / pause buttons over the first seconds of every video
-  // (no setting turns that off): the video comes in blurred and a little dark, so they can't
-  // be made out, and sharpens once they're gone, FOCUS_AT seconds in (FOCUS_LATEST at most)
-  const FOCUS_AT = 3;
-  const FOCUS_LATEST = 3400; // ms after it started
+  const REVEAL = 250; // after it starts playing, a moment for YouTube's own title to fade
 
   // connect to YouTube ahead of time, so the first video starts faster
   ["https://www.youtube.com", "https://i.ytimg.com", "https://www.google.com"].forEach((href) => {
@@ -232,11 +227,8 @@
 
   // always try: browsers that allow sound (site allowed to autoplay, or you've clicked on
   // the page) play it; the others pause or keep it muted, and then it carries on muted
-  // (only once you've clicked or pressed a key on the page: before that the browser refuses
-  // sound and pauses the video, and YouTube flashes its controls when it's restarted)
-  const soundAllowed = () => !navigator.userActivation || navigator.userActivation.hasBeenActive;
   function trySound() {
-    if (!preview || !preview.classList.contains("show") || !preview.classList.contains("playing") || !muted || !wantSound || !soundAllowed()) return;
+    if (!preview || !preview.classList.contains("show") || !preview.dataset.started || !muted || !wantSound) return;
     muted = false;
     preview.dataset.soundAt = Date.now();
     send("command", "unMute");
@@ -254,7 +246,7 @@
     iframe.referrerPolicy = "strict-origin-when-cross-origin";
     iframe.src =
       `https://www.youtube.com/embed/${encodeURIComponent(key)}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0` +
-      `&modestbranding=1&rel=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&loop=1&playlist=${encodeURIComponent(key)}&enablejsapi=1${origin}`;
+      `&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&loop=1&playlist=${encodeURIComponent(key)}&enablejsapi=1${origin}`;
     // ask the player to tell us when it's playing (or can't play), and nudge it to start:
     // some trailers ignore autoplay until they're told to play
     iframe.addEventListener("load", () => {
@@ -262,14 +254,12 @@
       let tries = 0;
       const nudge = () => {
         if (!preview || !iframe.isConnected || preview.dataset.started || tries++ > 8) return;
-        preview.dataset.nudgedAt = Date.now();
         send("command", "mute");
         send("command", "playVideo");
         setTimeout(nudge, 400);
       };
-      // only if it hasn't started by itself: a nudge makes YouTube flash its play button and
-      // controls. Trailers start on their own about a second after loading, so wait well past that
-      setTimeout(nudge, 2500);
+      // only if it hasn't started by itself (a nudge makes YouTube flash its buttons)
+      setTimeout(nudge, 1000);
     });
     // Cover the video area like a picture would (the player itself is always 16:9).
     // YouTube picks the quality from the player's size, and a ~490px player gets 360p: so
@@ -303,40 +293,17 @@
     const frame = preview.querySelector(".hp-frame");
     if (!frame || e.source !== frame.contentWindow) return;
     // playing: fade the video in over the picture, show the sound button
-    // (a moment after it starts, once YouTube's own title has faded away)
     const state = data.event === "onStateChange" ? data.info : data.event === "infoDelivery" && data.info ? data.info.playerState : undefined;
-    const el = preview;
-    const reveal = () => {
-      if (el !== preview || el.classList.contains("playing") || !el.querySelector(".hp-frame")) return;
-      el.classList.remove("resuming");
-      if (!el.dataset.focused) el.classList.add("focusing"); // (blurred until YouTube's buttons are gone)
-      el.classList.add("playing");
-      el.querySelector(".hp-sound").hidden = false;
-      trySound();
-    };
-    const sharpen = () => {
-      if (el !== preview) return;
-      clearTimeout(el.focusTimer);
-      el.dataset.focused = "1";
-      el.classList.remove("focusing");
-    };
+    // (a moment after it starts, once YouTube's own title / buttons have faded away)
     if (state === 1 && !preview.dataset.started) {
       preview.dataset.started = "1";
-      clearTimeout(preview.focusTimer);
-      preview.focusTimer = setTimeout(sharpen, FOCUS_LATEST);
-      clearTimeout(preview.revealTimer);
-      // (started by a nudge: YouTube's controls flash for a moment, so wait them out)
-      const since = Date.now() - Number(preview.dataset.nudgedAt || 0);
-      preview.revealTimer = setTimeout(reveal, since < 3000 ? Math.max(REVEAL, 2200 - since) : REVEAL);
-    }
-    // far enough in: YouTube's title and buttons have gone, bring it into focus
-    const at = data.event === "infoDelivery" && data.info ? data.info.currentTime : undefined;
-    if (preview.dataset.started && !preview.dataset.focused && !preview.dataset.refocus && typeof at === "number" && at >= FOCUS_AT) sharpen();
-    // (playing again after the pause below: back into view once it really plays)
-    if (state === 1 && preview.dataset.resuming) {
-      delete preview.dataset.resuming;
-      clearTimeout(preview.revealTimer);
-      preview.revealTimer = setTimeout(reveal, REVEAL);
+      const el = preview;
+      setTimeout(() => {
+        if (el !== preview || !el.querySelector(".hp-frame")) return;
+        el.classList.add("playing");
+        el.querySelector(".hp-sound").hidden = false;
+        trySound();
+      }, REVEAL);
     }
     // the player reports it's still muted (sound refused): show that on the button
     const info = data.event === "infoDelivery" && data.info;
@@ -344,24 +311,9 @@
       muted = true;
       paintSound();
     }
-    // the browser refused the sound and paused it: carry on muted. Restarting makes YouTube
-    // flash its play button and controls, so the video hides behind the picture until it
-    // plays again
+    // the browser refused the sound and paused it: carry on muted
     if (state === 2 && preview.dataset.soundAt && Date.now() - Number(preview.dataset.soundAt) < 2500) {
       delete preview.dataset.soundAt;
-      preview.classList.remove("playing");
-      preview.classList.add("resuming"); // (hidden at once, not faded)
-      preview.dataset.resuming = "1";
-      // (and blurred again for a moment when it's back: the restart brings YouTube's buttons back)
-      delete preview.dataset.focused;
-      preview.dataset.refocus = "1";
-      clearTimeout(preview.focusTimer);
-      preview.focusTimer = setTimeout(() => {
-        if (!preview) return;
-        delete preview.dataset.refocus;
-        preview.dataset.focused = "1";
-        preview.classList.remove("focusing");
-      }, 3000);
       muted = true;
       send("command", "mute");
       send("command", "playVideo");
@@ -372,12 +324,8 @@
     if (data.event === "onError") {
       if (frame.dataset.key) Cards.markBadTrailer(frame.dataset.key);
       frame.remove();
-      preview.classList.remove("playing", "resuming", "focusing");
+      preview.classList.remove("playing");
       delete preview.dataset.started;
-      delete preview.dataset.resuming;
-      delete preview.dataset.focused;
-      clearTimeout(preview.revealTimer);
-      clearTimeout(preview.focusTimer);
       const next = (preview.videoQueue || []).shift();
       if (next) playVideo(next);
     }

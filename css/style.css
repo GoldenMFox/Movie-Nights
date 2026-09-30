@@ -6902,9 +6902,9 @@ body[data-page="home"] main.container {
   }
 }
 /* hover preview: the player is a real 1920 × 1080 (so YouTube sends HD), shrunk to the
-   preview with --hp-fit, then zoomed 1.6× so YouTube's own title bar and labels stay out of view */
+   preview with --hp-fit, then zoomed 1.4× as before to hide YouTube's own labels */
 .hp-frame {
-  transform: translate(-50%, -50%) scale(calc(var(--hp-fit, 0.25) * 1.6));
+  transform: translate(-50%, -50%) scale(calc(var(--hp-fit, 0.25) * 1.4));
 }
 /* trailer pop-up head: title in the site's heading style, the year in its own glass pill */
 .th-title {
@@ -13327,40 +13327,4 @@ html.fade-watched #home-rows .movie-item[data-seen] .movie-info {
 html.fade-watched #discover .movie-item[data-seen]:hover .movie-info,
 html.fade-watched #home-rows .movie-item[data-seen]:hover .movie-info {
   opacity: 1;
-}
-
-/* hover preview: the video hides at once (no fade) while it's restarted after the browser
-   refused its sound, so YouTube's play button / controls flash never shows */
-.hover-preview.resuming .hp-frame {
-  opacity: 0;
-  transition: none;
-}
-
-/* hover preview: the video comes in blurred and a little dark while YouTube shows its own
-   title and buttons over it (its first ~3 seconds), then sharpens into focus. A veil over
-   the video does the blurring, so it's the same strength whatever the player's size */
-.hover-preview.playing .hp-video::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  -webkit-backdrop-filter: blur(0px) brightness(1);
-  backdrop-filter: blur(0px) brightness(1);
-  pointer-events: none;
-  transition: -webkit-backdrop-filter 0.8s ease, backdrop-filter 0.8s ease;
-}
-
-.hover-preview.playing.focusing .hp-video::before {
-  -webkit-backdrop-filter: blur(18px) brightness(0.72);
-  backdrop-filter: blur(18px) brightness(0.72);
-}
-
-.hover-preview .hp-sound {
-  z-index: 3;
-}
-
-/* (the picture behind steps aside once the video is on, so no light sliver of it shows at an edge) */
-.hover-preview.playing .hp-backdrop {
-  opacity: 0;
-  transition: opacity 0.5s 0.4s;
 }
