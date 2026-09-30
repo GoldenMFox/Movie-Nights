@@ -1905,134 +1905,6 @@ a.stat-tile:hover {
   color: var(--text-muted);
   margin: -8px 0 18px;
 }
-
-.tier-board {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.tier-row {
-  display: flex;
-  min-height: 120px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.tier-row:last-child {
-  border-bottom: 0;
-}
-
-.tier-label {
-  width: 90px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  font-size: 34px;
-  font-weight: 700;
-  color: #111;
-  cursor: pointer;
-}
-
-.tier-drop {
-  flex: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 6px;
-  align-content: flex-start;
-}
-
-.tier-drop.drag-over,
-.tier-pool.drag-over {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.tier-item {
-  position: relative;
-  width: 72px;
-  aspect-ratio: 2 / 3;
-  border-radius: 6px;
-  overflow: hidden;
-  cursor: grab;
-  background: var(--surface-2);
-  border: 2px solid transparent;
-  padding: 0;
-  flex-shrink: 0;
-}
-
-.tier-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  pointer-events: none;
-}
-
-.tier-item.selected {
-  border-color: gold;
-  box-shadow: 0 0 0 2px gold;
-}
-
-.tier-item.dragging {
-  opacity: 0.4;
-}
-
-.tier-pool-wrap {
-  margin-top: 24px;
-}
-
-.tier-pool {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  min-height: 120px;
-  max-height: 460px;
-  overflow-y: auto;
-  padding: 10px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.tier-selected-bar {
-  position: sticky;
-  bottom: 12px;
-  margin-top: 12px;
-  padding: 10px 14px;
-  background: #222;
-  color: #fff;
-  border-radius: 10px;
-  display: none;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  box-shadow: var(--shadow);
-  z-index: 5;
-}
-
-.tier-selected-bar.show {
-  display: flex;
-}
-
-.tier-selected-bar .btn {
-  padding: 6px 12px;
-  background: #333;
-  color: #fff;
-  border-color: #444;
-}
-
-@media (max-width: 600px) {
-  .tier-label {
-    width: 54px;
-    font-size: 24px;
-  }
-
-  .tier-item {
-    width: 56px;
-  }
-}
-
 /* ============================== Panels and help text ============================== */
 
 .panel {
@@ -3248,10 +3120,6 @@ a.stat-tile:hover {
   background: var(--glass-bg-hover);
 }
 
-.tier-pool-wrap .glass-search {
-  margin-top: 4px;
-}
-
 /* ---------- folding search / filters (title + two icons) ---------- */
 
 .page-head {
@@ -4334,8 +4202,8 @@ html.app-ui .app-sheet.open {
 }
 
 @media (max-width: 900px) {
-  /* Tier List "Move to…" bar: sit above the tab bar, not behind it */
-  html.app-ui .tier-selected-bar {
+  /* Tier List tray: sit above the tab bar, not behind it */
+  html.app-ui .tl-tray {
     bottom: calc(80px + var(--tab-gap));
   }
 
@@ -4659,7 +4527,7 @@ html.app-ui .app-sheet.open {
 .movie-row,
 .t-cast,
 .t-media-row,
-.tier-pool,
+.tl-pool,
 .search-results,
 .modal,
 .sheet-panel {
@@ -4672,7 +4540,7 @@ html.app-ui .app-sheet.open {
   .movie-row,
   .t-cast,
   .t-media-row,
-  .tier-pool,
+  .tl-pool,
   .search-results,
   .modal,
   .sheet-panel {
@@ -4683,7 +4551,7 @@ html.app-ui .app-sheet.open {
   .movie-row::-webkit-scrollbar,
   .t-cast::-webkit-scrollbar,
   .t-media-row::-webkit-scrollbar,
-  .tier-pool::-webkit-scrollbar,
+  .tl-pool::-webkit-scrollbar,
   .search-results::-webkit-scrollbar,
   .modal::-webkit-scrollbar,
   .sheet-panel::-webkit-scrollbar {
@@ -4694,7 +4562,7 @@ html.app-ui .app-sheet.open {
   .movie-row::-webkit-scrollbar-button,
   .t-cast::-webkit-scrollbar-button,
   .t-media-row::-webkit-scrollbar-button,
-  .tier-pool::-webkit-scrollbar-button,
+  .tl-pool::-webkit-scrollbar-button,
   .search-results::-webkit-scrollbar-button,
   .modal::-webkit-scrollbar-button,
   .sheet-panel::-webkit-scrollbar-button {
@@ -4706,7 +4574,7 @@ html.app-ui .app-sheet.open {
   .movie-row::-webkit-scrollbar-track,
   .t-cast::-webkit-scrollbar-track,
   .t-media-row::-webkit-scrollbar-track,
-  .tier-pool::-webkit-scrollbar-track,
+  .tl-pool::-webkit-scrollbar-track,
   .search-results::-webkit-scrollbar-track,
   .modal::-webkit-scrollbar-track,
   .sheet-panel::-webkit-scrollbar-track {
@@ -4716,7 +4584,7 @@ html.app-ui .app-sheet.open {
   .movie-row::-webkit-scrollbar-thumb,
   .t-cast::-webkit-scrollbar-thumb,
   .t-media-row::-webkit-scrollbar-thumb,
-  .tier-pool::-webkit-scrollbar-thumb,
+  .tl-pool::-webkit-scrollbar-thumb,
   .search-results::-webkit-scrollbar-thumb,
   .modal::-webkit-scrollbar-thumb,
   .sheet-panel::-webkit-scrollbar-thumb {
@@ -4728,14 +4596,14 @@ html.app-ui .app-sheet.open {
   .movie-row:hover::-webkit-scrollbar-thumb,
   .t-cast:hover::-webkit-scrollbar-thumb,
   .t-media-row:hover::-webkit-scrollbar-thumb,
-  .tier-pool:hover::-webkit-scrollbar-thumb {
+  .tl-pool:hover::-webkit-scrollbar-thumb {
     background: rgba(128, 128, 128, 0.55);
   }
 
   .movie-row::-webkit-scrollbar-thumb:hover,
   .t-cast::-webkit-scrollbar-thumb:hover,
   .t-media-row::-webkit-scrollbar-thumb:hover,
-  .tier-pool::-webkit-scrollbar-thumb:hover {
+  .tl-pool::-webkit-scrollbar-thumb:hover {
     background: var(--accent-hover);
   }
 }
@@ -4744,7 +4612,7 @@ html.app-ui .app-sheet.open {
 .movie-row:hover,
 .t-cast:hover,
 .t-media-row:hover,
-.tier-pool:hover {
+.tl-pool:hover {
   scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
 }
 
@@ -4752,18 +4620,18 @@ html.app-ui .app-sheet.open {
   .movie-row:hover,
   .t-cast:hover,
   .t-media-row:hover,
-  .tier-pool:hover {
+  .tl-pool:hover {
     scrollbar-color: auto;
   }
 
   .movie-row:hover::-webkit-scrollbar-thumb,
   .t-cast:hover::-webkit-scrollbar-thumb,
   .t-media-row:hover::-webkit-scrollbar-thumb,
-  .tier-pool:hover::-webkit-scrollbar-thumb,
+  .tl-pool:hover::-webkit-scrollbar-thumb,
   .movie-row::-webkit-scrollbar-thumb:hover,
   .t-cast::-webkit-scrollbar-thumb:hover,
   .t-media-row::-webkit-scrollbar-thumb:hover,
-  .tier-pool::-webkit-scrollbar-thumb:hover {
+  .tl-pool::-webkit-scrollbar-thumb:hover {
     background: rgba(128, 128, 128, 0.28);
   }
 }
@@ -12392,4 +12260,753 @@ html .modal .menu-switch:not([hidden]) {
 
 .dk-go {
   border-radius: 999px;
+}
+
+/* ============================== Tier list (tier-list.html): the site's own style ============================== */
+/* glass rows with a glowing letter (hot red S down to grey D, --tc), poster tiles that show
+   their title and score on hover, a tray of unranked titles fixed to the bottom of the screen,
+   and the Quick rank pop-up */
+
+.tl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.tl-actions .btn {
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 600;
+}
+
+.tl-actions .btn:disabled {
+  opacity: 0.45;
+}
+
+.tl-board {
+  display: grid;
+  gap: 10px;
+}
+
+.tl-row {
+  display: flex;
+  min-height: 150px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  border-radius: 22px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 13%, transparent), transparent 45%), var(--glass-bg);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+#tier-app.dragging-on .tl-row {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.tl-row.drag-over {
+  border-color: var(--tc);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tc) 30%, transparent), 0 12px 34px color-mix(in srgb, var(--tc) 22%, transparent);
+  transform: scale(1.005);
+}
+
+.tl-label {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 120px;
+  border-right: 1px solid var(--glass-border);
+  background: color-mix(in srgb, var(--tc) 16%, transparent);
+  cursor: pointer;
+  user-select: none;
+}
+
+.tl-label b {
+  color: var(--tc);
+  font-size: 54px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--tc) 70%, transparent);
+}
+
+.tl-row[data-tier="S"] .tl-label b {
+  color: #ff5a64;
+  text-shadow: 0 0 20px rgba(255, 59, 71, 0.9), 0 0 46px rgba(255, 59, 71, 0.5);
+}
+
+.tl-row[data-tier="D"] .tl-label b {
+  color: #9a9aa3;
+  text-shadow: none;
+}
+
+.tl-name {
+  color: var(--text);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tl-count {
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+
+.tl-label:focus-visible {
+  outline: 2px solid var(--tc);
+  outline-offset: -4px;
+}
+
+.tl-drop {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.tl-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 14px 18px;
+  border: 1.5px dashed var(--glass-border);
+  border-radius: 14px;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  text-align: center;
+}
+
+.tl-drop .tl-empty {
+  flex: 1;
+  min-height: 118px;
+}
+
+.tl-row.drag-over .tl-empty {
+  border-color: var(--tc);
+  color: var(--text);
+}
+
+/* a poster tile: lifts on hover and shows its title and your score */
+.tl-item {
+  position: relative;
+  flex: none;
+  width: 88px;
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  cursor: grab;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.tl-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.tl-cap {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 20px 6px 6px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.88));
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.25;
+  text-align: left;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+
+.tl-cap b {
+  display: -webkit-box;
+  overflow: hidden;
+  font-weight: 700;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.tl-cap small {
+  color: #f5b82e;
+  font-weight: 700;
+}
+
+@media (hover: hover) {
+  .tl-item:hover {
+    z-index: 1;
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.55);
+    transform: translateY(-3px) scale(1.05);
+  }
+
+  .tl-item:hover .tl-cap {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.tl-item:focus-visible .tl-cap {
+  opacity: 1;
+  transform: none;
+}
+
+.tl-item:active {
+  cursor: grabbing;
+}
+
+.tl-item.dragging {
+  opacity: 0.3;
+  transform: scale(0.9);
+}
+
+/* phones: the picked poster pulses, the tiers light up to be tapped */
+.tl-item.selected {
+  box-shadow: 0 0 0 3px var(--accent), 0 0 22px rgba(229, 9, 20, 0.55);
+  animation: tl-pulse 1.2s ease-in-out infinite;
+}
+
+#tier-app.picking .tl-label {
+  animation: tl-glow 1.4s ease-in-out infinite;
+}
+
+/* a poster that just moved lands with a pop */
+.tl-item.landed {
+  animation: tl-land 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes tl-pulse {
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes tl-glow {
+  50% {
+    background: color-mix(in srgb, var(--tc) 40%, transparent);
+  }
+}
+
+@keyframes tl-land {
+  from {
+    opacity: 0.3;
+    transform: scale(0.6);
+  }
+}
+
+/* ---- the tray: unranked titles, fixed to the bottom of the screen ---- */
+
+.tl-tray {
+  position: sticky;
+  bottom: 12px;
+  z-index: 20;
+  margin-top: 22px;
+  padding: 12px 14px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 22px;
+  background: rgba(18, 18, 22, 0.88);
+  -webkit-backdrop-filter: saturate(160%) blur(20px);
+  backdrop-filter: saturate(160%) blur(20px);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme="light"] .tl-tray {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 -6px 30px rgba(0, 0, 0, 0.12);
+}
+
+.tl-tray-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.tl-tray-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  font-size: 15px;
+}
+
+.tl-tray-title i {
+  color: var(--accent-hover);
+}
+
+.tl-left {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tl-search {
+  width: 220px;
+  height: 40px;
+  margin: 0;
+  padding: 0 14px;
+}
+
+.tl-search input {
+  font-size: 14px;
+}
+
+.tl-tray .glass-select {
+  height: 40px;
+}
+
+.tl-fold {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  background: var(--glass-bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.tl-fold i {
+  transition: transform 0.25s;
+}
+
+.tl-tray.folded .tl-fold i {
+  transform: rotate(180deg);
+}
+
+.tl-tray.folded .tl-pool,
+.tl-tray.folded .tl-more {
+  display: none;
+}
+
+.tl-pool {
+  display: flex;
+  gap: 10px;
+  min-height: 138px;
+  margin-top: 8px;
+  padding: 8px 2px 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border-radius: 14px;
+  transition: background 0.2s;
+}
+
+.tl-pool .tl-item {
+  width: 82px;
+}
+
+.tl-pool .tl-empty {
+  flex: 1;
+}
+
+.tl-pool.drag-over {
+  background: rgba(229, 9, 20, 0.08);
+  outline: 2px dashed rgba(229, 9, 20, 0.5);
+  outline-offset: -2px;
+}
+
+.tl-more {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.tl-more:empty {
+  display: none;
+}
+
+/* a poster picked (phones): the tiers as round buttons on top of the tray */
+.tl-pick {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.tl-tray.picking .tl-pick {
+  display: flex;
+}
+
+.tl-pick-name {
+  flex: 1 1 160px;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tl-pick-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tl-pick-tier {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--tc);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 900;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--tc) 45%, transparent);
+  cursor: pointer;
+}
+
+.tl-pick .btn {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+}
+
+/* ---- Quick rank ---- */
+
+.qr-modal {
+  max-width: 470px;
+  text-align: center;
+}
+
+.qr-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-right: 44px;
+}
+
+.qr-left {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+}
+
+.qr-stage {
+  display: grid;
+  place-items: center;
+  min-height: 370px;
+}
+
+.qr-card {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  animation: qr-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.qr-card.from-left {
+  animation-name: qr-in-left;
+}
+
+.qr-poster {
+  width: 200px;
+  aspect-ratio: 2 / 3;
+  border-radius: 16px;
+  object-fit: cover;
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.6);
+}
+
+.qr-card h3 {
+  margin: 12px 0 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.qr-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+.qr-tiers {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.qr-tiers[hidden] {
+  display: none;
+}
+
+.qr-tier {
+  display: grid;
+  gap: 2px;
+  padding: 10px 2px;
+  border: 1px solid color-mix(in srgb, var(--tc) 55%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--tc) 22%, transparent);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.2s;
+}
+
+.qr-tier b {
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-shadow: 0 0 14px var(--tc);
+}
+
+.qr-tier small {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.qr-tier:hover {
+  background: color-mix(in srgb, var(--tc) 42%, transparent);
+  transform: translateY(-2px);
+}
+
+.qr-tier.hit {
+  animation: qr-hit 0.4s ease;
+}
+
+.qr-foot {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.qr-foot .btn {
+  padding: 10px 18px;
+}
+
+.qr-foot .btn:disabled {
+  opacity: 0.4;
+}
+
+.qr-keys {
+  margin: 12px 0 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+}
+
+.qr-keys kbd {
+  padding: 1px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 11px;
+}
+
+.qr-done {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.qr-done i {
+  color: #f5b82e;
+  font-size: 46px;
+  filter: drop-shadow(0 0 16px rgba(245, 184, 46, 0.45));
+}
+
+.qr-done h3 {
+  margin: 6px 0 0;
+  font-size: 22px;
+}
+
+.qr-done p {
+  margin: 0 0 10px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+@keyframes qr-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px) rotate(3deg) scale(0.95);
+  }
+}
+
+@keyframes qr-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-40px) rotate(-3deg) scale(0.95);
+  }
+}
+
+@keyframes qr-hit {
+  40% {
+    background: var(--tc);
+    transform: scale(1.12);
+  }
+}
+
+@media (max-width: 700px) {
+  .tl-row {
+    min-height: 112px;
+    border-radius: 18px;
+  }
+
+  .tl-label {
+    width: 70px;
+  }
+
+  .tl-label b {
+    font-size: 36px;
+  }
+
+  .tl-name {
+    font-size: 8.5px;
+    letter-spacing: 0.06em;
+  }
+
+  .tl-count {
+    font-size: 10.5px;
+  }
+
+  .tl-drop {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .tl-drop .tl-empty {
+    min-height: 90px;
+    padding: 10px;
+    font-size: 12.5px;
+  }
+
+  .tl-item,
+  .tl-pool .tl-item {
+    width: 62px;
+    border-radius: 10px;
+  }
+
+  .tl-tray {
+    padding: 10px 10px 8px;
+    border-radius: 20px;
+  }
+
+  .tl-search {
+    order: 5;
+    flex: 1 1 100%;
+    width: auto;
+  }
+
+  .tl-tray .glass-select {
+    flex: 1;
+  }
+
+  .tl-tray .glass-select select {
+    width: 100%;
+  }
+
+  .tl-pool {
+    min-height: 104px;
+  }
+
+  .qr-stage {
+    min-height: 310px;
+  }
+
+  .qr-poster {
+    width: 160px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-item.selected,
+  #tier-app.picking .tl-label,
+  .tl-item.landed,
+  .qr-card,
+  .qr-tier.hit {
+    animation: none;
+  }
+}
+
+/* Tier list on phones: a compact tray (the tiers stay in view) */
+@media (max-width: 700px) {
+  .tl-tray-head {
+    gap: 6px;
+  }
+
+  .tl-search {
+    order: 5;
+    flex: 1 1 0;
+    min-width: 0;
+    height: 38px;
+  }
+
+  .tl-tray .glass-select {
+    flex: 0 0 auto;
+    order: 6;
+    height: 38px;
+  }
+
+  /* (sorted by your rating on phones) */
+  .tl-tray .glass-select:has(select[name="order"]) {
+    display: none;
+  }
+
+  /* a poster picked: just the tiers to tap and the posters */
+  .tl-tray.picking .tl-tray-head,
+  .tl-tray.picking .tl-more {
+    display: none;
+  }
+
+  .tl-pick {
+    gap: 6px;
+    margin-bottom: 6px;
+    padding-bottom: 8px;
+  }
+
+  .tl-pick-name {
+    flex-basis: 100%;
+    font-size: 14px;
+  }
+
+  .tl-pick-buttons {
+    flex-wrap: nowrap;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .tl-pick-tier,
+  .tl-pick .btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    font-size: 14px;
+  }
+
+  .tl-word {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  /* first row: "Unranked 39" and the fold button; second: search + type */
+  .tl-tray-title {
+    flex: 1 0 calc(100% - 50px);
+  }
 }
