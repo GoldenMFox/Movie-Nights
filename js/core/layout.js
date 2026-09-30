@@ -691,6 +691,7 @@
          </select>
          <i class="fa-solid fa-chevron-down sheet-type-arrow" aria-hidden="true"></i>
        </label>
+       <a class="sheet-adv" href="search.html"><i class="fa-solid fa-sliders"></i><span>Advanced search</span><small>genre, year, director, streaming…</small><i class="fa-solid fa-chevron-right"></i></a>
        <a class="sheet-more" href="discover.html" hidden></a>
        <h3 class="sheet-group" hidden>In your library</h3>
        <ul class="search-results sheet-results"></ul>`

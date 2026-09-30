@@ -21357,3 +21357,101 @@ html.tablet .st-card.open ol.st-tracks {
     display: none;
   }
 }
+
+/* Profile (phones): the three buttons in one row (icon above the label, like a title page's),
+   and "Member since … · 64 titles · 48 rated" only breaking between its parts */
+.p-joined .pj {
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .pv-actions {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .pv-actions > .btn:not([hidden]) {
+    flex-direction: column;
+    gap: 5px;
+    min-height: 60px;
+    padding: 8px 4px;
+    border-radius: 18px;
+    font-size: 12.5px;
+    line-height: 1.15;
+  }
+
+  .pv-actions > .btn i {
+    font-size: 16px;
+  }
+
+  .pv-actions > [hidden] {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  /* (phones: the three facts as small pills instead of a line with dots) */
+  .p-joined {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .p-joined .dot {
+    display: none;
+  }
+
+  .p-joined .pj {
+    padding: 4px 11px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 13px;
+  }
+}
+
+/* phones: "Advanced search" in the search sheet, under the type */
+.sheet-adv {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  column-gap: 12px;
+  margin-top: 10px;
+  padding: 11px 14px;
+  border: 1px solid rgba(229, 9, 20, 0.35);
+  border-radius: 16px;
+  background: rgba(229, 9, 20, 0.1);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sheet-adv > i:first-child {
+  grid-row: 1 / 3;
+  color: #ff6b6b;
+}
+
+.sheet-adv small {
+  grid-column: 2;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.sheet-adv .fa-chevron-right {
+  grid-column: 3;
+  grid-row: 1 / 3;
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+/* wide tablets: the soundtrack's buttons and "Now playing" don't stretch across the whole card */
+html.tablet .st-buttons,
+html.tablet .st-now,
+html.tablet .st-toggle {
+  max-width: 560px;
+}

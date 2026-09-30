@@ -84,7 +84,9 @@
       ? "Not signed in"
       : [p.joined ? `Member since ${esc(p.joined)}` : "", `${all.length} title${all.length === 1 ? "" : "s"}`, `${all.filter((i) => i.rating != null).length} rated`]
           .filter(Boolean)
-          .join('<span class="dot">·</span>');
+          // (each part in one piece: a line only breaks between them)
+          .map((s, n) => `<span class="pj">${n ? '<span class="dot">·</span>' : ""}${s}</span>`)
+          .join(" ");
     $(".p-signin").hidden = !(p.guest && window.Cloud && Cloud.enabled);
     $(".name-form").elements.displayName.value = p.name;
     document.querySelectorAll(".profile-menu .user-info h2").forEach((h) => (h.textContent = p.name));
