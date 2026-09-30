@@ -17346,3 +17346,16 @@ a.by-card:hover .by-blur {
 .bo-budget {
   width: max(var(--b), 10px);
 }
+
+/* (the inflation switch sits at the top, with the years: on the right on wide screens) */
+.bo-controls .bo-infl {
+  margin-left: auto;
+}
+
+@media (max-width: 700px) {
+  .bo-controls .bo-infl {
+    flex: 1 1 100%;
+    justify-content: space-between;
+    margin-left: 0;
+  }
+}

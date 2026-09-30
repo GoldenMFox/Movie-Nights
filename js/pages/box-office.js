@@ -72,6 +72,9 @@
           ${Array.from({ length: THIS_YEAR - 1969 }, (_, n) => THIS_YEAR - n).map((y) => `<option value="${y}">${y}</option>`).join("")}
         </select>
       </span>
+      <button type="button" class="bo-infl${state.real ? " on" : ""}" aria-pressed="${state.real}" title="Every amount on the page in today's dollars (US inflation), the classics ranked with today's films">
+        <i class="fa-solid fa-scale-balanced"></i> Adjusted for inflation <span class="bo-infl-track"><span></span></span>
+      </button>
     </div>
     <div class="chips bo-genres" role="group" aria-label="Genre">
       <span class="chip-indicator" aria-hidden="true"></span>
@@ -106,9 +109,6 @@
         <button type="button" class="top10-tab" data-show="unseen"><i class="fa-regular fa-eye-slash"></i> Not seen yet <small></small></button>
       </div>`
       }
-      <button type="button" class="bo-infl${state.real ? " on" : ""}" aria-pressed="${state.real}" title="Every amount in today's dollars (US inflation), the classics ranked with today's films">
-        <i class="fa-solid fa-scale-balanced"></i> Adjusted for inflation <span class="bo-infl-track"><span></span></span>
-      </button>
       </div>
       <div class="top10-switch bo-view" role="group" aria-label="View">
         <button type="button" class="top10-tab${state.view === "list" ? " active" : ""}" data-view="list" aria-label="List"><i class="fa-solid fa-list"></i> List</button>
@@ -218,6 +218,8 @@
     }
     return pools.get(key);
   }
+  // (the skyline's franchises, directors, studios and years: in today's dollars too when it's on)
+  const inToday = (list) => (state.real ? list.map(adjust) : list);
   async function getPage(p) {
     if (!state.real) return TMDB.boxOffice({ year: state.year, genre: state.genre, page: p });
     const pool = await realPool();
@@ -529,17 +531,17 @@ ${skyFilms
       if (sky.mode === "franchise") {
         const r = await TMDB.franchiseBoxOffice(pickId);
         if (me !== skyRun) return;
-        return showSky(plotHtml(r.results, { axis: "year", what: "film" }), `No box office numbers for ${esc(r.name)} yet.`);
+        return showSky(plotHtml(inToday(r.results), { axis: "year", what: "film" }), `No box office numbers for ${esc(r.name)} yet.`);
       }
       if (sky.mode === "director") {
         const r = await TMDB.directorBoxOffice(pickId);
         if (me !== skyRun) return;
-        return showSky(plotHtml(r.results, { axis: "year", what: "film" }), `No box office numbers for ${esc(r.name)}'s films yet.`);
+        return showSky(plotHtml(inToday(r.results), { axis: "year", what: "film" }), `No box office numbers for ${esc(r.name)}'s films yet.`);
       }
       if (sky.mode === "studio") {
         const r = await TMDB.boxOffice({ company: pickId });
         if (me !== skyRun) return;
-        return showSky(plotHtml(r.results));
+        return showSky(plotHtml(inToday(r.results)));
       }
       if (sky.mode === "years") {
         const years = Array.from({ length: SKY }, (_, n) => THIS_YEAR - SKY + 1 + n);
@@ -558,7 +560,7 @@ ${skyFilms
           })
         );
         if (me !== skyRun) return;
-        return showSky(plotHtml(tops.filter(Boolean), { axis: "year", what: "year" }));
+        return showSky(plotHtml(inToday(tops.filter(Boolean)), { axis: "year", what: "year" }));
       }
     } catch (e) {
       if (me === skyRun) showSky("", `Couldn't load it right now (${esc(e.message)}).`);
@@ -948,6 +950,9 @@ ${skyFilms
       state.real = !state.real;
       infl.classList.toggle("on", state.real);
       infl.setAttribute("aria-pressed", state.real);
+      // (the whole page: the chart, the skyline's other comparisons, your box office)
+      paintYours();
+      if (sky.mode !== "chart") paintPlot();
       return load();
     }
     const vw = e.target.closest("[data-view]");
@@ -1072,10 +1077,29 @@ ${skyFilms
       })
     );
     if (found.length < 3) return (box.hidden = true);
-    // (the skyline's "Your films": now it has them)
-    mineFilms = found.map((f) => Object.assign({}, f.item, { tmdbId: f.tmdbId, budget: f.budget, revenue: f.revenue }));
+    myFound = found;
     const mineBtn = app.querySelector('[data-sky-mode="mine"]');
     if (mineBtn) mineBtn.hidden = false;
+    paintYours();
+  }
+
+  // the cards, in the films' own dollars or (adjusted for inflation) in today's: drawn again
+  // when the switch changes, without adding everything up again
+  let myFound = null; // [{ item, tmdbId, budget, revenue }]
+  function paintYours() {
+    if (!myFound) return;
+    const box = $(".bo-yours");
+    const head = `<h2 class="section-title"><i class="fa-solid fa-ticket"></i> Your box office${
+      state.real ? ` <small class="bo-real-tag"><i class="fa-solid fa-scale-balanced"></i> in ${CPI_BASE_YEAR} dollars</small>` : ""
+    }</h2>`;
+    const found = state.real
+      ? myFound.map((f) => {
+          const k = inflation(f.item.year);
+          return Object.assign({}, f, { revenue: f.revenue * k, budget: f.budget * k });
+        })
+      : myFound;
+    // (the skyline's "Your films")
+    mineFilms = found.map((f) => Object.assign({}, f.item, { tmdbId: f.tmdbId, budget: f.budget, revenue: f.revenue }));
 
     const total = found.reduce((s, f) => s + f.revenue, 0);
     const spent = found.reduce((s, f) => s + f.budget, 0);
