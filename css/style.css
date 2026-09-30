@@ -13337,24 +13337,64 @@ img[data-my-pic] {
   object-position: 50% 18%;
 }
 
-.av-now {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin: 14px 0 4px;
+/* Profile page: your picture is a button (a camera badge; it lifts a little on hover) */
+.pv-avatar-btn {
+  position: relative;
+  border: 0;
+  cursor: pointer;
+  transition: transform 0.25s, box-shadow 0.25s;
 }
 
-.av-now-pic {
-  width: 76px;
-  height: 76px;
-  flex: none;
-  border: 3px solid var(--accent);
+.pv-avatar-btn:hover {
+  box-shadow: 0 22px 60px rgba(229, 9, 20, 0.55);
+  transform: scale(1.03);
+}
+
+.pv-cam {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 3px solid #0b0b0c;
   border-radius: 50%;
-  box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.18), 0 8px 22px rgba(0, 0, 0, 0.4);
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  transition: transform 0.25s;
 }
 
-.av-now .sv-name strong {
-  font-size: 17px;
+.pv-avatar-btn:hover .pv-cam {
+  transform: scale(1.12);
+}
+
+/* "as Cooper · Interstellar" under your name */
+/* (the header is dark in both themes: its own light text) */
+.pv-as {
+  margin: -4px 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+}
+
+.pv-as i {
+  margin-right: 4px;
+  color: #ff6b63;
+}
+
+.pv-as b {
+  color: #fff;
+}
+
+.avatar-modal .av-google {
+  margin: -6px 0 12px;
+  border-radius: 999px;
+}
+
+.avatar-modal .av-google[hidden] {
+  display: none;
 }
 
 /* the gallery */
