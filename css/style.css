@@ -17224,3 +17224,15 @@ a.by-card:hover .by-blur {
   inset: 0;
   width: auto !important;
 }
+
+/* (every row the same: the quick buttons always get room for three, lined up on the right,
+   so all the bars are as long, whether a film has 2 buttons or 3) */
+@media (min-width: 1001px) {
+  .bo-line {
+    grid-template-columns: 44px 56px minmax(0, 1fr) 150px 114px 22px;
+  }
+
+  .bo-line > .bo-acts {
+    justify-content: flex-end;
+  }
+}
