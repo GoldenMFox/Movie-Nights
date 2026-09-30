@@ -4774,14 +4774,22 @@ html.custom-scrollbars .grabbing .movie-item {
   clip-path: inset(0 50% 0 0);
 }
 
-/* while pointing, the hover picture wins over the saved rating */
-.stars:hover .star.selected-full:not(.hover-full):not(.hover-half) .star-fill,
-.stars:hover .star.selected-half:not(.hover-full):not(.hover-half) .star-fill {
-  opacity: 0;
+/* while pointing (a mouse), the hover picture wins over the saved rating. Not on touch
+   screens: there ":hover" sticks after a tap and your stars would stay hidden */
+@media (hover: hover) {
+  .stars:hover .star.selected-full:not(.hover-full):not(.hover-half) .star-fill,
+  .stars:hover .star.selected-half:not(.hover-full):not(.hover-half) .star-fill {
+    opacity: 0;
+  }
+
+  .stars:hover .star.hover-full .star-fill {
+    clip-path: none;
+  }
 }
 
-.stars:hover .star.hover-full .star-fill {
-  clip-path: none;
+/* a finger slides along the stars without scrolling the page */
+.stars {
+  touch-action: none;
 }
 
 .star.hover-full,
@@ -19785,13 +19793,34 @@ html.sm-lock {
 }
 
 .tq-ach {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border: 1px solid rgba(245, 197, 24, 0.4);
+  gap: 10px;
+  max-width: 100%;
+  padding: 9px 16px 9px 10px;
+  border: 1px solid rgba(245, 197, 24, 0.45);
   border-radius: 999px;
-  background: rgba(245, 197, 24, 0.12);
+  background: linear-gradient(100deg, rgba(245, 197, 24, 0.2), rgba(245, 197, 24, 0.08));
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.tq-ach i {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f5c518;
+  color: #2a1d00;
+  font-size: 13px;
+}
+
+.tq-ach b {
+  color: #f5c518;
 }
 
 .tq-end-buttons {
@@ -20895,4 +20924,436 @@ html.sm-lock {
 .pk-cap i {
   margin-right: 4px;
   color: var(--accent-hover);
+}
+
+/* ============================== Title page (phones): one row of actions, "Add to a list" ============================== */
+/* the Watchlist / Watched / Favorite / Rate buttons: one row, however many there are, the icon
+   above a short label (they used to wrap: Rate on a row of its own) */
+@media (max-width: 700px) {
+  .t-actions {
+    grid-template-columns: none;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 8px;
+  }
+
+  .t-actions .btn {
+    flex-direction: column;
+    gap: 5px;
+    height: 62px;
+    padding: 0 4px;
+    border-radius: 18px;
+    font-size: 12.5px;
+    line-height: 1.1;
+  }
+
+  .t-actions .btn i {
+    font-size: 17px;
+  }
+}
+
+/* the list button beside Share: red with a count once it's in one of your lists */
+.t-round.t-lists {
+  position: relative;
+}
+
+.t-round.t-lists.on {
+  background: var(--accent);
+}
+
+.t-lists-n {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 2px solid #111;
+  border-radius: 999px;
+  background: #fff;
+  color: #111;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+/* title page: "More like this" with its Your library / Discover switch */
+.t-more-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.t-more-head .section-title {
+  margin-bottom: 0;
+}
+
+.t-more-switch .top10-tab:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.t-more-like .movie-row {
+  margin-top: 14px;
+}
+
+/* ---------- X-Ray: "You've seen them in" as a fanned deck of posters (like the Profile's
+   stat cards): overlapping, the middle one on top, the others tilted out; pointing at the
+   card (or a tap on a touch screen) spreads them into a row with their titles ---------- */
+.xr-cast-titles.xr-deck {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  min-height: 150px;
+  padding: 10px 0 2px;
+}
+
+.xr-deck .xr-mini-poster {
+  position: relative;
+  z-index: var(--z);
+  flex: 0 0 86px;
+  width: 86px;
+  margin-left: -46px;
+  transform: translateY(calc(var(--a) * 8px)) rotate(calc(var(--m) * 8deg));
+  transform-origin: 50% 100%;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), margin 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.xr-deck .xr-mini-poster:first-child {
+  margin-left: 0;
+}
+
+.xr-deck .xr-mini-poster img {
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.xr-deck .xr-mini-poster span {
+  max-height: 0;
+  opacity: 0;
+  transition: opacity 0.3s, max-height 0.3s;
+}
+
+/* spread out */
+.xr-deck.spread .xr-mini-poster,
+.xr-deck.single .xr-mini-poster {
+  margin-left: 10px;
+  transform: none;
+}
+
+.xr-deck.spread .xr-mini-poster:first-child,
+.xr-deck.single .xr-mini-poster:first-child {
+  margin-left: 0;
+}
+
+.xr-deck.spread .xr-mini-poster span,
+.xr-deck.single .xr-mini-poster span {
+  max-height: 20px;
+  opacity: 1;
+}
+
+.xr-deck.spread {
+  flex-wrap: wrap;
+  row-gap: 12px;
+}
+
+@media (hover: hover) {
+  .xr-cast:hover .xr-deck .xr-mini-poster {
+    margin-left: 10px;
+    transform: none;
+  }
+
+  .xr-cast:hover .xr-deck .xr-mini-poster:first-child {
+    margin-left: 0;
+  }
+
+  .xr-cast:hover .xr-deck .xr-mini-poster span {
+    max-height: 20px;
+    opacity: 1;
+  }
+
+  .xr-cast:hover .xr-deck {
+    flex-wrap: wrap;
+    row-gap: 12px;
+  }
+}
+
+/* a hint under a deck on touch screens */
+@media (hover: none) {
+  .xr-deck:not(.single):not(.spread)::after {
+    content: "Tap to spread";
+    position: absolute;
+    left: 50%;
+    bottom: -18px;
+    color: var(--text-muted);
+    font-size: 11px;
+    white-space: nowrap;
+    transform: translateX(-50%);
+  }
+
+  .xr-deck {
+    position: relative;
+    margin-bottom: 14px;
+  }
+}
+
+/* ---------- X-Ray: "Made in" as flags only, big and waving a little (the name on hover / tap) ---------- */
+.xr-flags.xr-flags-big {
+  justify-content: center;
+  gap: 14px;
+  padding: 4px 0;
+}
+
+.xr-flag {
+  display: block;
+  width: 64px;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: 10px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+  animation: xr-flag-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both, xr-wave 5s ease-in-out infinite;
+  animation-delay: var(--d), calc(var(--d) + 0.6s);
+  transform-origin: 0 50%;
+}
+
+.xr-flag img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* a soft light moving across, like cloth */
+.xr-flag {
+  position: relative;
+}
+
+.xr-flag::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.28) 45%, transparent 60%, rgba(0, 0, 0, 0.18) 85%);
+  background-size: 250% 100%;
+  animation: xr-cloth 4s ease-in-out infinite;
+  animation-delay: var(--d);
+  pointer-events: none;
+}
+
+@keyframes xr-flag-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.8) rotate(-6deg);
+  }
+}
+
+@keyframes xr-wave {
+  0%,
+  100% {
+    transform: perspective(300px) rotateY(0deg);
+  }
+  50% {
+    transform: perspective(300px) rotateY(-10deg);
+  }
+}
+
+@keyframes xr-cloth {
+  0%,
+  100% {
+    background-position: 100% 0;
+  }
+  50% {
+    background-position: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xr-flag,
+  .xr-flag::before,
+  .xr-deck .xr-mini-poster {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* ---------- Soundtrack on phones and tablets: the album on top (the cover, beside it the
+   facts, vertically centred), the buttons in one row under it, what's playing, and the tracks
+   folded behind "Show all 28 tracks" ---------- */
+.st-toggle {
+  display: none;
+}
+
+html.app-ui .st-card,
+html.tablet .st-card {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px;
+}
+
+html.app-ui .st-side,
+html.tablet .st-side {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  grid-template-rows: 1fr auto auto 1fr;
+  column-gap: 16px;
+  row-gap: 2px;
+  align-items: center;
+}
+
+/* (the facts become the grid's own items, beside the cover) */
+html.app-ui .st-info,
+html.tablet .st-info {
+  display: contents;
+  text-align: left;
+}
+
+html.app-ui .st-cover,
+html.tablet .st-cover {
+  grid-column: 1;
+  grid-row: 1 / 5;
+  justify-self: start;
+  width: 108px;
+  margin: 0;
+}
+
+html.app-ui .st-info > small,
+html.tablet .st-info > small {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  font-size: 11px;
+}
+
+html.app-ui .st-info > h3,
+html.tablet .st-info > h3 {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 19px;
+}
+
+html.app-ui .st-info > p:not(.st-meta),
+html.tablet .st-info > p:not(.st-meta) {
+  grid-column: 2;
+  grid-row: 3;
+  overflow: hidden;
+  font-size: 14.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.app-ui .st-info > .st-meta,
+html.tablet .st-info > .st-meta {
+  grid-column: 2;
+  grid-row: 4;
+  align-self: start;
+  font-size: 13px;
+}
+
+html.app-ui .st-switch,
+html.app-ui .st-buttons,
+html.app-ui .st-now,
+html.tablet .st-switch,
+html.tablet .st-buttons,
+html.tablet .st-now {
+  grid-column: 1 / -1;
+}
+
+html.app-ui .st-switch,
+html.tablet .st-switch {
+  justify-self: start;
+  margin-top: 12px;
+}
+
+html.app-ui .st-buttons,
+html.tablet .st-buttons {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+html.app-ui .st-buttons .btn,
+html.tablet .st-buttons .btn {
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  font-size: 14.5px;
+}
+
+html.app-ui .st-now,
+html.tablet .st-now {
+  margin-top: 10px;
+}
+
+/* the record slides out a little less beside the smaller cover */
+html.app-ui .t-sound.is-playing .st-vinyl,
+html.tablet .t-sound.is-playing .st-vinyl {
+  translate: 22px 0;
+}
+
+/* the tracks, folded */
+html.app-ui .st-toggle,
+html.tablet .st-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+html.app-ui .st-toggle > i:first-child,
+html.tablet .st-toggle > i:first-child {
+  color: #ff6b6b;
+}
+
+html.app-ui .st-toggle .st-chev,
+html.tablet .st-toggle .st-chev {
+  margin-left: auto;
+  font-size: 12px;
+  opacity: 0.7;
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+html.app-ui .st-card.open .st-toggle .st-chev,
+html.tablet .st-card.open .st-toggle .st-chev {
+  transform: rotate(180deg);
+}
+
+html.app-ui .st-card:not(.open) ol.st-tracks,
+html.tablet .st-card:not(.open) ol.st-tracks {
+  display: none;
+}
+
+html.app-ui .st-card.open ol.st-tracks,
+html.tablet .st-card.open ol.st-tracks {
+  animation: wl-in 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* trivia score: the three buttons on one row on phones (Share as an icon) */
+@media (max-width: 420px) {
+  .tq-end-buttons {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .tq-end-buttons .btn {
+    padding: 10px 14px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .tq-end-buttons .tq-bt {
+    display: none;
+  }
 }

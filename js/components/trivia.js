@@ -343,10 +343,10 @@
         <h3><span class="tq-rank-icon">${icon}</span> ${rank}</h3>
         <p>${line}</p>
         ${record && before != null ? `<p class="tq-best new"><i class="fa-solid fa-arrow-trend-up"></i> New best (was ${before}/${COUNT})</p>` : before != null && !record ? `<p class="tq-best">Your best: ${before}/${COUNT}</p>` : ""}
-        ${buff && !Store.guest ? '<p class="tq-ach"><span>🧠</span> Counts for your <b>Movie Buff</b> achievement</p>' : ""}
+        ${buff && !Store.guest ? '<p class="tq-ach"><i class="fa-solid fa-trophy" aria-hidden="true"></i><span>Counts for your <b>Movie Buff</b> achievement</span></p>' : ""}
         <div class="tq-end-buttons">
           <button class="btn tq-again" type="button"><i class="fa-solid fa-rotate-left"></i> Play again</button>
-          <button class="btn tq-share" type="button"><i class="fa-solid fa-share-nodes"></i> Share</button>
+          <button class="btn tq-share" type="button" aria-label="Share" title="Share"><i class="fa-solid fa-share-nodes"></i><span class="tq-bt"> Share</span></button>
           <button class="btn btn-primary tq-done" type="button">Done</button>
         </div>
       </div>`;

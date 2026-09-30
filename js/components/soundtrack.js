@@ -15,6 +15,7 @@
   const { esc } = UI;
   const API = "https://itunes.apple.com";
   const cache = new Map(); // key -> { albums: [...], pick: index } | "none"
+  const openKeys = new Set(); // phones and tablets: the tracks are folded until you open them
 
   const norm = (s) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g, "");
   const keyOf = (d) => (d && d.tmdbId ? `${d.media || d.mediaType}-${d.tmdbId}` : null);
@@ -230,7 +231,7 @@
             .map((a, n) => `<button class="top10-tab${n === data.pick ? " active" : ""}" type="button" role="tab" aria-selected="${n === data.pick}" data-st-album="${n}">${esc(a.kind)}</button>`)
             .join("")}</div>`
         : "";
-    return `<div class="st-card" style="--art:url('${esc(art(album.art, 300))}')">
+    return `<div class="st-card${openKeys.has(key) ? " open" : ""}" style="--art:url('${esc(art(album.art, 300))}')">
       <div class="st-side">
         <div class="st-cover">
           <span class="st-vinyl" aria-hidden="true" style="--art:url('${esc(art(album.art, 200))}')"></span>
@@ -249,6 +250,11 @@
           <div class="st-now" hidden><span class="st-bars" aria-hidden="true"><i></i><i></i><i></i></span><span class="st-now-name"></span><span class="st-now-bar"><i></i></span></div>
         </div>
       </div>
+      ${
+        list
+          ? `<button class="st-toggle" type="button" aria-expanded="${openKeys.has(key)}"><i class="fa-solid fa-list-ol"></i> <span>${openKeys.has(key) ? "Hide the tracks" : `Show all ${list.length} tracks`}</span><i class="fa-solid fa-chevron-down st-chev"></i></button>`
+          : ""
+      }
       ${
         list
           ? `<ol class="st-tracks">${list
@@ -342,6 +348,18 @@
       repaint(key);
       await tracks(key, data.albums[data.pick]).catch(() => (data.albums[data.pick].tracks = []));
       return repaint(key);
+    }
+    // phones and tablets: open / fold the tracks
+    const tog = e.target.closest(".st-toggle");
+    if (tog) {
+      const card = tog.closest(".st-card");
+      const open = !openKeys.has(key);
+      if (open) openKeys.add(key);
+      else openKeys.delete(key);
+      card.classList.toggle("open", open);
+      tog.setAttribute("aria-expanded", open);
+      tog.querySelector("span").textContent = open ? "Hide the tracks" : `Show all ${(album.tracks || []).length} tracks`;
+      return;
     }
     const tr = e.target.closest("[data-st-track]");
     if (tr) return play(key, album, Number(tr.dataset.stTrack));

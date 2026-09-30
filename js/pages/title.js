@@ -143,24 +143,21 @@
     </div>`;
   }
 
-  function topbarHtml(menuItems) {
+  // back, share, and "Add to a list" (a badge: how many of your lists it's in).
+  // listAction: "lists" (a library title) or "t-lists" (a TMDB title: it joins your library first)
+  function topbarHtml(listAction, inLists) {
     return `<div class="t-topbar">
       <button class="t-round" data-t="back" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button>
       <span class="t-spacer"></span>
       <button class="t-round" data-t="share" aria-label="Share"><i class="fa-solid fa-arrow-up-from-bracket"></i></button>
-      <div class="t-more-wrap">
-        <button class="t-round" data-t="more" aria-label="More options"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-        <div class="t-menu" hidden>
-          <a href="index.html"><i class="fa-solid fa-house"></i> Home</a>
-          <a href="discover.html"><i class="fa-solid fa-compass"></i> Discover</a>
-          ${menuItems}
-        </div>
-      </div>
+      <button class="t-round t-lists${inLists ? " on" : ""}" data-action="${listAction}" aria-label="Add to a list" title="Add to a list"><i class="fa-solid fa-list-ul"></i>${
+        inLists ? `<b class="t-lists-n">${inLists}</b>` : ""
+      }</button>
     </div>`;
   }
 
   // the whole top block: backdrop, title, info, buttons, overview
-  function heroHtml(t, d, e, buttons, menuItems) {
+  function heroHtml(t, d, e, buttons, listAction, inLists) {
     const backdrop = d.backdrop ? Store.img(d.backdrop, "w1280") : Store.img(t.poster, "w780");
     heroEl.hidden = false;
     return `
@@ -169,7 +166,7 @@
           ? `<picture>${d.artPoster ? `<source media="(max-width: 700px)" srcset="${Store.img(d.artPoster, "w780")}" />` : ""}<img src="${backdrop}" alt="" /></picture>`
           : ""
       }</div>
-      ${topbarHtml(menuItems)}
+      ${topbarHtml(listAction, inLists)}
       <div class="container t-hero-inner">
         <img class="t-poster" src="${Store.poster(Lang.isRu() && d.posterRu ? d.posterRu : Cards.posterOf(t), "w500")}" alt="${esc(Lang.title(t))} poster" />
         <div class="t-head">
@@ -372,8 +369,10 @@
       cards.push(`<div class="xr-card xr-origin">
           ${label("fa-earth-europe", "Made in")}
           <div class="xr-body">
-            ${x.countries.length ? `<div class="xr-flags">${x.countries
-              .map((c) => `<span class="xr-chip"><img src="https://flagcdn.com/w40/${esc(c.code)}.png" alt="" loading="lazy" />${esc(c.name)}</span>`)
+            ${x.countries.length ? `<div class="xr-flags xr-flags-big">${x.countries
+              .map(
+                (c, k) => `<span class="xr-flag" style="--d:${k * 90}ms" title="${esc(c.name)}" aria-label="${esc(c.name)}"><img src="https://flagcdn.com/w160/${esc(c.code)}.png" alt="" loading="lazy" /></span>`
+              )
               .join("")}</div>` : ""}
             ${x.countries.length && x.language ? '<hr class="xr-line" />' : ""}
             ${x.language ? `<div class="xr-lang"><i class="fa-solid fa-language"></i> Original language: <b>${esc(langName(x.language))}</b></div>` : ""}
@@ -388,10 +387,12 @@
           <span><strong>${esc(p.name)}</strong>${p.here ? `<small>Here: ${esc(p.here)}</small>` : ""}</span>
         </a>
         <div class="xr-cast-label">You've seen them in</div>
-        <div class="xr-cast-titles">${p.titles
-          .map((t) => {
+        <div class="xr-cast-titles xr-deck${p.titles.length > 1 ? "" : " single"}" style="--n:${p.titles.length}">${p.titles
+          .map((t, k) => {
             const item = Store.get(t.id);
-            return `<a class="xr-mini-poster" href="title.html?id=${encodeURIComponent(t.id)}" title="${esc(t.title)}${t.character ? ` as ${esc(t.character)}` : ""}">
+            // a fanned deck: the middle one on top, the others tilted out (spread on hover / tap)
+            const m = k - (p.titles.length - 1) / 2;
+            return `<a class="xr-mini-poster" style="--m:${m};--a:${Math.abs(m)};--z:${20 - Math.round(Math.abs(m) * 2)}" href="title.html?id=${encodeURIComponent(t.id)}" title="${esc(t.title)}${t.character ? ` as ${esc(t.character)}` : ""}">
                 <img src="${Store.poster(item ? Cards.posterOf(item) : "", "w185")}" alt="" loading="lazy" />
                 <span>${esc(t.title)}</span>
               </a>`;
@@ -720,35 +721,50 @@
       ${tmdbUrl ? `<p><a class="t-link" href="${esc(tmdbUrl)}/reviews" target="_blank" rel="noopener">All reviews on TMDB <i class="fa-solid fa-arrow-up-right-from-square"></i></a></p>` : ""}`;
   }
 
-  // "Because you liked …" (a favorite, or rated 8+): TMDB's well-known picks for it that aren't
-  // in your library yet (the same row as on Home). It takes the place of "Recommended on TMDB".
-  // Loaded once, then the page redraws; null while loading (neither row shows yet)
-  let because = null; // [picks], once loaded
-  let becauseLoading = false;
-  function becauseHtml(item) {
-    const liked = typeof item.rating === "number" ? item.rating >= 8 : item.favorite;
-    if (!liked || !TMDB.enabled() || !window.Watch) return "";
-    if (!because) {
-      if (!becauseLoading) {
-        becauseLoading = true;
-        Watch.refOf(item)
-          .then((ref) => (ref ? TMDB.knownRecommendations(...ref.split("-").map((x, n) => (n ? Number(x) : x))) : []))
-          .catch(() => [])
-          .then((list) => {
-            because = list;
-            if (Store.get(id)) renderLibrary();
-          });
-      }
-      return null;
-    }
-    const picks = because.filter((h) => !Cards.inLibrary(h)).slice(0, 20);
-    if (picks.length < 4) return "";
-    return `<h2 class="section-title">Because you liked ${esc(Lang.title(item))}</h2><div class="movie-row">${picks.map(Cards.tmdbCard).join("")}</div>`;
-  }
   function recommendationsHtml(d) {
     const recs = (d && d.recommendations) || [];
     return recs.length ? `<h2 class="section-title">Recommended on TMDB</h2><div class="movie-row">${recs.map(Cards.tmdbCard).join("")}</div>` : "";
   }
+
+  // "More like this": from your library (the titles of yours most like it) or from Discover
+  // (TMDB's recommendations you don't have yet), a switch between the two
+  let moreFrom = null; // "library" | "discover" (null: whichever has something)
+  let moreLike = { library: [], discover: [] };
+  function moreLikeHtml(similar, d) {
+    moreLike = {
+      library: similar,
+      discover: ((d && d.recommendations) || []).filter((h) => !Cards.inLibrary(h)).slice(0, 20),
+    };
+    const from = moreFrom && moreLike[moreFrom].length ? moreFrom : moreLike.library.length ? "library" : "discover";
+    const list = moreLike[from];
+    if (!moreLike.library.length && !moreLike.discover.length) return "";
+    const tab = (k, icon, label) =>
+      `<button class="top10-tab${from === k ? " active" : ""}" type="button" data-more="${k}"${moreLike[k].length ? "" : " disabled"}><i class="fa-solid ${icon}"></i> ${label}</button>`;
+    return `<div class="t-more-head"><h2 class="section-title">More like this</h2>
+        <div class="top10-switch t-more-switch" role="tablist" aria-label="More like this from">${tab("library", "fa-film", "Your library")}${tab("discover", "fa-compass", "Discover")}</div></div>
+      <div class="movie-row">${list.map(from === "library" ? Cards.card : Cards.tmdbCard).join("")}</div>`;
+  }
+  // "You've seen them in": on a touch screen the first tap spreads the deck of posters, the
+  // next one opens a title (with a mouse, pointing at the card spreads it)
+  document.addEventListener("click", (e) => {
+    const deck = e.target.closest(".xr-deck");
+    if (!deck || deck.classList.contains("single") || deck.classList.contains("spread")) return;
+    if (!window.matchMedia("(hover: none)").matches) return;
+    e.preventDefault();
+    document.querySelectorAll(".xr-deck.spread").forEach((d) => d.classList.remove("spread"));
+    deck.classList.add("spread");
+  });
+
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-more]");
+    if (!b || b.disabled) return;
+    moreFrom = b.dataset.more;
+    const box = mainEl.querySelector(".t-more-like");
+    if (box) {
+      box.innerHTML = moreLikeHtml(moreLike.library, { recommendations: moreLike.discover });
+      if (window.Cards && Cards.scanForScores) Cards.scanForScores();
+    }
+  });
 
   const TMDB_NOTE =
     "Details from TMDB, ratings from IMDb and Rotten Tomatoes via OMDb, streaming data by JustWatch. This product uses the TMDB API but is not endorsed or certified by TMDB.";
@@ -756,12 +772,9 @@
   /* ---------------- page-level buttons (back, share, menu, read more, videos) ---------------- */
 
   document.addEventListener("click", async (e) => {
-    const menu = heroEl.querySelector(".t-menu");
     const t = e.target.closest("[data-t]");
-    if (menu && !e.target.closest(".t-more-wrap")) menu.hidden = true;
     if (t) {
       if (t.dataset.t === "back") history.length > 1 ? history.back() : (location.href = "index.html");
-      if (t.dataset.t === "more" && menu) menu.hidden = !menu.hidden;
       if (t.dataset.t === "share") {
         const data = { title: document.title, url: location.href };
         try {
@@ -894,11 +907,8 @@
           ${item.rating != null ? `<i class="fa-solid fa-star"></i> ${Cards.formatRating(item.rating)}` : '<i class="fa-regular fa-thumbs-up"></i> Rate'}</button>
       </div>
       ${watchedOnHtml(item)}`;
-    const menu = `
-      <button type="button" data-action="lists"><i class="fa-solid fa-list-ul"></i> Add to a list…</button>
-      ${d.tmdbUrl ? `<a href="${esc(d.tmdbUrl)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open on TMDB</a>` : ""}
-      <button type="button" class="remove-title"><i class="fa-solid fa-trash"></i> Remove from library</button>`;
-    heroEl.innerHTML = heroHtml(item, d, e, buttons, menu);
+    const inLists = Store.lists().filter((l) => l.items.includes(item.id)).length;
+    heroEl.innerHTML = heroHtml(item, d, e, buttons, "lists", inLists);
 
     // more like this: the titles of yours that share the most genres with it (the same kind of
     // title counts a little too), then your likely favourites (Match %) and the closest years
@@ -918,7 +928,6 @@
       .map((x) => x.i);
 
     const loading = TMDB.enabled() && !extra;
-    const becauseRow = becauseHtml(item);
     const keep = rowScrolls();
     // (typing a note while something redraws the page: the note keeps its text and cursor)
     const noteEl = mainEl.querySelector(".tn-text");
@@ -926,8 +935,7 @@
     mainEl.innerHTML = `
       <div class="t-yours">${progressHtml(item, d)}${notesHtml(item)}${triviaHtml(item)}</div>
       <div class="t-sections">${sectionsHtml(d, loading)}</div>
-      ${becauseRow === null ? "" : becauseRow || recommendationsHtml(extra)}
-      ${similar.length ? `<h2 class="section-title">More like this in your library</h2><div class="movie-row">${similar.map(Cards.card).join("")}</div>` : ""}
+      <section class="t-more-like">${moreLikeHtml(similar, extra)}</section>
       <p class="tmdb-note">${
         TMDB.enabled() ? TMDB_NOTE : 'Tip: add a free TMDB API key in <a href="settings.html#keys">Settings</a> to see the overview, cast, trailer and recommendations for every title.'
       }</p>
@@ -1025,7 +1033,8 @@
       .join("");
   }
   // (folded or not: the header opens / closes it; remembered in this browser, open at first)
-  let notesFolded = Store.read("mn:notesFolded", false);
+  // your notes start folded on every title (movie, series, anime): tap to open them
+  let notesFolded = true;
   function notesHtml(item) {
     const note = item.note || "";
     const preview = note.split("\n").find((l) => l.trim()) || "";
@@ -1181,7 +1190,6 @@
       if (!t) return;
       const card = t.closest(".tn-card");
       notesFolded = !card.classList.contains("folded");
-      Store.write("mn:notesFolded", notesFolded);
       card.classList.toggle("folded", notesFolded);
       t.setAttribute("aria-expanded", !notesFolded);
       const el = card.querySelector(".tn-text");
@@ -1347,9 +1355,7 @@
                <button class="btn" data-action="t-rate"><i class="fa-regular fa-thumbs-up"></i> Rate</button>`
         }
       </div>`;
-    const menu = `<button type="button" data-action="t-lists"><i class="fa-solid fa-list-ul"></i> Add to a list…</button>
-      <a href="${esc(d.tmdbUrl)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open on TMDB</a>`;
-    heroEl.innerHTML = heroHtml(d, d, Ratings.entry(tmdbRef), buttons, menu);
+    heroEl.innerHTML = heroHtml(d, d, Ratings.entry(tmdbRef), buttons, "t-lists", 0);
   }
 
   if (tmdbRef) initTmdb();

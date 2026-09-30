@@ -965,23 +965,70 @@
     };
     ratingOverlay.setRing = setRing;
 
+    // the value under a point of the row (touch: the finger can slide along the stars; past
+    // either end counts as the first half star / the last star)
+    const row = ratingOverlay.querySelector(".stars");
+    const valueAtPoint = (x, y) => {
+      const hit = document.elementFromPoint(x, y);
+      const star = hit && hit.closest(".star");
+      if (star && row.contains(star)) return valueAt(star, { clientX: x });
+      const first = stars[0].getBoundingClientRect();
+      const last = stars[stars.length - 1].getBoundingClientRect();
+      if (x <= first.left) return 0.5;
+      if (x >= last.right) return 10;
+      return null;
+    };
+
+    // a mouse: the stars light up where you point, a click picks
     stars.forEach((star) => {
       star.addEventListener("pointermove", (e) => {
+        if (e.pointerType !== "mouse") return;
         const v = valueAt(star, e);
         paint(v, "hover");
         setRing(v);
       });
-      star.addEventListener("pointerleave", () => paint(0, "hover"));
       star.addEventListener("click", (e) => {
+        // (a finger already picked it: see below)
+        if (Date.now() - touchedAt < 800) return;
         // keyboard (Enter / Space) has no position: whole star
         picked = e.detail === 0 ? +star.dataset.value : valueAt(star, e);
         showPicked();
       });
     });
-    ratingOverlay.querySelector(".stars").addEventListener("pointerleave", () => {
+    row.addEventListener("pointerleave", (e) => {
+      if (e.pointerType !== "mouse") return;
       paint(0, "hover");
       setRing(picked); // back to your pick
     });
+
+    // a finger: tap a star, or slide along them and let go on your score
+    let sliding = false;
+    let touchedAt = 0;
+    const touchPick = (e) => {
+      const v = valueAtPoint(e.clientX, e.clientY);
+      if (v == null || v === picked) return;
+      picked = v;
+      showPicked();
+    };
+    row.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse") return;
+      sliding = true;
+      touchedAt = Date.now();
+      // (the finger's moves come to the row, not to the first star it touched)
+      if (e.target.releasePointerCapture && e.target.hasPointerCapture && e.target.hasPointerCapture(e.pointerId)) e.target.releasePointerCapture(e.pointerId);
+      touchPick(e);
+    });
+    row.addEventListener("pointermove", (e) => {
+      if (!sliding || e.pointerType === "mouse") return;
+      e.preventDefault();
+      touchPick(e);
+    });
+    const stop = () => {
+      if (sliding) touchedAt = Date.now();
+      sliding = false;
+    };
+    row.addEventListener("pointerup", stop);
+    row.addEventListener("pointercancel", stop);
 
     ratingOverlay.querySelector(".save").addEventListener("click", () => {
       if (picked == null) return;

@@ -86,10 +86,10 @@ remembered (`mn:picker`).
 - **Franchises** (title pages): "Harry Potter Collection · You've seen 2 of 8", every film in it.
   "Seen" = in your library (in your library means watched), unless it's only on your
   Watchlist; those are counted apart ("· 1 on your Watchlist"). Updates as you add or rate.
-  X-Ray's "where you've seen the cast" counts the same way.
+  X-Ray's "where you've seen the cast" counts the same way: each person's posters as a fanned deck that spreads on hover (a tap on phones). "Made in" shows the flags only.
 - **Your own lists** ("Halloween marathon", "Date night"): **New list** on the Watchlist page,
   then **+ Add titles** (on the list's row, or in the full list): search your library and all
-  of TMDB and tap Add. Also from the quick menu or a title page's ⋯ menu (Add to a list).
+  of TMDB and tap Add. Also from the quick menu or a title page's list button (top right, beside Share; a badge shows how many of your lists it's in).
   A title that isn't in your library yet goes in on your Watchlist (not watched yet). Each list gets a
   row and a place in the full-list switch (with Rename / Delete). Saved with your profile.
 - **X-Ray** (title pages): the tagline as a banner; budget vs box office as two bars with a
@@ -134,7 +134,9 @@ progress get an "S2 · E5" badge and a **Continue watching** row at the top of y
 The last episode finishes the show (off the Watchlist, into the diary, "rate it?"); a new season
 on TMDB picks it up again.
 
-**Your notes**: a note on any title in your library (title page), saved as you type.
+**Your notes**: a note on any title in your library (title page), saved as you type. Folded until you open it.
+
+**More like this** (a library title's page): a switch between titles from **Your library** and from **Discover** (TMDB's recommendations you don't have yet). On phones and tablets the four buttons (Watchlist, Watched, Favorite, Rate) sit in one row, and the soundtrack's tracks are folded behind "Show all N tracks".
 
 **Soundtrack** (title page, under Media): the title's soundtrack album from Apple Music (the free
 iTunes Search API): the cover, the album, the artist, the tracks and a 30-second preview of each
