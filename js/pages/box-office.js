@@ -80,8 +80,8 @@
     <section class="bo-yours" hidden></section>
     <section class="bo-plot" hidden>
       <div class="bo-head">
-        <h2 class="section-title"><i class="fa-solid fa-scale-unbalanced-flip"></i> What they cost vs what they made</h2>
-        <p class="bo-sub">Each line starts at the film's budget and ends at what it made worldwide: the longer the line, the more it made back. Tap a film to open it.</p>
+        <h2 class="section-title"><i class="fa-solid fa-city"></i> What they cost vs what they made</h2>
+        <p class="bo-sub">Each column is a film: as tall as what it made, the striped part at its foot what it cost. Point at one (or tap it) for its numbers.</p>
       </div>
       <div class="bo-plot-wrap"></div>
     </section>
@@ -273,58 +273,72 @@
     ].join("");
   }
 
-  /* ---------------- what they cost vs what they made ----------------
-     One row per film: a line from its budget (grey dot) to its worldwide gross (the coloured
-     dot, the verdict's colour), on one plain money scale. The longer the line, the more it made
-     back; a red line going left: it made less than it cost. The lines grow as they come into view. */
+  /* ---------------- what they cost vs what they made: the poster skyline ----------------
+     The top 20 by gross as columns made of their posters: a column's height is what the film
+     made worldwide, the striped band at its foot what it cost. The readout above tells the film
+     you point at (the #1 at first). The columns rise one after another. */
 
-  const PLOT_ROWS = 20;
-  // a round step for the scale: $100M, $250M, $500M, $1B…
-  function niceStep(max) {
-    const raw = max / 5;
-    const p = 10 ** Math.floor(Math.log10(raw));
-    return [1, 2, 2.5, 5, 10].map((m) => m * p).find((s) => s >= raw);
+  const SKY = 20;
+  let skyFilms = [];
+
+  function readoutHtml(f, n) {
+    const r = ratioOf(f);
+    const v = verdictOf(r);
+    return `<div class="sk-read-in ${v[1]}">
+        <img src="${posterOf(f, "w185")}" alt="" />
+        <div class="sk-read-text">
+          <small>#${n + 1} · ${f.year || ""}</small>
+          <strong>${esc(Lang.title(f))}</strong>
+          <span class="sk-flow">
+            <span><em>Cost</em><b>${money(f.budget)}</b></span>
+            <i class="fa-solid fa-arrow-right-long"></i>
+            <span><em>Made</em><b>${money(f.revenue)}</b></span>
+            <span class="sk-net"><em>${f.revenue >= f.budget ? "Profit" : "Loss"}</em><b>${f.revenue >= f.budget ? "+" : "−"}${money(Math.abs(f.revenue - f.budget))}</b></span>
+          </span>
+        </div>
+        <div class="sk-mult"><b>${r.toFixed(1)}×</b><small>${v[0]}</small></div>
+      </div>`;
   }
 
   function plotHtml(list) {
-    const rows = list.filter((f) => f.budget > 0 && f.revenue > 0).slice(0, PLOT_ROWS);
-    if (rows.length < 3) return "";
-    const step = niceStep(Math.max(...rows.map((f) => Math.max(f.revenue, f.budget))));
-    const top = Math.ceil(Math.max(...rows.map((f) => Math.max(f.revenue, f.budget))) / step) * step;
-    const at = (v) => `${((v / top) * 100).toFixed(2)}%`;
-    const ticks = [];
-    for (let v = 0; v <= top + 1; v += step) ticks.push(v);
-    const tickMoney = (v) => (v === 0 ? "$0" : v >= 1e9 ? `$${+(v / 1e9).toFixed(2)}B` : `$${Math.round(v / 1e6)}M`);
+    skyFilms = list.filter((f) => f.budget > 0 && f.revenue > 0).slice(0, SKY);
+    if (skyFilms.length < 3) return "";
+    const top = Math.max(...skyFilms.map((f) => Math.max(f.revenue, f.budget)));
+    const lines = [0.25, 0.5, 0.75, 1].map((p) => top * p);
     return `
-      <div class="bp-legend">
-        <span><i class="bp-key budget"></i> What it cost (budget)</span>
-        <span><i class="bp-key gross"></i> What it made worldwide</span>
-        <span class="bp-verdicts">
-          <span class="xr-verdict gold">Blockbuster 5×+</span><span class="xr-verdict green">Hit 2×+</span><span class="xr-verdict grey">Broke even</span><span class="xr-verdict red">Flop</span>
-        </span>
-      </div>
-      <div class="bp-chart" style="--rows:${rows.length}">
-        <div class="bp-scale" aria-hidden="true">${ticks.map((v) => `<span style="left:${at(v)}">${tickMoney(v)}</span>`).join("")}</div>
-        ${rows
+      <div class="sk-read" aria-live="polite">${readoutHtml(skyFilms[0], 0)}</div>
+      <div class="sk-chart">
+        <div class="sk-lines" aria-hidden="true">${lines.map((v) => `<span style="bottom:${((v / top) * 100).toFixed(2)}%"><em>${money(v)}</em></span>`).join("")}</div>
+        <div class="sk-cols">${skyFilms
           .map((f, n) => {
-            const r = ratioOf(f);
-            const v = verdictOf(r);
-            const lo = Math.min(f.budget, f.revenue);
-            const hi = Math.max(f.budget, f.revenue);
-            return `<a class="bp-row ${v[1]}${f.revenue < f.budget ? " loss" : ""}" href="${titleUrl(f)}" style="--d:${n * 45}ms"
-                aria-label="${esc(Lang.title(f))}: cost ${money(f.budget)}, made ${money(f.revenue)}, ${r.toFixed(1)} times its budget">
-              <span class="bp-film"><img src="${posterOf(f, "w92")}" alt="" loading="lazy" /><span><strong>${esc(Lang.title(f))}</strong><small>${f.year || ""}</small></span></span>
-              <span class="bp-track">
-                ${ticks.map((t) => `<i class="bp-grid" style="left:${at(t)}"></i>`).join("")}
-                <span class="bp-line" style="left:${at(lo)};width:${at(hi - lo)}"></span>
-                <span class="bp-dot budget" style="left:${at(f.budget)}"><em>${money(f.budget)}</em></span>
-                <span class="bp-dot gross" style="left:${at(f.revenue)}"><em>${money(f.revenue)}</em></span>
+            const v = verdictOf(ratioOf(f));
+            return `<a class="sk-col ${v[1]}${n === 0 ? " on" : ""}" href="${titleUrl(f)}" data-sk="${n}" style="--h:${((f.revenue / top) * 100).toFixed(2)}%;--b:${Math.min(100, (f.budget / f.revenue) * 100).toFixed(2)}%;--d:${n * 55}ms"
+                aria-label="${esc(Lang.title(f))}: cost ${money(f.budget)}, made ${money(f.revenue)}">
+              <span class="sk-bar">
+                <span class="sk-poster" style="background-image:url('${posterOf(f, "w342")}')"></span>
+                <span class="sk-budget"></span>
+                <span class="sk-tag">${ratioOf(f).toFixed(1)}×</span>
               </span>
-              <span class="bp-x"><b>${r.toFixed(1)}×</b><small>${v[0]}</small></span>
+              <span class="sk-rank">${n + 1}</span>
             </a>`;
           })
-          .join("")}
+          .join("")}</div>
+      </div>
+      <div class="sk-legend">
+        <span><i class="sk-key made"></i> Height: what it made worldwide</span>
+        <span><i class="sk-key cost"></i> Striped: what it cost</span>
+        <span class="sk-verdicts"><span class="xr-verdict gold">5×+ Blockbuster</span><span class="xr-verdict green">2×+ Hit</span><span class="xr-verdict grey">Broke even</span><span class="xr-verdict red">Flop</span></span>
       </div>`;
+  }
+
+  function skyShow(n) {
+    const f = skyFilms[n];
+    if (!f) return;
+    const read = $(".sk-read");
+    if (read.dataset.n === String(n)) return;
+    read.dataset.n = n;
+    read.innerHTML = readoutHtml(f, n);
+    app.querySelectorAll(".sk-col").forEach((c) => c.classList.toggle("on", c.dataset.sk === String(n)));
   }
 
   function paintPlot() {
@@ -334,9 +348,9 @@
     if (!html) return;
     const wrap = $(".bo-plot-wrap");
     wrap.innerHTML = html;
-    const chart = wrap.querySelector(".bp-chart");
+    const chart = wrap.querySelector(".sk-chart");
     if ("IntersectionObserver" in window) {
-      const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && (chart.classList.add("in"), io.disconnect()), { threshold: 0.15 });
+      const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && (chart.classList.add("in"), io.disconnect()), { threshold: 0.2 });
       io.observe(chart);
     } else chart.classList.add("in");
   }
@@ -530,6 +544,12 @@
       app.querySelectorAll("[data-sort]").forEach((b) => b.classList.toggle("active", b === so));
       return resort();
     }
+    // the skyline: a tap on a column that isn't showing shows its numbers (the next tap opens it)
+    const col = e.target.closest(".sk-col");
+    if (col && !col.classList.contains("on") && e.pointerType !== "mouse") {
+      e.preventDefault();
+      return skyShow(Number(col.dataset.sk));
+    }
     // the podium: a tap on one that isn't showing shows it (the next tap opens its page)
     const pod = e.target.closest(".bo-pod");
     if (pod && !pod.classList.contains("on")) {
@@ -570,6 +590,8 @@
     if (e.pointerType !== "mouse") return;
     const pod = e.target.closest(".bo-pod");
     if (pod && !pod.classList.contains("on")) showStage(Number(pod.dataset.pod));
+    const col = e.target.closest(".sk-col");
+    if (col) skyShow(Number(col.dataset.sk));
   });
   app.addEventListener(
     "mouseenter",
@@ -581,6 +603,8 @@
     (e) => e.target.classList && e.target.classList.contains("bo-stage") && hold(false),
     true
   );
+  // (the keyboard: the column you move to)
+  app.addEventListener("focusin", (e) => e.target.closest && e.target.closest(".sk-col") && skyShow(Number(e.target.closest(".sk-col").dataset.sk)));
   // (a hidden tab doesn't turn the podium)
   document.addEventListener("visibilitychange", () => (document.hidden ? clearTimeout(stageTimer) : schedule()));
   window.addEventListener("resize", moveChip);

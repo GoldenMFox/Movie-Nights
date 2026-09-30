@@ -16100,328 +16100,430 @@ a.by-card:hover .by-blur {
   }
 }
 
-/* ---------- box office: what they cost vs what they made (a line from budget to gross) ---------- */
+/* ---------- box office: the poster skyline (height = what it made, the striped foot = what it cost) ---------- */
 .bo-plot-wrap {
-  padding: 18px 20px 12px;
+  padding: 18px 20px 16px;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 70% at 50% 110%, rgba(229, 9, 20, 0.14), transparent 70%),
+    var(--glass-bg);
 }
 
-.bp-legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 20px;
-  margin-bottom: 18px;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 600;
+/* the readout: the film you point at */
+.sk-read {
+  min-height: 104px;
+  margin-bottom: 14px;
 }
 
-.bp-legend > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.bp-key {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.bp-key.budget {
-  border: 2px solid #9a9aa3;
-  background: var(--surface);
-}
-
-.bp-key.gross {
-  background: #f5c518;
-  box-shadow: 0 0 10px rgba(245, 197, 24, 0.6);
-}
-
-.bp-verdicts {
-  margin-left: auto;
-  gap: 6px !important;
-}
-
-.bp-verdicts .xr-verdict {
-  padding: 3px 9px;
-  font-size: 11px;
-}
-
-.bp-chart {
-  --film: 210px;
-  --x: 86px;
-  --gap: 14px;
-  position: relative;
+.sk-read-in {
+  --c: 245, 197, 24;
   display: grid;
-  gap: 2px;
-}
-
-/* the money scale, above the lines */
-.bp-scale {
-  position: relative;
-  height: 22px;
-  /* (lined up with the tracks: the row's padding + the film column + the gap) */
-  margin: 0 calc(var(--x) + var(--gap) + 8px) 4px calc(var(--film) + var(--gap) + 4px);
-  color: var(--text-muted);
-  font-size: 11.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.bp-scale span {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  white-space: nowrap;
-}
-
-.bp-scale span:first-child {
-  transform: none;
-}
-
-.bp-row {
-  display: grid;
-  grid-template-columns: var(--film) minmax(0, 1fr) var(--x);
+  grid-template-columns: 58px minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--gap);
-  min-height: 46px;
-  padding: 4px 8px 4px 4px;
-  border-radius: 14px;
-  color: var(--text);
-  text-decoration: none;
-  transition: background-color 0.2s ease;
+  gap: 16px;
+  padding: 12px 16px 12px 12px;
+  border: 1px solid rgba(var(--c), 0.3);
+  border-radius: 18px;
+  background: linear-gradient(90deg, rgba(var(--c), 0.12), rgba(var(--c), 0.02) 60%);
+  animation: sk-read-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.bp-row:hover,
-.bp-row:focus-visible {
-  background: var(--glass-bg-hover);
-  outline: none;
+.sk-read-in.green {
+  --c: 70, 211, 105;
 }
 
-.bp-film {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
+.sk-read-in.grey {
+  --c: 154, 154, 163;
 }
 
-.bp-film img {
-  flex-shrink: 0;
-  width: 28px;
+.sk-read-in.red {
+  --c: 255, 107, 99;
+}
+
+@keyframes sk-read-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.sk-read-in img {
+  width: 58px;
   aspect-ratio: 2 / 3;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: 9px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
 }
 
-.bp-film > span {
+.sk-read-text {
   display: grid;
+  gap: 4px;
   min-width: 0;
 }
 
-.bp-film strong {
-  overflow: hidden;
-  font-size: 13.5px;
+.sk-read-text small {
+  color: var(--text-muted);
+  font-size: 12px;
   font-weight: 700;
+}
+
+.sk-read-text strong {
+  overflow: hidden;
+  font-size: 19px;
+  font-weight: 800;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.bp-film small {
+.sk-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}
+
+.sk-flow > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.sk-flow em {
   color: var(--text-muted);
-  font-size: 11.5px;
-}
-
-.bp-track {
-  position: relative;
-  height: 26px;
-}
-
-.bp-grid {
-  position: absolute;
-  top: -6px;
-  bottom: -6px;
-  width: 1px;
-  background: var(--glass-border);
-}
-
-/* the line: budget → gross, in the verdict's colour; it grows once it's in view */
-.bp-row {
-  --c: 245, 197, 24;
-}
-
-.bp-row.green {
-  --c: 70, 211, 105;
-}
-
-.bp-row.grey {
-  --c: 154, 154, 163;
-}
-
-.bp-row.red {
-  --c: 255, 107, 99;
-}
-
-.bp-line {
-  position: absolute;
-  top: 50%;
-  height: 6px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(var(--c), 0.25), rgba(var(--c), 0.9));
-  transform: translateY(-50%) scaleX(0);
-  transform-origin: left center;
-  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) var(--d, 0ms);
-}
-
-/* made less than it cost: the line runs back from the budget to the gross */
-.bp-row.loss .bp-line {
-  background: linear-gradient(270deg, rgba(var(--c), 0.25), rgba(var(--c), 0.9));
-  transform-origin: right center;
-}
-
-.bp-chart.in .bp-line {
-  transform: translateY(-50%) scaleX(1);
-}
-
-.bp-dot {
-  position: absolute;
-  top: 50%;
-  width: 14px;
-  height: 14px;
-  margin: -7px 0 0 -7px;
-  border-radius: 50%;
-  transition: transform 0.25s ease, opacity 0.4s ease;
-}
-
-.bp-dot.budget {
-  border: 2px solid #9a9aa3;
-  background: var(--surface);
-}
-
-.bp-dot.gross {
-  background: rgb(var(--c));
-  box-shadow: 0 0 12px rgba(var(--c), 0.6);
-  opacity: 0;
-  transition: transform 0.25s ease, opacity 0.3s ease calc(var(--d, 0ms) + 0.7s);
-}
-
-.bp-chart.in .bp-dot.gross {
-  opacity: 1;
-}
-
-/* the amounts show on the dots of the row you point at */
-.bp-dot em {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  padding: 2px 7px;
-  border-radius: 6px;
-  background: rgba(20, 20, 24, 0.92);
-  color: #fff;
   font-size: 11px;
   font-style: normal;
   font-weight: 700;
-  white-space: nowrap;
-  opacity: 0;
-  transform: translate(-50%, 4px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  pointer-events: none;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.bp-row:hover .bp-dot em,
-.bp-row:focus-visible .bp-dot em {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-
-.bp-row:hover .bp-dot {
-  transform: scale(1.25);
-}
-
-/* (dots close together: the budget's amount goes under its dot) */
-.bp-dot.budget em {
-  top: calc(100% + 6px);
-  bottom: auto;
-}
-
-.bp-x {
-  display: grid;
-  justify-items: end;
-  line-height: 1.15;
-}
-
-.bp-x b {
-  color: rgb(var(--c));
-  font-size: 16px;
-  font-weight: 900;
+.sk-flow b {
+  font-size: 15px;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
-.bp-x small {
+.sk-flow > i {
+  color: rgb(var(--c));
+  font-size: 13px;
+}
+
+.sk-net b {
+  color: rgb(var(--c));
+}
+
+.sk-mult {
+  display: grid;
+  justify-items: end;
+  line-height: 1;
+}
+
+.sk-mult b {
+  color: rgb(var(--c));
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  text-shadow: 0 0 24px rgba(var(--c), 0.45);
+}
+
+.sk-mult small {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* the chart */
+.sk-chart {
+  position: relative;
+  height: 340px;
+  padding-bottom: 26px;
+}
+
+.sk-lines span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed var(--glass-border);
+  pointer-events: none;
+}
+
+.sk-lines em {
+  position: absolute;
+  right: 0;
+  bottom: 2px;
   color: var(--text-muted);
   font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.sk-lines {
+  position: absolute;
+  inset: 0 0 26px;
+}
+
+.sk-cols {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 100%;
+  padding-right: 44px;
+}
+
+.sk-col {
+  --c: 245, 197, 24;
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-width: 0;
+  height: 100%;
+  color: var(--text);
+  text-decoration: none;
+  outline: none;
+}
+
+.sk-col.green {
+  --c: 70, 211, 105;
+}
+
+.sk-col.grey {
+  --c: 154, 154, 163;
+}
+
+.sk-col.red {
+  --c: 255, 107, 99;
+}
+
+.sk-bar {
+  position: relative;
+  display: block;
+  height: var(--h);
+  border-radius: 10px 10px 4px 4px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transform: scaleY(0);
+  transform-origin: bottom center;
+  transition: transform 0.9s cubic-bezier(0.2, 0.9, 0.25, 1) var(--d, 0ms), box-shadow 0.25s ease, filter 0.25s ease;
+}
+
+.sk-chart.in .sk-bar {
+  transform: scaleY(1);
+}
+
+/* the poster fills the column, dark at its foot */
+.sk-poster {
+  position: absolute;
+  inset: 0;
+  background-position: center top;
+  background-size: cover;
+}
+
+.sk-poster::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent 55%);
+}
+
+/* the budget: a striped band at the foot, its top edge in the verdict's colour */
+.sk-budget {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  border-top: 2px solid rgb(var(--c));
+  background: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.72) 0 5px, rgba(0, 0, 0, 0.5) 5px 10px);
+  transition: height 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--d, 0ms) + 0.75s);
+}
+
+.sk-chart.in .sk-budget {
+  height: var(--b);
+}
+
+/* the multiple on top of each column */
+.sk-tag {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(var(--c), 0.92);
+  color: #111;
+  font-size: 10.5px;
+  font-weight: 900;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.3s ease calc(var(--d, 0ms) + 0.9s);
+}
+
+.sk-chart.in .sk-tag {
+  opacity: 1;
+}
+
+.sk-rank {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -24px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  transition: color 0.2s ease;
+}
+
+/* pointing at one: it glows in its colour, the others step back */
+.sk-cols:hover .sk-col:not(:hover):not(.on) .sk-bar,
+.sk-cols:focus-within .sk-col:not(:focus):not(.on) .sk-bar {
+  filter: saturate(0.4) brightness(0.55);
+}
+
+.sk-col.on .sk-bar,
+.sk-col:hover .sk-bar {
+  box-shadow: 0 0 0 2px rgb(var(--c)), 0 0 26px rgba(var(--c), 0.45);
+}
+
+.sk-col.on .sk-rank {
+  color: rgb(var(--c));
+}
+
+.sk-col:not(.on):hover .sk-bar {
+  filter: brightness(1.1);
+}
+
+.sk-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  margin-top: 14px;
+  color: var(--text-muted);
+  font-size: 12.5px;
   font-weight: 600;
 }
 
-/* the rest dim while you point at one */
-.bp-chart:hover .bp-row:not(:hover) {
-  opacity: 0.55;
+.sk-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
 
-.bp-row {
-  transition: background-color 0.2s ease, opacity 0.2s ease;
+.sk-key {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
 }
 
-@media (max-width: 800px) {
-  .bp-chart {
-    --film: 120px;
-    --x: 58px;
+.sk-key.made {
+  background: linear-gradient(180deg, #d9d9e0, #6b6b75);
+}
+
+.sk-key.cost {
+  border-top: 2px solid #f5c518;
+  background: repeating-linear-gradient(-45deg, #2a2a30 0 3px, #444450 3px 6px);
+}
+
+.sk-verdicts {
+  gap: 6px !important;
+  margin-left: auto;
+}
+
+.sk-verdicts .xr-verdict {
+  padding: 3px 9px;
+  font-size: 11px;
+}
+
+/* smaller screens: the columns scroll sideways, a little wider */
+@media (max-width: 900px) {
+  .sk-chart {
+    height: 300px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
   }
 
-  .bp-film img {
+  .sk-chart::-webkit-scrollbar {
     display: none;
   }
 
-  .bp-verdicts {
+  .sk-cols {
+    width: max(100%, calc(var(--n, 20) * 46px));
+    min-width: 900px;
+  }
+
+  .sk-lines {
+    right: auto;
+    width: max(100%, 900px);
+  }
+
+  .sk-verdicts {
     margin-left: 0;
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 600px) {
   .bo-plot-wrap {
-    padding: 14px 10px 8px;
+    padding: 14px 12px 12px;
   }
 
-  .bp-chart {
-    --film: 92px;
-    --x: 46px;
+  .sk-read-in {
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 12px;
   }
 
-  .bp-chart {
-    --gap: 8px;
+  .sk-read-in img {
+    width: 46px;
   }
 
-  .bp-film strong {
-    font-size: 12px;
+  .sk-read-text strong {
+    font-size: 16px;
   }
 
-  .bp-x b {
-    font-size: 13px;
+  .sk-mult {
+    grid-column: 1 / -1;
+    grid-auto-flow: column;
+    justify-content: start;
+    align-items: baseline;
+    gap: 8px;
   }
 
-  .bp-scale {
-    font-size: 10px;
+  .sk-mult b {
+    font-size: 28px;
   }
 
-  /* (fewer labels on the scale so they don't touch) */
-  .bp-scale span:nth-child(even) {
-    display: none;
+  .sk-flow b {
+    font-size: 13.5px;
+  }
+
+  .sk-cols {
+    min-width: 760px;
+  }
+
+  .sk-lines {
+    width: 760px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bp-line,
-  .bp-dot.gross {
+  .sk-bar,
+  .sk-budget,
+  .sk-tag,
+  .sk-read-in {
     transition: none;
+    animation: none;
   }
+}
+
+/* (room above the tallest column) */
+.sk-chart {
+  margin-top: 26px;
 }
