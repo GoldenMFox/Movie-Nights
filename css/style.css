@@ -17449,3 +17449,14 @@ html:not(.app-ui) .profile-menu .menu-group a.bo-menu-link {
     display: flex;
   }
 }
+
+/* (room before the first column: it and its highlight outline stay clear of the chart's edge) */
+.sk-cols {
+  padding-left: 6px;
+}
+
+@media (max-width: 900px) {
+  .sk-cols {
+    padding-left: 12px;
+  }
+}
