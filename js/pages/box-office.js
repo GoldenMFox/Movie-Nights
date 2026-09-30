@@ -702,13 +702,58 @@
     const byGross = found.slice().sort((a, b) => b.revenue - a.revenue);
     const flops = found.filter((f) => ratioOf(f) != null && ratioOf(f) < 1).sort((a, b) => b.budget - b.revenue - (a.budget - a.revenue));
     const rated = found.filter((f) => f.item.rating != null);
-    const loved = rated.filter((f) => f.item.rating >= 8).sort((a, b) => b.revenue - a.revenue)[0];
-    // (not a streaming film with a few dollars on TMDB: at least $1M)
-    const gem = rated.filter((f) => f.item.rating >= 8 && f.revenue >= 1e6).sort((a, b) => a.revenue - b.revenue)[0];
     const name = (f) => esc(Lang.title(f.item));
     const url = (f) => `title.html?id=${encodeURIComponent(f.item.id)}`;
-    const tile = (icon, label, count, sub, f, minus) =>
-      `<a class="xr-card bo-stat" href="${url(f)}"><span class="xr-label"><i class="${icon}"></i> ${label}</span><b>${minus ? "−" : ""}<span data-count="${count}">${money(count)}</span></b><small>${sub}</small></a>`;
+    // each one about its film: the poster (tilted, straightening when you point at it), the
+    // film blurred behind, its own colour, and a small picture of the number
+    const avg = total / found.length;
+    const stars = (r) => {
+      const full = Math.round(r) / 2; // 0..5, halves
+      return `<span class="by-stars" aria-label="${Cards.formatRating(r)} out of 10">${[1, 2, 3, 4, 5]
+        .map((n) => `<i class="fa-solid ${full >= n ? "fa-star" : full >= n - 0.5 ? "fa-star-half-stroke" : "fa-star by-off"}"></i>`)
+        .join("")}<b>${Cards.formatRating(r)}</b></span>`;
+    };
+    const meter = (pct, caption, cls) =>
+      `<span class="by-meter ${cls || ""}"><span class="by-track"><i style="--w:${Math.max(3, Math.min(100, pct)).toFixed(1)}%"></i></span><small>${caption}</small></span>`;
+    const card = (kind, icon, label, count, f, sub, extra, opts = {}) => {
+      const poster = Store.poster(f.item.poster, "w342");
+      return `<a class="xr-card bo-stat by-card by-${kind}" href="${url(f)}">
+          <span class="by-blur" style="background-image:url('${poster}')"></span>
+          <img class="by-poster" src="${poster}" alt="" loading="lazy" />
+          <span class="by-body">
+            <span class="xr-label"><i class="${icon}"></i> ${label}</span>
+            <b>${opts.minus ? "−" : ""}<span data-count="${count}" data-fmt="${opts.fmt || "money"}">${fmt[opts.fmt || "money"](count)}</span></b>
+            <strong class="by-name">${name(f)} <small>${f.item.year || ""}</small></strong>
+            ${sub ? `<small>${sub}</small>` : ""}
+            ${extra || ""}
+          </span>
+        </a>`;
+    };
+    // (each card a different film: the first of its list not on another card yet)
+    const used = new Set();
+    const pick = (list) => {
+      const f = list.find((x) => !used.has(x));
+      if (f) used.add(f);
+      return f;
+    };
+    const top = pick(byGross);
+    const flop = pick(flops);
+    const love = pick(rated.filter((f) => f.item.rating >= 8).sort((a, b) => b.revenue - a.revenue));
+    // (a hidden gem made at least $1M: not a streaming film with a few dollars on TMDB)
+    const hidden = pick(rated.filter((f) => f.item.rating >= 8 && f.revenue >= 1e6).sort((a, b) => a.revenue - b.revenue));
+    const best = pick(found.filter((f) => ratioOf(f) != null && f.revenue >= 1e6).sort((a, b) => ratioOf(b) - ratioOf(a)));
+    const priciest = pick(found.filter((f) => f.budget).sort((a, b) => b.budget - a.budget));
+    const cards = [
+      card("top", "fa-solid fa-crown", "Biggest you've seen", top.revenue, top, "", meter(100, `${(top.revenue / avg).toFixed(1)}× your average film (${money(avg)})`)),
+      flop
+        ? card("flop", "fa-solid fa-arrow-trend-down", "Biggest flop you've seen", flop.budget - flop.revenue, flop, "",
+            meter((flop.revenue / flop.budget) * 100, `made ${money(flop.revenue)} of its ${money(flop.budget)} budget`, "loss"), { minus: true })
+        : "",
+      love ? card("love", "fa-solid fa-heart", "Your 8+ money maker", love.revenue, love, "", stars(love.item.rating)) : "",
+      hidden ? card("gem", "fa-solid fa-gem", "Your 8+ hidden gem", hidden.revenue, hidden, "the smallest gross you loved", stars(hidden.item.rating)) : "",
+      best ? card("roi", "fa-solid fa-rocket", "Best return you've seen", ratioOf(best), best, `${money(best.budget)} → ${money(best.revenue)}`, meter(Math.min(100, (ratioOf(best) / 10) * 100), verdictOf(ratioOf(best))[0], "gold"), { fmt: "x" }) : "",
+      priciest ? card("cost", "fa-solid fa-coins", "Most expensive you've seen", priciest.budget, priciest, "", meter((priciest.revenue / (priciest.budget * 5)) * 100, `it made ${money(priciest.revenue)} (${ratioOf(priciest) ? `${ratioOf(priciest).toFixed(1)}×` : "–"})`)) : "",
+    ].filter(Boolean);
 
     box.innerHTML = `${head}
       <div class="bo-yours-hero xr-card">
@@ -720,12 +765,7 @@
         <b data-count="${total}">${money(total)}</b>
         <small>worldwide, on ${money(spent)} of budgets${spent ? ` (${(total / spent).toFixed(1)}×)` : ""}. That's ${money(total / found.length)} a film.</small>
       </div>
-      <div class="bo-stats">
-        ${tile("fa-solid fa-crown", "Biggest you've seen", byGross[0].revenue, name(byGross[0]), byGross[0])}
-        ${flops.length ? tile("fa-solid fa-arrow-trend-down", "Biggest flop you've seen", flops[0].budget - flops[0].revenue, `${name(flops[0])}: ${money(flops[0].budget)} → ${money(flops[0].revenue)}`, flops[0], true) : ""}
-        ${loved ? tile("fa-solid fa-heart", "Your 8+ money maker", loved.revenue, `${name(loved)} · ★ ${Cards.formatRating(loved.item.rating)}`, loved) : ""}
-        ${gem && gem !== loved ? tile("fa-solid fa-gem", "Your 8+ hidden gem", gem.revenue, `${name(gem)} · ★ ${Cards.formatRating(gem.item.rating)} · the smallest gross you loved`, gem) : ""}
-      </div>`;
+      <div class="bo-stats by-cards n${cards.length}">${cards.join("")}</div>`;
     watchCounts(box);
     reveal([...box.querySelectorAll(".bo-stat, .bo-yours-hero")]);
   }

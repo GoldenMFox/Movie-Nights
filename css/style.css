@@ -16035,3 +16035,255 @@ html[data-theme="light"] .bo-kline {
 .bo-yours {
   margin: 0 0 48px;
 }
+
+/* ---------- your box office: a card per film (poster, its colour, a small picture of the number) ---------- */
+.by-cards {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.by-cards.n4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.by-card {
+  --tint: 229, 9, 20;
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+  min-height: 170px;
+  padding: 20px;
+  border-color: rgba(var(--tint), 0.22);
+  background:
+    radial-gradient(120% 120% at 100% 0%, rgba(var(--tint), 0.16), transparent 60%),
+    var(--glass-bg);
+}
+
+.by-top {
+  --tint: 245, 197, 24;
+}
+
+.by-flop {
+  --tint: 255, 90, 80;
+}
+
+.by-love {
+  --tint: 255, 77, 141;
+}
+
+.by-gem {
+  --tint: 45, 212, 191;
+}
+
+.by-roi {
+  --tint: 70, 211, 105;
+}
+
+.by-cost {
+  --tint: 160, 140, 255;
+}
+
+.by-card .xr-label i {
+  color: rgb(var(--tint));
+}
+
+a.by-card:hover {
+  border-color: rgba(var(--tint), 0.55);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(var(--tint), 0.2), 0 10px 40px rgba(var(--tint), 0.12);
+}
+
+/* the film, blurred, behind everything */
+.by-blur {
+  position: absolute;
+  inset: -20px;
+  z-index: -1;
+  background-position: center;
+  background-size: cover;
+  filter: blur(28px) saturate(1.4);
+  opacity: 0.16;
+  transition: opacity 0.4s ease;
+}
+
+a.by-card:hover .by-blur {
+  opacity: 0.3;
+}
+
+.by-poster {
+  width: 92px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transform: rotate(-4deg);
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease;
+}
+
+.by-cards .by-card:nth-child(even) .by-poster {
+  transform: rotate(3deg);
+}
+
+.by-cards a.by-card:hover .by-poster {
+  transform: rotate(0) translateY(-4px) scale(1.04);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(var(--tint), 0.7);
+}
+
+.by-body {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.by-card b {
+  margin-top: 2px;
+  font-size: 30px;
+  line-height: 1.05;
+}
+
+.by-flop b {
+  color: #ff6b63;
+}
+
+.by-name {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.by-name small {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* the little pictures */
+.by-meter {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.by-track {
+  display: block;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--glass-bg-hover);
+  overflow: hidden;
+}
+
+.by-track i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(var(--tint), 0.6), rgb(var(--tint)));
+  box-shadow: 0 0 12px rgba(var(--tint), 0.45);
+  transition: width 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;
+}
+
+.by-card.in .by-track i {
+  width: var(--w);
+}
+
+/* a flop: what it made in grey, the rest of the budget (the loss) red */
+.by-meter.loss .by-track {
+  background: rgba(255, 90, 80, 0.35);
+}
+
+.by-meter.loss .by-track i {
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: none;
+}
+
+.by-meter small {
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.by-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 4px;
+  color: rgb(var(--tint));
+  font-size: 14px;
+}
+
+.by-stars .by-off {
+  opacity: 0.2;
+}
+
+.by-stars b {
+  margin: 0 0 0 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* the stars light up one after another */
+.by-card .by-stars i {
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.by-card.in .by-stars i {
+  opacity: 1;
+  transform: none;
+}
+
+.by-card.in .by-stars i.by-off {
+  opacity: 0.2;
+}
+
+.by-card.in .by-stars i:nth-child(1) { transition-delay: 0.3s; }
+.by-card.in .by-stars i:nth-child(2) { transition-delay: 0.38s; }
+.by-card.in .by-stars i:nth-child(3) { transition-delay: 0.46s; }
+.by-card.in .by-stars i:nth-child(4) { transition-delay: 0.54s; }
+.by-card.in .by-stars i:nth-child(5) { transition-delay: 0.62s; }
+
+.by-cards .by-card:nth-child(5) {
+  transition-delay: 0.28s, 0.28s, 0s, 0s;
+}
+
+.by-cards .by-card:nth-child(6) {
+  transition-delay: 0.35s, 0.35s, 0s, 0s;
+}
+
+@media (max-width: 1100px) {
+  .by-cards,
+  .by-cards.n4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .by-cards,
+  .by-cards.n4 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .by-card {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 14px;
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .by-poster {
+    width: 72px;
+  }
+
+  .by-card b {
+    font-size: 26px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .by-track i,
+  .by-card .by-stars i,
+  .by-poster {
+    transition: none;
+  }
+}
