@@ -13693,3 +13693,8 @@ img[data-my-pic] {
   border-color: var(--accent);
   background: var(--accent);
 }
+
+/* (while folded, the paragraphs run on so the 2 lines are all words) */
+.t-review p.clamp {
+  white-space: normal;
+}

@@ -542,6 +542,24 @@
 
   // the newest 3 reviews; "See more reviews" shows the rest (stays open while you're on the page)
   const REVIEWS_SHOWN = 3;
+  // reviews are written with HTML (<em>, <br>, links, &amp;) and Markdown (**bold**, _italic_,
+  // > quotes, [link](url)): just the words, with the paragraphs kept
+  const decoder = document.createElement("textarea");
+  function reviewText(s) {
+    let t = String(s || "")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/p>\s*<p[^>]*>/gi, "\n\n")
+      .replace(/<\/?[a-z][^>]*>/gi, "") // tags
+      .replace(/<\/?[a-z][^>]*$/i, "") // (one cut off at the end)
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // [text](link)
+      .replace(/(\*\*|__)(.+?)\1/g, "$2")
+      .replace(/(^|[\s(])[*_]([^*_\n]+?)[*_](?=[\s).,!?:;]|$)/g, "$1$2")
+      .replace(/^\s*(>|#{1,6})\s?/gm, "")
+      .replace(/^\s*([-*_]\s*){3,}$/gm, "");
+    decoder.innerHTML = t; // &amp; &quot; &#39; …
+    t = decoder.value;
+    return t.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  }
   // your like / dislike on a review (kept in this browser): { key: 1 | -1 }
   const VOTES_KEY = "mn:reviewVotes";
   const reviewKey = (r) => r.url || `${r.author}|${r.date}`;
@@ -572,7 +590,7 @@
       .map(
         (r, n) => `<article class="t-review"${n >= REVIEWS_SHOWN && !reviewsOpen ? " hidden" : ""}>
           <header><strong>${esc(r.author)}</strong>${r.rating != null ? `<span class="t-review-score"><i class="fa-solid fa-star"></i> ${r.rating} / 10</span>` : ""}<small>${esc(r.date)}</small></header>
-          <p class="clamp">${esc(r.text)}</p>
+          <p class="clamp">${esc(reviewText(r.text))}</p>
           <footer class="t-review-foot">
             <button class="t-link t-review-more" type="button">Read more</button>
             ${voteButtons(reviewKey(r))}
