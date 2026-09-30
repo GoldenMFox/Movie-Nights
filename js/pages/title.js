@@ -540,17 +540,22 @@
         .join("")}</div>` : ""}`;
   }
 
+  // the newest 3 reviews; "See more reviews" shows the rest (stays open while you're on the page)
+  const REVIEWS_SHOWN = 3;
+  let reviewsOpen = false;
   function reviewsPanel(reviews, tmdbUrl) {
     if (!reviews.length) return '<p class="muted t-empty">No reviews yet.</p>';
+    const more = reviews.length - REVIEWS_SHOWN;
     return `<div class="t-reviews">${reviews
       .map(
-        (r) => `<article class="t-review">
+        (r, n) => `<article class="t-review"${n >= REVIEWS_SHOWN && !reviewsOpen ? " hidden" : ""}>
           <header><strong>${esc(r.author)}</strong>${r.rating != null ? `<span class="t-review-score"><i class="fa-solid fa-star"></i> ${r.rating} / 10</span>` : ""}<small>${esc(r.date)}</small></header>
           <p class="clamp">${esc(r.text)}</p>
           <button class="t-link t-review-more" type="button">Read more</button>
         </article>`
       )
       .join("")}</div>
+      ${more > 0 ? `<p><button class="btn t-reviews-more" type="button">${reviewsOpen ? "Show fewer reviews" : `See more reviews (${more})`}</button></p>` : ""}
       ${tmdbUrl ? `<p><a class="t-link" href="${esc(tmdbUrl)}/reviews" target="_blank" rel="noopener">All reviews on TMDB <i class="fa-solid fa-arrow-up-right-from-square"></i></a></p>` : ""}`;
   }
 
@@ -614,6 +619,14 @@
       const p = heroEl.querySelector(".t-overview");
       p.classList.toggle("clamp", !overviewOpen);
       e.target.closest(".t-read-more").textContent = overviewOpen ? "Show less" : "Read more";
+      return;
+    }
+    const allReviews = e.target.closest(".t-reviews-more");
+    if (allReviews) {
+      reviewsOpen = !reviewsOpen;
+      const list = allReviews.closest("p").previousElementSibling;
+      [...list.children].forEach((a, n) => (a.hidden = n >= REVIEWS_SHOWN && !reviewsOpen));
+      allReviews.textContent = reviewsOpen ? "Show fewer reviews" : `See more reviews (${list.children.length - REVIEWS_SHOWN})`;
       return;
     }
     const reviewMore = e.target.closest(".t-review-more");

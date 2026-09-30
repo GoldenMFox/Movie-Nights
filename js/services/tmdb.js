@@ -609,7 +609,7 @@
   }
 
   // a title's details depend on your country (streaming services, age rating)
-  const detailsKey = (media, id) => `d1:${country()}:${media}-${id}`;
+  const detailsKey = (media, id) => `d2:${country()}:${media}-${id}`; // d2: newest reviews first
 
   function certificationOf(d, media, country) {
     if (media === "movie") {
@@ -707,7 +707,8 @@
       images: ((d.images && d.images.backdrops) || []).slice(0, 12).map((i) => i.file_path),
       // poster art without the title printed on it: used as the tall header image on phones
       artPoster: (((d.images && d.images.posters) || []).find((p) => p.iso_639_1 === null) || {}).file_path || "",
-      reviews: ((d.reviews && d.reviews.results) || []).slice(0, 6).map((r) => ({
+      // (TMDB lists them oldest first: the newest 10 of them, newest first)
+      reviews: ((d.reviews && d.reviews.results) || []).slice().sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || ""))).slice(0, 10).map((r) => ({
         author: r.author || (r.author_details && r.author_details.username) || "TMDB user",
         rating: r.author_details && r.author_details.rating,
         date: (r.created_at || "").slice(0, 10),
