@@ -17460,3 +17460,11 @@ html:not(.app-ui) .profile-menu .menu-group a.bo-menu-link {
     padding-left: 12px;
   }
 }
+
+/* (phones: the chart clips what sticks out (it scrolls sideways), so room above the tallest
+   column: its outline and glow stay whole) */
+@media (max-width: 900px) {
+  .sk-chart {
+    padding-top: 12px;
+  }
+}
