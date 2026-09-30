@@ -114,7 +114,7 @@
                 Store.guest
                   ? ""
                   : `<label class="menu-switch fade-row" title="On Discover, what you've already watched is dimmed (like Letterboxd)">
-                <i class="fa-solid fa-eye-low-vision"></i><span>Dim watched on Discover</span>
+                <i class="fa-solid fa-eye-low-vision"></i><span>Dim watched</span>
                 <input type="checkbox" class="fade-switch" />
                 <span class="switch-track"><span class="switch-thumb"></span></span>
               </label>`
