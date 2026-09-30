@@ -19361,41 +19361,6 @@ html.sm-lock {
 
 /* ============================== Movie trivia (title page card + the quiz pop-up) ============================== */
 
-.tq-card-in {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 12px;
-}
-
-.tq-card-icon {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  background: radial-gradient(circle at 30% 25%, rgba(229, 9, 20, 0.45), rgba(229, 9, 20, 0.12));
-  font-size: 26px;
-}
-
-.tq-card-in > div {
-  display: grid;
-  flex: 1;
-  gap: 2px;
-  min-width: 0;
-}
-
-.tq-card-in small {
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
-.tq-card-in .btn {
-  flex: none;
-  border-radius: 999px;
-}
-
 .trivia-modal {
   max-width: 560px;
   overflow: hidden;
@@ -19764,15 +19729,6 @@ html.sm-lock {
 }
 
 @media (max-width: 520px) {
-  .tq-card-in {
-    flex-wrap: wrap;
-  }
-
-  .tq-card-in .btn {
-    width: 100%;
-    justify-content: center;
-  }
-
   .tq-dots span {
     width: 12px;
   }
@@ -20580,4 +20536,132 @@ html.sm-lock {
 /* Advanced search: posters that would start a half row wait for "Load more" */
 .movie-grid .as-held {
   display: none !important;
+}
+
+/* ---------- Title page: the Trivia card, one row like the folded notes beside it ---------- */
+.xr-card.tq-card {
+  display: flex;
+  flex-direction: row;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  text-align: left;
+  align-self: start;
+  align-items: center;
+  gap: 14px;
+}
+
+/* your best: a small ring that fills with the score (grey, red, then gold) */
+.tq-ring-s {
+  --tc: rgba(255, 255, 255, 0.35);
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: conic-gradient(var(--tc) var(--p), rgba(127, 127, 127, 0.18) 0);
+}
+
+.tq-ring-s.t-fan {
+  --tc: var(--accent);
+}
+
+.tq-ring-s.t-buff {
+  --tc: #f0a830;
+}
+
+.tq-ring-s.t-gold {
+  --tc: #f5c518;
+  box-shadow: 0 0 18px rgba(245, 197, 24, 0.3);
+}
+
+.tq-ring-s > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  width: calc(100% - 8px);
+  height: calc(100% - 8px);
+  padding-top: 10px;
+  border-radius: 50%;
+  background: var(--surface, #17181c);
+  line-height: 1;
+}
+
+.tq-ring-s b {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.tq-ring-s small {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.tq-ring-s.t-none > span {
+  align-items: center;
+  padding: 0;
+  color: var(--accent-hover);
+  font-size: 17px;
+}
+
+.tq-txt {
+  display: grid;
+  flex: 1;
+  gap: 1px;
+  min-width: 0;
+}
+
+.tq-txt .xr-label {
+  margin-bottom: 2px;
+}
+
+.tq-txt b {
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tq-txt small {
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.tq-card .tq-play {
+  flex: none;
+  padding: 8px 16px;
+  border: 1px solid rgba(229, 9, 20, 0.55);
+  border-radius: 999px;
+  background: rgba(229, 9, 20, 0.14);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.tq-card .tq-play:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.tq-card .tq-play:active {
+  transform: scale(0.96);
+}
+
+.tq-card .tq-play i {
+  font-size: 11px;
+}
+
+.tq-txt b small {
+  margin-left: 6px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+@media (max-width: 420px) {
+  .tq-txt b small {
+    display: none;
+  }
 }

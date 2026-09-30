@@ -1062,14 +1062,17 @@
     if (!window.Trivia || !TMDB.enabled() || !seenIt(item)) return "";
     const b = Trivia.best(item);
     const r = b != null ? Trivia.rankOf(b) : null;
+    // one row, like the folded notes beside it: your best as a small ring, the rank, Play
+    const tier = b == null ? "none" : b >= 9 ? "gold" : b >= 7 ? "buff" : b >= 4 ? "fan" : "low";
     return `<div class="xr-card tq-card">
-        <span class="xr-label"><i class="fa-solid fa-brain"></i> Trivia</span>
-        <div class="tq-card-in">
-          <span class="tq-card-icon" aria-hidden="true">${r ? r[1] : "🧠"}</span>
-          <div><b>${r ? `Your best: ${b}/${Trivia.COUNT}` : "How well do you know it?"}</b>
-          <small>${r ? r[2] : `${Trivia.COUNT} quick questions. 7 or more makes you a Movie Buff.`}</small></div>
-          <button class="btn btn-primary tq-play" type="button"><i class="fa-solid fa-play"></i> ${r ? "Play again" : "Play"}</button>
+        <span class="tq-ring-s t-${tier}" style="--p:${b == null ? 0 : (b / Trivia.COUNT) * 100}%" aria-hidden="true">
+          <span>${b == null ? '<i class="fa-solid fa-brain"></i>' : `<b>${b}</b><small>/${Trivia.COUNT}</small>`}</span>
+        </span>
+        <div class="tq-txt">
+          <span class="xr-label"><i class="fa-solid fa-brain"></i> Trivia</span>
+          <b>${r ? `${r[1]} ${esc(r[2])}` : `Test yourself <small>${Trivia.COUNT} questions</small>`}</b>
         </div>
+        <button class="btn tq-play" type="button"><i class="fa-solid fa-play"></i> ${r ? "Play again" : "Play"}</button>
       </div>`;
   }
   // just marked Watched: offer the trivia once the rating pop-up is closed
