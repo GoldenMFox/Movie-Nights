@@ -12479,25 +12479,19 @@ html.dx-fx .movie-grid:not(.dx-skeletons) > .movie-item {
 }
 
 /* ============================== Library pages (Movies, TV Shows, Anime): motion ============================== */
-/* (html.lb-fx is set by js/pages/browse.js, and only when motion isn't turned down) */
+/* (html.lb-fx is set by js/pages/browse.js, and only when motion isn't turned down)
+   Kept calm on purpose: these pages are switched between often, so nothing goes blank. */
 
-/* opening the page: the title, then the chips pop in one at a time */
-html.lb-fx .page-title {
-  animation: dx-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-}
-
+/* opening the page: the chips settle in */
 html.lb-fx .chips.lb-intro > .chip {
-  animation: dx-chip 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
+  animation: lb-soft 0.35s ease-out backwards;
 }
 
-html.lb-fx .chips.lb-intro > .chip:nth-of-type(1) { animation-delay: 0.1s; }
-html.lb-fx .chips.lb-intro > .chip:nth-of-type(2) { animation-delay: 0.17s; }
-html.lb-fx .chips.lb-intro > .chip:nth-of-type(3) { animation-delay: 0.24s; }
-html.lb-fx .chips.lb-intro > .chip:nth-of-type(4) { animation-delay: 0.31s; }
-html.lb-fx .chips.lb-intro > .chip:nth-of-type(5) { animation-delay: 0.38s; }
-html.lb-fx .chips.lb-intro > .chip:nth-of-type(n + 6) { animation-delay: 0.45s; }
+html.lb-fx .chips.lb-intro > .chip:nth-of-type(2) { animation-delay: 0.03s; }
+html.lb-fx .chips.lb-intro > .chip:nth-of-type(3) { animation-delay: 0.06s; }
+html.lb-fx .chips.lb-intro > .chip:nth-of-type(n + 4) { animation-delay: 0.09s; }
 
-/* the red pill behind the picked chip: grows in, then glides to each new pick */
+/* the red pill behind the picked chip glides to each new pick */
 html.lb-fx .chips {
   position: relative;
 }
@@ -12517,33 +12511,44 @@ html.lb-fx .chip-indicator {
   z-index: 0;
   border-radius: 999px;
   background: var(--accent);
-  box-shadow: 0 6px 18px rgba(229, 9, 20, 0.35);
+  box-shadow: 0 4px 14px rgba(229, 9, 20, 0.3);
   pointer-events: none;
-  transition: left 0.45s cubic-bezier(0.32, 0.72, 0, 1), top 0.45s cubic-bezier(0.32, 0.72, 0, 1), width 0.45s cubic-bezier(0.32, 0.72, 0, 1),
-    height 0.45s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s;
+  transition: left 0.4s cubic-bezier(0.32, 0.72, 0, 1), top 0.4s cubic-bezier(0.32, 0.72, 0, 1), width 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+    height 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s;
 }
 
 html.lb-fx .chip-indicator.intro {
   transition: none;
-  animation: dx-pill 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s backwards;
+  animation: lb-soft 0.35s ease-out backwards;
 }
 
 html.lb-fx .chip-indicator.off {
   opacity: 0;
 }
 
-/* the count slides in afresh when it changes */
+/* the count changes with a quick fade */
 html.lb-fx .result-count.lb-count {
-  animation: dx-count 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: lb-fade 0.3s ease-out;
 }
 
-/* posters flow in one after another when the view changes */
+/* posters: a short, soft settle (never hidden, so the page doesn't flash) */
 html.lb-fx .movie-grid > .lb-in {
-  animation: dx-card 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation: lb-settle 0.3s ease-out backwards;
   animation-delay: var(--lb-d, 0ms);
 }
 
-/* "nothing matches" fades in */
 html.lb-fx .empty-state:not([hidden]) {
-  animation: dx-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation: lb-fade 0.3s ease-out;
+}
+
+@keyframes lb-soft {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+@keyframes lb-fade {
+  from { opacity: 0.3; }
+}
+
+@keyframes lb-settle {
+  from { opacity: 0.55; transform: translateY(6px); }
 }

@@ -407,7 +407,7 @@
     if (fx && animateFrom != null)
       [...grid.children].slice(animateFrom).forEach((c, i) => {
         c.classList.add("lb-in");
-        c.style.setProperty("--lb-d", `${Math.min(i, 24) * 30}ms`);
+        c.style.setProperty("--lb-d", `${Math.min(i, 12) * 12}ms`);
       });
     animateFrom = null;
     moreBtn.hidden = items.length <= shown;
