@@ -1051,5 +1051,75 @@
     document.querySelectorAll("img[data-my-pic]").forEach((i) => (i.src = src));
   }
 
-  window.UI = { esc, toast, download, PAGES, foldTools, signInPrompt, needSignIn, welcome, confirm: confirmBox, ask, paintMyPic };
+  /* A character's photo is a tall, tight close-up (the head fills the width), so a circle
+     would cut the chin or the top of the head. It's drawn once into a square picture made for
+     a circle, the same way as in the gallery: the photo a bit smaller, the face in the middle
+     with even room above and below, the strips around it filled with a soft, blurred copy of
+     it and its edges faded in. From the large photo (sharp at any size); kept in this browser
+     (mn:myPicFramed: { path, url }). Resolves once it's ready (false if it couldn't be made). */
+  function frameMyPic() {
+    const av = Store.getProfile().avatar;
+    if (!av || !av.path) return Promise.resolve(false);
+    const saved = Store.read("mn:myPicFramed", null);
+    if (saved && saved.path === av.path) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const photo = new Image();
+      photo.crossOrigin = "anonymous";
+      photo.onerror = () => resolve(false);
+      photo.onload = () => {
+        try {
+          const S = 360;
+          const ratio = photo.naturalHeight / photo.naturalWidth;
+          const out = document.createElement("canvas");
+          out.width = out.height = S;
+          const g = out.getContext("2d");
+          // the soft fill: the photo shrunk to a few pixels and stretched back (a blur that
+          // works in every browser), a little darker
+          const tiny = document.createElement("canvas");
+          tiny.width = 18;
+          tiny.height = Math.round(18 * ratio);
+          tiny.getContext("2d").drawImage(photo, 0, 0, tiny.width, tiny.height);
+          g.imageSmoothingEnabled = true;
+          g.imageSmoothingQuality = "high";
+          const bw = S * 1.25;
+          g.drawImage(tiny, (S - bw) / 2, -bw * ratio * 0.1, bw, bw * ratio);
+          g.fillStyle = "rgba(0, 0, 0, 0.22)";
+          g.fillRect(0, 0, S, S);
+          // the photo: 80% as wide as the circle, its top 7% down (as in the gallery), with
+          // its side and top edges faded into the fill
+          const pw = S * 0.8;
+          const px = (S - pw) / 2;
+          const py = S * 0.07;
+          const layer = document.createElement("canvas");
+          layer.width = layer.height = S;
+          const l = layer.getContext("2d");
+          l.imageSmoothingQuality = "high";
+          l.drawImage(photo, px, py, pw, pw * ratio);
+          l.globalCompositeOperation = "destination-in";
+          let fade = l.createLinearGradient(px, 0, px + pw, 0);
+          fade.addColorStop(0, "rgba(0,0,0,0)");
+          fade.addColorStop(0.12, "#000");
+          fade.addColorStop(0.88, "#000");
+          fade.addColorStop(1, "rgba(0,0,0,0)");
+          l.fillStyle = fade;
+          l.fillRect(0, 0, S, S);
+          fade = l.createLinearGradient(0, py, 0, py + S * 0.09);
+          fade.addColorStop(0, "rgba(0,0,0,0)");
+          fade.addColorStop(1, "#000");
+          l.fillStyle = fade;
+          l.fillRect(0, 0, S, S);
+          g.drawImage(layer, 0, 0);
+          Store.write("mn:myPicFramed", { path: av.path, url: out.toDataURL("image/jpeg", 0.88) });
+          resolve(true);
+        } catch (e) {
+          resolve(false); // (e.g. the photo's server didn't allow drawing it)
+        }
+      };
+      photo.src = Store.img(av.path, "h632");
+    });
+  }
+  // (a character picked on another device: make its framed picture here)
+  frameMyPic().then((made) => made && paintMyPic());
+
+  window.UI = { esc, toast, download, PAGES, foldTools, signInPrompt, needSignIn, welcome, confirm: confirmBox, ask, paintMyPic, frameMyPic };
 })();

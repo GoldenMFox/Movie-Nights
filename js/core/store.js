@@ -282,11 +282,18 @@
     write(KEYS.profile, Object.assign(getProfile(), patch));
   }
 
-  // your picture: the character you picked (Settings → Profile picture, saved with your
-  // profile: { path, character, title, actor }), else your Google photo ("" = none)
-  function myPhoto() {
+  // your picture: the character you picked (Profile page, saved with your profile:
+  // { path, character, title, actor }), else your Google photo ("" = none).
+  // A character's photo is shown framed for a circle (the whole face, even room above and
+  // below: UI.frameMyPic() makes it and keeps it in mn:myPicFramed); until that's ready, the
+  // photo itself. raw: always the photo's own address (what goes into your account)
+  function myPhoto(raw) {
     const av = account ? getProfile().avatar : null;
-    if (av && av.path) return img(av.path, "w185");
+    if (av && av.path) {
+      const framed = read("mn:myPicFramed", null);
+      if (!raw && framed && framed.path === av.path && framed.url) return framed.url;
+      return img(av.path, "h632");
+    }
     return (account && account.photo) || "";
   }
 

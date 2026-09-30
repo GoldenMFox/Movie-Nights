@@ -13534,9 +13534,9 @@ img[data-my-pic] {
 
 .av-face img {
   position: absolute;
-  top: 5%;
-  left: 7.5%;
-  width: 85%;
+  top: 7%;
+  left: 10%;
+  width: 80%;
   height: auto;
   aspect-ratio: 2 / 3;
   object-fit: cover;

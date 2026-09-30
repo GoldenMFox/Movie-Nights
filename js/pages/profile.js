@@ -146,6 +146,8 @@
   function setAvatar(av) {
     Store.setProfile({ avatar: av || undefined });
     UI.paintMyPic();
+    // (then the version framed for a circle, a moment later)
+    UI.frameMyPic().then((made) => made && UI.paintMyPic());
     paintAs();
     if (avOverlay) {
       avOverlay.querySelectorAll(".av-pick").forEach((b) => b.classList.toggle("on", !!av && b.dataset.avPath === av.path));

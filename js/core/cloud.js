@@ -177,7 +177,7 @@
       method: "PATCH",
       tok,
       // (your picture: the character you picked, else your Google photo; shown in Members)
-      body: toDoc({ data: text, name: acct.name, photo: (acct === account ? Store.myPhoto() : acct.photo) || "", base: acct.base, updatedAt: at }),
+      body: toDoc({ data: text, name: acct.name, photo: (acct === account ? Store.myPhoto(true) : acct.photo) || "", base: acct.base, updatedAt: at }),
     });
     return at;
   }
@@ -654,7 +654,7 @@
     write(K.accounts, accounts().filter((a) => a.uid !== account.uid));
     // this device shows no library until someone signs in (not even the spare copies);
     // your data stays in your account
-    drop(K.account, K.syncAt, K.dirty, K.backup, K.base, ...Store.SYNCED);
+    drop(K.account, K.syncAt, K.dirty, K.backup, K.base, "mn:myPicFramed", ...Store.SYNCED);
     location.reload();
   }
 
