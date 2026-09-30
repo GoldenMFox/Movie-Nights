@@ -1,13 +1,13 @@
 /*
  * TMDB (themoviedb.org) integration.
- * The key comes from js/config.js, or from Profile -> Settings (this browser only).
+ * The key comes from js/config.js, or from Settings (this browser only).
  * It powers the Discover page, overviews / cast / trailers on title pages,
  * recommendations, and poster search when adding a title.
  * The rest of the site works without it.
  */
 (function () {
   const API = "https://api.themoviedb.org/3";
-  const CACHE_LIMIT = 120; // title pages kept in this browser (details now include reviews, images...)
+  const CACHE_LIMIT = 800; // title pages, franchises and recommendations kept in this browser
   const DETAILS_MAX_AGE = 7 * 24 * 3600 * 1000; // streaming services change, so refresh weekly
   const ANIMATION = 16; // TMDB genre id
   const NOT_SHOWS = "10763|10764|10766|10767"; // News, Reality, Soap, Talk
@@ -432,10 +432,27 @@
       genres: genreNames((d.genres || []).map((g) => g.id), media),
     };
   }
-  /* ---------------- release dates in your country (Romania) ---------------- */
+  /* ---------------- your country: streaming, age ratings, cinema dates ---------------- */
 
-  const COUNTRY = ((window.MN_CONFIG || {}).RELEASE_COUNTRY || "RO").toUpperCase();
-  const LOCAL_DATES = "mn:localDates2"; // { movieId: { d: "2026-10-03" | "", at } }, "" = no cinema date there
+  // one country for everything (picked in Settings → Streaming, saved with your profile);
+  // until you pick one, the site's default (MN_CONFIG.RELEASE_COUNTRY, Romania)
+  function country() {
+    const picked = window.Store && Store.getProfile ? Store.getProfile().country : "";
+    return String(picked || (window.MN_CONFIG || {}).RELEASE_COUNTRY || "RO").toUpperCase();
+  }
+  // a saved answer is for this country ("c"; older ones, from before you could pick, were Romania's)
+  const sameCountry = (s) => (s.c || "RO") === country();
+  // "RO" -> "Romania"
+  function countryName(code) {
+    code = code || country();
+    try {
+      return new Intl.DisplayNames(["en"], { type: "region" }).of(code) || code;
+    } catch (e) {
+      return code;
+    }
+  }
+
+  const LOCAL_DATES = "mn:localDates2"; // { movieId: { d: "2026-10-03" | "", at, c } }, "" = no cinema date there
   try {
     ["mn:localDates", "mn:ruVideos"].forEach((k) => localStorage.removeItem(k)); // older versions
   } catch (e) {}
@@ -445,7 +462,7 @@
   // TV / digital dates are often a local broadcast years later (streaming films come
   // out everywhere on their worldwide date, which is used when there's no cinema date).
   function countryDate(list) {
-    const entry = (list || []).find((r) => r.iso_3166_1 === COUNTRY);
+    const entry = (list || []).find((r) => r.iso_3166_1 === country());
     if (!entry) return "";
     return (
       entry.release_dates
@@ -461,11 +478,11 @@
     const saved = Store.read(LOCAL_DATES, {});
     const s = saved[id];
     const today = new Date().toISOString().slice(0, 10);
-    if (s && (Date.now() - s.at < 3 * 86400000 || (s.d && s.d <= today))) return s.d;
+    if (s && sameCountry(s) && (Date.now() - s.at < 3 * 86400000 || (s.d && s.d <= today))) return s.d;
     const d = await request(`/movie/${id}/release_dates`);
     const date = countryDate(d.results);
     const fresh = Store.read(LOCAL_DATES, {});
-    fresh[id] = { d: date, at: Date.now() };
+    fresh[id] = { d: date, at: Date.now(), c: country() };
     const keys = Object.keys(fresh);
     if (keys.length > 800) keys.sort((a, b) => fresh[a].at - fresh[b].at).slice(0, keys.length - 800).forEach((k) => delete fresh[k]);
     Store.write(LOCAL_DATES, fresh);
@@ -473,7 +490,7 @@
   }
   const knownLocalDate = (id) => {
     const s = Store.read(LOCAL_DATES, {})[id];
-    return s ? s.d : null;
+    return s && sameCountry(s) ? s.d : null;
   };
 
   // the release date that counts for you: movies in your country (worldwide date when
@@ -504,30 +521,95 @@
     return h ? `${h}h ${m}min` : `${m}min`;
   }
 
-  function readCache() {
-    return Store.read(Store.KEYS.tmdbCache, {});
+  /* ---------------- the cache: the browser's database (IndexedDB) ---------------- */
+
+  // Title pages, franchises and recommendations are kept here for a week. Each one is its own
+  // record, so reading or saving one never touches the others (it used to be one big
+  // localStorage block, read and rewritten whole every time). Oldest records go first
+  // past CACHE_LIMIT. No database (some private windows): kept for this visit only.
+  const DB_NAME = "mn-cache";
+  const STORE_NAME = "tmdb";
+  const mem = new Map();
+  let dbPromise = null;
+  try {
+    localStorage.removeItem(Store.KEYS.tmdbCache); // the old localStorage cache
+  } catch (e) {}
+
+  function db() {
+    if (!dbPromise)
+      dbPromise = new Promise((resolve) => {
+        try {
+          const req = indexedDB.open(DB_NAME, 1);
+          req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME, { keyPath: "k" }).createIndex("at", "at");
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(null);
+          req.onblocked = () => resolve(null);
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    return dbPromise;
   }
 
-  function writeCache(cache) {
-    Object.keys(cache).forEach((k) => /^v[2-8]:/.test(k) && delete cache[k]); // older formats
-    const keys = Object.keys(cache);
-    if (keys.length > CACHE_LIMIT) {
-      keys
-        .sort((a, b) => (cache[a].savedAt || 0) - (cache[b].savedAt || 0))
-        .slice(0, keys.length - CACHE_LIMIT)
-        .forEach((k) => delete cache[k]);
-    }
-    Store.write(Store.KEYS.tmdbCache, cache);
+  async function cacheGet(key) {
+    if (mem.has(key)) return mem.get(key);
+    const d = await db();
+    if (!d) return null;
+    return new Promise((resolve) => {
+      try {
+        const req = d.transaction(STORE_NAME).objectStore(STORE_NAME).get(key);
+        req.onsuccess = () => {
+          const v = req.result ? req.result.v : null;
+          if (v) mem.set(key, v);
+          resolve(v);
+        };
+        req.onerror = () => resolve(null);
+      } catch (e) {
+        resolve(null);
+      }
+    });
   }
 
-  // your country, for age ratings and streaming services (e.g. "en-GB" -> "GB")
-  function region() {
-    for (const lang of navigator.languages || [navigator.language || ""]) {
-      const m = /-([A-Z]{2})$/i.exec(lang);
-      if (m) return m[1].toUpperCase();
-    }
-    return "US";
+  let writes = 0;
+  async function cacheSet(key, value) {
+    mem.set(key, value);
+    const d = await db();
+    if (!d) return;
+    try {
+      d.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME).put({ k: key, at: Date.now(), v: value });
+    } catch (e) {}
+    if (++writes % 25 === 1) trimCache(d);
   }
+
+  // past the limit: delete the oldest records
+  function trimCache(d) {
+    try {
+      const store = d.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME);
+      const count = store.count();
+      count.onsuccess = () => {
+        let extra = count.result - CACHE_LIMIT;
+        if (extra <= 0) return;
+        store.index("at").openCursor().onsuccess = (e) => {
+          const cur = e.target.result;
+          if (!cur || extra-- <= 0) return;
+          cur.delete();
+          cur.continue();
+        };
+      };
+    } catch (e) {}
+  }
+
+  // Settings → Remove key: start over
+  async function clearCache() {
+    mem.clear();
+    const d = await db();
+    try {
+      if (d) d.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME).clear();
+    } catch (e) {}
+  }
+
+  // a title's details depend on your country (streaming services, age rating)
+  const detailsKey = (media, id) => `d1:${country()}:${media}-${id}`;
 
   function certificationOf(d, media, country) {
     if (media === "movie") {
@@ -561,13 +643,13 @@
 
   // Full details for a TMDB movie / show (cached for a week)
   async function detailsById(media, id) {
-    const cacheKey = `v9:${media}-${id}`; // v9: X-Ray with logos and country codes
-    const cache = readCache();
-    if (cache[cacheKey] && Date.now() - cache[cacheKey].savedAt < DETAILS_MAX_AGE) return withRuNames(cache[cacheKey], media, id);
+    const cacheKey = detailsKey(media, id);
+    const cached = await cacheGet(cacheKey);
+    if (cached && Date.now() - cached.savedAt < DETAILS_MAX_AGE) return withRuNames(cached, media, id);
 
-    const country = region();
+    const where = country();
     const d = await request(`/${media}/${id}`, {
-      append_to_response: `videos,credits,recommendations,external_ids,images,reviews,watch/providers,keywords,${media === "movie" ? "release_dates" : "content_ratings"}`,
+      append_to_response: `videos,credits,recommendations,external_ids,images,reviews,watch/providers,${media === "movie" ? "release_dates" : "content_ratings"}`,
       include_image_language: "en,null",
     });
     // Many TV shows keep their trailers on the seasons, not the show (Breaking Bad has
@@ -615,8 +697,8 @@
         .filter((r) => r.poster_path)
         .slice(0, 16)
         .map((r) => simplify(r, r.media_type || media)),
-      certification: certificationOf(d, media, country),
-      providers: providersOf(d, country),
+      certification: certificationOf(d, media, where),
+      providers: providersOf(d, where),
       videos: ((d.videos && d.videos.results) || [])
         .filter((v) => v.site === "YouTube")
         .sort(byQuality)
@@ -653,12 +735,10 @@
           .slice(0, 4),
         companies: (d.production_companies || []).map((c) => ({ name: c.name, logo: c.logo_path || "" })).slice(0, 4),
         networks: (d.networks || []).map((n) => ({ name: n.name, logo: n.logo_path || "" })).slice(0, 3),
-        keywords: (((d.keywords && (d.keywords.keywords || d.keywords.results)) || []).map((k) => k.name)).slice(0, 10),
       },
       savedAt: Date.now(),
     });
-    cache[cacheKey] = result;
-    writeCache(cache);
+    cacheSet(cacheKey, result);
     return withRuNames(result, media, id);
   }
 
@@ -671,9 +751,7 @@
       if (ru.poster_path && ru.poster_path !== result.poster) result.posterRu = ru.poster_path;
       applyRu(result.recommendations || [], ru.recommendations, media);
       result.ruDone2 = true;
-      const cache = readCache();
-      cache[`v9:${media}-${id}`] = result;
-      writeCache(cache);
+      cacheSet(detailsKey(media, id), result);
     } catch (e) {}
     return result;
   }
@@ -808,19 +886,20 @@
   // streaming services (subscription) a title is on in your country: [{ id, name, logo }]
   async function providersFor(media, id) {
     const d = await request(`/${media}/${id}/watch/providers`);
-    const here = (d.results || {})[COUNTRY];
+    const here = (d.results || {})[country()];
     return ((here && here.flatrate) || []).map((p) => ({ id: p.provider_id, name: p.provider_name, logo: p.logo_path }));
   }
 
   // every streaming service in your country, most popular first (to pick yours)
   async function providerCatalog() {
+    const where = country();
     const [m, t] = await Promise.all([
-      request("/watch/providers/movie", { watch_region: COUNTRY }),
-      request("/watch/providers/tv", { watch_region: COUNTRY }),
+      request("/watch/providers/movie", { watch_region: where }),
+      request("/watch/providers/tv", { watch_region: where }),
     ]);
     const seen = new Map();
     (m.results || []).concat(t.results || []).forEach((p) => {
-      const prio = (p.display_priorities || {})[COUNTRY] ?? p.display_priority ?? 999;
+      const prio = (p.display_priorities || {})[where] ?? p.display_priority ?? 999;
       const old = seen.get(p.provider_id);
       if (!old || prio < old.prio) seen.set(p.provider_id, { id: p.provider_id, name: p.provider_name, logo: p.logo_path, prio });
     });
@@ -848,9 +927,9 @@
 
   // a franchise: every film in it, in release order (kept a week)
   async function collection(id) {
-    const cache = readCache();
     const key = `col:${id}`;
-    if (cache[key] && Date.now() - cache[key].savedAt < DETAILS_MAX_AGE) return cache[key];
+    const cached = await cacheGet(key);
+    if (cached && Date.now() - cached.savedAt < DETAILS_MAX_AGE) return cached;
     const d = await request(`/collection/${id}`);
     const result = {
       id,
@@ -861,8 +940,7 @@
         .map((p) => simplify(p, "movie")),
       savedAt: Date.now(),
     };
-    cache[key] = result;
-    writeCache(cache);
+    cacheSet(key, result);
     return result;
   }
 
@@ -870,9 +948,9 @@
   // (enough votes that most people have heard of them), two pages deep, kept a week
   const KNOWN_VOTES = { movie: 2000, tv: 500 };
   async function knownRecommendations(media, id) {
-    const cache = readCache();
     const key = `rec3:${media}-${id}`; // rec3: best-known first
-    if (cache[key] && Date.now() - cache[key].savedAt < DETAILS_MAX_AGE) return cache[key].results;
+    const cached = await cacheGet(key);
+    if (cached && Date.now() - cached.savedAt < DETAILS_MAX_AGE) return cached.results;
     const pages = await Promise.all([1, 2].map((page) => request(`/${media}/${id}/recommendations`, { page }).catch(() => ({ results: [] }))));
     const seen = new Set();
     const results = pages
@@ -881,10 +959,27 @@
       .filter((r) => !seen.has(`${r.media_type}-${r.id}`) && seen.add(`${r.media_type}-${r.id}`))
       .sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0)) // the best-known first
       .map((r) => simplify(r, r.media_type || media));
-    cache[key] = { results, savedAt: Date.now() };
-    writeCache(cache);
+    cacheSet(key, { results, savedAt: Date.now() });
     return results;
   }
 
-  window.TMDB = { knownRecommendations, collection, findByImdb, findFilm, providersFor, providerCatalog, nextUp, enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos, seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, COUNTRY, findMatch, person, findPerson, test, CATEGORIES, genreNames, genresFor };
+  // every country TMDB has streaming data for: [{ code, name }] (Settings → Streaming), kept a month
+  async function regions() {
+    const saved = Store.read("mn:regions", null);
+    if (saved && Date.now() - saved.at < 30 * 86400000) return saved.list;
+    const d = await request("/watch/providers/regions");
+    const list = (d.results || []).map((r) => ({ code: r.iso_3166_1, name: r.english_name || r.native_name || r.iso_3166_1 })).sort((a, b) => a.name.localeCompare(b.name));
+    Store.write("mn:regions", { list, at: Date.now() });
+    return list;
+  }
+
+  window.TMDB = {
+    knownRecommendations, collection, findByImdb, findFilm, providersFor, providerCatalog, nextUp, enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos,
+    seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, findMatch, person, findPerson, test, CATEGORIES,
+    genreNames, genresFor, country, countryName, sameCountry, regions, clearCache,
+    // the country picked in Settings (or the site's default)
+    get COUNTRY() {
+      return country();
+    },
+  };
 })();

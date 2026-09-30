@@ -82,6 +82,7 @@
   }
 
   function setLink(libId, ref) {
+    links = Store.read(KEYS.links, {});
     links[libId] = { ref, at: Date.now() };
     Store.write(KEYS.links, links);
   }
@@ -91,6 +92,7 @@
   }
 
   function saveEntry(ref, e) {
+    ratings = Store.read(KEYS.ratings, {}); // (the latest, in case another tab added some)
     ratings[ref] = e;
     Store.write(KEYS.ratings, ratings);
   }
@@ -249,10 +251,21 @@
     listeners.forEach((fn) => fn(libId));
   }
 
+  // (the count is this browser's: OMDb's own limit is per key, and when it's reached on any
+  // device OMDb says so and lookups stop for the day, "blocked")
   function status() {
     const b = budget();
-    return { enabled: omdbEnabled(), keyRejected, used: b.used, limit: DAILY_BUDGET, blocked: b.blocked, cached: Object.keys(ratings).length };
+    const cached = Object.values(ratings).filter((e) => e && typeof e.imdb === "number").length;
+    return { enabled: omdbEnabled(), keyRejected, used: b.used, limit: DAILY_BUDGET, blocked: b.blocked, cached };
   }
+
+  // another tab looked something up: use its answers (and don't save over them)
+  window.addEventListener("storage", (e) => {
+    if (e.key === KEYS.links) links = Store.read(KEYS.links, {});
+    else if (e.key === KEYS.ratings) ratings = Store.read(KEYS.ratings, {});
+    else if (e.key !== KEYS.budget) return;
+    notify(null);
+  });
 
   window.Ratings = { display, needsWork, request, forRef, seed, setLink, refOf, entry, onChange, status, omdbEnabled };
 })();

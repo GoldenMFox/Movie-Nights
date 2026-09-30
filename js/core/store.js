@@ -253,6 +253,17 @@
     listeners.push(fn);
   }
 
+  // The site open in several tabs: a change made in another tab is picked up here at once.
+  // (Without this, this tab would save its older copy over it the next time you change
+  // something, and the other tab's change would be lost.) That tab uploads it.
+  window.addEventListener("storage", (e) => {
+    if (guest || (e.key && !SYNCED.includes(e.key))) return;
+    if (!e.key || e.key === KEYS.overrides) overrides = read(KEYS.overrides, {});
+    if (!e.key || e.key === KEYS.custom) custom = read(KEYS.custom, []);
+    cache = null;
+    listeners.forEach((fn) => fn(null));
+  });
+
   function getTiers() {
     return (!guest && read(KEYS.tiers, null)) || { S: [], A: [], B: [], C: [], D: [] };
   }
@@ -261,31 +272,10 @@
     write(KEYS.tiers, tiers);
   }
 
-  // the whole library as one list with every change baked in (the owner's library moving
-  // from data/library.js into the account: js/core/cloud.js)
-  function flatten() {
-    const fields = [
-      "id", "title", "titleRu", "year", "type", "rating", "poster", "genres", "isNew", "favorite", "watchlist", "rewatch",
-      "tmdbId", "tmdbMedia", "backdrop", "trailer", "runtime", "certification", "director", "overview", "cast", "watchedAt",
-    ];
-    const list = all()
-      .sort((a, b) => a.order - b.order)
-      .map((item) => {
-        const clean = {};
-        fields.forEach((f) => item[f] !== undefined && item[f] !== false && (clean[f] = item[f]));
-        if (clean.rating === undefined) clean.rating = null;
-        return clean;
-      });
-    return { overrides: {}, custom: list, tiers: read(KEYS.tiers, null), profile: Object.assign({ name: getProfile().name, joined: getProfile().joined }, read(KEYS.profile, {})) };
-  }
-
-  // signed in: your own name (the owner's defaults to the site's; others get their Google name).
-  // signed out: "Guest", never the owner's name
+  // signed in: your own name (your Google name until you change it). Signed out: "Guest"
   function getProfile() {
     if (!account) return { name: "Guest", joined: "", guest: true };
-    const defaults =
-      account.base === "empty" ? { name: account.name || "Me", joined: "" } : { name: "Mirzac Nicolae", joined: "July 2023" };
-    return Object.assign(defaults, read(KEYS.profile, {}));
+    return Object.assign({ name: account.name || "Me", joined: "" }, read(KEYS.profile, {}));
   }
 
   function setProfile(patch) {
@@ -434,7 +424,6 @@
     renameList,
     deleteList,
     toggleInList,
-    flatten,
     guest,
     exportBackup,
     importBackup,

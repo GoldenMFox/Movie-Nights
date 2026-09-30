@@ -57,11 +57,17 @@
             "services",
             "fa-tv",
             "Streaming",
-            `<div class="services">
+            `${row(
+              "fa-earth-europe",
+              "Your country",
+              "Where to watch, age ratings and cinema dates",
+              `<span class="glass-select small sv-country-box"><select class="sv-country" aria-label="Your country"><option value="${esc(TMDB.COUNTRY)}">${esc(TMDB.countryName())}</option></select></span>`
+            )}
+            <div class="services">
               <div class="svc-mine"></div>
               <div class="svc-all" hidden></div>
             </div>
-            <p class="sv-note">Used by "On my services" on the Watchlist and by "What should I watch?". Availability in ${esc(TMDB.COUNTRY)}, from JustWatch.</p>`,
+            <p class="sv-note sv-svc-note"></p>`,
             guest ? " hidden" : ""
           )}
 
@@ -76,9 +82,9 @@
               <button class="btn test-key" type="button">Test</button>
               <button class="btn clear-key" type="button">Remove</button>
             </div>
+            <p class="sv-note">Free at themoviedb.org → Settings → API. A key typed here is stored only in this browser and overrides the one in <code>js/config.js</code>.</p>
             ${row("fa-star", "IMDb ratings (OMDb)", '<span class="omdb-state"></span>')}
-            <div class="omdb-status sv-meter"></div>
-            <p class="sv-note">Free at themoviedb.org → Settings → API. A key typed here is stored only in this browser and overrides the one in <code>js/config.js</code>.</p>`,
+            <div class="omdb-status sv-meter"></div>`,
             " data-owner"
           )}
         </div>
@@ -171,7 +177,7 @@
     box.innerHTML = `
       <div class="sv-meter-top">
         <span class="sv-meter-num"><b>${s.used}</b> / ${s.limit}</span>
-        <span class="sv-meter-label">lookups today</span>
+        <span class="sv-meter-label" title="Counted in this browser. If OMDb's own limit is reached from any device, lookups stop for the day by themselves.">lookups today on this device</span>
         <span class="sv-meter-pct ${level}">${full ? "Limit reached" : `${pct}%`}</span>
       </div>
       <div class="sv-meter-bar ${level}"><i style="width:${pct}%"></i></div>
@@ -216,8 +222,8 @@
     keyInput.value = "";
     try {
       localStorage.removeItem(Store.KEYS.tmdbKey);
-      localStorage.removeItem(Store.KEYS.tmdbCache);
     } catch (e) {}
+    TMDB.clearCache();
     toast("Browser key removed");
     showKeyStatus();
   });
@@ -250,6 +256,33 @@
   /* ---------------- streaming services ---------------- */
 
   const logo = (p) => (p.logo ? `https://image.tmdb.org/t/p/w92${p.logo}` : "");
+
+  // your country: every country TMDB has streaming data for
+  const countrySel = $(".sv-country");
+  function paintCountryNote() {
+    $(".sv-svc-note").textContent = `Used by "On my services" on the Watchlist, by "What should I watch?" and by "Where to watch" on title pages. Availability in ${TMDB.countryName()}, from JustWatch.`;
+  }
+  paintCountryNote();
+  if (!guest && TMDB.enabled())
+    TMDB.regions()
+      .then((list) => {
+        const now = TMDB.COUNTRY;
+        if (!list.some((c) => c.code === now)) list.unshift({ code: now, name: TMDB.countryName(now) });
+        countrySel.innerHTML = list.map((c) => `<option value="${esc(c.code)}"${c.code === now ? " selected" : ""}>${esc(c.name)}</option>`).join("");
+      })
+      .catch(() => {});
+  countrySel.addEventListener("change", () => {
+    Store.setProfile({ country: countrySel.value });
+    catalog = null; // the services list is per country
+    const all = $(".svc-all");
+    if (!all.hidden) {
+      all.hidden = true;
+      openServices();
+    }
+    paintCountryNote();
+    toast(`Country: ${TMDB.countryName()}`);
+  });
+
   function renderServices() {
     const mine = Watch.mine();
     $(".svc-mine").innerHTML =

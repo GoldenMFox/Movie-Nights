@@ -10,14 +10,15 @@
  *    aren't signed in see no library at all.
  *  - The owner (admin) is the account the rules allow to list everyone ("users"):
  *    it gets Add a title, the advanced settings and the Members panel.
- *  - The owner's library used to live in the public data/library.js (plus a public
- *    copy, "public/owner"); on the owner's next visit it moves into their private
- *    account and the public copy is emptied (migrate()).
  *  - Several accounts can stay signed in on one device ("Who's watching?").
  *
  * This browser's localStorage stays the working copy: pages read it straight
  * away, and changes are uploaded a moment later. Nothing here runs unless
  * MN_CONFIG.FIREBASE is filled in (js/config.js).
+ *
+ * Two devices changed things before syncing (e.g. the phone offline): both sets of changes
+ * are kept. The last version both agreed on is remembered (mn:syncBase), so for every
+ * title and every setting it's clear which side changed it; the other side's changes stay.
  */
 (function () {
   const cfg = (window.MN_CONFIG || {}).FIREBASE;
@@ -30,6 +31,7 @@
     syncAt: "mn:syncAt", // time of the account version this browser has
     dirty: "mn:dirty", // changes not uploaded yet
     backup: "mn:localBackup", // what this browser had before signing in
+    base: "mn:syncBase", // the last version this browser and the account agreed on (for merging)
   };
   try {
     // older versions: a partner's / friends' ratings, the owner's public library
@@ -157,9 +159,11 @@
   let pushTimer;
   let pushing = Promise.resolve();
   let caughtUp = false; // never upload before this browser has your latest version
+  let edits = 0; // changes made on this page (one made during an upload goes up next time)
 
   function schedulePush() {
     if (!account) return;
+    edits++;
     write(K.dirty, true);
     setStatus("syncing");
     clearTimeout(pushTimer);
@@ -183,8 +187,13 @@
     pushing = pushing
       .then(async () => {
         if (!read(K.dirty, false)) return setStatus("synced");
-        const at = await upload(account, await token(account), Store.snapshot());
+        const seen = edits;
+        const data = Store.snapshot();
+        const at = await upload(account, await token(account), data);
         write(K.syncAt, at);
+        write(K.base, data);
+        // changed again while it was uploading: stays "to upload" (its own timer sends it)
+        if (edits !== seen) return;
         drop(K.dirty);
         setStatus("synced");
       })
@@ -200,14 +209,12 @@
 
   /* ---------------- download ---------------- */
 
-  let reloading = false;
   function reloadOnce() {
     try {
       const last = Number(sessionStorage.getItem("mn:syncReload") || 0);
       if (Date.now() - last < 10000) return;
       sessionStorage.setItem("mn:syncReload", Date.now());
     } catch (e) {}
-    reloading = true;
     location.reload();
   }
 
@@ -216,8 +223,69 @@
     const before = JSON.stringify(Store.snapshot());
     Store.replaceData(data);
     write(K.syncAt, at);
+    write(K.base, data);
     drop(K.dirty);
     if (JSON.stringify(Store.snapshot()) !== before) reloadOnce();
+  }
+
+  /* ---------------- merging two devices' changes ---------------- */
+
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+  // field by field: what this browser changed since the last sync wins, the rest comes
+  // from the account (so a change on the other device is kept too)
+  function mergeFields(base, local, remote) {
+    base = base || {};
+    local = local || {};
+    remote = remote || {};
+    const out = {};
+    new Set([...Object.keys(base), ...Object.keys(local), ...Object.keys(remote)]).forEach((f) => {
+      const v = same(local[f], base[f]) ? remote[f] : local[f];
+      if (v !== undefined) out[f] = v;
+    });
+    return out;
+  }
+
+  function mergeData(base, local, remote) {
+    const B = base.overrides || {};
+    const L = local.overrides || {};
+    const R = remote.overrides || {};
+    const overrides = {};
+    new Set([...Object.keys(L), ...Object.keys(R)]).forEach((id) => {
+      const m = mergeFields(B[id], L[id], R[id]);
+      if (Object.keys(m).length) overrides[id] = m;
+    });
+
+    // titles: added on either side stay; removed on one side go, unless the other side
+    // changed them meanwhile
+    const byId = (list) => new Map((list || []).map((i) => [i.id, i]));
+    const b = byId(base.custom);
+    const l = byId(local.custom);
+    const r = byId(remote.custom);
+    const pick = (id) => {
+      if (l.has(id) && r.has(id)) return mergeFields(b.get(id), l.get(id), r.get(id));
+      if (l.has(id)) return b.has(id) && same(l.get(id), b.get(id)) ? null : l.get(id);
+      if (r.has(id)) return b.has(id) && same(r.get(id), b.get(id)) ? null : r.get(id);
+      return null;
+    };
+    const custom = [];
+    // the account's order, then what's new here
+    (remote.custom || []).forEach((i) => {
+      const m = pick(i.id);
+      if (m) custom.push(m);
+    });
+    (local.custom || []).forEach((i) => {
+      if (r.has(i.id)) return;
+      const m = pick(i.id);
+      if (m) custom.push(m);
+    });
+
+    return {
+      overrides,
+      custom,
+      tiers: same(local.tiers, base.tiers) ? remote.tiers : local.tiers,
+      profile: mergeFields(base.profile, local.profile, remote.profile),
+    };
   }
 
   // signed in, on every page: catch up with your account, then upload anything left over
@@ -226,30 +294,48 @@
       const tok = await token(account);
       const remote = fromDoc(await api(`users/${account.uid}`, { tok }));
       caughtUp = true;
-      // the account's library changed shape on another device (the owner's moved into
-      // the account): take the account's version and start again
+      // the account's library changed shape on another device: take the account's version
       if (remote && remote.base && remote.base !== account.base) {
         remember(Object.assign({}, account, { base: remote.base }));
         Store.replaceData(dataOf(remote));
         write(K.syncAt, remote.updatedAt);
+        write(K.base, dataOf(remote));
         return reloadOnce();
       }
       if (!remote) {
         write(K.dirty, true);
         await push();
       } else if (remote.updatedAt > read(K.syncAt, 0)) {
-        // a newer version from another device wins; keep a copy of this browser's in case
-        if (read(K.dirty, false)) write(K.backup, Store.snapshot());
-        apply(dataOf(remote), remote.updatedAt);
-        setStatus("synced");
+        const theirs = dataOf(remote);
+        const base = read(K.base, null);
+        if (read(K.dirty, false) && base) {
+          // both this browser and another device changed things: keep both
+          write(K.backup, Store.snapshot());
+          const before = JSON.stringify(Store.snapshot());
+          const merged = mergeData(base, Store.snapshot(), theirs);
+          Store.replaceData(merged);
+          write(K.syncAt, remote.updatedAt);
+          write(K.base, theirs);
+          write(K.dirty, true);
+          edits++;
+          await push();
+          if (JSON.stringify(Store.snapshot()) !== before) {
+            toast("Synced: your changes here and on your other device are both kept");
+            setTimeout(reloadOnce, 1200);
+          }
+        } else {
+          // (changes here with nothing to compare against: the account's version wins,
+          // and a copy of this browser's is kept in mn:localBackup)
+          if (read(K.dirty, false)) write(K.backup, Store.snapshot());
+          apply(theirs, remote.updatedAt);
+          setStatus("synced");
+        }
       } else if (read(K.dirty, false)) {
         await push();
       } else {
         setStatus("synced");
       }
       await checkOwner(tok);
-      // (not while the page is reloading with a newer version: that happens on the next load)
-      if (account.base === "library" && !reloading) await migrate(tok);
     } catch (err) {
       console.warn("Sync:", err.message);
       if (err.signedOut) {
@@ -280,27 +366,6 @@
     write(K.accounts, accounts().map((a) => (a.uid === account.uid ? Object.assign({}, a, { owner: account.owner }) : a)));
     document.documentElement.classList.toggle("is-owner", account.owner);
     ownerListeners.forEach((fn) => fn(account.owner));
-  }
-
-  // The owner's library moves from the public data/library.js into their private account
-  // (everything baked into one list), and the public copy visitors used to see is emptied.
-  async function migrate(tok) {
-    if (!(window.LIBRARY || []).length) return; // the site's list is gone already: nothing to move
-    const flat = Store.flatten();
-    if (!flat.custom.length) return;
-    write(K.backup, Store.snapshot());
-    const acct = Object.assign({}, account, { base: "empty", owner: true });
-    const at = await upload(acct, tok, flat);
-    try {
-      await api("public/owner", { method: "PATCH", tok, body: toDoc({ data: "{}", name: "-", updatedAt: at }) });
-    } catch (e) {
-      console.warn("Public copy:", e.message);
-    }
-    remember(acct);
-    Store.replaceData(flat);
-    write(K.syncAt, at);
-    toast("Your library is now private: only you can see it");
-    setTimeout(() => location.reload(), 1500);
   }
 
   // Members panel (owner only): everyone who has signed in, with how big their library is
@@ -480,6 +545,7 @@
         remember(acct);
         Store.replaceData(dataOf(remote));
         write(K.syncAt, remote.updatedAt);
+        write(K.base, dataOf(remote));
       } else {
         // first time ever: a new, empty library of your own
         acct.base = "empty";
@@ -489,6 +555,7 @@
         remember(acct);
         Store.replaceData(data);
         write(K.syncAt, at);
+        write(K.base, data);
       }
       if (back) location.replace(back);
       else location.reload();
@@ -564,12 +631,13 @@
       remember(acct);
       Store.replaceData(remote ? dataOf(remote) : {});
       write(K.syncAt, remote ? remote.updatedAt : 0);
+      write(K.base, remote ? dataOf(remote) : {});
       if (typeof back === "string") location.replace(back);
       else location.reload();
     } catch (err) {
       if (err.signedOut) {
         write(K.accounts, accounts().filter((a) => a.uid !== uid));
-        toast(`${first(acct.name)} was signed out. Choose "Add a profile" to sign in again.`);
+        toast(`${first(acct.name)} was signed out. Use "Sign in with Google" in the profile menu to sign in again.`);
       } else toast(`Couldn't switch profiles: ${err.message}`);
     }
   }
@@ -583,8 +651,9 @@
       await app.delete();
     } catch (e) {}
     write(K.accounts, accounts().filter((a) => a.uid !== account.uid));
-    // this device shows no library until someone signs in; your data stays in your account
-    drop(K.account, K.syncAt, K.dirty, ...Store.SYNCED);
+    // this device shows no library until someone signs in (not even the spare copies);
+    // your data stays in your account
+    drop(K.account, K.syncAt, K.dirty, K.backup, K.base, ...Store.SYNCED);
     location.reload();
   }
 
@@ -592,6 +661,8 @@
 
   if (enabled) {
     if (account) Store.onSave(schedulePush);
+    // another tab signed in, out or switched profiles: follow it
+    window.addEventListener("storage", (e) => e.key === K.account && location.reload());
     document.addEventListener("DOMContentLoaded", async () => {
       if (await finishRedirect()) return;
       if (account) start();

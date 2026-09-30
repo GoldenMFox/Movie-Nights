@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Service worker: makes Movie Nights work as an installed app and offline.
  *
  *  - Pages, styles, scripts and data/library.js: always fetched fresh when
@@ -12,7 +12,7 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v42";
+const VERSION = "v43";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [

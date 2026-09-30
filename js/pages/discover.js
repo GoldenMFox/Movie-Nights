@@ -168,8 +168,8 @@
 
   // "Coming soon · Dec 15" on titles that aren't out yet (only here on Discover). Not on
   // the "Coming soon" list itself, where every title would have it.
-  // Movies use their release date in Romania (MN_CONFIG.RELEASE_COUNTRY), looked up for
-  // recent and upcoming ones; until it arrives (or if Romania has none) the worldwide date.
+  // Movies use their release date in your country (Settings → Streaming), looked up for
+  // recent and upcoming ones; until it arrives (or if your country has none) the worldwide date.
   const today = () => new Date().toISOString().slice(0, 10);
   const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
 
@@ -186,7 +186,7 @@
     });
     img.insertAdjacentHTML(
       "afterend",
-      `<span class="soon-label" title="In cinemas in ${esc(TMDB.COUNTRY === "RO" ? "Romania" : TMDB.COUNTRY)} from ${esc(when)}"><i class="fa-regular fa-clock"></i> <span class="soon-word">Coming soon · </span>${esc(when)}</span>`
+      `<span class="soon-label" title="In cinemas in ${esc(TMDB.countryName())} from ${esc(when)}"><i class="fa-regular fa-clock"></i> <span class="soon-word">Coming soon · </span>${esc(when)}</span>`
     );
   }
 

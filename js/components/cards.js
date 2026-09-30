@@ -157,7 +157,7 @@
   function toggleReminder(hit, key) {
     const on = Watch.toggleReminder(hit, key);
     toast(on ? `We'll show "${Lang.title(hit)}" in Coming up on your Watchlist page` : `Reminder for "${Lang.title(hit)}" removed`);
-    document.querySelectorAll(`.movie-item[data-tmdb="${CSS.escape(key)}"]`).forEach((el) => (el.outerHTML = tmdbCard(hit)));
+    document.querySelectorAll(`.movie-item[data-tmdb="${CSS.escape(key)}"]`).forEach((el) => redraw(el, tmdbCard(hit)));
     return on;
   }
 
@@ -787,18 +787,33 @@
     runAction(action, holder.dataset.id);
   });
 
+  // swap a card for a freshly drawn one, keeping what the page added to it: Discover's
+  // "waiting for Load more" (hidden) state and its "Coming soon · date" label
+  const KEEP_CLASSES = ["dc-later"];
+  function redraw(el, html) {
+    const box = document.createElement("div");
+    box.innerHTML = html;
+    const fresh = box.firstElementChild;
+    if (!fresh) return;
+    KEEP_CLASSES.forEach((c) => el.classList.contains(c) && fresh.classList.add(c));
+    const soon = el.querySelector(".soon-label");
+    const img = fresh.querySelector(".poster-link .movie-poster");
+    if (soon && img) img.after(soon);
+    el.replaceWith(fresh);
+  }
+
   // redraw cards in place when something changes
   Store.onChange((id) => {
     const selector = id ? `.movie-item[data-id="${CSS.escape(id)}"]` : ".movie-item[data-id]";
     document.querySelectorAll(selector).forEach((el) => {
       const item = Store.get(el.dataset.id);
-      if (item) el.outerHTML = card(item);
+      if (item) redraw(el, card(item));
     });
     // TMDB cards that were just added become normal library cards
     document.querySelectorAll(".movie-item[data-tmdb]").forEach((el) => {
       const hit = hits.get(el.dataset.tmdb);
       const lib = hit && inLibrary(hit);
-      if (lib) el.outerHTML = card(lib);
+      if (lib) redraw(el, card(lib));
     });
   });
 
@@ -1175,7 +1190,8 @@
     if (!window.TMDB || !TMDB.enabled() || !window.Ratings) return;
     const saved = Store.read(RELEASES, {});
     const today = new Date().toISOString().slice(0, 10);
-    const stale = (r) => !r || (Date.now() - r.at > 7 * 86400000 && (!r.d || r.d > today));
+    // (or looked up for another country: you changed it in Settings)
+    const stale = (r) => !r || !TMDB.sameCountry(r) || (Date.now() - r.at > 7 * 86400000 && (!r.d || r.d > today));
     const minYear = new Date().getFullYear() - 1;
     const todo = Store.all().filter((i) => Number(i.year) >= minYear && stale(saved[i.id]));
     if (!todo.length) return;
@@ -1188,7 +1204,7 @@
           Ratings.setLink(item.id, ref);
         }
         const [media, id] = ref.split("-");
-        saved[item.id] = { d: ref === "none" ? "" : await TMDB.releaseDate(media, id), at: Date.now() };
+        saved[item.id] = { d: ref === "none" ? "" : await TMDB.releaseDate(media, id), at: Date.now(), c: TMDB.country() };
       } catch (e) {
         break; // offline / TMDB trouble: try again next time
       }

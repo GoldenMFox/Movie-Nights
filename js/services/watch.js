@@ -1,12 +1,14 @@
 /*
  * Watch: your streaming services and what's coming (Watchlist page, picker, Profile).
  *
- *  - Your services: picked in Profile → Settings, saved in your profile (so they follow
- *    your account to every device).
+ *  - Your services and your country: picked in Settings → Streaming, saved in your profile
+ *    (so they follow your account to every device).
  *  - Which services a title is on in your country (TMDB / JustWatch): mn:providers,
- *    { "movie-157336": { v: [8, 337], at } }, looked up again after a week.
- *  - What's next for a title (a movie's release date, a show's next episode): mn:nextUp,
- *    { ref: { v: { date, kind, season, episode } | null, at } }, looked up again after a day.
+ *    { "movie-157336": { v: [8, 337], at, c: "RO" } }, looked up again after a week.
+ *  - What's next for a title (a movie's release date in your country, a show's next
+ *    episode): mn:nextUp, { ref: { v: { date, kind, season, episode } | null, at, c } },
+ *    looked up again after a day.
+ *  Answers for another country (you changed it) count as not looked up.
  */
 (function () {
   const PROV = "mn:providers";
@@ -44,10 +46,12 @@
 
   /* ---------------- lookups, kept in this browser ---------------- */
 
+  const here = (s) => !window.TMDB || TMDB.sameCountry(s);
+
   function saved(key, item) {
     const ref = knownRef(item);
     const s = ref && Store.read(key, {})[ref];
-    return s ? s.v : undefined; // undefined = not looked up yet
+    return s && here(s) ? s.v : undefined; // undefined = not looked up yet
   }
 
   const busy = new Set();
@@ -58,7 +62,7 @@
     const todo = items.filter((i) => {
       const ref = knownRef(i);
       const s = ref && store[ref];
-      return !(s && now - s.at < maxAge);
+      return !(s && here(s) && now - s.at < maxAge);
     });
     if (!todo.length) return;
     let found = false;
@@ -66,14 +70,16 @@
       while (todo.length) {
         const item = todo.shift();
         let ref;
+        let mine = false; // (another worker may be looking up the same title)
         try {
           ref = await refOf(item);
           if (!ref || busy.has(key + ref)) continue;
           busy.add(key + ref);
+          mine = true;
           const [media, id] = ref.split("-");
           const v = await fetcher(media, Number(id));
           const fresh = Store.read(key, {});
-          fresh[ref] = { v, at: Date.now() };
+          fresh[ref] = { v, at: Date.now(), c: TMDB.country() };
           const keys = Object.keys(fresh);
           if (keys.length > 600) keys.sort((a, b) => fresh[a].at - fresh[b].at).slice(0, keys.length - 600).forEach((k) => delete fresh[k]);
           Store.write(key, fresh);
@@ -81,7 +87,7 @@
         } catch (e) {
           // offline / TMDB hiccup: try again next time
         } finally {
-          if (ref) busy.delete(key + ref);
+          if (mine) busy.delete(key + ref);
         }
       }
     };
