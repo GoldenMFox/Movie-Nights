@@ -17468,3 +17468,100 @@ html:not(.app-ui) .profile-menu .menu-group a.bo-menu-link {
     padding-top: 12px;
   }
 }
+
+/* ---------- the chart's controls: sort + List / Posters together on the right, the Watched filter under them ---------- */
+.bo-head-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.bo-head-tools .top10-switch {
+  margin: 0;
+}
+
+.bo-view .top10-tab i {
+  margin-right: 0;
+}
+
+.bo-view-label {
+  margin-left: 5px;
+}
+
+@media (max-width: 700px) {
+  /* the title with the two view icons beside it; the sort below, full width, four equal parts;
+     then the Watched filter, full width too */
+  .bo-chart-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "title view"
+      "sort sort";
+    align-items: center;
+    gap: 12px 10px;
+    margin-bottom: 10px;
+  }
+
+  .bo-head-tools {
+    display: contents;
+  }
+
+  .bo-chart-title {
+    grid-area: title;
+  }
+
+  .bo-view {
+    grid-area: view;
+    align-self: start;
+  }
+
+  .bo-view-label {
+    display: none;
+  }
+
+  .bo-view .top10-tab {
+    padding: 8px 12px;
+  }
+
+  .bo-sort {
+    grid-area: sort;
+    display: flex;
+    width: 100%;
+  }
+
+  .bo-sort .top10-tab {
+    flex: 1;
+    padding: 9px 4px;
+  }
+
+  .bo-tools {
+    display: block;
+    margin: 0 0 14px;
+  }
+
+  .bo-show {
+    display: flex;
+    width: 100%;
+    overflow: visible;
+  }
+
+  .bo-show .top10-tab {
+    flex: 1 1 auto;
+    padding: 9px 6px;
+    white-space: nowrap;
+  }
+}
+
+/* (the "in 2026 dollars" tag stays in one piece: it moves to the next line whole) */
+.bo-real-tag {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .bo-chart-title .bo-real-tag {
+    margin: 6px 0 0;
+  }
+}

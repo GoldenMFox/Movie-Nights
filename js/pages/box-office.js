@@ -94,27 +94,28 @@
     </section>
     <div class="bo-head bo-chart-head">
       <h2 class="section-title bo-chart-title"></h2>
-      <div class="top10-switch bo-sort" role="group" aria-label="Sort the chart by">
-        ${Object.entries(SORTS).map(([k, s]) => `<button type="button" class="top10-tab${k === state.sort ? " active" : ""}" data-sort="${k}"><i class="fa-solid ${s.icon}"></i> ${s.label}</button>`).join("")}
+      <!-- (phones: List / Posters as two icons beside the title, the sort below at full width) -->
+      <div class="bo-head-tools">
+        <div class="top10-switch bo-sort" role="group" aria-label="Sort the chart by">
+          ${Object.entries(SORTS).map(([k, s]) => `<button type="button" class="top10-tab${k === state.sort ? " active" : ""}" data-sort="${k}"><i class="fa-solid ${s.icon}"></i> ${s.label}</button>`).join("")}
+        </div>
+        <div class="top10-switch bo-view" role="group" aria-label="View">
+          <button type="button" class="top10-tab${state.view === "list" ? " active" : ""}" data-view="list" aria-label="List" title="List"><i class="fa-solid fa-list"></i><span class="bo-view-label"> List</span></button>
+          <button type="button" class="top10-tab${state.view === "posters" ? " active" : ""}" data-view="posters" aria-label="Posters" title="Posters"><i class="fa-solid fa-table-cells"></i><span class="bo-view-label"> Posters</span></button>
+        </div>
       </div>
     </div>
-    <div class="bo-tools">
-      <div class="bo-tools-left">
-      ${
-        Store.guest
-          ? ""
-          : `<div class="top10-switch bo-show" role="group" aria-label="Which films">
+    ${
+      Store.guest
+        ? ""
+        : `<div class="bo-tools">
+      <div class="top10-switch bo-show" role="group" aria-label="Which films">
         <button type="button" class="top10-tab active" data-show="all">All <small></small></button>
         <button type="button" class="top10-tab" data-show="seen"><i class="fa-solid fa-check"></i> Watched <small></small></button>
         <button type="button" class="top10-tab" data-show="unseen"><i class="fa-regular fa-eye-slash"></i> Not seen yet <small></small></button>
-      </div>`
-      }
       </div>
-      <div class="top10-switch bo-view" role="group" aria-label="View">
-        <button type="button" class="top10-tab${state.view === "list" ? " active" : ""}" data-view="list" aria-label="List"><i class="fa-solid fa-list"></i> List</button>
-        <button type="button" class="top10-tab${state.view === "posters" ? " active" : ""}" data-view="posters" aria-label="Posters"><i class="fa-solid fa-table-cells"></i> Posters</button>
-      </div>
-    </div>
+    </div>`
+    }
     <ol class="bo-chart"></ol>
     <div class="bo-more"></div>
     <p class="bo-note"><i class="fa-solid fa-circle-info"></i> Worldwide gross and budgets from TMDB, in US dollars. "Adjusted for inflation" turns them into this year's dollars with US inflation (the CPI; this year's figure is an estimate until it's published), counting a film at its release year's prices, so classics that were re-released come out a little high. The verdict compares the gross with the budget (5× Blockbuster, 2× Hit, 1× Broke even, less: Flop); profit is before the cinemas' share and marketing. TMDB has no weekend or daily numbers.</p>`;
