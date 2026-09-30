@@ -5974,6 +5974,24 @@ html.tablet .lang-toggle.in-profile {
   }
 }
 
+/* iPad mini, upright (744px): a little tighter still */
+@media (max-width: 780px) {
+  html.tablet .nav-bar {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  html.tablet .nav-links a {
+    padding: 8px 8px;
+  }
+
+  html.tablet .nav-tools .icon-btn,
+  html.tablet .user-pic {
+    width: 36px;
+    height: 36px;
+  }
+}
+
 /* ---- home: the slideshow fills the width and sits under a see-through navbar ---- */
 html.tablet body[data-page="home"] .site-nav::before {
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent);
@@ -18304,5 +18322,413 @@ html.sm-lock {
 
   .wl-sort-s {
     display: inline;
+  }
+}
+
+/* ============================== Tier list: saved tier lists (the shelf, Save, the viewer) ============================== */
+/* each saved list is a glass card with a tiny version of its tiers (the letters and a few
+   posters); the one on the board has a red edge. Opening one shows it big, to look at. */
+
+.tl-saved {
+  margin: 0 0 18px;
+}
+
+.tl-saved-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.tl-saved-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.tl-saved-head h2 i {
+  margin-right: 6px;
+  color: var(--accent-hover);
+}
+
+.tl-saved-head h2 small {
+  margin-left: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--glass-bg);
+  color: var(--text-muted);
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.tl-saved-head .btn {
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 600;
+}
+
+.tl-shelf {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 12px 2px 10px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.tl-card {
+  position: relative;
+  display: flex;
+  flex: 0 0 250px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  background: var(--glass-bg);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), border-color 0.2s, box-shadow 0.2s;
+}
+
+.tl-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.3);
+  transform: translateY(-3px);
+}
+
+.tl-card.on {
+  border-color: rgba(229, 9, 20, 0.7);
+  box-shadow: 0 0 0 1px rgba(229, 9, 20, 0.35), 0 10px 28px rgba(144, 13, 9, 0.25);
+}
+
+.tl-mini {
+  display: grid;
+  gap: 3px;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.tl-mini-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 26px;
+  padding-right: 4px;
+  overflow: hidden;
+  border-radius: 7px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 22%, transparent), transparent 70%);
+}
+
+.tl-mini-row b {
+  flex: none;
+  width: 22px;
+  color: var(--tc);
+  font-size: 13px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.tl-mini-row[style*="#62626b"] b {
+  color: #9a9aa3;
+}
+
+.tl-mini-row img {
+  flex: none;
+  width: 17px;
+  height: 24px;
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+.tl-mini-row em {
+  margin-left: 2px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.tl-card-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tl-card-text strong {
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tl-card-text small {
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.tl-card-on {
+  position: absolute;
+  top: -8px;
+  right: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(144, 13, 9, 0.45);
+}
+
+.tl-shelf-empty {
+  flex: 1;
+  margin: 0;
+  padding: 18px 20px;
+  border: 1px dashed var(--glass-border);
+  border-radius: 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tl-shelf-empty i {
+  margin-right: 6px;
+  color: var(--accent-hover);
+}
+
+/* the status and Save, at the end of the buttons */
+.tl-actions {
+  align-items: center;
+}
+
+.tl-status {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+.tl-status b {
+  color: var(--text);
+}
+
+.tl-status .fa-check {
+  color: #7fd6a2;
+}
+
+.tl-dirty {
+  color: #ffb14a;
+  font-weight: 600;
+}
+
+.tl-actions .tl-save:not(:disabled) {
+  border-color: rgba(229, 9, 20, 0.6);
+  background: rgba(229, 9, 20, 0.16);
+  color: #fff;
+}
+
+.tl-actions .btn[hidden] {
+  display: none;
+}
+
+/* the viewer */
+.tlv-modal {
+  max-width: 820px;
+}
+
+.tlv-head {
+  margin: 0 36px 16px 0;
+}
+
+.tlv-head h3 {
+  margin: 4px 0 2px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-align: left;
+}
+
+.tlv-head small {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.tlv-board {
+  display: grid;
+  gap: 8px;
+}
+
+.tlv-row {
+  display: flex;
+  min-height: 92px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 14%, transparent), transparent 45%), rgba(255, 255, 255, 0.04);
+  animation: wl-in 0.4s cubic-bezier(0.32, 0.72, 0, 1) backwards;
+}
+
+.tlv-row:nth-child(2) { animation-delay: 40ms; }
+.tlv-row:nth-child(3) { animation-delay: 80ms; }
+.tlv-row:nth-child(4) { animation-delay: 120ms; }
+.tlv-row:nth-child(5) { animation-delay: 160ms; }
+
+.tlv-label {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 78px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--tc) 16%, transparent);
+}
+
+.tlv-label b {
+  color: var(--tc);
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 16px color-mix(in srgb, var(--tc) 70%, transparent);
+}
+
+.tlv-row[data-tier="S"] .tlv-label b {
+  color: #ff5a64;
+}
+
+.tlv-row[data-tier="D"] .tlv-label b {
+  color: #9a9aa3;
+  text-shadow: none;
+}
+
+.tlv-label small {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tlv-posters {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  gap: 6px;
+  padding: 8px;
+}
+
+.tlv-posters button {
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.tlv-posters button:hover {
+  transform: translateY(-2px) scale(1.04);
+}
+
+.tlv-posters img {
+  display: block;
+  width: 50px;
+  height: 75px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.tlv-none {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 13px;
+}
+
+.tlv-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.tlv-buttons .btn {
+  border-radius: 999px;
+}
+
+.tlv-modal .tlv-buttons .btn:not(.btn-primary) {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.tlv-modal .tlv-buttons .tlv-delete {
+  width: 42px;
+  margin-left: auto;
+  padding: 0;
+  justify-content: center;
+}
+
+.tlv-modal .tlv-buttons .tlv-delete:hover {
+  border-color: rgba(229, 9, 20, 0.6);
+  background: rgba(229, 9, 20, 0.2);
+}
+
+@media (max-width: 700px) {
+  .tl-card {
+    flex-basis: 190px;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .tl-mini-row {
+    height: 20px;
+  }
+
+  .tl-mini-row img {
+    width: 13px;
+    height: 19px;
+  }
+
+  .tl-saved-head h2 {
+    font-size: 17px;
+  }
+
+  .tl-saved-head .btn {
+    padding: 7px 13px;
+    font-size: 13.5px;
+  }
+
+  .tl-status {
+    order: -1;
+    flex: 1 1 100%;
+    margin: 0;
+  }
+
+  .tlv-label {
+    width: 54px;
+  }
+
+  .tlv-label b {
+    font-size: 26px;
+  }
+
+  .tlv-label small {
+    display: none;
+  }
+
+  .tlv-posters img {
+    width: 40px;
+    height: 60px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tlv-row {
+    animation: none;
   }
 }

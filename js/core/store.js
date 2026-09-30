@@ -304,6 +304,21 @@
     return (account && account.photo) || "";
   }
 
+  /* ---------- saved tier lists ("All-time favorites", "2026 so far"…), saved with your profile ---------- */
+
+  // [{ id, name, tiers: { S: [library ids], A, B, C, D }, made, at }] (made: created, at: last saved).
+  // The board on the Tier List page is mn:tiers; tierActive is the saved list it was opened from.
+  const tierLists = () => (getProfile().tierLists || []).filter((t) => t && t.id);
+  function saveTierLists(list, active) {
+    const patch = { tierLists: list };
+    if (active !== undefined) patch.tierActive = active;
+    setProfile(patch);
+  }
+  const tierActive = () => {
+    const id = getProfile().tierActive;
+    return id && tierLists().some((t) => t.id === id) ? id : null;
+  };
+
   /* ---------- your own lists ("Halloween marathon", "Date night"…), saved with your profile ---------- */
 
   // [{ id, name, items: [library ids] }]
@@ -440,6 +455,9 @@
     onChange,
     getTiers,
     setTiers,
+    tierLists,
+    saveTierLists,
+    tierActive,
     getProfile,
     setProfile,
     myPhoto,

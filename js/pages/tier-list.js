@@ -9,7 +9,9 @@
  *  - Fill from my ratings: 10 → S, 9 → A, 8 → B, 7 → C, below → D, with Undo.
  *
  * Only watched titles can be ranked: in your library, and not only on your Watchlist.
- * Saved with your account (Store.setTiers).
+ * Saved with your account (Store.setTiers). Save keeps the board as a named tier list
+ * (as many as you like, Store.tierLists); open one to look at it, or to edit it. Save keeps the board as a named tier list
+ * (as many as you like, Store.tierLists); open one to look at it, or to edit it.
  */
 (function () {
   const { esc, toast } = UI;
@@ -51,10 +53,14 @@
     : "Drag posters from the tray into a tier. Double-click a poster to open it. Or use Quick rank to go through them one by one.";
 
   root.innerHTML = `
+    <section class="tl-saved" aria-label="Your tier lists"></section>
     <div class="tl-actions">
       <button class="btn btn-primary tl-quick" type="button"><i class="fa-solid fa-bolt"></i> Quick rank</button>
       <button class="btn tl-fill" type="button"><i class="fa-solid fa-wand-magic-sparkles"></i> Fill from my ratings</button>
       <button class="btn tl-clear" type="button"><i class="fa-solid fa-rotate-left"></i> Clear</button>
+      <span class="tl-status" aria-live="polite"></span>
+      <button class="btn tl-saveas" type="button" hidden><i class="fa-regular fa-copy"></i> <span class="tl-word">Save as new</span></button>
+      <button class="btn tl-save" type="button"><i class="fa-solid fa-floppy-disk"></i> Save</button>
     </div>
     <div class="tl-board">
       ${TIERS.map(
@@ -144,6 +150,7 @@
     $(".tl-left").textContent = total;
     $(".tl-more").textContent = list.length > POOL_LIMIT ? `Showing ${POOL_LIMIT} of ${list.length}: search to find the rest.` : "";
     $(".tl-quick").disabled = !total;
+    renderSaved();
 
     // a poster picked (phones): the bar with the tiers, and the tiers light up
     root.classList.toggle("picking", !!selected);
@@ -239,6 +246,11 @@
       b.title = b.getAttribute("aria-label");
       return;
     }
+    const card = e.target.closest(".tl-card");
+    if (card) return view(card.dataset.list);
+    if (e.target.closest(".tl-new")) return newBoard();
+    if (e.target.closest(".tl-save")) return saveBoard(false);
+    if (e.target.closest(".tl-saveas")) return saveBoard(true);
     if (e.target.closest(".tl-quick")) return quickRank();
     if (e.target.closest(".tl-fill")) return fillFromRatings();
     if (e.target.closest(".tl-clear")) return clearAll();
@@ -325,6 +337,230 @@
     save();
     render();
     undoToast("Tiers cleared", before);
+  }
+
+  /* ---------- saved tier lists: keep as many as you like, look at them any time ---------- */
+
+  // The board is what you're ranking now (mn:tiers). Save keeps a copy under a name
+  // (Store.tierLists, with your profile); the board stays linked to it (Store.tierActive),
+  // so the next Save updates that one. Open a saved one to look at it, or to edit it.
+
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function dayLabel(t) {
+    const d = new Date(t);
+    return `${d.getDate()} ${MONTHS[d.getMonth()]}${d.getFullYear() !== new Date().getFullYear() ? ` ${d.getFullYear()}` : ""}`;
+  }
+  // a saved list's tiers, without titles that have left your library since
+  const tiersOf = (list) => {
+    const out = {};
+    IDS.forEach((id) => (out[id] = ((list.tiers || {})[id] || []).filter((x) => Store.get(x))));
+    return out;
+  };
+  const sameTiers = (a, b) => JSON.stringify(IDS.map((t) => a[t])) === JSON.stringify(IDS.map((t) => b[t]));
+  const countOf = (t) => IDS.reduce((n, id) => n + t[id].length, 0);
+  const active = () => Store.tierLists().find((l) => l.id === Store.tierActive()) || null;
+  // the board has changes that aren't in a saved list
+  function unsaved() {
+    const a = active();
+    return a ? !sameTiers(tiers, tiersOf(a)) : countOf(tiers) > 0;
+  }
+
+  function miniHtml(t) {
+    return `<span class="tl-mini">${TIERS.map(
+      (x) => `<span class="tl-mini-row" style="--tc:${x.color}"><b>${x.id}</b>${t[x.id]
+        .slice(0, 6)
+        .map((id) => `<img src="${Store.poster(Cards.posterOf(Store.get(id)), "w92")}" alt="" loading="lazy" />`)
+        .join("")}${t[x.id].length > 6 ? `<em>+${t[x.id].length - 6}</em>` : ""}</span>`
+    ).join("")}</span>`;
+  }
+
+  function renderSaved() {
+    const lists = Store.tierLists();
+    const a = active();
+    const dirty = unsaved();
+    root.querySelector(".tl-saved").innerHTML = `
+      <div class="tl-saved-head">
+        <h2><i class="fa-solid fa-layer-group"></i> Your tier lists${lists.length ? ` <small>${lists.length}</small>` : ""}</h2>
+        <button class="btn tl-new" type="button"><i class="fa-solid fa-plus"></i> New tier list</button>
+      </div>
+      <div class="tl-shelf">${
+        lists.length
+          ? lists
+              .slice()
+              // the one on the board first, then the last saved
+              .sort((x, y) => (a && y.id === a.id) - (a && x.id === a.id) || (y.at || 0) - (x.at || 0))
+              .map((l) => {
+                const t = tiersOf(l);
+                const on = a && a.id === l.id;
+                return `<button class="tl-card${on ? " on" : ""}" type="button" data-list="${esc(l.id)}" aria-label="${esc(l.name)}: look at it">
+                  ${miniHtml(t)}
+                  <span class="tl-card-text"><strong>${esc(l.name)}</strong>
+                  <small>${countOf(t)} title${countOf(t) === 1 ? "" : "s"} · ${dayLabel(l.at || l.made)}</small></span>
+                  ${on ? `<em class="tl-card-on">${dirty ? "Editing · unsaved" : "On the board"}</em>` : ""}
+                </button>`;
+              })
+              .join("")
+          : `<p class="tl-shelf-empty"><i class="fa-regular fa-floppy-disk"></i> Rank some titles, then <b>Save</b> to keep this tier list. Make as many as you like: all-time, this year, horror only… and look at them any time.</p>`
+      }</div>`;
+
+    const status = $(".tl-status");
+    status.innerHTML = a
+      ? `<b>${esc(a.name)}</b> · ${dirty ? '<span class="tl-dirty">Unsaved changes</span>' : '<i class="fa-solid fa-check"></i> Saved'}`
+      : countOf(tiers)
+      ? '<span class="tl-dirty">Not saved yet</span>'
+      : "";
+    $(".tl-save").disabled = (a && !dirty) || !countOf(tiers);
+    $(".tl-saveas").hidden = !a;
+  }
+
+  const newId = () => `t${Date.now().toString(36)}`;
+
+  async function saveBoard(asNew) {
+    if (!countOf(tiers)) return toast("Rank a few titles first");
+    const lists = Store.tierLists();
+    const a = active();
+    const now = Date.now();
+    if (a && !asNew) {
+      Store.saveTierLists(lists.map((l) => (l.id === a.id ? Object.assign({}, l, { tiers: copy(tiers), at: now }) : l)));
+      toast(`Saved "${a.name}"`);
+      return render();
+    }
+    const name = await UI.ask({
+      icon: "fa-floppy-disk",
+      title: asNew ? "Save as a new tier list" : "Name this tier list",
+      text: "Keep as many as you like and look at them any time.",
+      value: a ? `${a.name} (copy)` : lists.length ? `My tier list ${lists.length + 1}` : "All-time favorites",
+      placeholder: "e.g. Best of 2026",
+      ok: "Save",
+    });
+    if (!name) return;
+    const id = newId();
+    Store.saveTierLists(lists.concat({ id, name: name.slice(0, 40), tiers: copy(tiers), made: now, at: now }), id);
+    toast(`Saved "${name.slice(0, 40)}"`);
+    render();
+  }
+
+  // leaving the board (open another list, start a new one): ask first when it has unsaved changes
+  async function mayLeave() {
+    if (!unsaved()) return true;
+    const a = active();
+    return UI.confirm({
+      icon: "fa-floppy-disk",
+      title: "Leave without saving?",
+      text: a ? `Your changes to <b>${esc(a.name)}</b> aren't saved.` : "The tiers on the board aren't saved in a tier list.",
+      ok: "Leave anyway",
+      cancel: "Keep editing",
+      danger: true,
+    });
+  }
+
+  async function openForEdit(listId) {
+    const l = Store.tierLists().find((x) => x.id === listId);
+    if (!l) return;
+    if (!(await mayLeave())) return false;
+    tiers = tiersOf(l);
+    save();
+    Store.saveTierLists(Store.tierLists(), l.id);
+    selected = null;
+    render();
+    toast(`"${l.name}" is on the board`);
+    return true;
+  }
+
+  async function newBoard() {
+    if (!(await mayLeave())) return;
+    IDS.forEach((t) => (tiers[t] = []));
+    save();
+    Store.saveTierLists(Store.tierLists(), null);
+    selected = null;
+    render();
+    toast("A fresh board: rank away");
+  }
+
+  // a saved list, to look at (and open, rename or delete)
+  let viewer = null;
+  let viewing = null;
+  function view(listId) {
+    const l = Store.tierLists().find((x) => x.id === listId);
+    if (!l) return;
+    viewing = l.id;
+    if (!viewer) {
+      viewer = Cards.makeOverlay("tlv-modal", `<div class="tlv-in"></div>`);
+      viewer.addEventListener("click", async (e) => {
+        if (e.target.closest(".tlv-open")) {
+          if (Store.tierActive() === viewing) return Cards.closeModal(viewer);
+          Cards.closeModal(viewer);
+          if (!(await openForEdit(viewing))) view(viewing);
+          else window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+        if (e.target.closest(".tlv-rename")) renameList(viewing);
+        if (e.target.closest(".tlv-delete")) deleteList(viewing);
+        const poster = e.target.closest("[data-open]");
+        if (poster) location.href = `title.html?id=${encodeURIComponent(poster.dataset.open)}`;
+      });
+    }
+    const t = tiersOf(l);
+    const on = Store.tierActive() === l.id;
+    viewer.querySelector(".tlv-in").innerHTML = `
+      <div class="tlv-head">
+        <span class="xr-label"><i class="fa-solid fa-layer-group"></i> Tier list</span>
+        <h3>${esc(l.name)}</h3>
+        <small>${countOf(t)} title${countOf(t) === 1 ? "" : "s"} · saved ${dayLabel(l.at || l.made)}${l.made && dayLabel(l.made) !== dayLabel(l.at) ? ` · made ${dayLabel(l.made)}` : ""}</small>
+      </div>
+      <div class="tlv-board">${TIERS.map(
+        (x) => `<div class="tlv-row" style="--tc:${x.color}" data-tier="${x.id}">
+          <span class="tlv-label"><b>${x.id}</b><small>${x.name}</small></span>
+          <div class="tlv-posters">${
+            t[x.id].length
+              ? t[x.id]
+                  .map((id) => {
+                    const item = Store.get(id);
+                    return `<button type="button" data-open="${esc(id)}" title="${esc(Lang.title(item))}${item.year ? ` (${item.year})` : ""}"><img src="${Store.poster(
+                      Cards.posterOf(item),
+                      "w154"
+                    )}" alt="${esc(Lang.title(item))}" loading="lazy" /></button>`;
+                  })
+                  .join("")
+              : `<span class="tlv-none">Nothing here</span>`
+          }</div>
+        </div>`
+      ).join("")}</div>
+      <div class="tlv-buttons">
+        <button class="btn btn-primary tlv-open" type="button"><i class="fa-solid fa-pen"></i> ${on ? "Back to editing" : "Open to edit"}</button>
+        <button class="btn tlv-rename" type="button"><i class="fa-solid fa-i-cursor"></i> Rename</button>
+        <button class="btn tlv-delete" type="button" aria-label="Delete" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
+      </div>`;
+    Cards.openModal(viewer);
+  }
+
+  async function renameList(listId) {
+    const l = Store.tierLists().find((x) => x.id === listId);
+    if (!l) return;
+    const name = await UI.ask({ icon: "fa-i-cursor", title: "Rename tier list", value: l.name, ok: "Rename" });
+    if (!name) return;
+    Store.saveTierLists(Store.tierLists().map((x) => (x.id === listId ? Object.assign({}, x, { name: name.slice(0, 40) }) : x)));
+    render();
+    if (viewer && viewer.classList.contains("active")) view(listId);
+  }
+
+  async function deleteList(listId) {
+    const l = Store.tierLists().find((x) => x.id === listId);
+    if (!l) return;
+    const ok = await UI.confirm({ icon: "fa-trash-can", title: `Delete "${l.name}"?`, text: "The saved tier list goes. Your titles and ratings stay.", ok: "Delete", danger: true });
+    if (!ok) return;
+    const wasActive = Store.tierActive() === listId;
+    const before = Store.tierLists();
+    Store.saveTierLists(before.filter((x) => x.id !== listId), wasActive ? null : undefined);
+    if (viewer) Cards.closeModal(viewer);
+    render();
+    toast(`Deleted "${l.name}"`, {
+      label: "Undo",
+      run: () => {
+        Store.saveTierLists(before, wasActive ? listId : undefined);
+        render();
+        toast("Undone");
+      },
+    });
   }
 
   /* ---------- Quick rank: one poster at a time ---------- */
