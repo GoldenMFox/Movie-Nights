@@ -24,11 +24,17 @@
     think: { icon: "fa-brain", label: "Thought-provoking", short: "Deep", word: "thought-provoking", genres: ["Science Fiction", "Mystery", "Documentary", "History", "Drama"], ask: ["Science Fiction", "Mystery", "History"] },
     emotional: { icon: "fa-heart", label: "Emotional", word: "moving", genres: ["Drama", "Romance", "Family", "Music", "War"], ask: ["Romance", "Drama"] },
   };
+  // the era: any year, the last few, one decade, or the classics (before 1980)
   const AGES = {
-    new: { icon: "fa-wand-magic-sparkles", label: "New", word: "new", hint: `${THIS_YEAR - 2} or later`, from: THIS_YEAR - 2 },
-    any: { icon: "fa-infinity", label: "Any year", hint: "Any year" },
-    classic: { icon: "fa-film", label: "Classics", word: "classic", hint: "Before 2000", to: 1999 },
+    any: { label: "Any", hint: "Any year" },
+    new: { label: "New", word: "new", hint: `${THIS_YEAR - 2} or later`, from: THIS_YEAR - 2 },
+    d2010: { label: "2010s", short: "'10s", word: "2010s", from: 2010, to: 2019 },
+    d2000: { label: "2000s", short: "'00s", word: "2000s", from: 2000, to: 2009 },
+    d1990: { label: "'90s", word: "'90s", from: 1990, to: 1999 },
+    d1980: { label: "'80s", word: "'80s", an: true, from: 1980, to: 1989 },
+    classic: { label: "Classics", word: "classic", hint: "Before 1980", to: 1979 },
   };
+  if (!AGES[choice.age]) choice.age = "any";
   // who's watching: genres that suit the company (a plus), and ones that don't (a minus;
   // with the family they're left out altogether)
   const WHO = {
@@ -134,7 +140,7 @@
     }
     if (i.score) s += (i.score - 6.5) * 0.8; // TMDB's score (Discover)
     if (i.rating) s += (i.rating - 7) * 0.4; // yours (a rewatch)
-    if (choice.age !== "any" && i.year) why.push(`<i class="fa-solid ${AGES[choice.age].icon}"></i> ${i.year}`);
+    if (choice.age !== "any" && i.year) why.push(`<i class="fa-solid fa-calendar"></i> ${i.year}`);
     return { s, why };
   }
 
@@ -225,7 +231,7 @@
            ${row("fa-layer-group", "From", seg("from", [["watch", opt("fa-bookmark", "Watchlist")], ["fav", opt("fa-heart", "Favorites")], ["discover", opt("fa-compass", "Discover")]]), 1)}
            ${row("fa-clapperboard", "What", seg("what", [["any", opt("fa-shuffle", "Anything", "Any")], ["movie", opt("fa-film", "Movie")], ["tv", opt("fa-tv", "Series")], ["anime", opt("fa-dragon", "Anime")]]), 2)}
            ${row("fa-masks-theater", "Mood", seg("mood", Object.entries(MOODS).map(([k, m]) => [k, opt(m.icon, m.label, m.short)]), true), 3)}
-           ${row("fa-calendar", "Era", seg("age", Object.entries(AGES).map(([k, a]) => [k, opt(a.icon, a.label, k === "any" ? "Any" : "")])), 4)}
+           ${row("fa-calendar", "Era", seg("age", Object.entries(AGES).map(([k, a]) => [k, a.short ? `<span class="pk-l">${a.label}</span><span class="pk-s">${a.short}</span>` : a.label])), 4)}
            ${row("fa-couch", "With", seg("who", Object.entries(WHO).map(([k, w]) => [k, opt(w.icon, w.label)]), true), 5)}
            ${row("fa-clock", "Time", seg("time", [["any", opt("fa-infinity", "Any")], ["short", opt("fa-hourglass-start", "Under 1h45", "≤ 1h45")], ["long", opt("fa-hourglass-half", "Under 2h30", "≤ 2h30")], ["episode", opt("fa-tv", "An episode", "Episode")]]), 6)}
            <label class="menu-switch pk-mine" hidden>
@@ -278,7 +284,8 @@
   function sentence() {
     const noun = { any: "pick", movie: "movie", tv: "series", anime: "anime" }[choice.what];
     const words = [choice.mood && MOODS[choice.mood].word, AGES[choice.age].word, noun].filter(Boolean);
-    const a = /^[aeiou]/i.test(words[0]) ? "An" : "A";
+    // ("an '80s movie": you say "eighties")
+    const a = /^[aeiou]/i.test(words[0]) || (words[0] === AGES[choice.age].word && AGES[choice.age].an) ? "An" : "A";
     const who = choice.who ? ` ${WHO[choice.who].phrase}` : "";
     const time = { any: "", short: ", under <b>1h45</b>", long: ", under <b>2h30</b>", episode: ", <b>one episode</b> long" }[choice.time];
     const from = { watch: "from your <b>Watchlist</b>", fav: "from your <b>Favorites</b>", discover: "fresh from <b>Discover</b>" }[choice.from];
@@ -451,7 +458,7 @@
   function tagsHtml() {
     const tags = [
       choice.mood && [MOODS[choice.mood].icon, MOODS[choice.mood].label],
-      choice.age !== "any" && [AGES[choice.age].icon, AGES[choice.age].label],
+      choice.age !== "any" && ["fa-calendar", AGES[choice.age].label],
       choice.who && [WHO[choice.who].icon, WHO[choice.who].label],
       choice.what !== "any" && [{ movie: "fa-film", tv: "fa-tv", anime: "fa-dragon" }[choice.what], { movie: "Movies", tv: "Series", anime: "Anime" }[choice.what]],
       choice.time !== "any" && ["fa-clock", { short: "Under 1h45", long: "Under 2h30", episode: "An episode" }[choice.time]],

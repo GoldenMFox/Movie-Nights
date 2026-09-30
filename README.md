@@ -58,9 +58,9 @@ The navbar search (or `/` on any page) searches your library and all of TMDB.
 
 **What should I watch?** (the shuffle button in the navbar, on every page, next to your picture on phones): pick where from (your Watchlist, your
 Favorites for a rewatch, or Discover: well-liked titles from TMDB you haven't added), what
-(movie / series / anime), the mood (😄 Fun, 😨 Intense, 🧠 Thought-provoking, ❤️ Emotional),
-how old (🆕 New, 📼 Any, 🏆 Classics), who's watching (👤 Alone, ❤️ Date, 👨‍👩‍👧 Family: no horror,
-war, crime or thrillers, 👥 Friends), the time you have and, optionally, only your streaming
+(movie / series / anime), the mood (fun, intense, thought-provoking, emotional),
+the era (any, new, the 2010s, 2000s, '90s or '80s, or classics before 1980), who's watching (alone, date, family: no horror,
+war, crime or thrillers, friends), the time you have and, optionally, only your streaming
 services. It makes a shortlist of five, best fits first, each with why it fits, and spins to
 one: tap another poster to look at it, ✕ drops one ("Not tonight"), Spin picks again, New
 shortlist draws five more. Trailer and Watchlist buttons on the pick. Your answers are
