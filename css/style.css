@@ -17137,3 +17137,90 @@ a.by-card:hover .by-blur {
     grid-row: span 3;
   }
 }
+
+/* (box office on phones: a compact sort switch; the gross and the quick buttons share a line) */
+@media (max-width: 700px) {
+  .bo-sort .top10-tab i,
+  .bo-tools .top10-tab i {
+    display: none;
+  }
+
+  .bo-sort .top10-tab {
+    padding: 8px 12px;
+  }
+
+  .bo-line .bo-rank,
+  .bo-line .bo-poster {
+    grid-row: span 2;
+  }
+
+  .bo-line > .bo-acts {
+    grid-column: 3;
+    grid-row: 2;
+    justify-self: end;
+    align-self: center;
+  }
+
+  .bo-line .bo-nums .xr-verdict {
+    display: none;
+  }
+
+  .bo-act {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+}
+
+/* (the poster wall: the medal is the rank badge, not the row edge) */
+.bo-row.bo-tile.medal.m1,
+.bo-row.bo-tile.medal.m2,
+.bo-row.bo-tile.medal.m3 {
+  border: 0;
+  box-shadow: none;
+}
+
+@media (max-width: 700px) {
+  /* (a row's details on phones: the facts 2 × 2) */
+  .bo-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .bo-fact {
+    padding: 10px 12px;
+  }
+
+  .bo-fact b {
+    font-size: 18px;
+  }
+
+  .bo-detail-in {
+    padding: 14px;
+  }
+}
+
+/* (skyline: the multiple sits at the top of its column, or above it when the column is short) */
+.sk-col > .sk-tag {
+  top: auto;
+  bottom: calc(var(--h) - 26px);
+  z-index: 2;
+}
+
+.sk-col.low > .sk-tag {
+  bottom: calc(var(--h) + 6px);
+}
+
+@media (max-width: 900px) {
+  /* (it scrolls sideways: the edges fade to say so) */
+  .sk-chart:not(.few) {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 8px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 8px), transparent);
+  }
+}
+
+/* (the money lines live inside the columns' area, so they span it however wide it scrolls) */
+.sk-cols > .sk-lines {
+  inset: 0;
+  width: auto !important;
+}

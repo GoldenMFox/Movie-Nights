@@ -381,18 +381,20 @@
     return `
       <div class="sk-read" aria-live="polite" data-n="${first}">${readoutHtml(skyFilms[first], first)}</div>
       <div class="sk-chart${skyFilms.length < 8 ? " few" : ""}">
-        <div class="sk-lines" aria-hidden="true">${lines.map((v) => `<span style="bottom:${((v / top) * 100).toFixed(2)}%"><em>${money(v)}</em></span>`).join("")}</div>
-        <div class="sk-cols">${skyFilms
+        <div class="sk-cols" style="--n:${skyFilms.length}">
+          <div class="sk-lines" aria-hidden="true">${lines.map((v) => `<span style="bottom:${((v / top) * 100).toFixed(2)}%"><em>${money(v)}</em></span>`).join("")}</div>
+${skyFilms
           .map((f, n) => {
             const r = ratioOf(f);
             const v = verdictOf(r) || ["", "grey"];
-            return `<a class="sk-col ${v[1]}${n === first ? " on" : ""}" href="${titleUrl(f)}" data-sk="${n}" style="--h:${((f.revenue / top) * 100).toFixed(2)}%;--b:${f.budget ? Math.min(100, (f.budget / f.revenue) * 100).toFixed(2) : 0}%;--d:${n * 55}ms"
+            const h = (f.revenue / top) * 100;
+            return `<a class="sk-col ${v[1]}${n === first ? " on" : ""}${h < 16 ? " low" : ""}" href="${titleUrl(f)}" data-sk="${n}" style="--h:${((f.revenue / top) * 100).toFixed(2)}%;--b:${f.budget ? Math.min(100, (f.budget / f.revenue) * 100).toFixed(2) : 0}%;--d:${n * 55}ms"
                 aria-label="${esc(Lang.title(f))}: ${f.budget ? `cost ${money(f.budget)}, ` : ""}made ${money(f.revenue)}">
               <span class="sk-bar">
                 <span class="sk-poster" style="background-image:url('${posterOf(f, "w342")}')"></span>
                 <span class="sk-budget"></span>
-                <span class="sk-tag">${r ? `${r.toFixed(1)}×` : "?"}</span>
               </span>
+              <span class="sk-tag">${r ? `${r.toFixed(1)}×` : "?"}</span>
               <span class="sk-rank">${opts.axis === "year" ? f.year || "" : n + 1}</span>
             </a>`;
           })
@@ -420,6 +422,9 @@
     wrap.innerHTML = html || `<p class="sk-empty"><i class="fa-regular fa-face-meh"></i> ${empty || "Not enough box office numbers to compare here."}</p>`;
     const chart = wrap.querySelector(".sk-chart");
     if (!chart) return;
+    // (a skyline wider than the screen: open it on the film the readout shows)
+    const on = chart.querySelector(".sk-col.on");
+    if (on && chart.scrollWidth > chart.clientWidth) chart.scrollLeft = on.offsetLeft - chart.clientWidth / 2 + on.offsetWidth / 2;
     if ("IntersectionObserver" in window) {
       const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && (chart.classList.add("in"), io.disconnect()), { threshold: 0.2 });
       io.observe(chart);
