@@ -13223,37 +13223,6 @@ html .modal .menu-switch:not([hidden]) {
   }
 }
 
-/* the switch's red pill glides to the picked type */
-.wl-type {
-  position: relative;
-}
-
-.wl-type .top10-tab {
-  position: relative;
-  z-index: 1;
-}
-
-.wl-type .top10-tab.active {
-  background: transparent;
-  box-shadow: none;
-}
-
-.wl-pill {
-  position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: 4px;
-  width: 0;
-  border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 4px 14px rgba(144, 13, 9, 0.45);
-  transition: left 0.38s cubic-bezier(0.32, 0.72, 0, 1), width 0.38s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.wl-type.no-glide .wl-pill {
-  transition: none;
-}
-
 /* after a switch: the posters settle in, one after another */
 .wl-in {
   animation: wl-settle 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
@@ -13268,11 +13237,48 @@ html .modal .menu-switch:not([hidden]) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-pill {
-    transition: none;
-  }
-
   .wl-in {
     animation: none;
+  }
+}
+
+/* ============================== Pill switches: the gliding red pill (js/core/layout.js) ============================== */
+/* Home's Top 10, the theme in Settings, the Watchlist's switches, the picker's choices */
+
+.has-pill {
+  position: relative;
+}
+
+.has-pill > button {
+  position: relative;
+  z-index: 1;
+}
+
+/* the picked button lets the pill show through (the pill is its red background now) */
+.has-pill > button.active,
+.has-pill > button.on {
+  background: transparent;
+  box-shadow: none;
+}
+
+.sw-pill {
+  position: absolute;
+  z-index: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 4px 14px rgba(144, 13, 9, 0.45);
+  pointer-events: none;
+  transition: left 0.38s cubic-bezier(0.32, 0.72, 0, 1), top 0.38s cubic-bezier(0.32, 0.72, 0, 1), width 0.38s cubic-bezier(0.32, 0.72, 0, 1),
+    height 0.38s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.2s;
+}
+
+/* the picker's rows have softer corners */
+.pk-seg > .sw-pill {
+  border-radius: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sw-pill {
+    transition: none !important;
   }
 }

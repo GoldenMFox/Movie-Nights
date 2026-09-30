@@ -305,33 +305,19 @@
     const on = typeOf(row);
     const tabs = TYPE_TABS.filter(([t]) => t === "all" || have.has(t));
     sw.hidden = tabs.length < 3; // only one kind of title: nothing to switch
-    // the buttons stay (only redrawn when the choices change), so the red pill can glide
+    // (the buttons are only redrawn when the choices change; the red pill that glides to the
+    // picked one comes from js/core/layout.js)
     const key = tabs.map(([t]) => t).join();
     if (sw.dataset.tabs !== key) {
       sw.dataset.tabs = key;
-      sw.innerHTML =
-        '<span class="wl-pill" aria-hidden="true"></span>' +
-        tabs.map(([t, label]) => `<button type="button" class="top10-tab" data-type="${t}">${label}</button>`).join("");
-      sw.classList.add("no-glide");
+      sw.innerHTML = tabs.map(([t, label]) => `<button type="button" class="top10-tab" data-type="${t}">${label}</button>`).join("");
     }
     sw.querySelectorAll("[data-type]").forEach((b) => {
       const active = b.dataset.type === on;
       b.classList.toggle("active", active);
       b.setAttribute("aria-pressed", active);
     });
-    requestAnimationFrame(() => moveTypePill(sw));
   }
-
-  // the red pill behind the picked type
-  function moveTypePill(sw) {
-    const on = sw.querySelector(".top10-tab.active");
-    const pill = sw.querySelector(".wl-pill");
-    if (!on || !pill || !on.offsetWidth) return;
-    pill.style.left = `${on.offsetLeft}px`;
-    pill.style.width = `${on.offsetWidth}px`;
-    if (sw.classList.contains("no-glide")) requestAnimationFrame(() => sw.classList.remove("no-glide"));
-  }
-  if (isLists) window.addEventListener("resize", () => root.querySelectorAll(".wl-type").forEach(moveTypePill));
 
   // after a switch, the row's posters (or Coming up's titles) settle in, one after another
   function settle(box) {

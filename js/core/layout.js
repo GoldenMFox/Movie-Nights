@@ -722,6 +722,70 @@
     );
   }
 
+  /* ---------------- pill switches: the red pill glides to the picked option ---------------- */
+
+  // Every switch made of pill buttons (Home's Top 10 Movies / TV, the theme in Settings, the
+  // Watchlist's list switch and its All / Movies / TV rows, the picker's choices) gets one red
+  // pill behind the picked button, which glides to the next pick. Pages just toggle .active /
+  // .on as before; this watches for it. A switch that's drawn again (new buttons) keeps its
+  // pill's last place, so it still glides from there.
+  const PILL_SWITCHES = ".top10-switch, .pk-seg, .wl-switch";
+  const pillAt = new WeakMap(); // switch -> the pill's last { left, top, width, height }
+  const px = (b) => ({ left: `${b.left}px`, top: `${b.top}px`, width: `${b.width}px`, height: `${b.height}px` });
+
+  function placePill(sw) {
+    let pill = sw.querySelector(":scope > .sw-pill");
+    const known = pillAt.get(sw);
+    if (!pill) {
+      pill = document.createElement("span");
+      pill.className = "sw-pill";
+      pill.setAttribute("aria-hidden", "true");
+      sw.prepend(pill);
+      sw.classList.add("has-pill");
+      // (first time: straight to its place; drawn again: from where it was)
+      pill.style.transition = "none";
+      if (known) Object.assign(pill.style, px(known));
+      void pill.offsetWidth;
+      if (known) pill.style.transition = "";
+      else requestAnimationFrame(() => requestAnimationFrame(() => (pill.style.transition = "")));
+    }
+    const on = sw.querySelector(":scope > .active, :scope > .on");
+    if (!on || !on.offsetWidth) return (pill.style.opacity = "0");
+    const box = { left: on.offsetLeft, top: on.offsetTop, width: on.offsetWidth, height: on.offsetHeight };
+    pill.style.opacity = "1";
+    Object.assign(pill.style, px(box));
+    pillAt.set(sw, box);
+  }
+
+  const pending = new Set();
+  let pillFrame = 0;
+  function queuePill(sw) {
+    pending.add(sw);
+    if (!pillFrame)
+      pillFrame = requestAnimationFrame(() => {
+        pillFrame = 0;
+        pending.forEach((s) => s.isConnected && placePill(s));
+        pending.clear();
+      });
+  }
+  new MutationObserver((muts) =>
+    muts.forEach((m) => {
+      const t = m.target.nodeType === 1 ? m.target : m.target.parentElement;
+      const sw = t && t.closest(PILL_SWITCHES);
+      if (sw) queuePill(sw);
+      m.addedNodes.forEach((n) => {
+        if (n.nodeType !== 1) return;
+        if (n.matches(PILL_SWITCHES)) queuePill(n);
+        n.querySelectorAll(PILL_SWITCHES).forEach(queuePill);
+      });
+      // a hidden switch shown again (e.g. the picker's rows): measure it now
+      if (m.type === "attributes" && m.attributeName === "hidden") t.querySelectorAll(PILL_SWITCHES).forEach(queuePill);
+    })
+  ).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "hidden"] });
+  document.addEventListener("DOMContentLoaded", () => document.querySelectorAll(PILL_SWITCHES).forEach(queuePill));
+  window.addEventListener("resize", () => document.querySelectorAll(PILL_SWITCHES).forEach(queuePill));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => document.querySelectorAll(PILL_SWITCHES).forEach(queuePill));
+
   /* ---------------- "out today" badge on Watchlist ---------------- */
 
   // how many titles in Coming up come out (or get a new episode) today: a red number on the
