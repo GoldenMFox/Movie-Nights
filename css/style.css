@@ -16030,3 +16030,8 @@ html[data-theme="light"] .bo-kline {
     font-size: 12px;
   }
 }
+
+/* (your box office sits above the budget vs box office plot) */
+.bo-yours {
+  margin: 0 0 48px;
+}

@@ -77,6 +77,7 @@
     </div>
     <section class="bo-stage" aria-label="The top 3"></section>
     <div class="bo-stats"></div>
+    <section class="bo-yours" hidden></section>
     <section class="bo-plot" hidden>
       <div class="bo-head">
         <h2 class="section-title"><i class="fa-solid fa-magnifying-glass-chart"></i> Budget vs box office</h2>
@@ -92,7 +93,6 @@
     </div>
     <ol class="bo-chart"></ol>
     <div class="bo-more"></div>
-    <section class="bo-yours" hidden></section>
     <p class="bo-note"><i class="fa-solid fa-circle-info"></i> Worldwide gross and budgets from TMDB, in US dollars and not adjusted for inflation. The verdict compares the gross with the budget (5× Blockbuster, 2× Hit, 1× Broke even, less: Flop); profit is before the cinemas' share and marketing. TMDB has no weekend or daily numbers.</p>`;
 
   const $ = (s) => app.querySelector(s);
@@ -703,7 +703,8 @@
     const flops = found.filter((f) => ratioOf(f) != null && ratioOf(f) < 1).sort((a, b) => b.budget - b.revenue - (a.budget - a.revenue));
     const rated = found.filter((f) => f.item.rating != null);
     const loved = rated.filter((f) => f.item.rating >= 8).sort((a, b) => b.revenue - a.revenue)[0];
-    const gem = rated.filter((f) => f.item.rating >= 8).sort((a, b) => a.revenue - b.revenue)[0];
+    // (not a streaming film with a few dollars on TMDB: at least $1M)
+    const gem = rated.filter((f) => f.item.rating >= 8 && f.revenue >= 1e6).sort((a, b) => a.revenue - b.revenue)[0];
     const name = (f) => esc(Lang.title(f.item));
     const url = (f) => `title.html?id=${encodeURIComponent(f.item.id)}`;
     const tile = (icon, label, count, sub, f, minus) =>
