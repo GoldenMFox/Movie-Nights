@@ -125,7 +125,7 @@
   // Like picking a Netflix avatar. Tabs (the site's pill switch):
   //  - Movie & TV cast: characters grouped by title (the actor's TMDB photo, named after the
   //    character), or search any movie / show and pick from its cast
-  //  - Superheroes, Harry Potter, Star Wars, Game of Thrones, Disney: the 20 best-known
+  //  - Superheroes, Harry Potter, Star Wars, Game of Thrones, Disney: the best-known
   //    characters of each, pictures of the characters themselves from free fan-made character
   //    databases (Superheroes: the Marvel and DC movie fan wikis)
   // Saved with your profile (so it follows your account): { path, character, title, actor }
@@ -147,7 +147,7 @@
   const HEROES = [
     ["Iron Man", "Marvel"], ["Batman", "DC"], ["Spider-Man", "Marvel"], ["Superman", "DC"], ["Wonder Woman", "DC"],
     ["Hulk", "Marvel"], ["Black Widow", "Marvel", "Natasha Romanoff"], ["Joker", "DC"], ["Black Panther", "Marvel", "T'Challa"],
-    ["Flash", "DC"], ["Doctor Strange", "Marvel"], ["Aquaman", "DC"], ["Scarlet Witch", "Marvel", "Wanda Maximoff"],
+    ["Flash", "DC"], ["Aquaman", "DC"],
     ["Deadpool", "Marvel"], ["Wolverine", "Marvel"], ["Loki", "Marvel"], ["Thanos", "Marvel"], ["Captain Marvel", "Marvel"],
     ["Hawkeye", "Marvel"], ["Cyborg", "DC"],
   ];
@@ -175,10 +175,10 @@
 
   // the other sets: these characters, in this order (each source names them its own way)
   const TOP = {
-    hp: ["Harry Potter", "Hermione Granger", "Ron Weasley", "Severus Snape", "Rubeus Hagrid", "Lord Voldemort", "Draco Malfoy", "Sirius Black", "Minerva McGonagall", "Neville Longbottom", "Luna Lovegood", "Ginny Weasley", "Bellatrix Lestrange", "Remus Lupin", "Dolores Umbridge", "Cedric Diggory", "Lucius Malfoy", "Cho Chang", "Arthur Weasley", "Horace Slughorn"],
-    sw: ["Luke Skywalker", "Darth Vader", "Leia Organa", "Han Solo", "Yoda", "Obi-Wan Kenobi", "Chewbacca", "Anakin Skywalker", "Padmé Amidala", "Palpatine", "Boba Fett", "Darth Maul", "Qui-Gon Jinn", "Mace Windu", "Lando Calrissian", "C-3PO", "R2-D2", "Jabba Desilijic Tiure", "Dooku", "Jar Jar Binks"],
-    got: ["Jon Snow", "Daenerys Targaryen", "Tyrion Lannister", "Arya Stark", "Sansa Stark", "Cersei Lannister", "Jamie Lannister", "Ned Stark", "The Hound", "Brienne of Tarth", "Khal Drogo", "Brandon Stark", "Petyr Baelish", "Samwell Tarly", "Tywin Lannister", "Joffrey Baratheon", "Jorah Mormont", "Melisandre", "Robert Baratheon", "Hodor"],
-    disney: ["Mickey Mouse", "Minnie Mouse", "Donald Duck", "Simba", "Elsa", "Anna", "Olaf", "Moana", "Stitch", "Ariel", "Aladdin", "Genie", "Mulan", "Rapunzel", "Winnie the Pooh", "Pumbaa", "Timon", "Maui", "Jack Sparrow", "Hercules"],
+    hp: ["Harry Potter", "Hermione Granger", "Ron Weasley", "Severus Snape", "Rubeus Hagrid", "Lord Voldemort", "Draco Malfoy", "Sirius Black", "Minerva McGonagall", "Neville Longbottom", "Luna Lovegood", "Ginny Weasley", "Bellatrix Lestrange", "Remus Lupin", "Dolores Umbridge", "Cedric Diggory", "Lucius Malfoy", "Arthur Weasley"],
+    sw: ["Luke Skywalker", "Darth Vader", "Leia Organa", "Han Solo", "Yoda", "Obi-Wan Kenobi", "Chewbacca", "Anakin Skywalker", "Padmé Amidala", "Palpatine", "Boba Fett", "Darth Maul", "Lando Calrissian", "C-3PO", "R2-D2", "Jabba Desilijic Tiure", "Dooku", "Jar Jar Binks"],
+    got: ["Jon Snow", "Daenerys Targaryen", "Tyrion Lannister", "Arya Stark", "Sansa Stark", "Cersei Lannister", "Jamie Lannister", "Ned Stark", "The Hound", "Brienne of Tarth", "Khal Drogo", "Brandon Stark", "Petyr Baelish", "Samwell Tarly", "Tywin Lannister", "Joffrey Baratheon", "Melisandre", "Hodor"],
+    disney: ["Mickey Mouse", "Simba", "Elsa", "Anna", "Olaf", "Moana", "Stitch", "Ariel", "Aladdin", "Genie", "Mulan", "Rapunzel", "Winnie the Pooh", "Pumbaa", "Timon", "Maui", "Jack Sparrow", "Hercules"],
   };
   // a source's list -> just the TOP ones that have a picture, in TOP's order
   const pickTop = (key, list, nameOf, imgOf, title) =>
