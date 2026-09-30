@@ -622,21 +622,76 @@ ${skyFilms
       </div>`;
   }
 
-  function paintChart() {
-    const list = sorted();
-    const top = films.length ? Math.max(...films.map((f) => f.revenue)) : 1;
+  // the poster wall: how many posters a row holds (it depends on the screen)
+  function posterCols() {
+    const t = getComputedStyle($(".bo-chart")).gridTemplateColumns;
+    return t && t !== "none" ? t.split(" ").length : 1;
+  }
+  // the poster wall shows whole rows only: at least 3 (the next page is loaded to fill them),
+  // and the few left over wait for the next "Show more" (unless there's nothing more to load)
+  function shownPosters(list) {
+    const cols = posterCols();
+    if (page >= pages || list.length <= cols) return list;
+    return list.slice(0, Math.floor(list.length / cols) * cols);
+  }
+  let filling = false;
+  async function fillRows() {
+    // (not for "Watched": more pages rarely add films you've seen)
+    if (filling || state.view !== "posters" || state.show === "seen") return;
+    const me = run;
+    filling = true;
+    try {
+      // (3 rows' worth, a few pages at most)
+      for (let tries = 0; tries < 3 && page < pages && sorted().length < posterCols() * 3; tries++) {
+        const res = await TMDB.boxOffice({ year: state.year, genre: state.genre, page: page + 1 });
+        if (me !== run) return;
+        page++;
+        const seen = new Set(films.map((f) => f.tmdbId));
+        films = films.concat(res.results.filter((f) => !seen.has(f.tmdbId)));
+      }
+    } catch (e) {
+    } finally {
+      filling = false;
+    }
+    if (me === run && state.view === "posters") {
+      const known = new Set([...app.querySelectorAll(".bo-row")].map((r) => r.dataset.id));
+      paintChart(true);
+      app.querySelectorAll(".bo-row").forEach((r) => known.has(r.dataset.id) && r.classList.add("in"));
+    }
+  }
+
+  function paintChart(filled) {
     const chart = $(".bo-chart");
     const posters = state.view === "posters";
     chart.classList.toggle("posters", posters);
+    const all = sorted();
+    const list = posters ? shownPosters(all) : all;
+    const top = films.length ? Math.max(...films.map((f) => f.revenue)) : 1;
+    // (fewer than 3 rows: the next page is loaded, then the wall is drawn again)
+    if (posters && !filled && state.show !== "seen" && all.length < posterCols() * 3 && page < pages) fillRows();
     const open = new Set([...chart.querySelectorAll(".bo-row.open")].map((r) => r.dataset.id));
     chart.innerHTML = list.length
       ? list.map((f, n) => (posters ? tileHtml(f, n) : rowHtml(f, n, top))).join("")
       : `<li class="bo-none">${state.show === "seen" ? "You haven't watched any of these yet." : "You've watched all of these!"}</li>`;
     if (!posters) open.forEach((id) => toggleRow(chart.querySelector(`.bo-row[data-id="${id}"]`), true));
     reveal([...chart.querySelectorAll(".bo-row")]);
-    $(".bo-more").innerHTML = page < pages ? `<button class="btn bo-load" type="button"><i class="fa-solid fa-chevron-down"></i> Show the next 20</button>` : "";
+    $(".bo-more").innerHTML =
+      page < pages || list.length < all.length
+        ? `<button class="btn bo-load" type="button"><i class="fa-solid fa-chevron-down"></i> ${posters ? "Show more" : "Show the next 20"}</button>`
+        : "";
     paintShow();
   }
+  // (the wall drawn again when the screen fits a different number of posters in a row)
+  let wallCols = 0;
+  window.addEventListener("resize", () => {
+    if (state.view !== "posters" || !films.length) return;
+    const cols = posterCols();
+    if (cols === wallCols) return;
+    wallCols = cols;
+    const known = new Set([...app.querySelectorAll(".bo-row")].map((r) => r.dataset.id));
+    paintChart();
+    app.querySelectorAll(".bo-row").forEach((r) => known.has(r.dataset.id) && r.classList.add("in"));
+  });
 
   // All / Watched / Not seen: with how many of each
   function paintShow() {
@@ -652,6 +707,11 @@ ${skyFilms
   // a new order: the rows (or posters) glide from where they were to where they go (FLIP)
   function resort() {
     const chart = $(".bo-chart");
+    if (state.view === "posters") {
+      const want = shownPosters(sorted()).map((f) => String(f.tmdbId)).sort().join();
+      const have = [...chart.querySelectorAll(".bo-row")].map((r) => r.dataset.id).sort().join();
+      if (want !== have) return paintChart();
+    }
     const before = new Map([...chart.querySelectorAll(".bo-row")].map((r) => [r.dataset.id, r.getBoundingClientRect()]));
     const list = sorted();
     list.forEach((f, n) => {
