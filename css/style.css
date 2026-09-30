@@ -16717,3 +16717,423 @@ a.by-card:hover .by-blur {
     flex-basis: auto;
   }
 }
+
+/* ---------- box office chart: verdict colours, backdrops, quick buttons, filter, poster wall ---------- */
+.bo-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: -4px 0 14px;
+}
+
+.bo-tools .top10-switch {
+  margin: 0;
+}
+
+.bo-tools .top10-tab i {
+  margin-right: 5px;
+  font-size: 12px;
+}
+
+.bo-tools .top10-tab small {
+  margin-left: 5px;
+  opacity: 0.6;
+  font-weight: 700;
+}
+
+/* each verdict its colour (the bar, the rank's glow, the poster's edge) */
+.bo-row {
+  --vc: 229, 9, 20;
+}
+
+.bo-row.v-gold {
+  --vc: 245, 197, 24;
+}
+
+.bo-row.v-green {
+  --vc: 70, 211, 105;
+}
+
+.bo-row.v-grey {
+  --vc: 154, 154, 163;
+}
+
+.bo-row.v-red {
+  --vc: 255, 107, 99;
+}
+
+.bo-fill {
+  background: linear-gradient(90deg, rgba(var(--vc), 0.45), rgb(var(--vc)));
+  box-shadow: 0 0 14px rgba(var(--vc), 0.35);
+}
+
+.bo-bar {
+  height: 12px;
+}
+
+.bo-budget {
+  background: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.62) 0 4px, rgba(0, 0, 0, 0.42) 4px 8px);
+  border-right-color: #fff;
+}
+
+.bo-main {
+  gap: 7px;
+}
+
+/* under the bar: the cost at its start, the profit at its end */
+.bo-barnote {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  width: max(var(--w), 230px);
+  max-width: 100%;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-barnote i {
+  margin-right: 3px;
+  font-size: 10px;
+}
+
+.bo-pl {
+  color: rgb(var(--vc));
+  font-weight: 800;
+}
+
+.bo-line {
+  position: relative;
+  grid-template-columns: 44px 56px minmax(0, 1fr) 130px auto 22px;
+  isolation: isolate;
+}
+
+/* the film's backdrop slides in behind the row you point at */
+.bo-line::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--bg, none) right 30% / 55% auto no-repeat;
+  opacity: 0;
+  transform: translateX(30px);
+  transition: opacity 0.45s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  -webkit-mask-image: linear-gradient(90deg, transparent 40%, #000 85%);
+  mask-image: linear-gradient(90deg, transparent 40%, #000 85%);
+}
+
+.bo-row:hover .bo-line::before,
+.bo-row.open .bo-line::before {
+  opacity: 0.28;
+  transform: none;
+}
+
+/* the top 3: a medal-coloured edge */
+.bo-row.medal.m1 {
+  border-color: rgba(245, 197, 24, 0.45);
+  box-shadow: inset 3px 0 0 #f5c518, 0 0 30px rgba(245, 197, 24, 0.08);
+}
+
+.bo-row.medal.m2 {
+  border-color: rgba(201, 206, 214, 0.35);
+  box-shadow: inset 3px 0 0 #c9ced6;
+}
+
+.bo-row.medal.m3 {
+  border-color: rgba(208, 138, 82, 0.4);
+  box-shadow: inset 3px 0 0 #d08a52;
+}
+
+.bo-mine.later {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+
+/* quick buttons: Trailer, Watchlist, Watched */
+.bo-acts {
+  display: flex;
+  gap: 6px;
+  opacity: 0.35;
+  transition: opacity 0.25s ease;
+}
+
+.bo-row:hover .bo-acts,
+.bo-row.open .bo-acts,
+.bo-acts:focus-within {
+  opacity: 1;
+}
+
+.bo-act {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  background: var(--glass-bg);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease, color 0.2s ease;
+}
+
+.bo-act:hover {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  transform: scale(1.08);
+}
+
+.bo-act:active {
+  transform: scale(0.92);
+}
+
+.bo-act.on {
+  border-color: rgba(229, 9, 20, 0.5);
+  color: var(--accent-hover);
+}
+
+/* ---------- the poster wall ---------- */
+.bo-chart.posters {
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 14px;
+}
+
+.bo-tile {
+  position: relative;
+  overflow: visible;
+  border: 0;
+  background: none;
+}
+
+.bo-tile:hover {
+  background: none;
+}
+
+.bo-tile-in {
+  position: relative;
+  display: block;
+  aspect-ratio: 2 / 3;
+  border-radius: 16px;
+  overflow: hidden;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 12px 30px rgba(0, 0, 0, 0.35);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease;
+}
+
+.bo-tile:hover .bo-tile-in {
+  transform: translateY(-6px);
+  box-shadow: 0 0 0 2px rgb(var(--vc)), 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(var(--vc), 0.25);
+}
+
+.bo-tile-in img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.bo-tile:hover .bo-tile-in img {
+  transform: scale(1.06);
+}
+
+.bo-tile-in::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 5%, rgba(0, 0, 0, 0.5) 38%, transparent 62%);
+}
+
+.bo-tile-rank {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.65);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.bo-tile.m1 .bo-tile-rank {
+  background: #f5c518;
+  color: #111;
+}
+
+.bo-tile.m2 .bo-tile-rank {
+  background: #c9ced6;
+  color: #111;
+}
+
+.bo-tile.m3 .bo-tile-rank {
+  background: #d08a52;
+  color: #111;
+}
+
+.bo-tile .bo-mine {
+  position: absolute;
+  top: 12px;
+  right: 10px;
+  z-index: 1;
+  background: rgba(229, 9, 20, 0.85);
+  color: #fff;
+}
+
+.bo-tile .bo-mine.later {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.bo-tile-info {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 1;
+  display: grid;
+  gap: 2px;
+}
+
+.bo-tile-info strong {
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.bo-tile-info b {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-tile-meta {
+  display: flex;
+  justify-content: space-between;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bo-tile-x {
+  color: rgb(var(--vc));
+  font-weight: 900;
+}
+
+/* the quick buttons float over the poster's top when you point at it */
+.bo-tile .bo-acts {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  opacity: 0;
+  transform: translate(-50%, -30%);
+  transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.bo-tile:hover .bo-acts,
+.bo-tile .bo-acts:focus-within {
+  opacity: 1;
+  transform: translate(-50%, -50%);
+}
+
+.bo-tile .bo-act {
+  width: 40px;
+  height: 40px;
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #fff;
+}
+
+@media (max-width: 1000px) {
+  .bo-line {
+    grid-template-columns: 44px 56px minmax(0, 1fr) 130px 22px;
+  }
+
+  .bo-line > .bo-acts {
+    grid-column: 3 / -1;
+    justify-content: flex-end;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 700px) {
+  .bo-line {
+    grid-template-columns: 26px 44px minmax(0, 1fr) 14px;
+  }
+
+  .bo-line > .bo-acts {
+    grid-column: 3;
+    grid-row: 3;
+    justify-content: flex-start;
+  }
+
+  .bo-barnote {
+    width: 100%;
+  }
+
+  .bo-line::before {
+    display: none;
+  }
+
+  .bo-chart.posters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  /* phones: no pointing, so the buttons show under each poster */
+  .bo-tile .bo-acts {
+    position: static;
+    justify-content: center;
+    margin-top: 8px;
+    opacity: 1;
+    transform: none;
+  }
+
+  .bo-tile .bo-act {
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
+    color: var(--text);
+  }
+
+  .bo-tools {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bo-tools .top10-switch {
+    overflow-x: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bo-line::before,
+  .bo-tile-in,
+  .bo-tile-in img,
+  .bo-tile .bo-acts {
+    transition: none;
+  }
+}
+
+@media (max-width: 700px) {
+  /* (phones: rank and poster beside the name, the numbers and the buttons under it) */
+  .bo-line .bo-rank,
+  .bo-line .bo-poster {
+    grid-row: span 3;
+  }
+}

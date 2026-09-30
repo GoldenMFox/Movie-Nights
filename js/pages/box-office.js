@@ -39,6 +39,8 @@
     year: /^\d{4}$/.test(params.get("year") || "") ? Number(params.get("year")) : null,
     genre: GENRES.includes(params.get("genre")) ? params.get("genre") : "",
     sort: "gross",
+    show: "all", // all | seen | unseen
+    view: Store.read("mn:boView", "list") === "posters" ? "posters" : "list",
   };
   let films = [];
   let page = 1;
@@ -90,6 +92,21 @@
       <h2 class="section-title bo-chart-title"></h2>
       <div class="top10-switch bo-sort" role="group" aria-label="Sort the chart by">
         ${Object.entries(SORTS).map(([k, s]) => `<button type="button" class="top10-tab${k === state.sort ? " active" : ""}" data-sort="${k}"><i class="fa-solid ${s.icon}"></i> ${s.label}</button>`).join("")}
+      </div>
+    </div>
+    <div class="bo-tools">
+      ${
+        Store.guest
+          ? ""
+          : `<div class="top10-switch bo-show" role="group" aria-label="Which films">
+        <button type="button" class="top10-tab active" data-show="all">All <small></small></button>
+        <button type="button" class="top10-tab" data-show="seen"><i class="fa-solid fa-check"></i> Watched <small></small></button>
+        <button type="button" class="top10-tab" data-show="unseen"><i class="fa-regular fa-eye-slash"></i> Not seen yet <small></small></button>
+      </div>`
+      }
+      <div class="top10-switch bo-view" role="group" aria-label="View">
+        <button type="button" class="top10-tab${state.view === "list" ? " active" : ""}" data-view="list" aria-label="List"><i class="fa-solid fa-list"></i> List</button>
+        <button type="button" class="top10-tab${state.view === "posters" ? " active" : ""}" data-view="posters" aria-label="Posters"><i class="fa-solid fa-table-cells"></i> Posters</button>
       </div>
     </div>
     <ol class="bo-chart"></ol>
@@ -487,44 +504,97 @@
     }, 350);
   }
 
-  /* ---------------- the chart ---------------- */
+  /* ---------------- the chart ----------------
+     A list (a bar per film in its verdict's colour: the budget marked inside it, the profit
+     under it; the film's backdrop slides in behind the row you point at; tap a row for its
+     details) or a wall of posters. Quick buttons on each: Trailer, Watchlist, Watched (the
+     site's own actions, js/components/cards.js). Show all, only what you've watched, or only
+     what you haven't. */
+
+  const libOf = (f) => {
+    const lib = Cards.inLibrary(f);
+    return { lib, seen: !!lib && (lib.rating != null || !!lib.watchedAt || !lib.watchlist) };
+  };
 
   function sorted() {
     const by = SORTS[state.sort].by;
-    return films.slice().sort((a, b) => by(b) - by(a) || b.revenue - a.revenue);
+    return films
+      .filter((f) => state.show === "all" || (state.show === "seen") === libOf(f).seen)
+      .sort((a, b) => by(b) - by(a) || b.revenue - a.revenue);
+  }
+
+  function mineHtml(f) {
+    const { lib, seen } = libOf(f);
+    if (!lib) return "";
+    return `<span class="bo-mine${seen ? "" : " later"}" title="In your library">${
+      seen ? `<i class="fa-solid fa-check"></i> Watched${lib.rating != null ? ` · <i class="fa-solid fa-star"></i> ${Cards.formatRating(lib.rating)}` : ""}` : '<i class="fa-solid fa-bookmark"></i> Watchlist'
+    }</span>`;
+  }
+
+  // Trailer / Watchlist / Watched: data-action inside data-tmdb runs the site's own actions
+  function actsHtml(f) {
+    const { lib, seen } = libOf(f);
+    Cards.tmdbCard(f); // (registers the film, so the actions know it)
+    const b = (action, icon, label, on) =>
+      `<button type="button" class="bo-act${on ? " on" : ""}" data-action="${action}" title="${label}" aria-label="${label}"><i class="${icon}"></i></button>`;
+    return `<span class="bo-acts" data-tmdb="movie-${f.tmdbId}">
+        ${b("t-trailer", "fa-solid fa-play", "Trailer")}
+        ${seen ? "" : b("t-watch", lib ? "fa-solid fa-bookmark" : "fa-regular fa-bookmark", lib ? "On your Watchlist" : "Add to Watchlist", !!lib)}
+        ${b("t-watched", seen ? "fa-solid fa-circle-check" : "fa-regular fa-circle-check", seen ? "Watched (rate it)" : "Watched it", seen)}
+      </span>`;
   }
 
   function rowHtml(f, n, top) {
-    const lib = Cards.inLibrary(f);
-    const seen = lib && (lib.rating != null || !!lib.watchedAt || !lib.watchlist);
+    const r = ratioOf(f);
+    const v = verdictOf(r) || ["", "none"];
     const w = Math.max(3, (f.revenue / top) * 100);
     const b = f.budget ? Math.min(100, (f.budget / f.revenue) * 100) : 0;
-    return `<li class="bo-row" data-id="${f.tmdbId}">
-        <div class="bo-line" role="button" tabindex="0" aria-expanded="false">
+    const bg = f.backdrop ? ` style="--bg:url('${Store.img(f.backdrop, "w780")}')"` : "";
+    return `<li class="bo-row v-${v[1]}${n < 3 ? ` medal m${n + 1}` : ""}" data-id="${f.tmdbId}">
+        <div class="bo-line" role="button" tabindex="0" aria-expanded="false"${bg}>
           <span class="bo-rank${n < 3 ? ` top${n + 1}` : ""}">${n + 1}</span>
           <span class="bo-poster"><img src="${posterOf(f, "w185")}" alt="" loading="lazy" /></span>
           <div class="bo-main">
             <div class="bo-name">
               <strong>${esc(Lang.title(f))}</strong>
               <small>${f.year || ""}${f.genres && f.genres.length ? ` · ${esc(f.genres.slice(0, 2).join(", "))}` : ""}</small>
-              ${
-                lib
-                  ? `<span class="bo-mine" title="In your library">${seen ? `<i class="fa-solid fa-check"></i> Watched${lib.rating != null ? ` · <i class="fa-solid fa-star"></i> ${Cards.formatRating(lib.rating)}` : ""}` : '<i class="fa-solid fa-bookmark"></i> Watchlist'}</span>`
-                  : ""
-              }
+              ${mineHtml(f)}
             </div>
-            <div class="bo-bar" style="--w:${w}%" title="Gross ${money(f.revenue)}${f.budget ? ` · budget ${money(f.budget)}` : ""}">
+            <div class="bo-bar" style="--w:${w}%">
               <span class="bo-fill">${b ? `<span class="bo-budget" style="--b:${b}%"></span>` : ""}</span>
+            </div>
+            <div class="bo-barnote" style="--w:${w}%">
+              <span>${f.budget ? `<i class="fa-solid fa-coins"></i> cost ${money(f.budget)}` : "cost unknown"}</span>
+              ${f.budget ? `<span class="bo-pl">${f.revenue >= f.budget ? "+" : "−"}${money(Math.abs(f.revenue - f.budget))} ${f.revenue >= f.budget ? "profit" : "loss"}</span>` : ""}
             </div>
           </div>
           <div class="bo-nums">
             <b>${money(f.revenue)}</b>
-            <small>${f.budget ? `budget ${money(f.budget)}` : "budget –"}</small>
             ${verdictHtml(f)}
           </div>
+          ${actsHtml(f)}
           <i class="fa-solid fa-chevron-down bo-chev" aria-hidden="true"></i>
         </div>
         <div class="bo-detail"><div></div></div>
+      </li>`;
+  }
+
+  // the poster wall: the rank as a medal, the gross and the verdict on the poster
+  function tileHtml(f, n) {
+    const r = ratioOf(f);
+    const v = verdictOf(r) || ["Budget unknown", "none"];
+    return `<li class="bo-row bo-tile v-${v[1]}${n < 3 ? ` medal m${n + 1}` : ""}" data-id="${f.tmdbId}">
+        <a class="bo-tile-in" href="${titleUrl(f)}">
+          <img src="${posterOf(f, "w342")}" alt="" loading="lazy" />
+          <span class="bo-tile-rank">${n + 1}</span>
+          ${mineHtml(f)}
+          <span class="bo-tile-info">
+            <strong>${esc(Lang.title(f))}</strong>
+            <b>${money(f.revenue)}</b>
+            <span class="bo-tile-meta"><span>${f.budget ? `cost ${money(f.budget)}` : "cost ?"}</span><span class="bo-tile-x">${r ? `${r.toFixed(1)}×` : ""}</span></span>
+          </span>
+        </a>
+        ${actsHtml(f)}
       </li>`;
   }
 
@@ -551,45 +621,81 @@
     const list = sorted();
     const top = films.length ? Math.max(...films.map((f) => f.revenue)) : 1;
     const chart = $(".bo-chart");
+    const posters = state.view === "posters";
+    chart.classList.toggle("posters", posters);
     const open = new Set([...chart.querySelectorAll(".bo-row.open")].map((r) => r.dataset.id));
-    chart.innerHTML = list.map((f, n) => rowHtml(f, n, top)).join("");
-    open.forEach((id) => toggleRow(chart.querySelector(`.bo-row[data-id="${id}"]`), true));
+    chart.innerHTML = list.length
+      ? list.map((f, n) => (posters ? tileHtml(f, n) : rowHtml(f, n, top))).join("")
+      : `<li class="bo-none">${state.show === "seen" ? "You haven't watched any of these yet." : "You've watched all of these!"}</li>`;
+    if (!posters) open.forEach((id) => toggleRow(chart.querySelector(`.bo-row[data-id="${id}"]`), true));
     reveal([...chart.querySelectorAll(".bo-row")]);
     $(".bo-more").innerHTML = page < pages ? `<button class="btn bo-load" type="button"><i class="fa-solid fa-chevron-down"></i> Show the next 20</button>` : "";
+    paintShow();
   }
 
-  // a new order: the rows glide from where they were to where they go (FLIP)
+  // All / Watched / Not seen: with how many of each
+  function paintShow() {
+    const seen = films.filter((f) => libOf(f).seen).length;
+    const counts = { all: films.length, seen, unseen: films.length - seen };
+    app.querySelectorAll("[data-show]").forEach((b) => {
+      b.classList.toggle("active", b.dataset.show === state.show);
+      const c = b.querySelector("small");
+      if (c) c.textContent = counts[b.dataset.show];
+    });
+  }
+
+  // a new order: the rows (or posters) glide from where they were to where they go (FLIP)
   function resort() {
     const chart = $(".bo-chart");
-    const before = new Map([...chart.querySelectorAll(".bo-row")].map((r) => [r.dataset.id, r.getBoundingClientRect().top]));
+    const before = new Map([...chart.querySelectorAll(".bo-row")].map((r) => [r.dataset.id, r.getBoundingClientRect()]));
     const list = sorted();
     list.forEach((f, n) => {
       const row = chart.querySelector(`.bo-row[data-id="${f.tmdbId}"]`);
       if (!row) return;
       chart.appendChild(row);
-      const rank = row.querySelector(".bo-rank");
+      row.classList.toggle("medal", n < 3);
+      ["m1", "m2", "m3"].forEach((m, i) => row.classList.toggle(m, n === i));
+      const rank = row.querySelector(".bo-rank, .bo-tile-rank");
       rank.textContent = n + 1;
-      rank.className = `bo-rank${n < 3 ? ` top${n + 1}` : ""}`;
+      if (rank.classList.contains("bo-rank")) rank.className = `bo-rank${n < 3 ? ` top${n + 1}` : ""}`;
     });
     if (still) return;
     chart.querySelectorAll(".bo-row").forEach((row) => {
       const was = before.get(row.dataset.id);
-      if (was == null) return;
-      const dy = was - row.getBoundingClientRect().top;
-      if (!dy) return;
+      if (!was) return;
+      const now = row.getBoundingClientRect();
+      const dx = was.left - now.left;
+      const dy = was.top - now.top;
+      if (!dx && !dy) return;
       row.classList.add("in");
-      row.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: 550, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
+      row.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: 550, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
     });
   }
 
   function toggleRow(row, force) {
-    if (!row) return;
+    if (!row || row.classList.contains("bo-tile")) return;
     const on = force != null ? force : !row.classList.contains("open");
     const f = films.find((x) => String(x.tmdbId) === row.dataset.id);
     if (on && f) row.querySelector(".bo-detail > div").innerHTML = detailHtml(f);
     row.classList.toggle("open", on);
     row.querySelector(".bo-line").setAttribute("aria-expanded", on);
   }
+
+  // something added / watched / rated: the tags and buttons follow (the rows stay where they are)
+  function refreshMine() {
+    app.querySelectorAll(".bo-row[data-id]").forEach((row) => {
+      const f = films.find((x) => String(x.tmdbId) === row.dataset.id);
+      if (!f) return;
+      const mine = row.querySelector(".bo-mine");
+      const html = mineHtml(f);
+      if (mine) mine.outerHTML = html || "";
+      else if (html) (row.querySelector(".bo-name") || row.querySelector(".bo-tile-rank")).insertAdjacentHTML(row.classList.contains("bo-tile") ? "afterend" : "beforeend", html);
+      const acts = row.querySelector(".bo-acts");
+      if (acts) acts.outerHTML = actsHtml(f);
+    });
+    paintShow();
+  }
+  Store.onChange(() => films.length && refreshMine());
 
   /* ---------------- loading ---------------- */
 
@@ -684,6 +790,22 @@
       if (sp.dataset.name) (sky.found = sky.found || []).unshift({ mode: sky.mode, id: Number(sp.dataset.skyPick), name: sp.dataset.name });
       return paintPlot();
     }
+    const sh = e.target.closest("[data-show]");
+    if (sh) {
+      if (sh.dataset.show === state.show) return;
+      state.show = sh.dataset.show;
+      return paintChart();
+    }
+    const vw = e.target.closest("[data-view]");
+    if (vw) {
+      if (vw.dataset.view === state.view) return;
+      state.view = vw.dataset.view;
+      Store.write("mn:boView", state.view);
+      app.querySelectorAll("[data-view]").forEach((b) => b.classList.toggle("active", b === vw));
+      return paintChart();
+    }
+    // (a quick button on a row: the site's own action, js/components/cards.js)
+    if (e.target.closest(".bo-acts")) return;
     const so = e.target.closest("[data-sort]");
     if (so) {
       if (so.dataset.sort === state.sort) return;
