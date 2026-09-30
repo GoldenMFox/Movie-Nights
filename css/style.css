@@ -12370,7 +12370,8 @@ html.home-fx .row-section.in:not(.shown) .top10-num {
 }
 
 /* ============================== Discover page: motion ============================== */
-/* (html.dx-fx is set by js/pages/discover.js, and only when motion isn't turned down) */
+/* (html.dx-fx is set by js/pages/discover.js, and only when motion isn't turned down)
+   Kept calm, like the library pages: nothing goes blank when you switch. */
 
 /* placeholders while the first posters load */
 .dx-skeletons > .movie-item.skeleton {
@@ -12379,32 +12380,18 @@ html.home-fx .row-section.in:not(.shown) .top10-num {
   border-radius: 14px;
 }
 
-/* opening the page: the title, the search, then the category chips one by one */
-html.dx-fx .page-title,
-html.dx-fx .discover-search,
-html.dx-fx .genre-bar {
-  animation: dx-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-}
-
-html.dx-fx .discover-search { animation-delay: 0.08s; }
-html.dx-fx .genre-bar { animation-delay: 0.14s; }
-
-/* the category buttons pop in one at a time, left to right */
+/* the chips settle in when the page opens */
 html.dx-fx .chips > .chip {
-  animation: dx-chip 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
+  animation: lb-soft 0.35s ease-out backwards;
 }
 
-html.dx-fx .chips > .chip:nth-of-type(1) { animation-delay: 0.1s; }
-html.dx-fx .chips > .chip:nth-of-type(2) { animation-delay: 0.16s; }
-html.dx-fx .chips > .chip:nth-of-type(3) { animation-delay: 0.22s; }
-html.dx-fx .chips > .chip:nth-of-type(4) { animation-delay: 0.28s; }
-html.dx-fx .chips > .chip:nth-of-type(5) { animation-delay: 0.34s; }
-html.dx-fx .chips > .chip:nth-of-type(6) { animation-delay: 0.4s; }
-html.dx-fx .chips > .chip:nth-of-type(7) { animation-delay: 0.46s; }
-html.dx-fx .chips > .chip:nth-of-type(8) { animation-delay: 0.52s; }
-html.dx-fx .chips > .chip:nth-of-type(n + 9) { animation-delay: 0.58s; }
+html.dx-fx .chips > .chip:nth-of-type(2) { animation-delay: 0.02s; }
+html.dx-fx .chips > .chip:nth-of-type(3) { animation-delay: 0.04s; }
+html.dx-fx .chips > .chip:nth-of-type(4) { animation-delay: 0.06s; }
+html.dx-fx .chips > .chip:nth-of-type(5) { animation-delay: 0.08s; }
+html.dx-fx .chips > .chip:nth-of-type(n + 6) { animation-delay: 0.1s; }
 
-/* ...then a red pill grows behind the picked one, and glides to each new pick */
+/* the red pill behind the picked chip glides to each new pick */
 .chip-indicator {
   display: none;
 }
@@ -12428,54 +12415,30 @@ html.dx-fx .chip-indicator {
   z-index: 0;
   border-radius: 999px;
   background: var(--accent);
-  box-shadow: 0 6px 18px rgba(229, 9, 20, 0.35);
+  box-shadow: 0 4px 14px rgba(229, 9, 20, 0.3);
   pointer-events: none;
-  transition: left 0.45s cubic-bezier(0.32, 0.72, 0, 1), top 0.45s cubic-bezier(0.32, 0.72, 0, 1), width 0.45s cubic-bezier(0.32, 0.72, 0, 1),
-    height 0.45s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s;
+  transition: left 0.4s cubic-bezier(0.32, 0.72, 0, 1), top 0.4s cubic-bezier(0.32, 0.72, 0, 1), width 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+    height 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s;
 }
 
 html.dx-fx .chip-indicator.intro {
   transition: none;
-  animation: dx-pill 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.65s backwards;
+  animation: lb-soft 0.35s ease-out backwards;
 }
 
 html.dx-fx .chip-indicator.off {
   opacity: 0;
 }
 
-/* the count line slides in afresh whenever it changes */
+/* the count changes with a quick fade */
 html.dx-fx .result-count.dx-count {
-  animation: dx-count 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: lb-fade 0.3s ease-out;
 }
 
-@keyframes dx-chip {
-  from { opacity: 0; transform: translateX(-14px) scale(0.8); filter: blur(3px); }
-}
-
-@keyframes dx-pill {
-  from { opacity: 0; transform: scale(0.3); }
-}
-
-@keyframes dx-count {
-  from { opacity: 0; transform: translateX(-12px); letter-spacing: 0.04em; }
-}
-
-/* posters: each batch flows in one after another (also the ones "Load more" shows) */
+/* posters: a short, soft settle (also the ones "Load more" shows) */
 html.dx-fx .movie-grid:not(.dx-skeletons) > .movie-item {
-  animation: dx-card 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation: lb-settle 0.3s ease-out backwards;
   animation-delay: var(--dx-d, 0ms);
-}
-
-@keyframes dx-rise {
-  from { opacity: 0; transform: translateY(16px); }
-}
-
-@keyframes dx-card {
-  from { opacity: 0; transform: translateY(24px) scale(0.95); }
-}
-
-@keyframes dx-fade {
-  from { opacity: 0; }
 }
 
 /* ============================== Library pages (Movies, TV Shows, Anime): motion ============================== */

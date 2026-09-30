@@ -275,7 +275,7 @@
       [...grid.children].forEach((c, i) => {
         c.classList.toggle("dc-later", i >= state.limit);
         // the newly shown posters come in one after another
-        if (i >= before && i < state.limit) c.style.setProperty("--dx-d", `${Math.min(i - before, 30) * 30}ms`);
+        if (i >= before && i < state.limit) c.style.setProperty("--dx-d", `${Math.min(i - before, 12) * 12}ms`);
       });
 
       const shown = Math.min(grid.children.length, state.limit);
