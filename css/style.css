@@ -17244,70 +17244,6 @@ a.by-card:hover .by-blur {
   align-items: center;
   gap: 10px;
 }
-
-.bo-infl {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  height: 44px;
-  padding: 0 8px 0 16px;
-  border: 1px solid var(--glass-border);
-  border-radius: 999px;
-  background: var(--glass-bg);
-  color: var(--text-muted);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
-}
-
-.bo-infl:hover {
-  color: var(--text);
-  background: var(--glass-bg-hover);
-}
-
-.bo-infl.on {
-  border-color: rgba(245, 197, 24, 0.5);
-  background: rgba(245, 197, 24, 0.1);
-  color: var(--text);
-}
-
-.bo-infl > i {
-  color: #f5c518;
-  font-size: 13px;
-}
-
-/* the little switch */
-.bo-infl-track {
-  position: relative;
-  width: 38px;
-  height: 24px;
-  border-radius: 999px;
-  background: var(--glass-bg-hover);
-  transition: background-color 0.25s ease;
-}
-
-.bo-infl-track span {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-  transition: transform 0.3s cubic-bezier(0.3, 1.4, 0.5, 1);
-}
-
-.bo-infl.on .bo-infl-track {
-  background: #d4a514;
-}
-
-.bo-infl.on .bo-infl-track span {
-  transform: translateX(14px);
-}
-
 .bo-real-tag {
   margin-left: 8px;
   padding: 3px 10px;
@@ -17335,10 +17271,6 @@ a.by-card:hover .by-blur {
     flex-direction: column;
     align-items: stretch;
   }
-
-  .bo-infl {
-    justify-content: space-between;
-  }
 }
 
 /* (a budget that is a sliver of the gross, e.g. a classic that made 100× its cost, still shows
@@ -17358,4 +17290,128 @@ a.by-card:hover .by-blur {
     justify-content: space-between;
     margin-left: 0;
   }
+}
+
+/* ---------- adjusted for inflation: a chip, "2026 dollars" (grey; solid gold with a soft shine when on) ---------- */
+.bo-controls .bo-infl,
+.bo-infl {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--glass-bg);
+  color: var(--glass-muted, var(--text-muted));
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  isolation: isolate;
+  transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease;
+}
+
+.bo-infl > .fa-scale-balanced {
+  color: #f5c518;
+  font-size: 13px;
+  transition: color 0.3s ease;
+}
+
+.bo-infl:hover {
+  border-color: rgba(245, 197, 24, 0.45);
+  background: var(--glass-bg-hover);
+  color: var(--text);
+}
+
+.bo-infl:active {
+  transform: scale(0.96);
+}
+
+.bo-infl:focus-visible {
+  outline: 2px solid #f5c518;
+  outline-offset: 3px;
+}
+
+/* the check comes in when it's on */
+.bi-check {
+  width: 0;
+  margin-left: -8px;
+  font-size: 12px;
+  opacity: 0;
+  transform: scale(0.4);
+  transition: width 0.3s ease, margin 0.3s ease, opacity 0.25s ease, transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+/* on: solid gold */
+.bo-infl.on {
+  border-color: transparent;
+  background: linear-gradient(135deg, #ffe680, #f5c518 45%, #d49b0a);
+  color: #1d1500;
+  box-shadow: 0 4px 18px rgba(245, 197, 24, 0.35);
+}
+
+.bo-infl.on > .fa-scale-balanced {
+  color: #1d1500;
+}
+
+.bo-infl.on .bi-check {
+  width: 12px;
+  margin-left: 0;
+  opacity: 1;
+  transform: none;
+}
+
+/* a soft shine across the gold now and then */
+.bo-infl::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%);
+  transform: translateX(-120%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bo-infl.on::after {
+  opacity: 1;
+  animation: bi-shine 3.4s ease-in-out 0.4s infinite;
+}
+
+@keyframes bi-shine {
+  0% {
+    transform: translateX(-120%);
+  }
+  40%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@media (max-width: 700px) {
+  .bo-controls .bo-infl {
+    flex: 1 1 100%;
+    justify-content: center;
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bo-infl.on::after {
+    animation: none;
+    opacity: 0;
+  }
+
+  .bi-check {
+    transition: none;
+  }
+}
+
+/* (light theme: a deeper gold icon, so it shows on the light chip) */
+html[data-theme="light"] .bo-infl:not(.on) > .fa-scale-balanced {
+  color: #b07d05;
 }

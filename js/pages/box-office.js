@@ -72,8 +72,8 @@
           ${Array.from({ length: THIS_YEAR - 1969 }, (_, n) => THIS_YEAR - n).map((y) => `<option value="${y}">${y}</option>`).join("")}
         </select>
       </span>
-      <button type="button" class="bo-infl${state.real ? " on" : ""}" aria-pressed="${state.real}" title="Every amount on the page in today's dollars (US inflation), the classics ranked with today's films">
-        <i class="fa-solid fa-scale-balanced"></i> Adjusted for inflation <span class="bo-infl-track"><span></span></span>
+      <button type="button" class="bo-infl${state.real ? " on" : ""}" aria-pressed="${state.real}" aria-label="Adjusted for inflation: ${THIS_YEAR} dollars" title="Adjusted for inflation: every amount on the page in ${THIS_YEAR} dollars, the classics ranked with today's films">
+        <i class="fa-solid fa-scale-balanced"></i> ${THIS_YEAR} dollars <i class="fa-solid fa-check bi-check" aria-hidden="true"></i>
       </button>
     </div>
     <div class="chips bo-genres" role="group" aria-label="Genre">
