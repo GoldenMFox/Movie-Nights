@@ -321,6 +321,8 @@
   let scanQueued = false;
   function scanForScores() {
     scanQueued = false;
+    // ("My rating" on in the menu: the posters show only yours, no IMDb to look up)
+    if (!document.documentElement.classList.contains("ext-ratings")) return;
     document.querySelectorAll(".movie-item[data-need-score]:not([data-score-watch])").forEach((el) => {
       el.dataset.scoreWatch = "1";
       if (scoreWatcher) scoreWatcher.observe(el);
@@ -1268,6 +1270,7 @@
 
   window.Cards = {
     card,
+    scanForScores,
     tmdbCard,
     inLibrary,
     addHit,

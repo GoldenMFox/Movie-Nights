@@ -129,6 +129,8 @@ cached in the browser's database (IndexedDB), a week each.
 In the **profile menu**:
 
 - **Russian titles**: names, posters and trailers in Russian (dubbed trailers when TMDB has them in HD).
+- **My rating** (menu, under Russian titles): the posters of your library show your own rating
+  (on, at first) or their IMDb rating (off). While it's on, no IMDb lookups are made for posters.
   On narrow computer windows it's the EN | RU switch in the side menu.
 - **Poster details** (computers): off = posters only, like on phones and tablets.
 - **Match %** (computers): off = no match on the posters or in the hover preview (title

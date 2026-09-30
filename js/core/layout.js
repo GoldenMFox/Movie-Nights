@@ -115,6 +115,15 @@
               ${
                 Store.guest
                   ? ""
+                  : `<label class="menu-switch" title="On: your own rating on the posters in your library. Off: their IMDb rating">
+                <i class="fa-solid fa-star"></i><span>My rating</span>
+                <input type="checkbox" class="my-rating-switch" />
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+              </label>`
+              }
+              ${
+                Store.guest
+                  ? ""
                   : `<label class="menu-switch fade-row" title="On Discover and Home, what you've already watched is dimmed (like Letterboxd)">
                 <i class="fa-solid fa-eye-low-vision"></i><span>Dim watched</span>
                 <input type="checkbox" class="fade-switch" />
@@ -504,6 +513,24 @@
       else localStorage.setItem("mn:showMatch", "off");
     } catch (e) {}
   });
+  // "My rating": the posters of your library show your own rating (on, at first) or their
+  // IMDb rating (off, html.ext-ratings). One or the other, never both.
+  try {
+    if (localStorage.getItem("mn:myRatings") === "off") document.documentElement.classList.add("ext-ratings");
+  } catch (e) {}
+  const myRatingSwitch = nav.querySelector(".my-rating-switch");
+  if (myRatingSwitch) {
+    myRatingSwitch.checked = !document.documentElement.classList.contains("ext-ratings");
+    myRatingSwitch.addEventListener("change", () => {
+      document.documentElement.classList.toggle("ext-ratings", !myRatingSwitch.checked);
+      try {
+        if (myRatingSwitch.checked) localStorage.removeItem("mn:myRatings");
+        else localStorage.setItem("mn:myRatings", "off");
+      } catch (e) {}
+      // (IMDb shown now: look up the ones still missing)
+      if (!myRatingSwitch.checked && window.Cards && Cards.scanForScores) Cards.scanForScores();
+    });
+  }
   // "Dim watched" (like Letterboxd's "fade watched"): titles you've already
   // watched are dimmed on Discover and Home's rows, so the new ones stand out. Off at first.
   try {

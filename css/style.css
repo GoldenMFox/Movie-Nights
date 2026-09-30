@@ -14189,3 +14189,9 @@ html.mv-lock {
     transition: none;
   }
 }
+
+/* ---------- "My rating" (menu): library posters show your rating (on) or IMDb (off), not both ---------- */
+html:not(.ext-ratings) .movie-item[data-id] .ratings .ext-score,
+html.ext-ratings .movie-item[data-id] .ratings .score.mine {
+  display: none;
+}
