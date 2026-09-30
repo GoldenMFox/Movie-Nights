@@ -507,6 +507,13 @@ ${skyFilms
     // (a skyline wider than the screen: open it on the film the readout shows)
     const on = chart.querySelector(".sk-col.on");
     if (on && chart.scrollWidth > chart.clientWidth) chart.scrollLeft = on.offsetLeft - chart.clientWidth / 2 + on.offsetWidth / 2;
+    // (the edge fades: only where there's more to scroll)
+    const edges = () => {
+      chart.classList.toggle("at-start", chart.scrollLeft < 4);
+      chart.classList.toggle("at-end", chart.scrollLeft + chart.clientWidth >= chart.scrollWidth - 4);
+    };
+    chart.addEventListener("scroll", edges, { passive: true });
+    edges();
     if ("IntersectionObserver" in window) {
       const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && (chart.classList.add("in"), io.disconnect()), { threshold: 0.2 });
       io.observe(chart);
