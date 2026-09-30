@@ -156,7 +156,7 @@
   root.innerHTML = isLists
     ? `<div class="wl-welcome"></div>
       <section class="wl-coming" hidden>
-        <div class="row-head"><h2><i class="fa-regular fa-calendar"></i> Coming up</h2></div>
+        <div class="row-head"><h2><i class="fa-regular fa-calendar"></i> Coming up</h2><div class="top10-switch wl-type" role="group" aria-label="Show" data-type-row="coming"></div></div>
         <div class="wl-coming-list"></div>
       </section>
       <div class="wl-rows"></div>
@@ -285,6 +285,74 @@
       names.map((g) => `<option value="${esc(g)}"${g === state.genre ? " selected" : ""}>${esc(g)} (${counts[g] || 0})</option>`).join("");
   }
 
+  // Watchlist page: an All / Movies / TV / Anime switch next to each row's title (Coming up
+  // too). Each row keeps its own choice (remembered in mn:wlTypes); a type only gets a
+  // button when that row has some of it. "See all" opens the full list on the same type.
+  const TYPE_TABS = [
+    ["all", "All"],
+    ["movie", "Movies"],
+    ["tv", "TV"],
+    ["anime", "Anime"],
+  ];
+  let rowType = Store.read("mn:wlTypes", {});
+  const typeOf = (row) => rowType[row] || "all";
+  const ofType = (type) => (i) => type === "all" || i.type === type;
+  function paintTypes(sw, items) {
+    const row = sw.dataset.typeRow;
+    const have = new Set(items.map((i) => i.type));
+    // (a choice with nothing left in it goes back to All)
+    if (typeOf(row) !== "all" && !have.has(typeOf(row))) delete rowType[row];
+    const on = typeOf(row);
+    const tabs = TYPE_TABS.filter(([t]) => t === "all" || have.has(t));
+    sw.hidden = tabs.length < 3; // only one kind of title: nothing to switch
+    // the buttons stay (only redrawn when the choices change), so the red pill can glide
+    const key = tabs.map(([t]) => t).join();
+    if (sw.dataset.tabs !== key) {
+      sw.dataset.tabs = key;
+      sw.innerHTML =
+        '<span class="wl-pill" aria-hidden="true"></span>' +
+        tabs.map(([t, label]) => `<button type="button" class="top10-tab" data-type="${t}">${label}</button>`).join("");
+      sw.classList.add("no-glide");
+    }
+    sw.querySelectorAll("[data-type]").forEach((b) => {
+      const active = b.dataset.type === on;
+      b.classList.toggle("active", active);
+      b.setAttribute("aria-pressed", active);
+    });
+    requestAnimationFrame(() => movePill(sw));
+  }
+
+  // the red pill behind the picked type
+  function movePill(sw) {
+    const on = sw.querySelector(".top10-tab.active");
+    const pill = sw.querySelector(".wl-pill");
+    if (!on || !pill || !on.offsetWidth) return;
+    pill.style.left = `${on.offsetLeft}px`;
+    pill.style.width = `${on.offsetWidth}px`;
+    if (sw.classList.contains("no-glide")) requestAnimationFrame(() => sw.classList.remove("no-glide"));
+  }
+  if (isLists) window.addEventListener("resize", () => root.querySelectorAll(".wl-type").forEach(movePill));
+
+  // after a switch, the row's posters (or Coming up's titles) settle in, one after another
+  function settle(box) {
+    [...box.children].slice(0, 12).forEach((c, n) => {
+      c.classList.remove("wl-in");
+      void c.offsetWidth;
+      c.style.setProperty("--wl-d", `${n * 35}ms`);
+      c.classList.add("wl-in");
+    });
+  }
+  if (isLists)
+    root.addEventListener("click", (e) => {
+      const b = e.target.closest(".wl-type [data-type]");
+      if (!b) return;
+      const row = b.closest(".wl-type").dataset.typeRow;
+      if (b.dataset.type === "all") delete rowType[row];
+      else rowType[row] = b.dataset.type;
+      Store.write("mn:wlTypes", rowType);
+      renderRows();
+    });
+
   // Watchlist page: a row per list (newest first) and the switch above the full list
   function renderRows() {
     syncLists();
@@ -313,6 +381,7 @@
         const addBtn = (cls, label) =>
           custom ? `<button type="button" class="${cls}" data-add-to="${esc(custom)}"><i class="fa-solid fa-plus"></i> ${label}</button>` : "";
         sec.innerHTML = `<div class="row-head"><h2><i class="fa-solid ${LISTS[k].icon}"></i> <span class="wl-name"></span></h2>
+            <div class="top10-switch wl-type" role="group" aria-label="Show" data-type-row="${esc(k)}"></div>
             <span class="wl-row-tools">${addBtn("wl-add", "Add titles")}<a href="?list=${encodeURIComponent(k)}" class="wl-see" data-see="${esc(k)}"></a></span></div>
           <div class="movie-row"></div>
           <div class="wl-row-empty" hidden><span></span>${addBtn("btn btn-primary wl-add-big", "Add titles")}</div>`;
@@ -332,12 +401,17 @@
       const scroll = row.scrollLeft;
       // your own lists: in the order you added them (newest first)
       const order = LISTS[k].order;
-      const items = all
-        .filter(LISTS[k].base)
+      const inList = all.filter(LISTS[k].base);
+      paintTypes(sec.querySelector(".wl-type"), inList);
+      const items = inList
+        .filter(ofType(typeOf(k)))
         .sort(order ? (a, b) => order.indexOf(a.id) - order.indexOf(b.id) : (a, b) => b.order - a.order);
+      const typeChanged = row.dataset.type != null && row.dataset.type !== typeOf(k);
+      row.dataset.type = typeOf(k);
       row.innerHTML = items.slice(0, 20).map(Cards.card).join("");
       row.hidden = !items.length;
-      row.scrollLeft = scroll;
+      row.scrollLeft = typeChanged ? 0 : scroll; // (a new type starts at the beginning)
+      if (typeChanged) settle(row);
       sec.querySelector(".wl-row-empty").hidden = !!items.length;
       const see = sec.querySelector(".wl-see");
       see.hidden = !items.length;
@@ -355,12 +429,17 @@
   function renderComing(all) {
     const box = root.querySelector(".wl-coming");
     if (!window.Watch) return;
-    const list = Watch.candidates(all)
+    const upcoming = Watch.candidates(all)
       .map((i) => ({ i, u: Watch.upcoming(i) }))
       .filter((x) => x.u)
-      .sort((a, b) => a.u.date.localeCompare(b.u.date))
-      .slice(0, 12);
-    box.hidden = !list.length;
+      .sort((a, b) => a.u.date.localeCompare(b.u.date));
+    paintTypes(box.querySelector(".wl-type"), upcoming.map((x) => x.i));
+    const list = upcoming.filter((x) => ofType(typeOf("coming"))(x.i)).slice(0, 12);
+    box.hidden = !upcoming.length;
+    const comingList = box.querySelector(".wl-coming-list");
+    const typeChanged = comingList.dataset.type != null && comingList.dataset.type !== typeOf("coming");
+    comingList.dataset.type = typeOf("coming");
+    if (typeChanged) requestAnimationFrame(() => settle(comingList));
     box.querySelector(".wl-coming-list").innerHTML = list
       .map(
         ({ i, u }) => `<a class="coming-item${u.soon ? " soon" : ""}" href="${i.reminder ? `title.html?tmdb=${encodeURIComponent(i.key)}` : `title.html?id=${encodeURIComponent(i.id)}`}">
@@ -377,7 +456,8 @@
     PAGE = LISTS[k];
     const q = root.querySelector('[name="q"]');
     if (q) q.value = "";
-    set({ list: k, chip: "all", q: "", genre: "" });
+    // (on the type picked on that row: Movies there = Movies here)
+    set({ list: k, chip: typeOf(k), q: "", genre: "" });
     panel.hidden = false;
     if (scroll) panel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
