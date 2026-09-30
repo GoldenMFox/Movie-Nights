@@ -722,6 +722,32 @@
     );
   }
 
+  /* ---------------- "out today" badge on Watchlist ---------------- */
+
+  // how many titles in Coming up come out (or get a new episode) today: a red number on the
+  // Watchlist link and tab. Release dates are kept fresh on any page (a day old at most).
+  document.addEventListener("DOMContentLoaded", () => {
+    if (Store.guest || !window.Watch) return;
+    const paint = () => {
+      const n = Watch.outToday(Store.all()).length;
+      document.querySelectorAll('.nav-links a[href="watchlist.html"], .tab-bar a[href="watchlist.html"]').forEach((a) => {
+        let b = a.querySelector(".nav-badge");
+        if (!n) return b && b.remove();
+        if (!b) {
+          b = document.createElement("span");
+          b.className = "nav-badge";
+          a.append(b);
+        }
+        b.textContent = n;
+        b.title = `${n} out today`;
+        a.setAttribute("aria-label", `Watchlist, ${n} out today`);
+      });
+    };
+    paint();
+    Watch.onChange(paint);
+    if (window.TMDB && TMDB.enabled()) setTimeout(() => Watch.loadNext(Watch.candidates(Store.all())), 4000);
+  });
+
   /* ---------------- shared helpers ---------------- */
 
   // a short message at the bottom; with { label, run } it gets a button (e.g. Undo)

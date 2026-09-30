@@ -172,7 +172,53 @@
     return lib.concat(reminderItems().filter((r) => !have.has(r.key)));
   }
 
+  /* ---------------- "Continue watching": the episode you're at ---------------- */
+
+  // saved on the title (so it follows your account): progress = { s: season, e: last episode
+  // you watched, eps: [episodes in season 1, 2, …], done }, progressAt = when it last moved
+  const isSeries = (i) => !!i && (i.type === "tv" || (i.type === "anime" && i.tmdbMedia !== "movie"));
+
+  // the episode after the one you're at ({ s, e }), or null when that was the last one
+  function nextEpisode(p) {
+    if (!p) return { s: 1, e: 1 };
+    const eps = p.eps || [];
+    if (p.e < (eps[p.s - 1] || 0)) return { s: p.s, e: p.e + 1 };
+    for (let s = p.s + 1; s <= eps.length; s++) if (eps[s - 1] > 0) return { s, e: 1 };
+    return null;
+  }
+
+  // how far through the whole show: { seen, total, pct }
+  function progressOf(p) {
+    const eps = (p && p.eps) || [];
+    const total = eps.reduce((a, b) => a + b, 0);
+    const seen = p ? eps.slice(0, p.s - 1).reduce((a, b) => a + b, 0) + p.e : 0;
+    return { seen, total, pct: total ? Math.min(100, Math.round((seen / total) * 100)) : 0 };
+  }
+
+  // the shows you're in the middle of, the last one you moved first
+  const continuing = (all) =>
+    all.filter((i) => isSeries(i) && i.progress && !i.progress.done).sort((a, b) => (b.progressAt || 0) - (a.progressAt || 0));
+
+  // "S2 E5"
+  const epLabel = (p) => `S${p.s} E${p.e}`;
+
+  /* ---------------- out today (the badge on Watchlist) ---------------- */
+
+  function outToday(all) {
+    const today = Store.today();
+    return candidates(all).filter((i) => {
+      const u = upcoming(i);
+      return u && u.date === today;
+    });
+  }
+
   window.Watch = {
+    isSeries,
+    nextEpisode,
+    progressOf,
+    continuing,
+    epLabel,
+    outToday,
     mine,
     setMine,
     refOf,

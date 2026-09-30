@@ -69,6 +69,7 @@
         ${Store.isRecent(item) ? '<span class="new-label">NEW</span>' : ""}
         ${badges ? `<span class="badges">${badges}</span>` : ""}
         ${matchPill(item)}
+        ${epBadge(item)}
       </a>
       <div class="movie-info">
         <h3 class="movie-title"><a href="${url}" title="${esc(Lang.title(item))}">${esc(Lang.title(item))}</a></h3>
@@ -147,6 +148,37 @@
     const m = window.Taste ? Taste.match(hit) : null;
     if (m == null || m < 65) return "";
     return `<span class="match-pill${m >= 85 ? " high" : ""}" title="${m}% match: how much you'll probably like it, from your own scores">${m}%</span>`;
+  }
+
+  // a show you're in the middle of: the episode you're at, on the poster ("S2 · E5")
+  function epBadge(item) {
+    const p = item.progress;
+    if (!p || p.done || !window.Watch || !Watch.isSeries(item)) return "";
+    return `<span class="ep-badge" title="You're at season ${p.s}, episode ${p.e}"><i class="fa-solid fa-play"></i> S${p.s} · E${p.e}</span>`;
+  }
+
+  // "Watched S2 E6": one episode on. The last one finishes the show: off the Watchlist,
+  // today in the diary, and a gentle "rate it?"
+  function nextEpisode(id) {
+    const item = Store.get(id);
+    const p = item && item.progress;
+    const n = p && Watch.nextEpisode(p);
+    if (!n) return;
+    const np = Object.assign({}, p, n);
+    if (!Watch.nextEpisode(np)) {
+      Store.update(id, { progress: Object.assign(np, { done: true }), progressAt: Date.now(), watchlist: false, watchedAt: item.watchedAt || Store.today() });
+      toast(`🎉 You finished ${Lang.title(item)}!`);
+      if (item.rating == null) setTimeout(() => openRating(id, { watched: true }), 500);
+    } else {
+      Store.update(id, { progress: np, progressAt: Date.now() });
+      toast(`${Lang.title(item)}: ${Watch.epLabel(np)} watched`);
+    }
+  }
+  // the quick menus' row for it (a show you're in the middle of)
+  function nextEpRow(item, row) {
+    const p = item.progress;
+    const n = p && !p.done && window.Watch && Watch.nextEpisode(p);
+    return n ? row("next-ep", "fa-solid fa-forward-step", `Watched S${n.s} E${n.e}`) : "";
   }
 
   // not out yet ("Remind me" instead of "Rate it")
@@ -337,6 +369,8 @@
       removeTitle(id);
     } else if (action === "lists") {
       openLists(id);
+    } else if (action === "next-ep") {
+      nextEpisode(id);
     }
   }
 
@@ -556,6 +590,7 @@
       ${
         s.lib
           ? `<div class="qa-list">
+              ${nextEpRow(item, row)}
               ${row("watch", `fa-${item.watchlist ? "solid" : "regular"} fa-bookmark`, item.watchlist ? "Remove from Watchlist" : "Add to Watchlist")}
               ${row("fav", `fa-${item.favorite ? "solid" : "regular"} fa-heart`, item.favorite ? "Remove from Favorites" : "Add to Favorites")}
               ${row("rate", "fa-solid fa-star", item.rating != null ? "Change your score" : "Rate it")}
@@ -594,7 +629,8 @@
     const row = (action, icon, label, cls) =>
       `<button type="button" class="qa-p-row${cls || ""}" data-action="${action}"><i class="${icon}"></i><span>${label}</span></button>`;
     const rows = s.lib
-      ? `${row("watch", `fa-${item.watchlist ? "solid" : "regular"} fa-bookmark`, item.watchlist ? "On Watchlist" : "Watchlist", item.watchlist ? " on" : "")}
+      ? `${nextEpRow(item, row)}
+        ${row("watch", `fa-${item.watchlist ? "solid" : "regular"} fa-bookmark`, item.watchlist ? "On Watchlist" : "Watchlist", item.watchlist ? " on" : "")}
         ${row("fav", `fa-${item.favorite ? "solid" : "regular"} fa-heart`, "Favorite", item.favorite ? " on" : "")}
         ${row("rate", "fa-solid fa-star", item.rating != null ? `Your score ${formatRating(item.rating)}` : "Rate", item.rating != null ? " on" : "")}
         ${row("lists", "fa-solid fa-list-ul", "Add to list")}

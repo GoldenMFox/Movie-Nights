@@ -13010,3 +13010,182 @@ html .modal .menu-switch:not([hidden]) {
     flex: 1 0 calc(100% - 50px);
   }
 }
+
+/* ============================== Continue watching, notes, "out today" ============================== */
+
+/* the episode you're at, on a show's poster (bottom-left; Match % is bottom-right) */
+.ep-badge {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.45);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.ep-badge i {
+  font-size: 8px;
+}
+
+/* title page: your progress (shows) and your notes, side by side */
+.t-yours {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+  margin: 0 0 28px;
+}
+
+.t-yours:empty {
+  display: none;
+}
+
+.tp-card .xr-head,
+.tn-card .xr-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tp-pct {
+  color: var(--accent-hover);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.tp-now {
+  display: grid;
+  gap: 2px;
+  margin: 12px 0 10px;
+}
+
+.tp-now b {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.tp-card.done .tp-now b i {
+  margin-right: 4px;
+  color: #f5b82e;
+}
+
+.tp-now small,
+.tn-state {
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.tp-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--glass-bg-hover);
+}
+
+.tp-bar i {
+  display: block;
+  width: var(--w);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  box-shadow: 0 0 12px rgba(229, 9, 20, 0.5);
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.tp-card.done .tp-bar i {
+  background: linear-gradient(90deg, #d99a16, #f5b82e);
+  box-shadow: 0 0 12px rgba(245, 184, 46, 0.45);
+}
+
+.tp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.tp-actions .btn,
+.tp-off .btn {
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-weight: 600;
+}
+
+.tp-actions .glass-select {
+  height: 40px;
+}
+
+.tp-lead {
+  margin: 10px 0 14px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tn-text {
+  display: block;
+  width: 100%;
+  min-height: 92px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  background: var(--glass-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14.5px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.tn-text:focus {
+  border-color: rgba(229, 9, 20, 0.55);
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.12);
+}
+
+/* a red number on the Watchlist link / tab: titles out today */
+.nav-links a[href="watchlist.html"],
+.tab-bar a[href="watchlist.html"] {
+  position: relative;
+}
+
+.nav-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(229, 9, 20, 0.6);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.tab-bar .nav-badge {
+  position: absolute;
+  top: 2px;
+  right: 50%;
+  margin: 0 -20px 0 0;
+}
+
+@media (max-width: 520px) {
+  .t-yours {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

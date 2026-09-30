@@ -335,6 +335,8 @@
 
   function myRows(all) {
     const rows = [
+      // the shows you're in the middle of (js/services/watch.js), the last one you watched first
+      { title: "Continue watching", items: window.Watch ? Watch.continuing(all) : [], link: null },
       { title: "Up next on your watchlist", items: all.filter((i) => i.watchlist), link: "watchlist.html?list=watch" },
       { title: "Your favorites", items: all.filter((i) => i.favorite), link: "watchlist.html?list=fav" },
       // newest first: everything you added (imports too), in the order it came in

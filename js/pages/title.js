@@ -690,7 +690,11 @@
 
     const loading = TMDB.enabled() && !extra;
     const keep = rowScrolls();
+    // (typing a note while something redraws the page: the note keeps its text and cursor)
+    const noteEl = mainEl.querySelector(".tn-text");
+    const typing = noteEl && document.activeElement === noteEl ? { v: noteEl.value, a: noteEl.selectionStart, b: noteEl.selectionEnd } : null;
     mainEl.innerHTML = `
+      <div class="t-yours">${progressHtml(item, d)}${notesHtml(item)}</div>
       <div class="t-sections">${sectionsHtml(d, loading)}</div>
       ${recommendationsHtml(extra)}
       ${similar.length ? `<h2 class="section-title">More like this in your library</h2><div class="movie-row">${similar.map(Cards.card).join("")}</div>` : ""}
@@ -699,8 +703,122 @@
       }</p>
       <p><button class="btn btn-danger remove-title" type="button"><i class="fa-solid fa-trash"></i> Remove from library</button></p>`;
     rowScrolls(keep);
+    if (typing) {
+      const n = mainEl.querySelector(".tn-text");
+      n.value = typing.v;
+      n.focus({ preventScroll: true });
+      n.setSelectionRange(typing.a, typing.b);
+    }
     if (extra && extra.xray) watchXray(d, renderLibrary);
+  }
 
+  /* ---------------- yours: episode progress (shows) and your notes ---------------- */
+
+  // episodes per season from TMDB ([10, 13, 8]); null while it isn't known
+  function episodesOf(d) {
+    const seasons = (d && d.seasons) || [];
+    if (!seasons.length) return null;
+    const eps = [];
+    seasons.forEach((s) => (eps[s.n - 1] = s.episodes || 0));
+    return Array.from(eps, (n) => n || 0);
+  }
+  const isShow = (item, d) => (d && d.media ? d.media === "tv" : window.Watch && Watch.isSeries(item));
+
+  function progressHtml(item, d) {
+    if (!window.Watch || !isShow(item, d)) return "";
+    const label = (icon, text) => `<span class="xr-label"><i class="fa-solid ${icon}"></i> ${text}</span>`;
+    const fresh = episodesOf(d);
+    let p = item.progress;
+    // TMDB knows more episodes now (a new season): count them, and a finished show can go on
+    if (p && fresh && JSON.stringify(fresh) !== JSON.stringify(p.eps)) {
+      const np = Object.assign({}, p, { eps: fresh });
+      if (np.done && Watch.nextEpisode(Object.assign({}, np, { done: false }))) np.done = false;
+      setTimeout(() => Store.update(item.id, { progress: np }), 0);
+      p = np;
+    }
+    if (!p) {
+      if (!fresh) return "";
+      return `<div class="xr-card tp-card tp-off">
+          ${label("fa-tv", "Your progress")}
+          <p class="tp-lead">Keep track of the episodes you've seen: the show sits in <b>Continue watching</b> on Home, and one tap moves you on to the next episode.</p>
+          <button class="btn btn-primary tp-start" type="button"><i class="fa-solid fa-play"></i> I'm watching it</button>
+        </div>`;
+    }
+    const eps = p.eps || [];
+    const { seen, total, pct } = Watch.progressOf(p);
+    const n = p.done ? null : Watch.nextEpisode(p);
+    const seasonOpts = eps.map((c, i) => (c ? `<option value="${i + 1}"${i + 1 === p.s ? " selected" : ""}>Season ${i + 1}</option>` : "")).join("");
+    const epOpts = Array.from({ length: (eps[p.s - 1] || 0) + 1 }, (_, e) => `<option value="${e}"${e === p.e ? " selected" : ""}>${e ? `Episode ${e}` : "Not started"}</option>`).join("");
+    return `<div class="xr-card tp-card${p.done ? " done" : ""}">
+        <div class="xr-head">${label("fa-tv", "Your progress")}<span class="tp-pct">${pct}%</span></div>
+        <div class="tp-now">
+          <b>${p.done ? '<i class="fa-solid fa-trophy"></i> Finished' : `Season ${p.s} · Episode ${p.e}`}</b>
+          <small>${seen} of ${total} episodes watched</small>
+        </div>
+        <div class="tp-bar"><i style="--w:${pct}%"></i></div>
+        <div class="tp-actions">
+          ${n ? `<button class="btn btn-primary" type="button" data-action="next-ep"><i class="fa-solid fa-check"></i> Watched S${n.s} E${n.e}</button>` : ""}
+          <span class="glass-select small"><select class="tp-season" aria-label="Season">${seasonOpts}</select></span>
+          <span class="glass-select small"><select class="tp-episode" aria-label="The last episode you watched">${epOpts}</select></span>
+          <button class="btn tp-stop" type="button">${p.done ? "Watch it again" : "Stop tracking"}</button>
+        </div>
+      </div>`;
+  }
+
+  function notesHtml(item) {
+    return `<div class="xr-card tn-card">
+        <div class="xr-head"><span class="xr-label"><i class="fa-solid fa-pen-to-square"></i> Your notes</span><small class="tn-state"></small></div>
+        <textarea class="input tn-text" rows="3" maxlength="2000" aria-label="Your notes" placeholder="What did you think? Who recommended it? A favourite scene…">${esc(item.note || "")}</textarea>
+      </div>`;
+  }
+
+  function initYours() {
+    const setProgress = (patch) => {
+      const item = Store.get(id);
+      if (!item) return;
+      const p = Object.assign({}, item.progress, patch);
+      p.done = !Watch.nextEpisode(p) && p.e > 0;
+      Store.update(id, { progress: p, progressAt: Date.now() });
+    };
+    document.addEventListener("click", (e) => {
+      if (e.target.closest(".tp-start")) {
+        const eps = episodesOf(extra);
+        if (!eps) return;
+        Store.update(id, { progress: { s: 1, e: 1, eps }, progressAt: Date.now() });
+        toast("Tracking it: find it in Continue watching on Home");
+      }
+      if (e.target.closest(".tp-stop")) {
+        const item = Store.get(id);
+        if (item && item.progress && item.progress.done) setProgress({ s: 1, e: 0, done: false });
+        else {
+          Store.update(id, { progress: undefined, progressAt: undefined });
+          toast("Stopped tracking");
+        }
+      }
+    });
+    document.addEventListener("change", (e) => {
+      if (e.target.classList.contains("tp-season")) setProgress({ s: Number(e.target.value), e: 1 });
+      if (e.target.classList.contains("tp-episode")) setProgress({ e: Number(e.target.value) });
+    });
+    // your notes: saved a moment after you stop typing (and when you leave the box)
+    let timer;
+    const saveNote = (el) => {
+      clearTimeout(timer);
+      const item = Store.get(id);
+      const note = el.value.trim();
+      if (!item || (item.note || "") === note) return;
+      Store.update(id, { note: note || undefined });
+      const state = mainEl.querySelector(".tn-state");
+      if (state) state.textContent = "Saved";
+    };
+    document.addEventListener("input", (e) => {
+      if (!e.target.classList.contains("tn-text")) return;
+      const state = mainEl.querySelector(".tn-state");
+      if (state) state.textContent = "Saving…";
+      clearTimeout(timer);
+      timer = setTimeout(() => saveNote(e.target), 900);
+    });
+    document.addEventListener("focusout", (e) => e.target.classList && e.target.classList.contains("tn-text") && saveNote(e.target));
   }
 
   function initLibrary() {
@@ -733,6 +851,7 @@
       if (!changedId || changedId === id || colData) renderLibrary();
     });
 
+    initYours();
     renderLibrary();
 
     const item = Store.get(id);
@@ -788,9 +907,25 @@
     mainEl.dataset.tmdb = tmdbRef;
     Ratings.seed(tmdbRef, d.tmdbScore, d.imdbId);
     renderExternal(d);
+    // a show: "I'm watching it" adds it (on your Watchlist) and starts tracking the episodes
+    const eps = d.media === "tv" && (d.released || "") <= Store.today() ? episodesOf(d) : null;
+    const track = eps
+      ? `<div class="t-yours"><div class="xr-card tp-card tp-off">
+          <span class="xr-label"><i class="fa-solid fa-tv"></i> Your progress</span>
+          <p class="tp-lead">Watching it? Keep track of your episodes: it goes on your Watchlist and into <b>Continue watching</b> on Home.</p>
+          <button class="btn btn-primary tp-add" type="button"><i class="fa-solid fa-play"></i> I'm watching it</button>
+        </div></div>`
+      : "";
+    if (eps)
+      mainEl.addEventListener("click", (e) => {
+        if (!e.target.closest(".tp-add")) return;
+        if (Store.guest) return UI.needSignIn();
+        const lib = Cards.addHit(d, { watchlist: true, progress: { s: 1, e: 1, eps }, progressAt: Date.now() });
+        location.replace(`title.html?id=${encodeURIComponent(lib.id)}`);
+      });
     const renderMain = () => {
       const keep = rowScrolls();
-      mainEl.innerHTML = `<div class="t-sections">${sectionsHtml(d, false)}</div>${recommendationsHtml(d)}<p class="tmdb-note">${TMDB_NOTE}</p>`;
+      mainEl.innerHTML = `${track}<div class="t-sections">${sectionsHtml(d, false)}</div>${recommendationsHtml(d)}<p class="tmdb-note">${TMDB_NOTE}</p>`;
       rowScrolls(keep);
       watchXray(d, renderMain);
     };
