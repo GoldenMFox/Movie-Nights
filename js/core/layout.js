@@ -1372,5 +1372,185 @@
     });
   }
 
+  /* ---------------- the site's own dropdown lists (instead of the browser's) ----------------
+     Every <select> on the site opens this list instead of the browser's own: a dark glass
+     pop-over under it (a sheet at the bottom on phones), the picked option in red with a ✓,
+     a search box for long lists (the countries). The <select> stays and keeps the value:
+     picking sets it and sends "change", so the pages work as before. Keys: ↑ ↓ Home End, Enter,
+     Esc, and typing a letter jumps to it. */
+  let menuEl = null;
+  let menuSelect = null;
+  let menuAt = -1;
+  let menuTyped = "";
+  let menuTypedAt = 0;
+
+  function menuItems() {
+    return [...menuEl.querySelectorAll(".sm-opt:not([hidden])")];
+  }
+  function menuMark(i, scroll) {
+    const items = menuItems();
+    if (!items.length) return;
+    menuAt = Math.max(0, Math.min(items.length - 1, i));
+    items.forEach((b, n) => b.classList.toggle("hot", n === menuAt));
+    if (scroll) items[menuAt].scrollIntoView({ block: "nearest" });
+  }
+  function menuPlace() {
+    if (!menuSelect) return;
+    if (window.matchMedia("(max-width: 700px)").matches) {
+      menuEl.classList.add("sheet");
+      menuEl.style.left = menuEl.style.top = menuEl.style.width = "";
+      return;
+    }
+    menuEl.classList.remove("sheet");
+    const box = (menuSelect.closest(".glass-select") || menuSelect).getBoundingClientRect();
+    const w = Math.max(box.width, 220);
+    menuEl.style.width = `${w}px`;
+    const h = menuEl.offsetHeight;
+    const left = Math.min(Math.max(12, box.left), window.innerWidth - w - 12);
+    const below = box.bottom + 8;
+    const top = below + h > window.innerHeight - 12 && box.top - h - 8 > 12 ? box.top - h - 8 : below;
+    menuEl.style.left = `${left}px`;
+    menuEl.style.top = `${top}px`;
+  }
+  function closeMenu() {
+    if (!menuEl || !menuSelect) return;
+    menuEl.classList.remove("open");
+    const sel = menuSelect;
+    menuSelect = null;
+    document.documentElement.classList.remove("sm-lock");
+    sel.focus({ preventScroll: true });
+  }
+  function pickFromMenu(i) {
+    const sel = menuSelect;
+    const opt = menuItems()[i];
+    if (!sel || !opt) return;
+    const changed = sel.value !== opt.dataset.value;
+    sel.value = opt.dataset.value;
+    closeMenu();
+    if (changed) {
+      sel.dispatchEvent(new Event("input", { bubbles: true }));
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+  function openMenu(sel) {
+    if (sel.disabled || !sel.options.length) return;
+    if (!menuEl) {
+      menuEl = document.createElement("div");
+      menuEl.className = "sm-pop";
+      menuEl.setAttribute("role", "listbox");
+      document.body.appendChild(menuEl);
+      menuEl.addEventListener("click", (e) => {
+        const b = e.target.closest(".sm-opt");
+        if (b) pickFromMenu(menuItems().indexOf(b));
+      });
+      menuEl.addEventListener("mousemove", (e) => {
+        const b = e.target.closest(".sm-opt");
+        if (b) menuMark(menuItems().indexOf(b), false);
+      });
+      menuEl.addEventListener("input", (e) => {
+        if (!e.target.classList.contains("sm-search")) return;
+        const q = e.target.value.trim().toLowerCase();
+        menuEl.querySelectorAll(".sm-opt").forEach((b) => (b.hidden = !!q && !b.textContent.toLowerCase().includes(q)));
+        menuEl.querySelector(".sm-none").hidden = !!menuItems().length;
+        menuMark(0, true);
+      });
+    }
+    menuSelect = sel;
+    const opts = [...sel.options];
+    const long = opts.length > 25; // (years, countries: a search box)
+    const label = sel.getAttribute("aria-label") || "";
+    menuEl.setAttribute("aria-label", label);
+    menuEl.innerHTML = `
+      ${label ? `<div class="sm-title">${esc(label)}</div>` : ""}
+      ${long ? `<label class="sm-find"><i class="fa-solid fa-magnifying-glass"></i><input class="sm-search" type="search" placeholder="Search…" autocomplete="off" aria-label="Search ${esc(label)}" /></label>` : ""}
+      <div class="sm-list">${opts
+        .map(
+          (o) => `<button type="button" class="sm-opt${o.selected ? " on" : ""}" role="option" aria-selected="${o.selected}" data-value="${esc(o.value)}"${o.disabled ? " disabled" : ""}>
+            <span>${esc(o.textContent)}</span>${o.selected ? '<i class="fa-solid fa-check"></i>' : ""}</button>`
+        )
+        .join("")}<p class="sm-none" hidden>Nothing matches</p></div>`;
+    menuPlace();
+    if (menuEl.classList.contains("sheet")) document.documentElement.classList.add("sm-lock");
+    menuMark(Math.max(0, sel.selectedIndex), true);
+    requestAnimationFrame(() => {
+      menuEl.classList.add("open");
+      // (a long list: the cursor in its search box, once the list shows; not on phones, where
+      // the keyboard would cover the list)
+      const find = menuEl.querySelector(".sm-search");
+      if (find && !menuEl.classList.contains("sheet")) find.focus({ preventScroll: true });
+    });
+  }
+
+  // opening: a click / tap on any <select> (the browser's own list is kept closed), or the
+  // keys that would open it (Space, Enter, Alt + ↓)
+  document.addEventListener(
+    "mousedown",
+    (e) => {
+      const sel = e.target.closest && e.target.closest("select");
+      if (!sel || e.button !== 0) return;
+      e.preventDefault();
+      if (menuSelect === sel) return closeMenu();
+      sel.focus({ preventScroll: true });
+      openMenu(sel);
+    },
+    true
+  );
+  // (a finger that starts on a list but scrolls the page doesn't open it: only a tap does)
+  let touchFrom = null;
+  document.addEventListener("touchstart", (e) => (touchFrom = e.touches[0] ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null), { capture: true, passive: true });
+  document.addEventListener(
+    "touchend",
+    (e) => {
+      const sel = e.target.closest && e.target.closest("select");
+      if (!sel) return;
+      e.preventDefault();
+      const t = e.changedTouches[0];
+      if (touchFrom && t && Math.hypot(t.clientX - touchFrom.x, t.clientY - touchFrom.y) > 10) return;
+      openMenu(sel);
+    },
+    { capture: true, passive: false }
+  );
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (menuSelect) {
+        const items = menuItems();
+        if (e.key === "Escape" || e.key === "Tab") {
+          e.preventDefault();
+          return closeMenu();
+        }
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          e.preventDefault();
+          return menuMark(menuAt + (e.key === "ArrowDown" ? 1 : -1), true);
+        }
+        if (e.key === "Home" || e.key === "End") {
+          e.preventDefault();
+          return menuMark(e.key === "Home" ? 0 : items.length - 1, true);
+        }
+        if (e.key === "Enter") {
+          e.preventDefault();
+          return pickFromMenu(menuAt);
+        }
+        // type-ahead (not while typing in the search box)
+        if (e.key.length === 1 && !e.target.classList.contains("sm-search")) {
+          menuTyped = Date.now() - menuTypedAt > 700 ? e.key.toLowerCase() : menuTyped + e.key.toLowerCase();
+          menuTypedAt = Date.now();
+          const i = items.findIndex((b) => b.textContent.trim().toLowerCase().startsWith(menuTyped));
+          if (i >= 0) menuMark(i, true);
+        }
+        return;
+      }
+      const sel = e.target.tagName === "SELECT" ? e.target : null;
+      if (sel && (e.key === " " || e.key === "Enter" || (e.altKey && e.key === "ArrowDown"))) {
+        e.preventDefault();
+        openMenu(sel);
+      }
+    },
+    true
+  );
+  document.addEventListener("pointerdown", (e) => menuSelect && !menuEl.contains(e.target) && !e.target.closest("select") && closeMenu(), true);
+  window.addEventListener("resize", menuPlace);
+  window.addEventListener("scroll", (e) => menuSelect && !menuEl.contains(e.target) && !menuEl.classList.contains("sheet") && closeMenu(), true);
+
   window.UI = { esc, toast, download, PAGES, foldTools, signInPrompt, needSignIn, welcome, confirm: confirmBox, ask, paintMyPic, frameMyPic, pickDate, chipIntoView };
 })();

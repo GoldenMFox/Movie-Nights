@@ -17649,3 +17649,181 @@ html:not(.app-ui) .profile-menu .menu-group a.bo-menu-link {
     padding-right: 40px;
   }
 }
+
+/* ---------- the site's dropdown lists (every <select>): dark glass like the menus, the picked one in red ---------- */
+html.sm-lock {
+  overflow: hidden;
+}
+
+.sm-pop {
+  position: fixed;
+  z-index: 3100;
+  display: flex;
+  flex-direction: column;
+  max-height: min(380px, calc(100vh - 40px));
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background: rgba(24, 24, 28, 0.94);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.55);
+  color: #fff;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top center;
+  transition: opacity 0.18s ease, transform 0.2s ease, visibility 0.2s;
+}
+
+.sm-pop.open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+.sm-title {
+  display: none;
+}
+
+.sm-find {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin: 2px 2px 6px;
+}
+
+.sm-find i {
+  position: absolute;
+  left: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.sm-search {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px 0 34px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+}
+
+.sm-search:focus {
+  border-color: rgba(229, 9, 20, 0.6);
+  outline: none;
+}
+
+.sm-list {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.sm-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.86);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sm-opt.hot {
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff;
+}
+
+.sm-opt.on {
+  background: rgba(229, 9, 20, 0.2);
+  color: #fff;
+}
+
+.sm-opt.on.hot {
+  background: rgba(229, 9, 20, 0.3);
+}
+
+.sm-opt i {
+  color: var(--accent-hover);
+  font-size: 12px;
+}
+
+.sm-opt:disabled {
+  color: rgba(255, 255, 255, 0.3);
+  cursor: default;
+}
+
+.sm-none {
+  margin: 0;
+  padding: 16px 12px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* phones: a sheet at the bottom (the page dims behind it), with its title and bigger rows */
+.sm-pop.sheet {
+  left: 8px;
+  right: 8px;
+  top: auto;
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  width: auto;
+  max-height: 70vh;
+  padding: 10px;
+  border-radius: 24px;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.5), 0 22px 56px rgba(0, 0, 0, 0.55);
+  transform: translateY(30px);
+  transform-origin: bottom center;
+}
+
+.sm-pop.sheet.open {
+  transform: none;
+}
+
+.sm-pop.sheet .sm-title {
+  display: block;
+  flex-shrink: 0;
+  padding: 6px 12px 10px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sm-pop.sheet .sm-opt {
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.sm-pop.sheet .sm-search {
+  height: 44px;
+  font-size: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-pop {
+    transition: none;
+  }
+}
+
+/* (opening: visible at once, so its search box can take the cursor; the fade still plays) */
+.sm-pop.open {
+  transition: opacity 0.18s ease, transform 0.2s ease, visibility 0s;
+}
