@@ -113,7 +113,7 @@
               ${
                 Store.guest
                   ? ""
-                  : `<label class="menu-switch fade-row" title="On Discover, what you've already watched is dimmed (like Letterboxd)">
+                  : `<label class="menu-switch fade-row" title="On Discover and Home, what you've already watched is dimmed (like Letterboxd)">
                 <i class="fa-solid fa-eye-low-vision"></i><span>Dim watched</span>
                 <input type="checkbox" class="fade-switch" />
                 <span class="switch-track"><span class="switch-thumb"></span></span>
@@ -502,8 +502,8 @@
       else localStorage.setItem("mn:showMatch", "off");
     } catch (e) {}
   });
-  // "Dim watched on Discover" (like Letterboxd's "fade watched"): titles you've already
-  // watched are dimmed on the Discover page, so the new ones stand out. Off at first.
+  // "Dim watched" (like Letterboxd's "fade watched"): titles you've already
+  // watched are dimmed on Discover and Home's rows, so the new ones stand out. Off at first.
   try {
     if (localStorage.getItem("mn:fadeWatched") === "on") document.documentElement.classList.add("fade-watched");
   } catch (e) {}

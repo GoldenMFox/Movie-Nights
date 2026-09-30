@@ -212,7 +212,9 @@
   function top10Item(hit, i) {
     const lib = Cards.inLibrary(hit);
     const url = lib ? `title.html?id=${encodeURIComponent(lib.id)}` : `title.html?tmdb=${hit.mediaType}-${hit.tmdbId}`;
-    return `<a class="top10-item" href="${url}" title="#${i + 1} · ${esc(Lang.title(hit))}">
+    // watched (in your library, not only on your Watchlist): "Dim watched" darkens it
+    const seen = lib && (lib.rating != null || lib.watchedAt || !lib.watchlist);
+    return `<a class="top10-item" href="${url}"${seen ? " data-seen" : ""} title="#${i + 1} · ${esc(Lang.title(hit))}">
       <span class="top10-num" aria-hidden="true">${i + 1}</span>
       <img src="${Store.poster(Cards.posterOf(hit), "w342")}" alt="${esc(Lang.title(hit))}" loading="lazy" decoding="async" />
     </a>`;

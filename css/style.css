@@ -13293,7 +13293,7 @@ html .modal .menu-switch:not([hidden]) {
   }
 }
 
-/* ============================== Discover: dim what you've watched (like Letterboxd) ============================== */
+/* ============================== Discover and Home: dim what you've watched (like Letterboxd) ============================== */
 /* the switch sits in the profile menu, under "Russian titles", on every device */
 html .profile-menu .menu-switch.fade-row {
   display: flex;
@@ -13301,22 +13301,30 @@ html .profile-menu .menu-switch.fade-row {
 
 /* the poster goes dark and nearly colourless (still clear enough to recognise); pointing
    at it (or its buttons) brings it back */
-html.fade-watched #discover .movie-item[data-seen] .poster-link {
+html.fade-watched #discover .movie-item[data-seen] .poster-link,
+html.fade-watched #home-rows .movie-item[data-seen] .poster-link,
+html.fade-watched #home-rows .top10-item[data-seen] img {
   filter: brightness(0.3) grayscale(0.75);
   transition: filter 0.25s;
 }
 
 html.fade-watched #discover .movie-item[data-seen]:hover .poster-link,
-html.fade-watched #discover .movie-item[data-seen]:focus-within .poster-link {
+html.fade-watched #discover .movie-item[data-seen]:focus-within .poster-link,
+html.fade-watched #home-rows .movie-item[data-seen]:hover .poster-link,
+html.fade-watched #home-rows .movie-item[data-seen]:focus-within .poster-link,
+html.fade-watched #home-rows .top10-item[data-seen]:hover img,
+html.fade-watched #home-rows .top10-item[data-seen]:focus-visible img {
   filter: none;
 }
 
 /* (and the title under it, when poster details are on) */
-html.fade-watched #discover .movie-item[data-seen] .movie-info {
+html.fade-watched #discover .movie-item[data-seen] .movie-info,
+html.fade-watched #home-rows .movie-item[data-seen] .movie-info {
   opacity: 0.4;
   transition: opacity 0.25s;
 }
 
-html.fade-watched #discover .movie-item[data-seen]:hover .movie-info {
+html.fade-watched #discover .movie-item[data-seen]:hover .movie-info,
+html.fade-watched #home-rows .movie-item[data-seen]:hover .movie-info {
   opacity: 1;
 }
