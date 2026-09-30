@@ -463,6 +463,7 @@
     if (loading) return html + '<p class="muted t-empty">Loading more details…</p>';
     if (d.xray) html += block('<i class="fa-solid fa-bolt"></i> X-Ray', 0, xrayPanel(d), "t-xray");
     if (videos.length || images.length) html += block("Media", 0, mediaPanel(videos, images));
+    if (window.Soundtrack) html += Soundtrack.html(d); // (js/components/soundtrack.js: filled in when it's near)
     if (reviews.length) html += block("Reviews", reviews.length, reviewsPanel(reviews, d.tmdbUrl));
     return html;
   }
@@ -932,6 +933,7 @@
       }</p>
       <p><button class="btn btn-danger remove-title" type="button"><i class="fa-solid fa-trash"></i> Remove from library</button></p>`;
     rowScrolls(keep);
+    if (window.Soundtrack) Soundtrack.mount(mainEl, d);
     const n = mainEl.querySelector(".tn-text");
     if (typing) {
       n.value = typing.v;
@@ -1302,6 +1304,7 @@
       const keep = rowScrolls();
       mainEl.innerHTML = `${track}<div class="t-sections">${sectionsHtml(d, false)}</div>${recommendationsHtml(d)}<p class="tmdb-note">${TMDB_NOTE}</p>`;
       rowScrolls(keep);
+      if (window.Soundtrack) Soundtrack.mount(mainEl, d);
       watchXray(d, renderMain);
     };
     renderMain();

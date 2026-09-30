@@ -135,6 +135,13 @@ on TMDB picks it up again.
 
 **Your notes**: a note on any title in your library (title page), saved as you type.
 
+**Soundtrack** (title page, under Media): the title's soundtrack album from Apple Music (the free
+iTunes Search API): the cover, the album, the artist, the tracks and a 30-second preview of each
+(Apple's own; one ends, the next starts; a record slides out from behind the cover and spins
+while it plays; a trailer stops it). Soundtrack and score albums both found: a switch. It's looked
+up only when the section comes near the screen, and kept for the visit; a title without one on
+Apple Music has no section (`js/components/soundtrack.js`).
+
 **Movie trivia** (title page, for what you've watched; and offered right after you mark a title
 Watched): 10 questions from TMDB (who directed it, who played whom, the year, the running time or
 seasons, the box office and budget, the franchise, where it was made, the studio or network, the
@@ -293,7 +300,8 @@ Movie-Nights-NEW/
 │   │   ├── import.js          import from IMDb / Letterboxd (Settings)
 │   │   ├── wrapped.js         Movie Nights Wrapped (Profile)
 │   │   ├── achievements.js    challenges & achievements (Profile)
-│   │   └── trivia.js          movie trivia (title page)
+│   │   ├── trivia.js          movie trivia (title page)
+│   │   └── soundtrack.js      soundtrack with previews (title page)
 │   └── pages/                 one script per page
 │       ├── home.js, discover.js, browse.js (movies / TV / anime / favorites / watchlist)
 │       └── title.js, person.js, tier-list.js, profile.js, settings.js
