@@ -14444,3 +14444,115 @@ html.ext-ratings .movie-item[data-id] .ratings .score.mine {
     animation: none;
   }
 }
+
+/* ---------- title page: your notes (grows with the text, prompts, saving state) ---------- */
+.tn-text {
+  min-height: 0;
+  max-height: 460px;
+  resize: none;
+  overflow-y: auto;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.tn-text:focus {
+  background: var(--glass-bg-hover);
+}
+
+.tn-card.has-note .tn-text:not(:focus) {
+  border-color: transparent;
+  background: transparent;
+  padding-left: 0;
+  padding-right: 0;
+  font-size: 15px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  cursor: text;
+}
+
+.tn-card.has-note .tn-text:not(:focus):hover {
+  padding-left: 14px;
+  padding-right: 14px;
+  border-color: var(--glass-border);
+  background: var(--glass-bg);
+}
+
+.tn-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.tn-foot:has(.tn-prompts:empty) {
+  justify-content: flex-end;
+}
+
+.tn-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tn-prompts:empty {
+  display: none;
+}
+
+.tn-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px dashed var(--glass-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
+}
+
+.tn-prompt i {
+  color: var(--accent-hover);
+  font-size: 11px;
+}
+
+.tn-prompt:hover {
+  border-style: solid;
+  border-color: rgba(229, 9, 20, 0.45);
+  background: rgba(229, 9, 20, 0.08);
+  color: var(--text);
+}
+
+.tn-prompt:active {
+  transform: scale(0.95);
+}
+
+.tn-count {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tn-count.full {
+  color: var(--accent-hover);
+  font-weight: 700;
+}
+
+.tn-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s ease;
+}
+
+.tn-state i {
+  font-size: 11px;
+}
+
+.tn-state.ok {
+  color: #46c46e;
+}

@@ -931,12 +931,13 @@
       }</p>
       <p><button class="btn btn-danger remove-title" type="button"><i class="fa-solid fa-trash"></i> Remove from library</button></p>`;
     rowScrolls(keep);
+    const n = mainEl.querySelector(".tn-text");
     if (typing) {
-      const n = mainEl.querySelector(".tn-text");
       n.value = typing.v;
       n.focus({ preventScroll: true });
       n.setSelectionRange(typing.a, typing.b);
     }
+    if (n) fitNote(n);
     if (extra && extra.xray) watchXray(d, renderLibrary);
   }
 
@@ -993,11 +994,52 @@
       </div>`;
   }
 
+  // Your notes: the box grows with what you write; prompts start a line for you ("Favourite
+  // scene: "), each one until you've used it; "Edited 3 days ago" (noteAt); a counter near the limit
+  const NOTE_MAX = 2000;
+  const NOTE_PROMPTS = [
+    ["fa-user-group", "Recommended by"],
+    ["fa-clapperboard", "Favourite scene"],
+    ["fa-quote-left", "Best line"],
+    ["fa-rotate", "Would I rewatch?"],
+  ];
+  function editedAgo(at) {
+    const min = Math.round((Date.now() - at) / 60000);
+    if (min < 1) return "Edited just now";
+    if (min < 60) return `Edited ${min} min ago`;
+    const h = Math.round(min / 60);
+    if (h < 24) return `Edited ${h} h ago`;
+    const days = Math.round(h / 24);
+    if (days === 1) return "Edited yesterday";
+    if (days < 30) return `Edited ${days} days ago`;
+    const d = new Date(at);
+    return `Edited ${d.getDate()} ${MONTHS[d.getMonth()]}${d.getFullYear() !== new Date().getFullYear() ? ` ${d.getFullYear()}` : ""}`;
+  }
+  const noteState = (item) => (item.note && item.noteAt ? editedAgo(item.noteAt) : "");
+  function notePrompts(note) {
+    return NOTE_PROMPTS.filter(([, l]) => !note.includes(`${l}:`) && !note.includes(l))
+      .map(([icon, l]) => `<button type="button" class="tn-prompt" data-prompt="${esc(l)}"><i class="fa-solid ${icon}"></i> ${esc(l)}</button>`)
+      .join("");
+  }
   function notesHtml(item) {
-    return `<div class="xr-card tn-card">
-        <div class="xr-head"><span class="xr-label"><i class="fa-solid fa-pen-to-square"></i> Your notes</span><small class="tn-state"></small></div>
-        <textarea class="input tn-text" rows="3" maxlength="2000" aria-label="Your notes" placeholder="What did you think? Who recommended it? A favourite scene…">${esc(item.note || "")}</textarea>
+    const note = item.note || "";
+    return `<div class="xr-card tn-card${note ? " has-note" : ""}">
+        <div class="xr-head"><span class="xr-label"><i class="fa-solid fa-pen-to-square"></i> Your notes</span><small class="tn-state">${esc(noteState(item))}</small></div>
+        <textarea class="tn-text" rows="2" maxlength="${NOTE_MAX}" aria-label="Your notes" placeholder="What did you think? Who recommended it? A favourite scene…">${esc(note)}</textarea>
+        <div class="tn-foot">
+          <div class="tn-prompts">${notePrompts(note)}</div>
+          <small class="tn-count" hidden></small>
+        </div>
       </div>`;
+  }
+  // (the box as tall as its text, up to a limit; the counter near the limit)
+  function fitNote(el) {
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight + 2, 460)}px`;
+    const count = el.closest(".tn-card").querySelector(".tn-count");
+    count.hidden = el.value.length < NOTE_MAX - 300;
+    count.textContent = `${el.value.length.toLocaleString()} / ${NOTE_MAX.toLocaleString()}`;
+    count.classList.toggle("full", el.value.length >= NOTE_MAX);
   }
 
   function initYours() {
@@ -1030,23 +1072,57 @@
     });
     // your notes: saved a moment after you stop typing (and when you leave the box)
     let timer;
+    let stateTimer;
+    const setState = (html, cls) => {
+      const state = mainEl.querySelector(".tn-state");
+      if (!state) return;
+      state.innerHTML = html;
+      state.className = `tn-state${cls ? ` ${cls}` : ""}`;
+    };
     const saveNote = (el) => {
       clearTimeout(timer);
       const item = Store.get(id);
       const note = el.value.trim();
-      if (!item || (item.note || "") === note) return;
-      Store.update(id, { note: note || undefined });
-      const state = mainEl.querySelector(".tn-state");
-      if (state) state.textContent = "Saved";
+      if (!item || (item.note || "") === note) return setState(esc(item ? noteState(item) : ""));
+      Store.update(id, { note: note || undefined, noteAt: note ? Date.now() : undefined });
+      setState('<i class="fa-solid fa-check"></i> Saved', "ok");
+      clearTimeout(stateTimer);
+      stateTimer = setTimeout(() => {
+        const now = Store.get(id);
+        if (now && !mainEl.querySelector(".tn-state.busy")) setState(esc(noteState(now)));
+      }, 2500);
     };
     document.addEventListener("input", (e) => {
       if (!e.target.classList.contains("tn-text")) return;
-      const state = mainEl.querySelector(".tn-state");
-      if (state) state.textContent = "Saving…";
+      fitNote(e.target);
+      setState('<i class="fa-solid fa-circle-notch fa-spin"></i> Saving…', "busy");
       clearTimeout(timer);
       timer = setTimeout(() => saveNote(e.target), 900);
     });
     document.addEventListener("focusout", (e) => e.target.classList && e.target.classList.contains("tn-text") && saveNote(e.target));
+    // (in and out of the box its sides change a little: the height follows)
+    ["focusin", "focusout"].forEach((t) =>
+      document.addEventListener(t, (e) => e.target.classList && e.target.classList.contains("tn-text") && requestAnimationFrame(() => fitNote(e.target)))
+    );
+    // Ctrl / ⌘ + Enter: done (saved, and out of the box)
+    document.addEventListener("keydown", (e) => {
+      if (e.target.classList && e.target.classList.contains("tn-text") && e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        e.target.blur();
+      }
+    });
+    // a prompt: starts its line at the end of the note, the cursor after it
+    document.addEventListener("click", (e) => {
+      const b = e.target.closest(".tn-prompt");
+      if (!b) return;
+      const el = b.closest(".tn-card").querySelector(".tn-text");
+      const text = el.value.replace(/\s+$/, "");
+      el.value = `${text}${text ? "\n" : ""}${b.dataset.prompt}${b.dataset.prompt.endsWith("?") ? " " : ": "}`;
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+      b.remove();
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
   }
 
   function initLibrary() {
