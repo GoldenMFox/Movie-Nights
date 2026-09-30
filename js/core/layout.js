@@ -28,7 +28,6 @@
         </label>`
       : `<div class="lang-toggle ${where}" role="group" aria-label="Movie names language">
       ${where === "in-menu" ? "<span>Movie names</span>" : ""}
-      ${where === "in-profile" ? `<i class="fa-solid fa-language"></i><span>Movie names</span>` : ""}
       <button type="button" data-lang="en" aria-pressed="${!Lang.isRu()}" class="${Lang.isRu() ? "" : "active"}">EN</button>
       <button type="button" data-lang="ru" aria-pressed="${Lang.isRu()}" class="${Lang.isRu() ? "active" : ""}">RU</button>
     </div>`;
@@ -236,7 +235,10 @@
     profileBox.classList.remove("open");
     if (sw) Cloud.switchTo(sw.dataset.cloudSwitch);
     else if (act.dataset.cloud === "add") Cloud.signIn();
-    else if (act.dataset.cloud === "sign-out" && confirm("Sign out on this device? Your library stays saved in your account.")) Cloud.signOut();
+    else if (act.dataset.cloud === "sign-out")
+      confirmBox({ icon: "fa-right-from-bracket", title: "Sign out on this device?", text: "Your library stays saved in your account.", ok: "Sign out", danger: true }).then(
+        (ok) => ok && Cloud.signOut()
+      );
   });
 
   // "Synced" / "Syncing…" under your name
@@ -344,9 +346,9 @@
           .map(
             ({ item }) => `<li><a href="title.html?id=${encodeURIComponent(item.id)}">
               <img src="${Store.poster(item.poster, "w92")}" alt="" loading="lazy" />
-              <span>${esc(Lang.title(item))}<small>${item.year} · ${Store.TYPE_LABEL[item.type] || ""}${
-              item.rating != null ? " · ★ " + item.rating : ""
-            }</small></span></a></li>`
+              <span>${esc(Lang.title(item))}<small>${[item.year, Store.TYPE_LABEL[item.type], item.rating != null ? `★ ${item.rating}` : ""]
+                .filter(Boolean)
+                .join(" · ")}</small></span></a></li>`
           )
           .join("")
       : `<li class="search-empty">No titles match "${esc(String(raw).trim())}"</li>`;
@@ -397,8 +399,8 @@
     <div class="footer-card">
       <div class="footer-brand">
         <a class="footer-logo" href="index.html"><img src="images/brand/logo.png" alt="Movie Nights" /></a>
-        <p>A personal list of the movies, TV shows and anime we've watched, rated and ranked,
-          plus everything still waiting on the watchlist.</p>
+        <p>Your own private diary of movies, TV shows and anime: rate and rank what you've
+          watched, and keep track of everything still waiting on your watchlist.</p>
         <div class="footer-cta">
           <a class="footer-btn primary" href="discover.html"><i class="fa-solid fa-compass"></i> Discover something new</a>
           <a class="footer-btn" href="watchlist.html"><i class="fa-solid fa-bookmark"></i> My watchlist</a>
@@ -863,6 +865,58 @@
     if (btn) setTimeout(() => btn.click(), 0);
   });
 
+  /* A question in the site's own glass pop-up (instead of the browser's grey box).
+     UI.confirm({ icon, title, text, ok, danger }) -> Promise<true | false>
+     UI.ask({ icon, title, text, value, placeholder, ok }) -> Promise<"typed text" | null>
+     (text is HTML: escape anything that comes from the user) */
+  function dialog(opts, withInput) {
+    return new Promise((resolve) => {
+      const overlay = document.createElement("div");
+      overlay.className = "overlay";
+      overlay.innerHTML = `<div class="modal notice-modal ui-dialog" role="alertdialog" aria-modal="true" aria-label="${esc(opts.title)}">
+          <div class="notice-icon${opts.danger ? " danger" : ""}"><i class="fa-solid ${opts.icon || (opts.danger ? "fa-triangle-exclamation" : "fa-circle-question")}"></i></div>
+          <h2>${esc(opts.title)}</h2>
+          ${opts.text ? `<p>${opts.text}</p>` : ""}
+          ${withInput ? `<input class="input ui-d-input" maxlength="${opts.max || 40}" value="${esc(opts.value || "")}" placeholder="${esc(opts.placeholder || "")}" aria-label="${esc(opts.title)}" autocomplete="off" />` : ""}
+          <div class="ui-d-buttons">
+            <button class="btn ui-d-cancel" type="button">${esc(opts.cancel || "Cancel")}</button>
+            <button class="btn ${opts.danger ? "btn-danger" : "btn-primary"} ui-d-ok" type="button">${esc(opts.ok || "OK")}</button>
+          </div>
+        </div>`;
+      document.body.append(overlay);
+      const field = overlay.querySelector(".ui-d-input");
+      let done = false;
+      const finish = (ok) => {
+        if (done) return;
+        done = true;
+        overlay.classList.remove("active");
+        setTimeout(() => overlay.remove(), 300);
+        resolve(withInput ? (ok ? field.value.trim() || null : null) : ok);
+      };
+      overlay.onclose = () => finish(false); // Esc (js/components/cards.js closes open pop-ups)
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay || e.target.closest(".ui-d-cancel")) finish(false);
+        else if (e.target.closest(".ui-d-ok")) finish(true);
+      });
+      overlay.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") finish(false);
+        if (e.key === "Enter" && field) {
+          e.preventDefault();
+          finish(true);
+        }
+      });
+      requestAnimationFrame(() => overlay.classList.add("active"));
+      // (a risky question starts on Cancel, so Enter doesn't delete anything by accident)
+      setTimeout(() => {
+        const first = field || overlay.querySelector(opts.danger ? ".ui-d-cancel" : ".ui-d-ok");
+        first.focus();
+        if (field) field.select();
+      }, 60);
+    });
+  }
+  const confirmBox = (opts) => dialog(opts, false);
+  const ask = (opts) => dialog(opts, true);
+
   // a library action while signed out: explain and open the menu with the Sign in button
   function needSignIn() {
     toast("Sign in to start your own list");
@@ -873,5 +927,5 @@
     setTimeout(() => box.classList.add("open"), 0);
   }
 
-  window.UI = { esc, toast, download, PAGES, foldTools, signInPrompt, needSignIn, welcome };
+  window.UI = { esc, toast, download, PAGES, foldTools, signInPrompt, needSignIn, welcome, confirm: confirmBox, ask };
 })();

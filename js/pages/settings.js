@@ -237,18 +237,45 @@
 
   $(".import-file").addEventListener("change", async (e) => {
     const file = e.target.files[0];
+    e.target.value = "";
     if (!file) return;
+    let text;
+    let data;
     try {
-      Store.importBackup(await file.text());
+      text = await file.text();
+      data = JSON.parse(text);
+      if (data.app !== "movie-nights") throw new Error("This is not a Movie Nights backup file.");
+    } catch (err) {
+      return toast(`Could not restore: ${err.message.startsWith("This") ? err.message : "the file can't be read"}`);
+    }
+    // it replaces everything: say what's in it and ask first
+    const n = (data.custom || []).length;
+    const when = data.exported ? new Date(data.exported).toLocaleDateString("en", { day: "numeric", month: "long", year: "numeric" }) : "";
+    const ok = await UI.confirm({
+      icon: "fa-clock-rotate-left",
+      title: "Restore this backup?",
+      text: `${n} title${n === 1 ? "" : "s"}${when ? `, saved on ${esc(when)}` : ""}. It <strong>replaces</strong> your whole library as it is now (titles, scores, lists and tiers).`,
+      ok: "Restore",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      Store.importBackup(text);
       toast("Backup restored");
     } catch (err) {
       toast(`Could not restore: ${err.message}`);
     }
-    e.target.value = "";
   });
 
-  $(".reset-all").addEventListener("click", () => {
-    if (!confirm("Delete every title, rating, favorite, watchlist entry and tier in your library? Download a backup first if you might want it back.")) return;
+  $(".reset-all").addEventListener("click", async () => {
+    const ok = await UI.confirm({
+      icon: "fa-trash-can",
+      title: "Delete your whole library?",
+      text: "Every title, rating, favorite, watchlist entry, list and tier. There's no undo: download a backup first if you might want it back.",
+      ok: "Delete everything",
+      danger: true,
+    });
+    if (!ok) return;
     Store.resetAll();
     toast("Your library is empty now");
   });

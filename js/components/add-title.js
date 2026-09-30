@@ -8,37 +8,42 @@
   let overlay, form, picked;
 
   function build() {
+    // (the site's pieces: the glass search pill, glass fields and dropdowns, the red switches)
+    const toggle = (name, icon, label) => `<label class="menu-switch at-switch">
+        <i class="fa-solid ${icon}"></i><span>${label}</span>
+        <input type="checkbox" name="${name}" />
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+      </label>`;
     overlay = Cards.makeOverlay(
       "add-modal",
-      `<h3>Add a title</h3>
-       <form class="form-grid" novalidate>
-         <label class="field full">Title
-           <span style="display:flex;gap:8px">
-             <input class="input" name="title" required autocomplete="off" />
-             <button type="button" class="btn tmdb-search-btn" hidden><i class="fa-solid fa-magnifying-glass"></i> TMDB</button>
-           </span>
-         </label>
-         <div class="tmdb-area full"></div>
-         <label class="field">Year <input class="input" name="year" type="number" min="1880" max="2100" /></label>
-         <label class="field">Type
-           <select class="select" name="type">
-             <option value="movie">Movie</option><option value="tv">TV Show</option><option value="anime">Anime</option>
-           </select>
-         </label>
-         <label class="field">My rating (0-10, empty = not rated)
-           <input class="input" name="rating" type="number" min="0" max="10" step="0.1" />
-         </label>
-         <label class="field">Poster (TMDB path or image URL)
-           <input class="input" name="poster" placeholder="/abc123.jpg" />
-         </label>
-         <label class="full" style="display:flex;gap:18px;flex-wrap:wrap;font-size:14px">
-           <span><input type="checkbox" name="favorite" /> Favorite</span>
-           <span><input type="checkbox" name="watchlist" /> On my watchlist</span>
-         </label>
-         <p class="help full form-error" style="color:#ff8080" hidden></p>
-         <div class="full" style="display:flex;justify-content:flex-end;gap:10px">
+      `<div class="pk-icon"><i class="fa-solid fa-plus"></i></div>
+       <h3>Add a title</h3>
+       <p class="pk-sub at-sub">Search TMDB and pick it, or fill it in by hand.</p>
+       <form class="at-form" novalidate>
+         <div class="glass-search at-search">
+           <i class="fa-solid fa-film gs-icon" aria-hidden="true"></i>
+           <input name="title" required autocomplete="off" placeholder="Title" aria-label="Title" />
+           <button type="button" class="gs-btn tmdb-search-btn" aria-label="Search TMDB" title="Search TMDB" hidden><i class="fa-solid fa-magnifying-glass"></i></button>
+         </div>
+         <div class="tmdb-area"></div>
+         <div class="at-grid">
+           <label class="at-field"><span>Year</span><input class="input" name="year" type="number" min="1880" max="2100" placeholder="2024" /></label>
+           <label class="at-field"><span>Type</span>
+             <span class="glass-select"><select name="type" aria-label="Type">
+               <option value="movie">Movie</option><option value="tv">TV Show</option><option value="anime">Anime</option>
+             </select></span>
+           </label>
+           <label class="at-field"><span>My rating</span><input class="input" name="rating" type="number" min="0" max="10" step="0.1" placeholder="0–10, empty = not rated" /></label>
+           <label class="at-field"><span>Poster</span><input class="input" name="poster" placeholder="TMDB path or image URL" /></label>
+         </div>
+         <div class="at-switches">
+           ${toggle("favorite", "fa-heart", "Favorite")}
+           ${toggle("watchlist", "fa-bookmark", "On my Watchlist")}
+         </div>
+         <p class="at-error form-error" hidden></p>
+         <div class="at-actions">
            <button type="button" class="btn cancel">Cancel</button>
-           <button type="submit" class="btn btn-primary">Add to library</button>
+           <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add to library</button>
          </div>
        </form>`
     );
@@ -54,12 +59,14 @@
       if (!q) return;
       results.innerHTML = '<p class="help">Searching…</p>';
       try {
-        const hits = await TMDB.search(q, f.type.value);
+        // the 10 best matches, the ones with a poster first (the form stays in view)
+        const found = await TMDB.search(q, f.type.value);
+        const hits = found.filter((h) => h.poster).concat(found.filter((h) => !h.poster)).slice(0, 10);
         results.innerHTML = hits.length
           ? `<div class="tmdb-results">${hits
               .map(
                 (h, i) => `<button type="button" data-i="${i}">
-                  <img src="${h.poster ? Store.img(h.poster, "w154") : ""}" alt="" loading="lazy" />
+                  <img src="${Store.poster(h.poster, "w154")}" alt="" loading="lazy" />
                   <span>${esc(h.title)} (${h.year || "?"})</span></button>`
               )
               .join("")}</div>`

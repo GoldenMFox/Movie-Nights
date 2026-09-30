@@ -17,7 +17,7 @@
  *
  * Note: anything in this file is visible to people who visit the site. These
  * keys can only read public movie data, so that's low risk. To keep the TMDB
- * key private instead, leave it empty and paste it in Profile -> Settings
+ * key private instead, leave it empty and paste it in Settings
  * (stored only in your own browser).
  */
 window.MN_CONFIG = {
@@ -31,12 +31,13 @@ window.MN_CONFIG = {
     messagingSenderId: "206066875468",
     appId: "1:206066875468:web:5252d0414c71d9f2b188e9",
   },
+  // The default country (TMDB country code) until someone picks theirs in Settings →
+  // Streaming: where to watch, age ratings, and the cinema dates on labels (Discover's
+  // "Coming soon", the NEW label; movies only, TV shows air worldwide). The lists
+  // themselves (In cinemas, Coming soon…) stay worldwide.
+  RELEASE_COUNTRY: "RO",
   // iPhone / iPad sign-in without a pop-up (js/core/cloud.js). The "Web client" ID from
   // Google Cloud console -> APIs & Services -> Credentials (Firebase created it). That
   // client needs this site's index.html as an "Authorized redirect URI". Empty = use the pop-up.
-  // Release dates on labels (Discover's "Coming soon" label, the NEW label) are the cinema
-  // dates in this country (TMDB country code). Movies only: TV shows air worldwide.
-  // The lists themselves (In cinemas, Coming soon…) stay worldwide.
-  RELEASE_COUNTRY: "RO",
   GOOGLE_CLIENT_ID: "206066875468-4h7ejupakg0jocqtg47pmdipodbet1s7.apps.googleusercontent.com",
 };

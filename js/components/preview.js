@@ -112,7 +112,13 @@
         : round("t-trailer", "Play trailer with sound", "fa-solid fa-play", false).replace("hp-btn", "hp-btn hp-play") +
           round("t-watch", "Add to Watchlist", "fa-regular fa-bookmark", false) +
           round("t-add", "Add to library", "fa-solid fa-plus", false) +
-          round("t-rate", "Rate it", "fa-solid fa-star", false);
+          // not out yet: Remind me (like its card), instead of Rate it
+          (b.hit && b.hit.released && b.hit.released > Store.today()
+            ? (() => {
+                const on = !!(window.Watch && Watch.isReminded(ref.value));
+                return round("t-remind", on ? "Reminder on" : "Remind me", `fa-${on ? "solid" : "regular"} fa-bell`, on);
+              })()
+            : round("t-rate", "Rate it", "fa-solid fa-star", false));
     return `
       <h3 class="hp-title">${esc(b.title)}</h3>
       <div class="hp-meta">${scoreHtml(b, d)}</div>
@@ -415,8 +421,8 @@
   window.Preview = { close: stop };
 
   // favorite / watchlist / rating changed: redraw the buttons (a TMDB title you just added
-  // becomes a library title)
-  Store.onChange(() => {
+  // becomes a library title). Remind me on / off too.
+  const redrawInfo = () => {
     if (!preview || !previewRef) return;
     let ref = previewRef;
     if (ref.kind === "tmdb") {
@@ -431,5 +437,7 @@
     Promise.resolve(trailerCache.get(cacheKey(previewRef)) || null).then((d) => {
       if (preview && previewRef === ref) preview.querySelector(".hp-info").innerHTML = infoHtml(ref, d);
     });
-  });
+  };
+  Store.onChange(redrawInfo);
+  document.addEventListener("DOMContentLoaded", () => window.Watch && Watch.onChange(redrawInfo));
 })();

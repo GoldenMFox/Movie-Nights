@@ -754,11 +754,6 @@
     },
     true
   );
-  // the phone's own long-press menu (save image / open link) would cover ours
-  document.addEventListener("contextmenu", (e) => {
-    if (quickCard(e.target) && (pressed || press)) e.preventDefault();
-  });
-
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
@@ -984,7 +979,7 @@
     ratingWatched = !!(opts && opts.watched);
     ratingOverlay.querySelector("h3").textContent = ratingWatched ? "Watched it? Rate it" : "Rate it";
     ratingOverlay.querySelector(".clear").textContent = ratingWatched ? "Skip for now" : "Clear rating";
-    ratingOverlay.querySelector(".rating-for").textContent = `${Lang.title(item)} (${item.year})`;
+    ratingOverlay.querySelector(".rating-for").textContent = `${Lang.title(item)}${item.year ? ` (${item.year})` : ""}`;
     ratingOverlay.showPicked();
     open(ratingOverlay);
   }

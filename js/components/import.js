@@ -1,5 +1,5 @@
 /*
- * Import (Profile page): your ratings, watched films and watchlist from IMDb or
+ * Import (Settings page): your ratings, watched films and watchlist from IMDb or
  * Letterboxd exports (.csv files).
  *
  *  - IMDb: "Your ratings" export (rated titles) and "Your watchlist" export. Titles are

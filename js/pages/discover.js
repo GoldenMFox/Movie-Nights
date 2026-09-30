@@ -1,24 +1,27 @@
 /*
  * Discover page: browse and search all of TMDB (trending, popular, in cinemas,
  * coming soon, top rated, anime) and add anything to your library or watchlist.
- * Needs a TMDB key (js/config.js or Profile -> Settings).
+ * Needs a TMDB key (js/config.js or Settings).
  */
 (function () {
   const { esc } = UI;
   const root = document.getElementById("discover");
 
   if (!TMDB.enabled()) {
-    root.innerHTML = `<div class="panel" style="max-width:720px">
-      <h2><i class="fa-solid fa-key"></i> Connect TMDB to discover new titles</h2>
-      <p>Discover shows what's trending, popular, in cinemas and coming soon, using TMDB's free API.
-         It needs a TMDB API key (takes about 2 minutes):</p>
-      <ol style="line-height:2">
-        <li>Create a free account at <a href="https://www.themoviedb.org/signup" target="_blank" rel="noopener">themoviedb.org/signup</a> and confirm your email.</li>
-        <li>Go to <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">Settings → API</a> and request a key (choose "Personal / Developer").</li>
-        <li>Copy the <strong>API Key</strong> (or the API Read Access Token).</li>
-        <li>Paste it in <a href="settings.html#keys">Settings</a>, or into <code>js/config.js</code> so it works everywhere.</li>
+    const step = (n, html) => `<li><span class="dk-num">${n}</span><span>${html}</span></li>`;
+    root.innerHTML = `<section class="xr-card dx-nokey">
+      <span class="xr-label"><i class="fa-solid fa-key"></i> Connect TMDB</span>
+      <h2>Connect TMDB to discover new titles</h2>
+      <p class="dk-lead">Discover shows what's trending, popular, in cinemas and coming soon, using TMDB's free API.
+         It needs a TMDB API key, which takes about 2 minutes:</p>
+      <ol class="dk-steps">
+        ${step(1, 'Create a free account at <a href="https://www.themoviedb.org/signup" target="_blank" rel="noopener">themoviedb.org/signup</a> and confirm your email.')}
+        ${step(2, 'Go to <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">Settings → API</a> and request a key (choose "Personal / Developer").')}
+        ${step(3, "Copy the <strong>API Key</strong> (or the API Read Access Token).")}
+        ${step(4, 'Paste it in <a href="settings.html#keys">Settings</a>, or into <code>js/config.js</code> so it works everywhere.')}
       </ol>
-    </div>`;
+      <a class="btn btn-primary dk-go" href="settings.html#keys"><i class="fa-solid fa-gear"></i> Open Settings</a>
+    </section>`;
     return;
   }
 

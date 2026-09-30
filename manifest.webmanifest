@@ -1,7 +1,7 @@
 {
   "name": "Movie Nights",
   "short_name": "Movie Nights",
-  "description": "Our movies, TV shows and anime: rated, ranked and saved for later, plus what's trending and in cinemas.",
+  "description": "Your own private diary of movies, TV shows and anime: rated, ranked and saved for later, plus what's trending and in cinemas.",
   "id": "./",
   "start_url": "./index.html",
   "scope": "./",

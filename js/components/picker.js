@@ -73,18 +73,40 @@
       `<option value="">Any genre</option>` + names.map((g) => `<option${g === choice.genre ? " selected" : ""}>${esc(g)}</option>`).join("");
   }
 
-  // runtime of a title: from the library, or looked up on TMDB (kept a week)
+  // runtime of a title: from the library, or looked up on TMDB once and remembered
+  // (mn:runtimes: { "movie-157336": 169 }, a movie's length doesn't change)
+  const RUNTIMES = "mn:runtimes";
   async function runtimeOf(item) {
     if (item.runtime) return minutes(item.runtime);
     try {
       const ref = await Watch.refOf(item);
       if (!ref) return null;
+      const known = Store.read(RUNTIMES, {})[ref];
+      if (known !== undefined) return known;
       const [media, id] = ref.split("-");
       const d = await TMDB.detailsById(media, Number(id));
-      return d ? minutes(d.runtime) : null;
+      const mins = d ? minutes(d.runtime) : null;
+      const all = Store.read(RUNTIMES, {});
+      all[ref] = mins;
+      Store.write(RUNTIMES, all);
+      return mins;
     } catch (e) {
       return null;
     }
+  }
+
+  // the movies' runtimes, a few at a time (a big Watchlist doesn't ask TMDB for everything at once)
+  async function runtimes(list) {
+    const out = new Array(list.length).fill(null);
+    let next = 0;
+    const worker = async () => {
+      while (next < list.length) {
+        const n = next++;
+        if (!isSeries(list[n])) out[n] = await runtimeOf(list[n]);
+      }
+    };
+    await Promise.all([worker(), worker(), worker(), worker()]);
+    return out;
   }
 
   async function pick() {
@@ -99,7 +121,7 @@
       const limit = TIMES[choice.time];
       if (limit === "episode") list = list.filter(isSeries);
       else if (limit) {
-        const mins = await Promise.all(list.map((i) => (isSeries(i) ? Promise.resolve(null) : runtimeOf(i))));
+        const mins = await runtimes(list);
         // series fit any evening (one episode); movies need a known, short enough runtime
         list = list.filter((i, n) => isSeries(i) || (mins[n] != null && mins[n] <= limit));
       }

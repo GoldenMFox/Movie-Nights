@@ -643,7 +643,7 @@
     const item = Store.get(id);
     if (!item) return message("fa-regular fa-face-frown", "This title isn't in your library any more.");
     const d = Object.assign({}, extra || {}, pick(item));
-    document.title = `${Lang.title(item)} (${item.year}) · Movie Nights`;
+    document.title = `${Lang.title(item)}${item.year ? ` (${item.year})` : ""} · Movie Nights`;
     heroEl.dataset.id = item.id;
     mainEl.dataset.id = item.id;
     const e = TMDB.enabled() ? Ratings.entry(Ratings.refOf(item)) : null;
@@ -671,11 +671,22 @@
       <button type="button" class="remove-title"><i class="fa-solid fa-trash"></i> Remove from library</button>`;
     heroEl.innerHTML = heroHtml(item, d, e, buttons, menu);
 
-    const near = (a) => Math.abs((a.rating ?? 5) - (item.rating ?? 5));
+    // more like this: the titles of yours that share the most genres with it (the same kind of
+    // title counts a little too), then your likely favourites (Match %) and the closest years
+    const mineG = new Set((d.genres || item.genres || []).map((g) => g.toLowerCase()));
+    const overlap = (i) => {
+      const g = (i.genres || []).map((x) => x.toLowerCase());
+      const shared = g.filter((x) => mineG.has(x)).length;
+      return shared ? shared / (mineG.size + g.length - shared) + (i.type === item.type ? 0.15 : 0) : 0;
+    };
+    const liked = (i) => (window.Taste && Taste.match(i)) || 0;
     const similar = Store.all()
-      .filter((i) => i.type === item.type && i.id !== item.id)
-      .sort((a, b) => near(a) - near(b) || Math.abs(a.year - item.year) - Math.abs(b.year - item.year))
-      .slice(0, 16);
+      .filter((i) => i.id !== item.id)
+      .map((i) => ({ i, o: overlap(i) }))
+      .filter((x) => x.o > 0)
+      .sort((a, b) => b.o - a.o || liked(b.i) - liked(a.i) || Math.abs((a.i.year || 0) - (item.year || 0)) - Math.abs((b.i.year || 0) - (item.year || 0)))
+      .slice(0, 16)
+      .map((x) => x.i);
 
     const loading = TMDB.enabled() && !extra;
     const keep = rowScrolls();

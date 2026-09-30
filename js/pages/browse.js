@@ -61,8 +61,12 @@
         anime: { base: (i) => i.type === "anime", chips: "status" },
       }[page];
 
+  // watched = in your library, unless it's only on your Watchlist (a score or a watch date
+  // always counts)
+  const seen = (i) => i.rating != null || !!i.watchedAt || !i.watchlist;
   const STATUS_CHIPS = [
     { id: "all", label: "All", test: () => true },
+    { id: "watched", label: "Watched", test: seen },
     { id: "rated", label: "Rated", test: (i) => i.rating != null },
     { id: "unrated", label: "Not rated", test: (i) => i.rating == null },
     { id: "fav", label: "Favorites", test: (i) => i.favorite },
@@ -490,13 +494,24 @@
     if (add) Cards.openListAdder(add.dataset.addTo);
     if (e.target.closest(".wl-add-panel") && PAGE.custom) Cards.openListAdder(PAGE.custom);
     if (e.target.closest(".wl-rename") && PAGE.custom) {
-      const name = prompt("New name for this list", PAGE.label);
-      if (name && name.trim()) Store.renameList(PAGE.custom, name);
+      const listId = PAGE.custom;
+      UI.ask({ icon: "fa-pen", title: "Rename this list", value: PAGE.label, placeholder: "List name", ok: "Rename" }).then((name) => {
+        if (name) Store.renameList(listId, name);
+      });
     }
     if (e.target.closest(".wl-delete") && PAGE.custom) {
-      if (!confirm(`Delete the list "${PAGE.label}"? The titles stay in your library.`)) return;
-      Store.deleteList(PAGE.custom);
-      UI.toast("List deleted");
+      const listId = PAGE.custom;
+      UI.confirm({
+        icon: "fa-trash-can",
+        title: `Delete "${PAGE.label}"?`,
+        text: "The list goes away; the titles stay in your library.",
+        ok: "Delete list",
+        danger: true,
+      }).then((ok) => {
+        if (!ok) return;
+        Store.deleteList(listId);
+        UI.toast("List deleted");
+      });
     }
   });
 

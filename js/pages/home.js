@@ -337,7 +337,8 @@
     const rows = [
       { title: "Up next on your watchlist", items: all.filter((i) => i.watchlist), link: "watchlist.html?list=watch" },
       { title: "Your favorites", items: all.filter((i) => i.favorite), link: "watchlist.html?list=fav" },
-      { title: "Recently added", items: all.filter((i) => i.isNew).reverse(), link: null },
+      // newest first: everything you added (imports too), in the order it came in
+      { title: "Recently added", items: all.slice().sort((a, b) => b.order - a.order), link: null },
     ];
     if (!live) {
       rows.push(

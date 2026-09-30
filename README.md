@@ -1,6 +1,6 @@
 # Movie Nights
 
-A personal list of the movies, TV shows and anime we've watched: rated, ranked, and saved for later.
+Your own private diary of movies, TV shows and anime: rated, ranked, and saved for later. Everyone who signs in gets their own library.
 
 Plain HTML, CSS and JavaScript. No build step, no frameworks, nothing to install.
 
