@@ -17601,3 +17601,51 @@ html:not(.app-ui) .profile-menu .menu-group a.bo-menu-link {
     --chips-r: #000;
   }
 }
+
+/* ---------- phones: the › button at the right end of a chip row (while there are more chips that way) ---------- */
+.chips-wrap {
+  position: relative;
+}
+
+.chips-more {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .chips-more {
+    position: absolute;
+    top: 50%;
+    right: -4px;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 11px;
+    box-shadow: -10px 0 16px var(--bg), 0 4px 12px rgba(0, 0, 0, 0.35);
+    transform: translateY(calc(-50% - 2px));
+    cursor: pointer;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  .chips-more:active {
+    transform: translateY(calc(-50% - 2px)) scale(0.9);
+  }
+
+  /* (at the end of the row, or a row that fits: no button) */
+  .chips-wrap:has(> .chips.at-end) .chips-more {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(calc(-50% - 2px)) scale(0.6);
+  }
+
+  /* (room after the last chip, so the button never covers it; constant, so nothing jumps) */
+  .chips-wrap .chips {
+    padding-right: 40px;
+  }
+}

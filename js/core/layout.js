@@ -811,9 +811,54 @@
   );
   // (scroll doesn't bubble: caught on the way down)
   document.addEventListener("scroll", (e) => e.target.classList && e.target.classList.contains("chips") && chipEdges(e.target), true);
+  // Phones: how you'd know a row scrolls. A small › button at its right end (while there are more
+  // chips that way: tap it to move along), and a one-time "peek" when the page opens: the row
+  // slides a little to the left and back (once per page per visit, not with motion turned down).
+  const phoneRows = () =>
+    window.matchMedia("(max-width: 700px)").matches ? [...document.querySelectorAll(".chips:not(.bo-genres):not(.sk-chips)")] : [];
+  function addMoreButton(row) {
+    if (row.parentElement.classList.contains("chips-wrap")) return;
+    const wrap = document.createElement("div");
+    wrap.className = "chips-wrap";
+    row.before(wrap);
+    wrap.appendChild(row);
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "chips-more";
+    more.setAttribute("aria-label", "More");
+    more.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+    more.addEventListener("click", () => row.scrollBy({ left: row.clientWidth * 0.7, behavior: "smooth" }));
+    wrap.appendChild(more);
+  }
+  function peek(row) {
+    const key = `mn:chipsPeek:${location.pathname}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch (e) {}
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (row.scrollWidth <= row.clientWidth || row.scrollLeft > 4) return;
+    let stop = false;
+    const cancel = () => (stop = true);
+    row.addEventListener("pointerdown", cancel, { once: true });
+    const t0 = performance.now();
+    const step = (t) => {
+      const p = Math.min(1, (t - t0) / 1300);
+      if (stop) return;
+      row.scrollLeft = Math.sin(Math.PI * p) * 70; // out and back
+      if (p < 1) requestAnimationFrame(step);
+      else row.scrollLeft = 0;
+    };
+    requestAnimationFrame(step);
+  }
   window.addEventListener("load", () => {
     allChipRows(false);
-    setTimeout(() => allChipRows(false), 700); // (rows a page fills in a moment later)
+    phoneRows().forEach(addMoreButton);
+    setTimeout(() => {
+      allChipRows(false); // (rows a page fills in a moment later)
+      phoneRows().forEach(addMoreButton);
+      phoneRows().forEach((row) => row.scrollLeft < 4 && peek(row));
+    }, 900);
   });
   window.addEventListener("resize", () => document.querySelectorAll(".chips").forEach(chipEdges));
 
