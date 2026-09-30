@@ -63,7 +63,10 @@
       item.watchlist ? '<span title="On watchlist"><i class="fa-solid fa-bookmark"></i></span>' : "",
     ].join("");
     const needScore = (window.Ratings && Ratings.needsWork(item)) || needsRuName(item);
-    return `<article class="movie-item" data-id="${esc(item.id)}"${needScore ? " data-need-score" : ""}>
+    // watched = in your library, unless it's only on your Watchlist (a score or a watch date
+    // always counts): Discover can dim these ("Dim watched on Discover" in the profile menu)
+    const seen = item.rating != null || !!item.watchedAt || !item.watchlist;
+    return `<article class="movie-item" data-id="${esc(item.id)}"${seen ? " data-seen" : ""}${needScore ? " data-need-score" : ""}>
       <a class="poster-link" href="${url}" tabindex="-1" aria-hidden="true">
         <img class="movie-poster" src="${Store.poster(posterOf(item))}" alt="" loading="lazy" decoding="async" />
         ${Store.isRecent(item) ? '<span class="new-label">NEW</span>' : ""}

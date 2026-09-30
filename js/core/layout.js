@@ -110,6 +110,15 @@
             </div>
             <div class="menu-prefs">
               ${langToggle("in-profile")}
+              ${
+                Store.guest
+                  ? ""
+                  : `<label class="menu-switch fade-row" title="On Discover, what you've already watched is dimmed (like Letterboxd)">
+                <i class="fa-solid fa-eye-low-vision"></i><span>Dim watched on Discover</span>
+                <input type="checkbox" class="fade-switch" />
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+              </label>`
+              }
               <label class="menu-switch" title="Title, ratings and buttons under each poster (off: posters only)">
                 <i class="fa-solid fa-table-cells-large"></i><span>Poster details</span>
                 <input type="checkbox" class="card-details-switch" />
@@ -493,6 +502,23 @@
       else localStorage.setItem("mn:showMatch", "off");
     } catch (e) {}
   });
+  // "Dim watched on Discover" (like Letterboxd's "fade watched"): titles you've already
+  // watched are dimmed on the Discover page, so the new ones stand out. Off at first.
+  try {
+    if (localStorage.getItem("mn:fadeWatched") === "on") document.documentElement.classList.add("fade-watched");
+  } catch (e) {}
+  const fadeSwitch = nav.querySelector(".fade-switch");
+  if (fadeSwitch) {
+    fadeSwitch.checked = document.documentElement.classList.contains("fade-watched");
+    fadeSwitch.addEventListener("change", () => {
+      document.documentElement.classList.toggle("fade-watched", fadeSwitch.checked);
+      try {
+        if (fadeSwitch.checked) localStorage.setItem("mn:fadeWatched", "on");
+        else localStorage.removeItem("mn:fadeWatched");
+      } catch (e) {}
+    });
+  }
+
   function syncMatchSwitch() {
     const usable = detailsSwitch.checked;
     matchSwitch.disabled = !usable;
