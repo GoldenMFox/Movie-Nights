@@ -1064,14 +1064,24 @@
   }
 
   /* Some YouTube videos can't be played on other websites (their owner turned embedding
-     off: "Video unavailable"). The player reports it (onError 101 / 150), and then the next
-     trailer / teaser TMDB lists for the title plays instead. Blocked videos are remembered
-     (mn:badTrailers) and skipped from then on; a library title keeps the one that worked. */
-  const BAD_TRAILERS = "mn:badTrailers";
-  const isBadTrailer = (key) => Store.read(BAD_TRAILERS, []).includes(key);
-  function markBadTrailer(key) {
-    const list = Store.read(BAD_TRAILERS, []);
-    if (!list.includes(key)) Store.write(BAD_TRAILERS, list.concat(key).slice(-300));
+     off: "Video unavailable"). The player reports it (onError 101 / 150; 100 = removed), and
+     then the next trailer / teaser TMDB lists for the title plays instead. Those videos are
+     remembered for a month (mn:badTrailers2: [{ k, at }]) and skipped meanwhile; a library
+     title keeps the one that worked. Any other error (a hiccup) only skips it this time, so a
+     trailer that works is never shut out for good. */
+  const BAD_TRAILERS = "mn:badTrailers2";
+  const BAD_DAYS = 30;
+  const BLOCKED = [100, 101, 150];
+  try {
+    localStorage.removeItem("mn:badTrailers"); // the old list kept every error, forever: start over
+  } catch (e) {}
+  const badList = () => Store.read(BAD_TRAILERS, []).filter((b) => b && b.k && Date.now() - b.at < BAD_DAYS * 86400000);
+  const isBadTrailer = (key) => badList().some((b) => b.k === key);
+  // code: YouTube's error number (only a real "can't be played here" is remembered)
+  function markBadTrailer(key, code) {
+    if (!key || (code != null && !BLOCKED.includes(Number(code)))) return;
+    const list = badList().filter((b) => b.k !== key);
+    Store.write(BAD_TRAILERS, list.concat({ k: key, at: Date.now() }).slice(-300));
   }
 
   let trailerRun = null; // { item, key, tried: Set, nextAlt(), frame }
@@ -1199,7 +1209,7 @@
     // refused (embedding off, removed, private…): the next video, or a link to YouTube
     if (data.event === "onError") {
       const bad = run.key;
-      markBadTrailer(bad);
+      markBadTrailer(bad, data.info); // (data.info: YouTube's error number)
       const next = await run.nextAlt();
       if (trailerRun !== run) return;
       if (next) playTrailer(run, next);

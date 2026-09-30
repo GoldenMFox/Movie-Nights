@@ -319,10 +319,10 @@
       send("command", "playVideo");
       paintSound();
     }
-    // YouTube won't play it here (embedding off, removed…): remember that, and try the
-    // next video; none left: keep the picture
+    // YouTube won't play it here (embedding off, removed…): remember that (a real block only,
+    // by YouTube's error number), and try the next video; none left: keep the picture
     if (data.event === "onError") {
-      if (frame.dataset.key) Cards.markBadTrailer(frame.dataset.key);
+      if (frame.dataset.key) Cards.markBadTrailer(frame.dataset.key, data.info);
       frame.remove();
       preview.classList.remove("playing");
       delete preview.dataset.started;
