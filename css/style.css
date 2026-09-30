@@ -14657,86 +14657,170 @@ html.ext-ratings .movie-item[data-id] .ratings .score.mine {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
-.bo-controls .top10-switch {
+.bo-controls .top10-switch,
+.bo-sort {
   margin: 0;
+}
+
+.bo-page .top10-switch .top10-tab i {
+  margin-right: 5px;
+  font-size: 12px;
 }
 
 .bo-controls .glass-select select {
   min-width: 120px;
 }
 
-/* the #1 */
-.bo-top {
+/* genres: one sideways row of chips, the red pill gliding to the picked one */
+.bo-genres {
   position: relative;
-  display: flex;
-  align-items: flex-end;
+  flex-wrap: nowrap;
+  margin: 0 0 22px;
+  padding: 2px 2px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, #000 92%, transparent);
+}
+
+.bo-genres::-webkit-scrollbar {
+  display: none;
+}
+
+.bo-genres .chip {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  padding: 8px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: color 0.25s ease, background-color 0.25s ease;
+}
+
+.bo-genres .chip.active {
+  background: transparent;
+}
+
+.bo-genres .chip-indicator {
+  display: block;
+  position: absolute;
+  z-index: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 4px 16px rgba(229, 9, 20, 0.35);
+  pointer-events: none;
+  transition: left 0.45s cubic-bezier(0.32, 0.72, 0, 1), width 0.45s cubic-bezier(0.32, 0.72, 0, 1), top 0.45s, height 0.45s;
+}
+
+/* ---------- the podium stage ---------- */
+.bo-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
   gap: 24px;
-  min-height: 340px;
-  padding: 28px;
+  min-height: 420px;
+  padding: 32px;
   border: 1px solid var(--glass-border);
-  border-radius: 26px;
+  border-radius: 28px;
   overflow: hidden;
-  background: #000;
+  background: #07070a;
   color: #fff;
-  text-decoration: none;
   isolation: isolate;
 }
 
-.bo-top.skeleton {
-  display: block;
-  background: var(--glass-bg);
+.bo-stage:empty {
+  display: none;
 }
 
-.bo-top-bg {
+.bo-stage-skel {
   position: absolute;
   inset: 0;
+  background: var(--glass-bg);
+  animation: bo-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes bo-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.bo-bg {
+  position: absolute;
+  inset: -2%;
   z-index: -2;
   background-position: center 25%;
   background-size: cover;
-  transform: scale(1.02);
-  transition: transform 1.2s ease;
+  opacity: 0;
+  transition: opacity 1.1s ease;
 }
 
-.bo-top:hover .bo-top-bg {
-  transform: scale(1.06);
+.bo-bg.on {
+  opacity: 1;
+  animation: bo-kenburns 14s ease-out forwards;
 }
 
-.bo-top-shade {
+@keyframes bo-kenburns {
+  from {
+    transform: scale(1.12) translateX(1.5%);
+  }
+  to {
+    transform: scale(1) translateX(0);
+  }
+}
+
+.bo-shade {
   position: absolute;
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(to top, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.35) 55%, rgba(0, 0, 0, 0.1)),
-    linear-gradient(to right, rgba(0, 0, 0, 0.6), transparent 60%);
+    linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.35) 55%, rgba(0, 0, 0, 0.15)),
+    linear-gradient(to right, rgba(0, 0, 0, 0.75), transparent 65%);
 }
 
-.bo-top-poster {
-  flex-shrink: 0;
-  width: 150px;
-  aspect-ratio: 2 / 3;
-  object-fit: cover;
-  border-radius: 14px;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
-}
-
-.bo-top-info {
+.bo-stage-text {
   display: grid;
-  gap: 8px;
-  min-width: 0;
+  gap: 10px;
+  justify-items: start;
+  animation: bo-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.bo-stage-text > * {
+  animation: bo-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.bo-stage-text > :nth-child(2) {
+  animation-delay: 0.06s;
+}
+
+.bo-stage-text > :nth-child(3) {
+  animation-delay: 0.12s;
+}
+
+.bo-stage-text > :nth-child(4) {
+  animation-delay: 0.18s;
+}
+
+@keyframes bo-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
 }
 
 .bo-top-rank {
-  justify-self: start;
   padding: 5px 12px;
   border-radius: 999px;
   background: var(--accent);
   font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
+  box-shadow: 0 6px 20px rgba(229, 9, 20, 0.4);
 }
 
 .bo-top-rank i {
@@ -14745,67 +14829,267 @@ html.ext-ratings .movie-item[data-id] .ratings .score.mine {
 }
 
 .bo-top-title {
-  font-size: clamp(24px, 3.4vw, 38px);
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  color: #fff;
+  font-size: clamp(26px, 3.6vw, 44px);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  text-decoration: none;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+.bo-top-title:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
 }
 
 .bo-top-title small {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.55em;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.5em;
   font-weight: 600;
 }
 
 .bo-top-gross {
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.7);
   font-size: 15px;
 }
 
 .bo-top-gross b {
   margin-right: 6px;
-  color: #fff;
-  font-size: clamp(34px, 5vw, 56px);
+  font-size: clamp(40px, 6vw, 72px);
   font-weight: 900;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, #fff 30%, #f5c518 140%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .bo-top-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: rgba(255, 255, 255, 0.75);
   font-size: 14px;
 }
 
-/* four numbers */
+/* the podium itself: 2nd, 1st, 3rd */
+.bo-podium {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  height: 330px;
+}
+
+.bo-pod {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 128px;
+  height: var(--h);
+  color: #fff;
+  text-decoration: none;
+  animation: bo-podium-in 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.bo-pod.gold {
+  animation-delay: 0.15s;
+}
+
+.bo-pod.silver {
+  animation-delay: 0.3s;
+}
+
+.bo-pod.bronze {
+  animation-delay: 0.45s;
+}
+
+@keyframes bo-podium-in {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+
+.bo-pod-poster {
+  position: relative;
+  display: block;
+  margin: 0 8px -10px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.6);
+  opacity: 0.6;
+  transform: scale(0.92);
+  transform-origin: bottom center;
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease, box-shadow 0.35s ease;
+}
+
+.bo-pod-poster img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+}
+
+.bo-pod:hover .bo-pod-poster,
+.bo-pod.on .bo-pod-poster {
+  opacity: 1;
+  transform: scale(1) translateY(-8px);
+}
+
+.bo-pod.on .bo-pod-poster {
+  box-shadow: 0 0 0 2px var(--medal), 0 18px 40px rgba(0, 0, 0, 0.6), 0 0 40px color-mix(in srgb, var(--medal) 45%, transparent);
+}
+
+.bo-pod.gold {
+  --medal: #f5c518;
+}
+
+.bo-pod.silver {
+  --medal: #c9ced6;
+}
+
+.bo-pod.bronze {
+  --medal: #d08a52;
+}
+
+.bo-pod-step {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 4px;
+  flex: 1;
+  min-height: 64px;
+  padding: 14px 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 0;
+  border-radius: 14px 14px 0 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.bo-pod.on .bo-pod-step {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--medal) 35%, transparent), rgba(255, 255, 255, 0.03));
+}
+
+.bo-medal {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--medal);
+  color: #111;
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+}
+
+.bo-pod-step b {
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* the time left before the next one (it stops while you point at the stage) */
+.bo-pod-time {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 0;
+  background: var(--medal);
+}
+
+.bo-pod.on .bo-pod-time {
+  animation: bo-time 7s linear forwards;
+}
+
+.bo-stage.hold .bo-pod-time {
+  animation-play-state: paused;
+}
+
+@keyframes bo-time {
+  to {
+    width: 100%;
+  }
+}
+
+/* ---------- four numbers ---------- */
 .bo-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  margin: 16px 0 34px;
+  margin: 16px 0 40px;
 }
 
 .bo-stat {
+  position: relative;
   display: grid;
   align-content: start;
   gap: 6px;
-  min-height: 118px;
+  min-height: 124px;
+  overflow: hidden;
   color: var(--text);
   text-decoration: none;
-  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+  isolation: isolate;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.bo-stat.in,
+.bo-stat.skeleton {
+  opacity: 1;
+  transform: none;
+}
+
+.bo-stats .bo-stat:nth-child(2) {
+  transition-delay: 0.07s, 0.07s, 0s, 0s;
+}
+
+.bo-stats .bo-stat:nth-child(3) {
+  transition-delay: 0.14s, 0.14s, 0s, 0s;
+}
+
+.bo-stats .bo-stat:nth-child(4) {
+  transition-delay: 0.21s, 0.21s, 0s, 0s;
 }
 
 a.bo-stat:hover {
-  transform: translateY(-2px);
-  border-color: rgba(229, 9, 20, 0.35);
+  border-color: rgba(229, 9, 20, 0.45);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+}
+
+.bo-stat-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-position: center;
+  background-size: cover;
+  opacity: 0.18;
+  transform: scale(1.05);
+  transition: opacity 0.4s ease, transform 0.8s ease;
+  -webkit-mask-image: linear-gradient(to left, #000, transparent 85%);
+  mask-image: linear-gradient(to left, #000, transparent 85%);
+}
+
+a.bo-stat:hover .bo-stat-bg {
+  opacity: 0.4;
+  transform: scale(1.12);
 }
 
 .bo-stat b {
   margin-top: 4px;
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 900;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
@@ -14818,10 +15102,233 @@ a.bo-stat:hover {
 }
 
 .bo-stat.skeleton {
+  animation: bo-pulse 1.4s ease-in-out infinite;
+}
+
+/* ---------- budget vs box office ---------- */
+.bo-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 14px;
+}
+
+.bo-head .section-title {
+  margin: 0;
+}
+
+.bo-head .section-title i {
+  margin-right: 6px;
+  color: var(--accent-hover);
+}
+
+.bo-plot .bo-head {
+  display: block;
+}
+
+.bo-sub {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.bo-plot {
+  margin-bottom: 44px;
+}
+
+.bo-plot-wrap {
+  position: relative;
+  padding: 14px 10px 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
   background: var(--glass-bg);
 }
 
-/* the chart */
+.bo-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.bo-zone {
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.bo-svg.in .bo-zone {
+  opacity: 1;
+}
+
+.bo-zone.red {
+  fill: rgba(255, 90, 80, 0.1);
+}
+
+.bo-zone.grey {
+  fill: rgba(160, 160, 170, 0.07);
+}
+
+.bo-zone.green {
+  fill: rgba(70, 211, 105, 0.08);
+}
+
+.bo-zone.gold {
+  fill: rgba(245, 197, 24, 0.09);
+}
+
+.bo-grid {
+  stroke: var(--glass-border);
+  stroke-width: 1;
+}
+
+.bo-kline {
+  stroke: rgba(255, 255, 255, 0.28);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 6;
+}
+
+html[data-theme="light"] .bo-kline {
+  stroke: rgba(0, 0, 0, 0.25);
+}
+
+.bo-klabel {
+  fill: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.bo-tick {
+  fill: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-axis {
+  fill: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.bo-dot {
+  cursor: pointer;
+  outline: none;
+}
+
+.bo-dot-in {
+  opacity: 0;
+  transform: scale(0);
+  transition: transform 0.25s cubic-bezier(0.3, 1.5, 0.5, 1), opacity 0.3s ease;
+}
+
+.bo-svg.in .bo-dot-in {
+  opacity: 1;
+  transform: scale(1);
+  transition-delay: var(--d, 0ms);
+  animation: none;
+}
+
+.bo-dot:hover .bo-dot-in,
+.bo-dot.hot .bo-dot-in,
+.bo-dot:focus-visible .bo-dot-in {
+  transform: scale(1.45);
+  transition-delay: 0s;
+}
+
+.bo-ring {
+  fill: var(--surface);
+  stroke-width: 2.5;
+}
+
+.bo-dot.gold .bo-ring {
+  stroke: #f5c518;
+}
+
+.bo-dot.green .bo-ring {
+  stroke: #46d369;
+}
+
+.bo-dot.grey .bo-ring {
+  stroke: #9a9aa3;
+}
+
+.bo-dot.red .bo-ring {
+  stroke: #ff6b63;
+}
+
+.bo-dots:hover .bo-dot:not(:hover):not(.hot) .bo-dot-in {
+  opacity: 0.45;
+}
+
+.bo-tip {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  gap: 10px;
+  width: 230px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(20, 20, 24, 0.94);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 13px;
+  pointer-events: none;
+  transform: translateY(-50%);
+  animation: bo-tip-in 0.18s ease both;
+}
+
+.bo-tip.flip {
+  transform: translate(-100%, -50%);
+}
+
+@keyframes bo-tip-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.bo-tip img {
+  flex-shrink: 0;
+  width: 46px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.bo-tip > span {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bo-tip small {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.bo-tip-nums {
+  color: rgba(255, 255, 255, 0.75);
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-tip-nums i {
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+.bo-tip .xr-verdict {
+  justify-self: start;
+  padding: 2px 9px;
+  font-size: 11px;
+}
+
+/* ---------- the chart ---------- */
 .bo-chart {
   display: grid;
   gap: 8px;
@@ -14831,17 +15338,13 @@ a.bo-stat:hover {
 }
 
 .bo-row {
-  display: grid;
-  grid-template-columns: 44px 56px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-  padding: 10px 16px 10px 10px;
   border: 1px solid var(--glass-border);
   border-radius: 18px;
   background: var(--glass-bg);
+  overflow: hidden;
   opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 0.45s ease var(--d, 0ms), transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) var(--d, 0ms), background-color 0.2s ease;
+  transform: translateY(14px);
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.25s ease;
 }
 
 .bo-row.in {
@@ -14849,14 +15352,36 @@ a.bo-stat:hover {
   transform: none;
 }
 
-.bo-row:hover {
+.bo-row.skeleton {
+  height: 96px;
+  opacity: 1;
+  transform: none;
+  animation: bo-pulse 1.4s ease-in-out infinite;
+}
+
+.bo-row:hover,
+.bo-row.open {
   background: var(--glass-bg-hover);
 }
 
-.bo-row.skeleton {
-  height: 104px;
-  opacity: 1;
-  transform: none;
+.bo-row.open {
+  border-color: rgba(229, 9, 20, 0.4);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+}
+
+.bo-line {
+  display: grid;
+  grid-template-columns: 44px 56px minmax(0, 1fr) 150px 22px;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px 10px 10px;
+  cursor: pointer;
+  outline: none;
+}
+
+.bo-line:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.5);
+  border-radius: 18px;
 }
 
 .bo-rank {
@@ -14868,7 +15393,7 @@ a.bo-stat:hover {
 }
 
 .bo-rank.top1 {
-  color: var(--gold);
+  color: #f5c518;
 }
 
 .bo-rank.top2 {
@@ -14885,6 +15410,11 @@ a.bo-stat:hover {
   aspect-ratio: 2 / 3;
   object-fit: cover;
   border-radius: 10px;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.bo-row:hover .bo-poster img {
+  transform: scale(1.08) rotate(-2deg);
 }
 
 .bo-main {
@@ -14901,19 +15431,12 @@ a.bo-stat:hover {
   min-width: 0;
 }
 
-.bo-name a {
+.bo-name strong {
   overflow: hidden;
-  color: var(--text);
   font-size: 16px;
   font-weight: 700;
-  text-decoration: none;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-.bo-name a:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 .bo-name small {
@@ -14934,7 +15457,7 @@ a.bo-stat:hover {
   font-size: 10px;
 }
 
-/* the gross as a bar (the #1 fills it), the budget the darker part inside it */
+/* the gross as a bar (the biggest fills it), the budget the darker part inside it */
 .bo-bar {
   height: 10px;
   border-radius: 999px;
@@ -14949,11 +15472,30 @@ a.bo-stat:hover {
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--accent), var(--accent-hover));
-  transition: width 1s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--d, 0ms) + 150ms);
+  transition: width 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s;
 }
 
 .bo-row.in .bo-fill {
   width: var(--w);
+}
+
+/* a shine across the bar once it's filled */
+.bo-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: translateX(-100%);
+}
+
+.bo-row.in .bo-fill::after {
+  animation: bo-shine 1.2s ease 1.2s;
+}
+
+@keyframes bo-shine {
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .bo-budget {
@@ -14962,8 +15504,8 @@ a.bo-stat:hover {
   top: 0;
   bottom: 0;
   width: var(--b);
-  background: rgba(0, 0, 0, 0.45);
-  border-right: 2px solid rgba(255, 255, 255, 0.55);
+  background: rgba(0, 0, 0, 0.55);
+  border-right: 2px solid rgba(255, 255, 255, 0.6);
 }
 
 .bo-nums {
@@ -14971,6 +15513,10 @@ a.bo-stat:hover {
   justify-items: end;
   gap: 3px;
   text-align: right;
+}
+
+.bo-nums > * {
+  white-space: nowrap;
 }
 
 .bo-nums b {
@@ -14989,6 +15535,128 @@ a.bo-stat:hover {
   margin-top: 3px;
   padding: 3px 10px;
   font-size: 11.5px;
+}
+
+.bo-chev {
+  color: var(--text-muted);
+  font-size: 12px;
+  transition: transform 0.35s ease, color 0.2s ease;
+}
+
+.bo-row:hover .bo-chev {
+  color: var(--text);
+}
+
+.bo-row.open .bo-chev {
+  transform: rotate(180deg);
+}
+
+/* the details under a row (opened by tapping it) */
+.bo-detail {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.bo-detail > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bo-row.open .bo-detail {
+  grid-template-rows: 1fr;
+}
+
+.bo-detail-in {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  margin: 0 10px 10px;
+  padding: 18px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.35);
+  isolation: isolate;
+}
+
+.bo-detail-in::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgba(10, 10, 12, 0.96) 35%, rgba(10, 10, 12, 0.6)), var(--bg, none) center / cover;
+}
+
+.bo-row.open .bo-detail-in > * {
+  animation: bo-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.bo-row.open .bo-detail-in > :nth-child(2) {
+  animation-delay: 0.06s;
+}
+
+.bo-row.open .bo-detail-in > :nth-child(3) {
+  animation-delay: 0.12s;
+}
+
+.bo-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.bo-fact {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.bo-fact small {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.bo-fact b {
+  font-size: 22px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-fact span {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+}
+
+.bo-overview {
+  display: -webkit-box;
+  max-width: 760px;
+  margin: 0;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.bo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bo-actions .btn {
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 .bo-more {
@@ -15017,9 +15685,9 @@ a.bo-stat:hover {
   font-size: 28px;
 }
 
-/* your box office */
+/* ---------- your box office ---------- */
 .bo-yours {
-  margin-top: 44px;
+  margin-top: 48px;
 }
 
 .bo-yours .section-title i {
@@ -15028,26 +15696,88 @@ a.bo-stat:hover {
 }
 
 .bo-progress {
+  display: grid;
+  gap: 10px;
+  max-width: 420px;
   color: var(--text-muted);
 }
 
+.bo-progress-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--glass-bg-hover);
+  overflow: hidden;
+}
+
+.bo-progress-bar i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
 .bo-yours-hero {
+  position: relative;
   display: grid;
   gap: 6px;
+  min-height: 170px;
+  align-content: center;
+  overflow: hidden;
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(229, 9, 20, 0.22), transparent 60%),
+    radial-gradient(120% 140% at 0% 0%, rgba(229, 9, 20, 0.25), transparent 60%),
     var(--glass-bg);
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.bo-yours-hero.in {
+  opacity: 1;
+  transform: none;
+}
+
+.bo-yours-hero > :not(.bo-yours-posters) {
+  position: relative;
+  z-index: 1;
 }
 
 .bo-yours-hero b {
-  font-size: clamp(36px, 5vw, 52px);
+  font-size: clamp(38px, 5.5vw, 60px);
   font-weight: 900;
   letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
 }
 
 .bo-yours-hero small {
   color: var(--text-muted);
   font-size: 14px;
+}
+
+/* a fan of your biggest films on the right */
+.bo-yours-posters {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  display: flex;
+  transform: translateY(-50%);
+}
+
+.bo-yours-posters img {
+  width: 78px;
+  aspect-ratio: 2 / 3;
+  margin-left: -34px;
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+  transform: rotate(calc((var(--n) - 3) * 5deg)) translateY(calc(var(--n) * 2px));
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), margin 0.4s ease;
+}
+
+.bo-yours-hero:hover .bo-yours-posters img {
+  margin-left: -18px;
+  transform: rotate(calc((var(--n) - 3) * 3deg)) translateY(-6px);
 }
 
 .bo-yours .bo-stats {
@@ -15081,6 +15811,33 @@ a.bo-stat:hover {
   color: var(--text);
 }
 
+/* ---------- smaller screens ---------- */
+@media (max-width: 1000px) {
+  .bo-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bo-stage {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    min-height: 0;
+    padding: 24px;
+  }
+
+  .bo-podium {
+    justify-content: center;
+    height: 260px;
+  }
+
+  .bo-pod {
+    width: 104px;
+  }
+
+  .bo-yours-posters {
+    opacity: 0.35;
+  }
+}
+
 @media (max-width: 700px) {
   .bo-controls .top10-switch {
     width: 100%;
@@ -15094,18 +15851,30 @@ a.bo-stat:hover {
     flex: 1;
   }
 
-  .bo-top {
-    min-height: 300px;
+  .bo-stage {
     padding: 18px;
-    gap: 14px;
+    border-radius: 22px;
   }
 
-  .bo-top-poster {
-    width: 88px;
+  .bo-podium {
+    gap: 8px;
+    height: 220px;
   }
 
-  .bo-row {
-    grid-template-columns: 26px 44px minmax(0, 1fr);
+  .bo-pod {
+    width: 92px;
+  }
+
+  .bo-pod-step b {
+    font-size: 13px;
+  }
+
+  .bo-stat b {
+    font-size: 22px;
+  }
+
+  .bo-line {
+    grid-template-columns: 26px 44px minmax(0, 1fr) 14px;
     gap: 10px;
     padding: 10px;
   }
@@ -15123,13 +15892,18 @@ a.bo-stat:hover {
     width: 44px;
   }
 
+  .bo-chev {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+  }
+
   .bo-nums {
     grid-column: 3;
-    grid-auto-flow: column;
+    grid-row: 2;
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: start;
-    justify-items: start;
-    gap: 10px;
+    gap: 4px 10px;
     text-align: left;
   }
 
@@ -15140,56 +15914,119 @@ a.bo-stat:hover {
   .bo-nums .xr-verdict {
     margin: 0;
   }
+
+  .bo-plot-wrap {
+    margin: 0 -6px;
+    padding: 8px 2px 2px;
+    overflow-x: auto;
+  }
+
+  .bo-svg {
+    min-width: 640px;
+  }
+
+  .bo-yours-posters {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .bo-row,
   .bo-fill,
-  .bo-top-bg {
+  .bo-stat,
+  .bo-yours-hero,
+  .bo-dot-in,
+  .bo-zone,
+  .bo-pod-poster {
     transition: none;
+  }
+
+  .bo-bg.on,
+  .bo-stage-text,
+  .bo-stage-text > *,
+  .bo-pod,
+  .bo-fill::after,
+  .bo-row.open .bo-detail-in > * {
+    animation: none;
   }
 }
 
-/* (box office: the bars all end in the same place; the four numbers 4 across, 2 on smaller screens) */
-.bo-row {
-  grid-template-columns: 44px 56px minmax(0, 1fr) 150px;
+/* (podium: each poster stands on its step; the steps rise from the bottom edge: 1st tallest) */
+.bo-stage {
+  padding-bottom: 0;
 }
 
-.bo-stats {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.bo-stage-info {
+  padding-bottom: 32px;
 }
 
-.bo-budget {
-  background: rgba(0, 0, 0, 0.55);
+.bo-podium {
+  height: auto;
+}
+
+.bo-pod {
+  height: auto;
+}
+
+.bo-pod.gold {
+  --step: 120px;
+}
+
+.bo-pod.silver {
+  --step: 88px;
+}
+
+.bo-pod.bronze {
+  --step: 62px;
+}
+
+.bo-pod-poster {
+  margin: 0 10px 12px;
+}
+
+.bo-pod-step {
+  flex: none;
+  height: var(--step);
+  min-height: 0;
+  padding-top: 10px;
+}
+
+.bo-pod.bronze .bo-pod-step {
+  grid-auto-flow: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 0;
+  align-content: center;
 }
 
 @media (max-width: 1000px) {
-  .bo-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .bo-stage-info {
+    padding-bottom: 0;
   }
 }
 
 @media (max-width: 700px) {
-  .bo-row {
-    grid-template-columns: 26px 44px minmax(0, 1fr);
+  .bo-pod.gold {
+    --step: 96px;
   }
 
-  .bo-stat b {
-    font-size: 22px;
+  .bo-pod.silver {
+    --step: 70px;
   }
-}
 
-/* (box office, phones: the numbers on one line that wraps between them, never inside them) */
-.bo-nums > *,
-.bo-top-meta .xr-verdict {
-  white-space: nowrap;
-}
+  .bo-pod.bronze {
+    --step: 52px;
+  }
 
-@media (max-width: 700px) {
-  .bo-nums {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px 10px;
+  .bo-pod.bronze .bo-pod-step {
+    grid-auto-flow: row;
+    gap: 2px;
+  }
+
+  .bo-pod.bronze .bo-medal {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
   }
 }
