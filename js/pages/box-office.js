@@ -80,10 +80,10 @@
     <section class="bo-yours" hidden></section>
     <section class="bo-plot" hidden>
       <div class="bo-head">
-        <h2 class="section-title"><i class="fa-solid fa-magnifying-glass-chart"></i> Budget vs box office</h2>
-        <p class="bo-sub">Every film by what it cost and what it made. Point at one (or tap it) for the numbers.</p>
+        <h2 class="section-title"><i class="fa-solid fa-scale-unbalanced-flip"></i> What they cost vs what they made</h2>
+        <p class="bo-sub">Each line starts at the film's budget and ends at what it made worldwide: the longer the line, the more it made back. Tap a film to open it.</p>
       </div>
-      <div class="bo-plot-wrap"><div class="bo-tip" hidden></div></div>
+      <div class="bo-plot-wrap"></div>
     </section>
     <div class="bo-head bo-chart-head">
       <h2 class="section-title bo-chart-title"></h2>
@@ -273,122 +273,72 @@
     ].join("");
   }
 
-  /* ---------------- budget vs box office ---------------- */
+  /* ---------------- what they cost vs what they made ----------------
+     One row per film: a line from its budget (grey dot) to its worldwide gross (the coloured
+     dot, the verdict's colour), on one plain money scale. The longer the line, the more it made
+     back; a red line going left: it made less than it cost. The lines grow as they come into view. */
 
-  const W = 1000;
-  const H = 440;
-  const PAD = { l: 64, r: 110, t: 18, b: 44 };
+  const PLOT_ROWS = 20;
+  // a round step for the scale: $100M, $250M, $500M, $1B…
+  function niceStep(max) {
+    const raw = max / 5;
+    const p = 10 ** Math.floor(Math.log10(raw));
+    return [1, 2, 2.5, 5, 10].map((m) => m * p).find((s) => s >= raw);
+  }
+
   function plotHtml(list) {
-    const pts = list.filter((f) => f.budget > 0 && f.revenue > 0);
-    if (pts.length < 4) return "";
-    const lb = pts.map((f) => Math.log10(f.budget));
-    const lg = pts.map((f) => Math.log10(f.revenue));
-    const x0 = Math.min(...lb) - 0.12;
-    const x1 = Math.max(...lb) + 0.12;
-    const y0 = Math.min(...lg) - 0.12;
-    const y1 = Math.max(...lg) + 0.1;
-    const X = (v) => PAD.l + ((Math.log10(v) - x0) / (x1 - x0)) * (W - PAD.l - PAD.r);
-    const Y = (v) => H - PAD.b - ((Math.log10(v) - y0) / (y1 - y0)) * (H - PAD.t - PAD.b);
-    const bx0 = 10 ** x0;
-    const bx1 = 10 ** x1;
-    // the zones between the lines gross = k × budget
-    const zone = (k1, k2, cls) =>
-      `<polygon class="bo-zone ${cls}" points="${[
-        [X(bx0), Y(k1 * bx0)],
-        [X(bx1), Y(k1 * bx1)],
-        [X(bx1), Y(k2 * bx1)],
-        [X(bx0), Y(k2 * bx0)],
-      ]
-        .map((p) => p.map((n) => n.toFixed(1)).join(","))
-        .join(" ")}" />`;
-    const line = (k, label) => {
-      // the part of gross = k × budget inside the plot (log k + budget, on log scales)
-      const lk = Math.log10(k);
-      const xs = Math.max(x0, y0 - lk);
-      const xe = Math.min(x1, y1 - lk);
-      if (xs >= xe) return "";
-      const a = 10 ** xs;
-      const b = 10 ** xe;
-      const end = xe < x1; // (leaves through the top: the label goes above the end)
-      return `<line class="bo-kline" x1="${X(a).toFixed(1)}" y1="${Y(k * a).toFixed(1)}" x2="${X(b).toFixed(1)}" y2="${Y(k * b).toFixed(1)}" />
-        <text class="bo-klabel" x="${(X(b) + (end ? 0 : 8)).toFixed(1)}" y="${(Y(k * b) + (end ? -8 : 4)).toFixed(1)}"${end ? ' text-anchor="middle"' : ""}>${label}</text>`;
-    };
-    // round amounts for the axes: 1 / 2 / 5, or finer when the films are close together
-    const ticks = (a, b) => {
-      const steps = b - a < 0.8 ? [1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8] : [1, 2, 5];
-      const out = [];
-      for (let e = Math.floor(a); e <= Math.ceil(b); e++) steps.forEach((m) => Math.log10(m * 10 ** e) >= a && Math.log10(m * 10 ** e) <= b && out.push(m * 10 ** e));
-      return out;
-    };
-    const tickMoney = (v) => (v >= 1e9 ? `$${+(v / 1e9).toFixed(1)}B` : v >= 1e6 ? `$${+(v / 1e6).toFixed(0)}M` : `$${Math.round(v / 1e3)}K`);
-    const top = list[0] ? list[0].revenue : 1;
-    const dots = pts
-      .map((f, n) => {
-        const r = 11 + Math.sqrt(f.revenue / top) * 9;
-        const v = verdictOf(ratioOf(f));
-        return `<g class="bo-dot ${v[1]}" data-i="${films.indexOf(f)}" tabindex="0" role="link" aria-label="${esc(Lang.title(f))}: ${money(f.budget)} budget, ${money(f.revenue)} gross"
-            transform="translate(${X(f.budget).toFixed(1)} ${Y(f.revenue).toFixed(1)})" style="--d:${Math.min(n, 40) * 25}ms">
-          <g class="bo-dot-in">
-            <circle r="${(r + 2.5).toFixed(1)}" class="bo-ring" />
-            <image href="${posterOf(f, "w92")}" x="${-r}" y="${-r}" width="${2 * r}" height="${2 * r}" preserveAspectRatio="xMidYMin slice" clip-path="url(#bo-round)" />
-          </g>
-        </g>`;
-      })
-      .join("");
-    return `<svg class="bo-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Budget against worldwide gross">
-        <defs><clipPath id="bo-round" clipPathUnits="objectBoundingBox"><circle cx="0.5" cy="0.5" r="0.5" /></clipPath><clipPath id="bo-clip"><rect x="${PAD.l}" y="${PAD.t}" width="${W - PAD.l - PAD.r}" height="${H - PAD.t - PAD.b}" rx="14" /></clipPath></defs>
-        <g clip-path="url(#bo-clip)">
-          ${zone(0.001, 1, "red")}${zone(1, 2, "grey")}${zone(2, 5, "green")}${zone(5, 1e4, "gold")}
-          ${ticks(x0, x1).map((v) => `<line class="bo-grid" x1="${X(v).toFixed(1)}" x2="${X(v).toFixed(1)}" y1="${PAD.t}" y2="${H - PAD.b}" />`).join("")}
-          ${ticks(y0, y1).map((v) => `<line class="bo-grid" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" x1="${PAD.l}" x2="${W - PAD.r}" />`).join("")}
-        </g>
-        ${line(1, "1× Broke even")}${line(2, "2× Hit")}${line(5, "5× Blockbuster")}
-        ${ticks(x0, x1).map((v) => `<text class="bo-tick" x="${X(v).toFixed(1)}" y="${H - PAD.b + 22}" text-anchor="middle">${tickMoney(v)}</text>`).join("")}
-        ${ticks(y0, y1).map((v) => `<text class="bo-tick" x="${PAD.l - 10}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${tickMoney(v)}</text>`).join("")}
-        <text class="bo-axis" x="${(W - PAD.r + PAD.l) / 2}" y="${H - 4}" text-anchor="middle">Budget →</text>
-        <text class="bo-axis" x="14" y="${(H - PAD.b + PAD.t) / 2}" text-anchor="middle" transform="rotate(-90 14 ${(H - PAD.b + PAD.t) / 2})">Worldwide gross →</text>
-        <g class="bo-dots">${dots}</g>
-      </svg>`;
+    const rows = list.filter((f) => f.budget > 0 && f.revenue > 0).slice(0, PLOT_ROWS);
+    if (rows.length < 3) return "";
+    const step = niceStep(Math.max(...rows.map((f) => Math.max(f.revenue, f.budget))));
+    const top = Math.ceil(Math.max(...rows.map((f) => Math.max(f.revenue, f.budget))) / step) * step;
+    const at = (v) => `${((v / top) * 100).toFixed(2)}%`;
+    const ticks = [];
+    for (let v = 0; v <= top + 1; v += step) ticks.push(v);
+    const tickMoney = (v) => (v === 0 ? "$0" : v >= 1e9 ? `$${+(v / 1e9).toFixed(2)}B` : `$${Math.round(v / 1e6)}M`);
+    return `
+      <div class="bp-legend">
+        <span><i class="bp-key budget"></i> What it cost (budget)</span>
+        <span><i class="bp-key gross"></i> What it made worldwide</span>
+        <span class="bp-verdicts">
+          <span class="xr-verdict gold">Blockbuster 5×+</span><span class="xr-verdict green">Hit 2×+</span><span class="xr-verdict grey">Broke even</span><span class="xr-verdict red">Flop</span>
+        </span>
+      </div>
+      <div class="bp-chart" style="--rows:${rows.length}">
+        <div class="bp-scale" aria-hidden="true">${ticks.map((v) => `<span style="left:${at(v)}">${tickMoney(v)}</span>`).join("")}</div>
+        ${rows
+          .map((f, n) => {
+            const r = ratioOf(f);
+            const v = verdictOf(r);
+            const lo = Math.min(f.budget, f.revenue);
+            const hi = Math.max(f.budget, f.revenue);
+            return `<a class="bp-row ${v[1]}${f.revenue < f.budget ? " loss" : ""}" href="${titleUrl(f)}" style="--d:${n * 45}ms"
+                aria-label="${esc(Lang.title(f))}: cost ${money(f.budget)}, made ${money(f.revenue)}, ${r.toFixed(1)} times its budget">
+              <span class="bp-film"><img src="${posterOf(f, "w92")}" alt="" loading="lazy" /><span><strong>${esc(Lang.title(f))}</strong><small>${f.year || ""}</small></span></span>
+              <span class="bp-track">
+                ${ticks.map((t) => `<i class="bp-grid" style="left:${at(t)}"></i>`).join("")}
+                <span class="bp-line" style="left:${at(lo)};width:${at(hi - lo)}"></span>
+                <span class="bp-dot budget" style="left:${at(f.budget)}"><em>${money(f.budget)}</em></span>
+                <span class="bp-dot gross" style="left:${at(f.revenue)}"><em>${money(f.revenue)}</em></span>
+              </span>
+              <span class="bp-x"><b>${r.toFixed(1)}×</b><small>${v[0]}</small></span>
+            </a>`;
+          })
+          .join("")}
+      </div>`;
   }
 
   function paintPlot() {
-    const html = plotHtml(films);
+    const html = plotHtml(films.slice().sort((a, b) => b.revenue - a.revenue));
     const sec = $(".bo-plot");
     sec.hidden = !html;
     if (!html) return;
     const wrap = $(".bo-plot-wrap");
-    wrap.querySelector("svg") && wrap.querySelector("svg").remove();
-    wrap.insertAdjacentHTML("afterbegin", html);
-    const svg = wrap.querySelector("svg");
-    if (revealer) {
-      const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && (svg.classList.add("in"), io.disconnect()), { threshold: 0.2 });
-      io.observe(svg);
-    } else svg.classList.add("in");
-  }
-
-  function showTip(dot) {
-    const f = films[Number(dot.dataset.i)];
-    const tip = $(".bo-tip");
-    if (!f) return;
-    app.querySelectorAll(".bo-dot.hot").forEach((d) => d !== dot && d.classList.remove("hot"));
-    dot.classList.add("hot");
-    dot.parentNode.appendChild(dot); // (on top of the others)
-    tip.innerHTML = `<img src="${posterOf(f, "w92")}" alt="" />
-      <span><b>${esc(Lang.title(f))}</b> <small>${f.year || ""}</small>
-      <span class="bo-tip-nums">${money(f.budget)} <i class="fa-solid fa-arrow-right"></i> <b>${money(f.revenue)}</b></span>
-      ${verdictHtml(f)}</span>`;
-    tip.hidden = false;
-    const w = $(".bo-plot-wrap").getBoundingClientRect();
-    const d = dot.getBoundingClientRect();
-    const left = d.left + d.width / 2 - w.left;
-    const flip = left > w.width - 250;
-    tip.style.left = `${flip ? left - d.width / 2 - 12 : left + d.width / 2 + 12}px`;
-    tip.style.top = `${d.top + d.height / 2 - w.top}px`;
-    tip.classList.toggle("flip", flip);
-  }
-  function hideTip() {
-    $(".bo-tip").hidden = true;
-    app.querySelectorAll(".bo-dot.hot").forEach((d) => d.classList.remove("hot"));
+    wrap.innerHTML = html;
+    const chart = wrap.querySelector(".bp-chart");
+    if ("IntersectionObserver" in window) {
+      const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && (chart.classList.add("in"), io.disconnect()), { threshold: 0.15 });
+      io.observe(chart);
+    } else chart.classList.add("in");
   }
 
   /* ---------------- the chart ---------------- */
@@ -502,7 +452,6 @@
     page = 1;
     paintControls();
     setAddress();
-    hideTip();
     clearTimeout(stageTimer);
     $(".bo-chart-title").textContent = `Highest-grossing ${state.genre ? `${state.genre.toLowerCase()} ` : ""}films ${scopeLabel()}`;
     $(".bo-stage").innerHTML = '<div class="bo-stage-skel"></div>';
@@ -598,14 +547,6 @@
         () => details().then((d) => (d.videos || []).map((v) => v.key))
       );
     }
-    const dot = e.target.closest(".bo-dot");
-    if (dot) {
-      // a mouse: straight to the film; a finger: first the numbers, then (tapped again) the film
-      const f = films[Number(dot.dataset.i)];
-      if (e.pointerType === "mouse" || dot.classList.contains("hot") || !e.pointerType) return f && (location.href = titleUrl(f));
-      return showTip(dot);
-    }
-    if (!e.target.closest(".bo-plot-wrap")) hideTip();
     const line = e.target.closest(".bo-line");
     if (line && !e.target.closest("a")) return toggleRow(line.closest(".bo-row"));
     const more = e.target.closest(".bo-load");
@@ -618,8 +559,6 @@
       e.preventDefault();
       toggleRow(line.closest(".bo-row"));
     }
-    const dot = e.target.closest(".bo-dot");
-    if (dot && e.key === "Enter") location.href = titleUrl(films[Number(dot.dataset.i)]);
   });
   app.addEventListener("change", (e) => {
     if (e.target.name !== "year") return;
@@ -631,15 +570,7 @@
     if (e.pointerType !== "mouse") return;
     const pod = e.target.closest(".bo-pod");
     if (pod && !pod.classList.contains("on")) showStage(Number(pod.dataset.pod));
-    const dot = e.target.closest(".bo-dot");
-    if (dot) showTip(dot);
   });
-  app.addEventListener("pointerout", (e) => {
-    if (e.pointerType !== "mouse") return;
-    const dot = e.target.closest(".bo-dot");
-    if (dot && !(e.relatedTarget && dot.contains(e.relatedTarget))) hideTip();
-  });
-  app.addEventListener("focusin", (e) => e.target.closest && e.target.closest(".bo-dot") && showTip(e.target.closest(".bo-dot")));
   app.addEventListener(
     "mouseenter",
     (e) => e.target.classList && e.target.classList.contains("bo-stage") && hold(true),
@@ -652,10 +583,7 @@
   );
   // (a hidden tab doesn't turn the podium)
   document.addEventListener("visibilitychange", () => (document.hidden ? clearTimeout(stageTimer) : schedule()));
-  window.addEventListener("resize", () => {
-    moveChip();
-    hideTip();
-  });
+  window.addEventListener("resize", moveChip);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveChip);
 
   /* ---------------- your box office: the films you've watched ---------------- */
