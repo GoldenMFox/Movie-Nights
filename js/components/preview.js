@@ -16,7 +16,11 @@
   const { esc } = UI;
   const DELAY = 800; // ms of resting on a poster before the preview appears
   const PRELOAD = 300; // the preview is built (invisible) and the trailer starts loading this early
-  const REVEAL = 250; // after it starts playing, a moment for YouTube's own title to fade
+  // YouTube shows its own title bar and buttons over the first seconds of every video: the
+  // video stays hidden behind the picture until it has played this long (they're gone by
+  // then), and REVEAL_LATEST after it started at the latest
+  const REVEAL_AT = 2.5; // seconds into the video
+  const REVEAL_LATEST = 3200; // ms
 
   // connect to YouTube ahead of time, so the first video starts faster
   ["https://www.youtube.com", "https://i.ytimg.com", "https://www.google.com"].forEach((href) => {
@@ -228,7 +232,7 @@
   // always try: browsers that allow sound (site allowed to autoplay, or you've clicked on
   // the page) play it; the others pause or keep it muted, and then it carries on muted
   function trySound() {
-    if (!preview || !preview.classList.contains("show") || !preview.dataset.started || !muted || !wantSound) return;
+    if (!preview || !preview.classList.contains("show") || !preview.classList.contains("playing") || !muted || !wantSound) return;
     muted = false;
     preview.dataset.soundAt = Date.now();
     send("command", "unMute");
@@ -292,19 +296,24 @@
     if (!data || !data.event) return;
     const frame = preview.querySelector(".hp-frame");
     if (!frame || e.source !== frame.contentWindow) return;
-    // playing: fade the video in over the picture, show the sound button
+    // playing: fade the video in over the picture, show the sound button (once YouTube's own
+    // title and buttons have gone: REVEAL_AT seconds in, or REVEAL_LATEST at the latest)
     const state = data.event === "onStateChange" ? data.info : data.event === "infoDelivery" && data.info ? data.info.playerState : undefined;
-    // (a moment after it starts, once YouTube's own title / buttons have faded away)
+    const el = preview;
+    const reveal = () => {
+      if (el !== preview || el.classList.contains("playing") || !el.querySelector(".hp-frame")) return;
+      clearTimeout(el.revealTimer);
+      el.classList.add("playing");
+      el.querySelector(".hp-sound").hidden = false;
+      trySound();
+    };
     if (state === 1 && !preview.dataset.started) {
       preview.dataset.started = "1";
-      const el = preview;
-      setTimeout(() => {
-        if (el !== preview || !el.querySelector(".hp-frame")) return;
-        el.classList.add("playing");
-        el.querySelector(".hp-sound").hidden = false;
-        trySound();
-      }, REVEAL);
+      clearTimeout(preview.revealTimer);
+      preview.revealTimer = setTimeout(reveal, REVEAL_LATEST);
     }
+    const at = data.event === "infoDelivery" && data.info ? data.info.currentTime : undefined;
+    if (preview.dataset.started && typeof at === "number" && at >= REVEAL_AT) reveal();
     // the player reports it's still muted (sound refused): show that on the button
     const info = data.event === "infoDelivery" && data.info;
     if (info && info.muted === true && !muted && preview.dataset.soundAt && Date.now() - Number(preview.dataset.soundAt) < 3000) {
@@ -326,6 +335,7 @@
       frame.remove();
       preview.classList.remove("playing");
       delete preview.dataset.started;
+      clearTimeout(preview.revealTimer);
       const next = (preview.videoQueue || []).shift();
       if (next) playVideo(next);
     }
