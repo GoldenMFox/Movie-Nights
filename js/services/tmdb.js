@@ -1007,9 +1007,10 @@
   // the highest-grossing films worldwide: all time, or of one year, of one genre ("Action").
   // 20 a page with their budget and gross (kept a day)
   // (company: a studio's TMDB id, e.g. 420 = Marvel Studios)
-  async function boxOffice({ year, genre, page, company } = {}) {
+  // (after / before: release dates, "1990-01-01" / "1989-12-31": the classics for the inflation-adjusted chart)
+  async function boxOffice({ year, genre, page, company, after, before } = {}) {
     const g = genre && GENRES.find((x) => x[0] === genre);
-    const key = `bo:list:${year || "all"}:${g ? g[1] : "all"}:${company || "any"}:${page || 1}:${wantRu() ? "ru" : "en"}`;
+    const key = `bo:list:${year || "all"}:${g ? g[1] : "all"}:${company || "any"}:${after || ""}-${before || ""}:${page || 1}:${wantRu() ? "ru" : "en"}`;
     const cached = await cacheGet(key);
     if (cached && Date.now() - cached.savedAt < 86400000) return cached;
     const [d, ru] = await requestWithRu("/discover/movie", {
@@ -1017,6 +1018,8 @@
       primary_release_year: year || "",
       with_genres: g ? g[1] : "",
       with_companies: company || "",
+      "primary_release_date.gte": after || "",
+      "primary_release_date.lte": before || "",
       page: page || 1,
     });
     const films = await mapLimit(d.results || [], 5, async (r) => {

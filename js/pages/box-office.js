@@ -38,6 +38,7 @@
   const state = {
     year: /^\d{4}$/.test(params.get("year") || "") ? Number(params.get("year")) : null,
     genre: GENRES.includes(params.get("genre")) ? params.get("genre") : "",
+    real: params.get("real") === "1", // adjusted for inflation
     sort: "gross",
     show: "all", // all | seen | unseen
     view: Store.read("mn:boView", "list") === "posters" ? "posters" : "list",
@@ -95,6 +96,7 @@
       </div>
     </div>
     <div class="bo-tools">
+      <div class="bo-tools-left">
       ${
         Store.guest
           ? ""
@@ -104,6 +106,10 @@
         <button type="button" class="top10-tab" data-show="unseen"><i class="fa-regular fa-eye-slash"></i> Not seen yet <small></small></button>
       </div>`
       }
+      <button type="button" class="bo-infl${state.real ? " on" : ""}" aria-pressed="${state.real}" title="Every amount in 2025 dollars (US inflation), the classics ranked with today's films">
+        <i class="fa-solid fa-scale-balanced"></i> Adjusted for inflation <span class="bo-infl-track"><span></span></span>
+      </button>
+      </div>
       <div class="top10-switch bo-view" role="group" aria-label="View">
         <button type="button" class="top10-tab${state.view === "list" ? " active" : ""}" data-view="list" aria-label="List"><i class="fa-solid fa-list"></i> List</button>
         <button type="button" class="top10-tab${state.view === "posters" ? " active" : ""}" data-view="posters" aria-label="Posters"><i class="fa-solid fa-table-cells"></i> Posters</button>
@@ -111,7 +117,7 @@
     </div>
     <ol class="bo-chart"></ol>
     <div class="bo-more"></div>
-    <p class="bo-note"><i class="fa-solid fa-circle-info"></i> Worldwide gross and budgets from TMDB, in US dollars and not adjusted for inflation. The verdict compares the gross with the budget (5× Blockbuster, 2× Hit, 1× Broke even, less: Flop); profit is before the cinemas' share and marketing. TMDB has no weekend or daily numbers.</p>`;
+    <p class="bo-note"><i class="fa-solid fa-circle-info"></i> Worldwide gross and budgets from TMDB, in US dollars. "Adjusted for inflation" turns them into 2025 dollars with US inflation (the CPI), counting a film at its release year's prices, so classics that were re-released come out a little high. The verdict compares the gross with the budget (5× Blockbuster, 2× Hit, 1× Broke even, less: Flop); profit is before the cinemas' share and marketing. TMDB has no weekend or daily numbers.</p>`;
 
   const $ = (s) => app.querySelector(s);
 
@@ -142,7 +148,75 @@
     const q = new URLSearchParams();
     if (state.year != null) q.set("year", state.year);
     if (state.genre) q.set("genre", state.genre);
+    if (state.real) q.set("real", "1");
     history.replaceState(null, "", `box-office.html${q.toString() ? `?${q}` : ""}`);
+  }
+
+  /* ---------------- adjusted for inflation ----------------
+     "Adjusted for inflation" turns every amount into 2025 dollars with the US consumer price
+     index (CPI-U, yearly averages, 1982-84 = 100; 2025 approximate). A film's gross is counted
+     at its release year's prices (re-releases were later, so old films with many come out a
+     little high). For all time, the classics join the chart too: the biggest films from before
+     1990 and from 1990-2004 are fetched as well, then all ranked in today's money. */
+  const CPI_BASE_YEAR = 2025;
+  const CPI = {
+    1913: 9.9, 1914: 10, 1915: 10.1, 1916: 10.9, 1917: 12.8, 1918: 15.1, 1919: 17.3, 1920: 20, 1921: 17.9, 1922: 16.8, 1923: 17.1, 1924: 17.1,
+    1925: 17.5, 1926: 17.7, 1927: 17.4, 1928: 17.1, 1929: 17.1, 1930: 16.7, 1931: 15.2, 1932: 13.7, 1933: 13, 1934: 13.4, 1935: 13.7, 1936: 13.9,
+    1937: 14.4, 1938: 14.1, 1939: 13.9, 1940: 14, 1941: 14.7, 1942: 16.3, 1943: 17.3, 1944: 17.6, 1945: 18, 1946: 19.5, 1947: 22.3, 1948: 24.1,
+    1949: 23.8, 1950: 24.1, 1951: 26, 1952: 26.5, 1953: 26.7, 1954: 26.9, 1955: 26.8, 1956: 27.2, 1957: 28.1, 1958: 28.9, 1959: 29.1, 1960: 29.6,
+    1961: 29.9, 1962: 30.2, 1963: 30.6, 1964: 31, 1965: 31.5, 1966: 32.4, 1967: 33.4, 1968: 34.8, 1969: 36.7, 1970: 38.8, 1971: 40.5, 1972: 41.8,
+    1973: 44.4, 1974: 49.3, 1975: 53.8, 1976: 56.9, 1977: 60.6, 1978: 65.2, 1979: 72.6, 1980: 82.4, 1981: 90.9, 1982: 96.5, 1983: 99.6, 1984: 103.9,
+    1985: 107.6, 1986: 109.6, 1987: 113.6, 1988: 118.3, 1989: 124, 1990: 130.7, 1991: 136.2, 1992: 140.3, 1993: 144.5, 1994: 148.2, 1995: 152.4,
+    1996: 156.9, 1997: 160.5, 1998: 163, 1999: 166.6, 2000: 172.2, 2001: 177.1, 2002: 179.9, 2003: 184, 2004: 188.9, 2005: 195.3, 2006: 201.6,
+    2007: 207.3, 2008: 215.3, 2009: 214.5, 2010: 218.1, 2011: 224.9, 2012: 229.6, 2013: 233, 2014: 236.7, 2015: 237, 2016: 240, 2017: 245.1,
+    2018: 251.1, 2019: 255.7, 2020: 258.8, 2021: 271, 2022: 292.7, 2023: 304.7, 2024: 313.7, 2025: 322.2,
+  };
+  // how many 2025 dollars one dollar of that year is worth (later years count as 2025)
+  const inflation = (year) => {
+    const y = Math.max(1913, Math.min(CPI_BASE_YEAR, Number(year) || CPI_BASE_YEAR));
+    return CPI[CPI_BASE_YEAR] / CPI[y];
+  };
+  // a film in 2025 dollars (its original amounts kept, for the details)
+  const adjust = (f) => {
+    const k = inflation(f.year);
+    return Object.assign({}, f, { revenue: f.revenue * k, budget: f.budget * k, nominal: { revenue: f.revenue, budget: f.budget, k } });
+  };
+
+  // one page (20) of the chart: TMDB's, or (adjusted for inflation) of the pool ranked in 2025 dollars
+  const pools = new Map(); // "genre|year" -> Promise of the adjusted, ranked films
+  function realPool() {
+    const key = `${state.genre}|${state.year || ""}`;
+    if (!pools.has(key)) {
+      const q = { genre: state.genre };
+      // one year: the same order, only in today's money; all time: the classics join in
+      const asks =
+        state.year != null
+          ? [1, 2, 3].map((p) => ({ ...q, year: state.year, page: p }))
+          : [
+              ...[1, 2, 3].map((p) => ({ ...q, page: p })),
+              ...[1, 2].map((p) => ({ ...q, before: "1989-12-31", page: p })),
+              { ...q, after: "1990-01-01", before: "2004-12-31", page: 1 },
+            ];
+      pools.set(
+        key,
+        Promise.all(asks.map((a) => TMDB.boxOffice(a).catch(() => ({ results: [] })))).then((pages) => {
+          const seen = new Set();
+          return pages
+            .flatMap((p) => p.results)
+            // (not a film dated before cinemas had box offices: a wrong date on TMDB, e.g. "1886")
+            .filter((f) => f.year >= 1915 && !seen.has(f.tmdbId) && seen.add(f.tmdbId))
+            .map(adjust)
+            .sort((a, b) => b.revenue - a.revenue);
+        })
+      );
+      pools.get(key).catch(() => pools.delete(key));
+    }
+    return pools.get(key);
+  }
+  async function getPage(p) {
+    if (!state.real) return TMDB.boxOffice({ year: state.year, genre: state.genre, page: p });
+    const pool = await realPool();
+    return { results: pool.slice((p - 1) * 20, p * 20), totalPages: Math.max(1, Math.ceil(pool.length / 20)) };
   }
 
   /* ---------------- counting up (the big numbers, as they come into view) ---------------- */
@@ -225,6 +299,7 @@
         <a class="bo-top-title" href="${titleUrl(f)}">${esc(Lang.title(f))} <small>${f.year || ""}</small></a>
         <span class="bo-top-gross"><b data-count="${f.revenue}">${money(f.revenue)}</b> worldwide</span>
         <span class="bo-top-meta"><span>${f.budget ? `Made for ${money(f.budget)}` : "Budget unknown"}</span>${r ? verdictHtml(f) : ""}</span>
+        ${f.nominal ? `<span class="bo-top-then"><i class="fa-solid fa-clock-rotate-left"></i> ${money(f.nominal.revenue)} at the time (${f.year}) · in ${CPI_BASE_YEAR} dollars</span>` : ""}
       </div>`;
   }
 
@@ -284,7 +359,7 @@
         <b data-count="${count}" data-fmt="${f}">${fmt[f](count)}</b><small>${sub}</small>
       </${film ? "a" : "div"}>`;
     return [
-      tile("s-total", "fa-solid fa-sack-dollar", `The top ${list.length} together`, total, "money", `worldwide, ${scopeLabel()}`),
+      tile("s-total", "fa-solid fa-sack-dollar", `The top ${list.length} together`, total, "money", `worldwide, ${scopeLabel()}${state.real ? ` in ${CPI_BASE_YEAR} dollars` : ""}`),
       median ? tile("s-median", "fa-solid fa-scale-balanced", "Typical return", median, "x", "their budget, for the film in the middle") : "",
       best ? tile("s-best", "fa-solid fa-rocket", "Best return", ratioOf(best), "x", `${esc(Lang.title(best))}: ${money(best.budget)} → ${money(best.revenue)}`, best) : "",
       priciest ? tile("s-price", "fa-solid fa-coins", "Most expensive", priciest.budget, "money", `${esc(Lang.title(priciest))} (${priciest.year || "–"})`, priciest) : "",
@@ -612,6 +687,7 @@ ${skyFilms
           ${f.budget ? fact(f.revenue >= f.budget ? "Profit" : "Loss", `${f.revenue >= f.budget ? "" : "−"}${money(Math.abs(f.revenue - f.budget))}`, "gross minus budget") : fact("Budget", "Unknown", "TMDB doesn't have it")}
           ${r ? fact("Every $1 spent made", `$${r.toFixed(2)}`, verdictOf(r)[0]) : ""}
           ${fact("Rank by gross", `#${grossRank}`, esc(scopeLabel()))}
+          ${f.nominal ? fact("At the time", money(f.nominal.revenue), `in ${f.year} dollars (×${f.nominal.k.toFixed(1)} today)`) : ""}
           ${f.score ? fact("TMDB rating", `${f.score.toFixed(1)}`, "out of 10") : ""}
         </div>
         ${f.overview ? `<p class="bo-overview">${esc(f.overview)}</p>` : ""}
@@ -643,7 +719,7 @@ ${skyFilms
     try {
       // (3 rows' worth, a few pages at most)
       for (let tries = 0; tries < 3 && page < pages && sorted().length < posterCols() * 3; tries++) {
-        const res = await TMDB.boxOffice({ year: state.year, genre: state.genre, page: page + 1 });
+        const res = await getPage(page + 1);
         if (me !== run) return;
         page++;
         const seen = new Set(films.map((f) => f.tmdbId));
@@ -771,13 +847,14 @@ ${skyFilms
     setAddress();
     clearTimeout(stageTimer);
     $(".bo-chart-title").textContent = `Highest-grossing ${state.genre ? `${state.genre.toLowerCase()} ` : ""}films ${scopeLabel()}`;
+    $(".bo-chart-title").insertAdjacentHTML("beforeend", state.real ? ` <small class="bo-real-tag"><i class="fa-solid fa-scale-balanced"></i> in ${CPI_BASE_YEAR} dollars</small>` : "");
     $(".bo-stage").innerHTML = '<div class="bo-stage-skel"></div>';
     $(".bo-stage").classList.remove("ready");
     $(".bo-stats").innerHTML = '<div class="xr-card bo-stat skeleton"></div>'.repeat(4);
     $(".bo-chart").innerHTML = '<li class="bo-row skeleton"></li>'.repeat(6);
     $(".bo-more").innerHTML = "";
     try {
-      const res = await TMDB.boxOffice({ year: state.year, genre: state.genre, page: 1 });
+      const res = await getPage(1);
       if (me !== run) return;
       films = res.results;
       pages = res.totalPages;
@@ -811,7 +888,7 @@ ${skyFilms
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Loading…';
     try {
-      const res = await TMDB.boxOffice({ year: state.year, genre: state.genre, page: page + 1 });
+      const res = await getPage(page + 1);
       if (me !== run) return;
       page++;
       const seen = new Set(films.map((f) => f.tmdbId));
@@ -860,6 +937,13 @@ ${skyFilms
       if (sh.dataset.show === state.show) return;
       state.show = sh.dataset.show;
       return paintChart();
+    }
+    const infl = e.target.closest(".bo-infl");
+    if (infl) {
+      state.real = !state.real;
+      infl.classList.toggle("on", state.real);
+      infl.setAttribute("aria-pressed", state.real);
+      return load();
     }
     const vw = e.target.closest("[data-view]");
     if (vw) {
