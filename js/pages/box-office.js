@@ -106,7 +106,7 @@
         <button type="button" class="top10-tab" data-show="unseen"><i class="fa-regular fa-eye-slash"></i> Not seen yet <small></small></button>
       </div>`
       }
-      <button type="button" class="bo-infl${state.real ? " on" : ""}" aria-pressed="${state.real}" title="Every amount in 2025 dollars (US inflation), the classics ranked with today's films">
+      <button type="button" class="bo-infl${state.real ? " on" : ""}" aria-pressed="${state.real}" title="Every amount in today's dollars (US inflation), the classics ranked with today's films">
         <i class="fa-solid fa-scale-balanced"></i> Adjusted for inflation <span class="bo-infl-track"><span></span></span>
       </button>
       </div>
@@ -117,7 +117,7 @@
     </div>
     <ol class="bo-chart"></ol>
     <div class="bo-more"></div>
-    <p class="bo-note"><i class="fa-solid fa-circle-info"></i> Worldwide gross and budgets from TMDB, in US dollars. "Adjusted for inflation" turns them into 2025 dollars with US inflation (the CPI), counting a film at its release year's prices, so classics that were re-released come out a little high. The verdict compares the gross with the budget (5× Blockbuster, 2× Hit, 1× Broke even, less: Flop); profit is before the cinemas' share and marketing. TMDB has no weekend or daily numbers.</p>`;
+    <p class="bo-note"><i class="fa-solid fa-circle-info"></i> Worldwide gross and budgets from TMDB, in US dollars. "Adjusted for inflation" turns them into this year's dollars with US inflation (the CPI; this year's figure is an estimate until it's published), counting a film at its release year's prices, so classics that were re-released come out a little high. The verdict compares the gross with the budget (5× Blockbuster, 2× Hit, 1× Broke even, less: Flop); profit is before the cinemas' share and marketing. TMDB has no weekend or daily numbers.</p>`;
 
   const $ = (s) => app.querySelector(s);
 
@@ -153,12 +153,12 @@
   }
 
   /* ---------------- adjusted for inflation ----------------
-     "Adjusted for inflation" turns every amount into 2025 dollars with the US consumer price
-     index (CPI-U, yearly averages, 1982-84 = 100; 2025 approximate). A film's gross is counted
+     "Adjusted for inflation" turns every amount into this year's dollars with the US consumer
+     price index (CPI-U, yearly averages, 1982-84 = 100; the current year estimated until its
+     official average is out). A film's gross is counted
      at its release year's prices (re-releases were later, so old films with many come out a
      little high). For all time, the classics join the chart too: the biggest films from before
      1990 and from 1990-2004 are fetched as well, then all ranked in today's money. */
-  const CPI_BASE_YEAR = 2025;
   const CPI = {
     1913: 9.9, 1914: 10, 1915: 10.1, 1916: 10.9, 1917: 12.8, 1918: 15.1, 1919: 17.3, 1920: 20, 1921: 17.9, 1922: 16.8, 1923: 17.1, 1924: 17.1,
     1925: 17.5, 1926: 17.7, 1927: 17.4, 1928: 17.1, 1929: 17.1, 1930: 16.7, 1931: 15.2, 1932: 13.7, 1933: 13, 1934: 13.4, 1935: 13.7, 1936: 13.9,
@@ -170,19 +170,24 @@
     1996: 156.9, 1997: 160.5, 1998: 163, 1999: 166.6, 2000: 172.2, 2001: 177.1, 2002: 179.9, 2003: 184, 2004: 188.9, 2005: 195.3, 2006: 201.6,
     2007: 207.3, 2008: 215.3, 2009: 214.5, 2010: 218.1, 2011: 224.9, 2012: 229.6, 2013: 233, 2014: 236.7, 2015: 237, 2016: 240, 2017: 245.1,
     2018: 251.1, 2019: 255.7, 2020: 258.8, 2021: 271, 2022: 292.7, 2023: 304.7, 2024: 313.7, 2025: 322.2,
+    // (estimated: 2025 + about 2.8%, until the year's official average is out)
+    2026: 331.2,
   };
-  // how many 2025 dollars one dollar of that year is worth (later years count as 2025)
+  const CPI_ESTIMATED = [2026];
+  // today's money: this year's dollars (or the latest year in the table)
+  const CPI_BASE_YEAR = CPI[THIS_YEAR] ? THIS_YEAR : Math.max(...Object.keys(CPI).map(Number));
+  // how many of today's dollars one dollar of that year is worth
   const inflation = (year) => {
     const y = Math.max(1913, Math.min(CPI_BASE_YEAR, Number(year) || CPI_BASE_YEAR));
     return CPI[CPI_BASE_YEAR] / CPI[y];
   };
-  // a film in 2025 dollars (its original amounts kept, for the details)
+  // a film in today's dollars (its original amounts kept, for the details)
   const adjust = (f) => {
     const k = inflation(f.year);
     return Object.assign({}, f, { revenue: f.revenue * k, budget: f.budget * k, nominal: { revenue: f.revenue, budget: f.budget, k } });
   };
 
-  // one page (20) of the chart: TMDB's, or (adjusted for inflation) of the pool ranked in 2025 dollars
+  // one page (20) of the chart: TMDB's, or (adjusted for inflation) of the pool ranked in today's dollars
   const pools = new Map(); // "genre|year" -> Promise of the adjusted, ranked films
   function realPool() {
     const key = `${state.genre}|${state.year || ""}`;
@@ -847,7 +852,7 @@ ${skyFilms
     setAddress();
     clearTimeout(stageTimer);
     $(".bo-chart-title").textContent = `Highest-grossing ${state.genre ? `${state.genre.toLowerCase()} ` : ""}films ${scopeLabel()}`;
-    $(".bo-chart-title").insertAdjacentHTML("beforeend", state.real ? ` <small class="bo-real-tag"><i class="fa-solid fa-scale-balanced"></i> in ${CPI_BASE_YEAR} dollars</small>` : "");
+    $(".bo-chart-title").insertAdjacentHTML("beforeend", state.real ? ` <small class="bo-real-tag"><i class="fa-solid fa-scale-balanced"></i> in ${CPI_BASE_YEAR} dollars${CPI_ESTIMATED.includes(CPI_BASE_YEAR) ? " (estimated)" : ""}</small>` : "");
     $(".bo-stage").innerHTML = '<div class="bo-stage-skel"></div>';
     $(".bo-stage").classList.remove("ready");
     $(".bo-stats").innerHTML = '<div class="xr-card bo-stat skeleton"></div>'.repeat(4);
