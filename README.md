@@ -43,6 +43,7 @@ It updates by itself whenever the site is published.
 | Page | What it does |
 | --- | --- |
 | `discover.html` | Browse and search **all** movies, TV shows and anime on TMDB (trending, popular, in cinemas, coming soon, top rated, anime), or browse by genre. Search forgives typos ("forest gump" finds Forrest Gump) and hides shorts / posterless uploads. Unreleased titles get a "Coming soon · date" label (the cinema date in Romania). Add anything to your library or watchlist |
+| `search.html` | **Advanced search** (under the navbar search, in the profile menu, on Discover): every filter at once on all of TMDB, the results changing as you pick. Movies: genres (all of them), years or a decade, length, score, language, country, director (only the films they directed), actor, franchise (its films checked with their film facts), streaming in your country (or on your services), age rating (US), black & white; TV shows: genres, years, episode length, score, language, country, streaming. Sort: most popular, top rated, most voted, newest, oldest, box office. The filters in use show as chips (tap to remove); every filter is in the address, so a search can be bookmarked or shared. On a phone the filters fold into a panel ("Filters 3") |
 | `index.html` | Home, live from TMDB: this week's trending titles in the slideshow, **Top 10 today** (movies / TV shows switch), then rows for in cinemas, coming soon, popular and top rated movies / TV / anime. At the bottom, "your own rows at the bottom (Continue watching, recently added, your top rated…); your numbers are on the Profile page, "What should I watch?" is the shuffle button in the navbar. (Without a TMDB key it shows your own list instead.) |
 | `movies.html`, `tv-shows.html`, `anime.html` | Full lists with search, genre, sort, rating and year filters, and chips (All, **Watched**, Rated, Not rated, Favorites, Watchlist, New releases) |
 | `watchlist.html` | **Coming up** (release dates of movies you're waiting for, new seasons / episodes of your shows), then two rows, **Plan to watch** and **Favorites**; "See all" opens the full list below them, with a switch between the two, search, filters and **On my services**. (`favorites.html` just forwards here.) |
@@ -303,7 +304,7 @@ Movie-Nights-NEW/
 │   │   ├── trivia.js          movie trivia (title page)
 │   │   └── soundtrack.js      soundtrack with previews (title page)
 │   └── pages/                 one script per page
-│       ├── home.js, discover.js, browse.js (movies / TV / anime / favorites / watchlist)
+│       ├── home.js, discover.js, search.js (advanced search), browse.js (movies / TV / anime / favorites / watchlist)
 │       └── title.js, person.js, tier-list.js, profile.js, settings.js
 ├── images/
 │   ├── brand/                 logo, favicon

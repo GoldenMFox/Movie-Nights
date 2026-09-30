@@ -20139,3 +20139,440 @@ html.sm-lock {
     animation: none;
   }
 }
+
+/* ============================== Advanced search (search.html) ============================== */
+/* the filters in a glass column on the left (a fold-out panel on phones), the results on the
+   right with the filters in use as removable chips above them */
+
+.page-sub {
+  margin: -6px 0 18px;
+  color: var(--text-muted);
+}
+
+.as-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.as-sort {
+  margin-left: auto;
+}
+
+.as-toggle {
+  display: none;
+  border-radius: 999px;
+}
+
+.as-toggle b {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+}
+
+.as-toggle b:empty {
+  display: none;
+}
+
+.as-layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  align-items: start;
+  gap: 22px;
+}
+
+.as-filters {
+  position: sticky;
+  top: 84px;
+  display: grid;
+  gap: 4px;
+  max-height: calc(100vh - 100px);
+  padding: 8px 14px 16px;
+  overflow-y: auto;
+  border: 1px solid var(--glass-border);
+  border-radius: 22px;
+  background: var(--glass-bg);
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.as-group {
+  display: grid;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.as-group h3 {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.as-group h3 i {
+  margin-right: 4px;
+  color: var(--accent-hover);
+}
+
+.as-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.as-chip {
+  padding: 6px 11px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+.as-chip:hover {
+  border-color: rgba(229, 9, 20, 0.5);
+}
+
+.as-chip:active {
+  transform: scale(0.96);
+}
+
+.as-chip.on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(144, 13, 9, 0.35);
+}
+
+.as-years {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.as-years input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
+.as-years input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.as-group .glass-select {
+  width: 100%;
+}
+
+.as-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* a person / franchise: type, then pick */
+.as-person,
+.as-picked {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 6px 0 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+.as-person > i,
+.as-picked > i {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.as-person input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+
+.as-person:focus-within {
+  border-color: var(--accent);
+}
+
+.as-picked {
+  border-color: rgba(229, 9, 20, 0.55);
+  background: rgba(229, 9, 20, 0.12);
+}
+
+.as-picked span {
+  flex: 1;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.as-unpick {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(127, 127, 127, 0.18);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.as-suggest {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(24, 24, 28, 0.97);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+}
+
+.as-suggest[hidden] {
+  display: none;
+}
+
+.as-sug {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.as-sug:hover,
+.as-sug:focus-visible {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.as-sug img,
+.as-noimg {
+  flex: none;
+  width: 34px;
+  height: 46px;
+  border-radius: 7px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.as-noimg {
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.as-sug span {
+  display: grid;
+  min-width: 0;
+}
+
+.as-sug b {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.as-sug small {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.as-reset {
+  margin-top: 12px;
+  border-radius: 999px;
+}
+
+/* the filters in use */
+.as-active {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.as-active:empty {
+  display: none;
+}
+
+.as-on {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid rgba(229, 9, 20, 0.45);
+  border-radius: 999px;
+  background: rgba(229, 9, 20, 0.12);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  animation: wl-in 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.as-on i {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.as-on:hover {
+  background: rgba(229, 9, 20, 0.22);
+}
+
+.as-on.as-clear-all {
+  border-color: var(--glass-border);
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.as-note {
+  margin: -4px 0 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.as-results .result-count {
+  margin-top: 0;
+}
+
+/* while it looks: the results fade a little, placeholders pulse */
+.as-loading .as-results .movie-grid {
+  opacity: 0.75;
+  transition: opacity 0.2s;
+}
+
+.as-skel {
+  aspect-ratio: 2 / 3;
+  border-radius: 14px;
+  background: linear-gradient(100deg, var(--glass-bg) 30%, rgba(255, 255, 255, 0.08) 50%, var(--glass-bg) 70%) 0 0 / 300% 100%;
+  animation: as-shimmer 1.3s linear infinite;
+}
+
+@keyframes as-shimmer {
+  to {
+    background-position: -150% 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .as-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .as-toggle {
+    display: inline-flex;
+  }
+
+  .as-filters {
+    position: static;
+    display: none;
+    max-height: none;
+  }
+
+  #adv.as-open .as-filters {
+    display: grid;
+    animation: wl-in 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  #adv.as-open .as-toggle {
+    border-color: var(--accent);
+  }
+}
+
+@media (max-width: 520px) {
+  .as-sort {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .as-type {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .as-skel,
+  .as-on {
+    animation: none;
+  }
+}
+
+/* Advanced search: the link under the navbar search, and on Discover */
+.search-adv {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.search-adv i:first-child {
+  color: var(--accent-hover);
+}
+
+.search-adv i:last-child {
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.search-adv:hover {
+  color: #fff;
+}
+
+.gf-adv {
+  border-radius: 999px;
+  white-space: nowrap;
+}

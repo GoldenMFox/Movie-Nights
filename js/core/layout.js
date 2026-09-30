@@ -91,6 +91,7 @@
           <div class="search-panel">
             <input type="search" placeholder="Search movies, TV shows & anime..." aria-label="Search movies, TV shows and anime" autocomplete="off" />
             <ul class="search-results"></ul>
+            <a class="search-adv" href="search.html"><i class="fa-solid fa-sliders"></i> Advanced search <i class="fa-solid fa-chevron-right"></i></a>
           </div>
         </div>
         <div class="profile">
@@ -109,6 +110,7 @@
               <a href="tier-list.html" class="tablet-link"><i class="fa-solid fa-ranking-star"></i><span>Tier List</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="box-office.html" class="bo-menu-link"><i class="fa-solid fa-sack-dollar"></i><span>Box Office</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="profile.html"><i class="fa-solid fa-user"></i><span>Profile &amp; stats</span><i class="fa-solid fa-chevron-right"></i></a>
+              <a href="search.html"><i class="fa-solid fa-sliders"></i><span>Advanced search</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="#" data-action="add-title" class="owner-only"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="settings.html"><i class="fa-solid fa-gear"></i><span>Settings</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="#" class="install-app" hidden><i class="fa-solid fa-mobile-screen"></i><span>Install the app</span><i class="fa-solid fa-chevron-right"></i></a>

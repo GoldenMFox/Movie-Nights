@@ -1141,6 +1141,70 @@
     return f;
   }
 
+  /* ---------------- Advanced search and the Awards Explorer ---------------- */
+
+  // TMDB's discover, any filters: { results (the site's shape), totalPages, total }
+  async function discover(media, params) {
+    const [d, ru] = await requestWithRu(`/discover/${media}`, params);
+    const results = (d.results || []).map((r) => simplify(r, media));
+    return { results: applyRu(results, ru, media), totalPages: Math.min(d.total_pages || 1, 500), total: d.total_results || 0 };
+  }
+
+  // people by name, the best-known first: [{ id, name, photo, dept, known }]
+  async function searchPeople(query) {
+    const d = await request("/search/person", { query });
+    return (d.results || [])
+      .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+      .slice(0, 8)
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        photo: p.profile_path || "",
+        dept: p.known_for_department || "",
+        known: (p.known_for || []).map((k) => k.title || k.name).filter(Boolean).slice(0, 2),
+      }));
+  }
+
+  // a keyword's TMDB id ("black and white" -> 1417), looked up once (mn:keywords)
+  async function keywordId(name) {
+    const all = Store.read("mn:keywords", {});
+    if (all[name]) return all[name];
+    const d = await request("/search/keyword", { query: name });
+    const hit = (d.results || []).find((k) => k.name.toLowerCase() === name.toLowerCase()) || (d.results || [])[0];
+    if (!hit) return null;
+    all[name] = hit.id;
+    Store.write("mn:keywords", all);
+    return hit.id;
+  }
+
+  // films by TMDB id, as cards (title, year, poster…), a few at a time; kept in one record
+  // ("cards": { "movie-13": {...} }) for a month
+  let cardMap = null;
+  let cardSave = null;
+  async function cardsFor(ids, media = "movie") {
+    if (!cardMap) cardMap = (await cacheGet("cards")) || {};
+    const out = new Map();
+    const todo = [];
+    ids.forEach((id) => {
+      const had = cardMap[`${media}-${id}`];
+      if (had && Date.now() - had.at < 30 * 86400000) out.set(id, had);
+      else todo.push(id);
+    });
+    await mapLimit(todo, 6, async (id) => {
+      try {
+        const d = await request(`/${media}/${id}`);
+        const c = Object.assign(simplify(d, media), { at: Date.now() });
+        cardMap[`${media}-${id}`] = c;
+        out.set(id, c);
+      } catch (e) {}
+    });
+    if (todo.length) {
+      clearTimeout(cardSave);
+      cardSave = setTimeout(() => cacheSet("cards", cardMap), 600);
+    }
+    return out;
+  }
+
   // Trivia (js/components/trivia.js): a title's whole cast and crew ({ cast: [names], crew:
   // [{ name, job }] }), and a title's tagline. Kept for this visit only.
   const triviaMem = new Map();
@@ -1203,6 +1267,8 @@
   }
 
   window.TMDB = {
+    genreId: (name, media) => (GENRES.find((g) => g[0] === name) || [])[media === "movie" ? 1 : 2] || null,
+    discover, searchPeople, keywordId, cardsFor, store: { get: (k) => cacheGet(k), set: (k, v) => cacheSet(k, v) },
     facts, credits, tagline, moodPicks, boxOffice, boxOfficeOf, franchiseBoxOffice, searchCollections, yearTop, directorBoxOffice, searchDirectors,
     knownRecommendations, collection, findByImdb, findFilm, providersFor, providerCatalog, nextUp, enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos,
     seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, findMatch, person, findPerson, test, CATEGORIES,

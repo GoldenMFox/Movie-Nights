@@ -73,6 +73,7 @@
           ${Object.entries(GSORTS).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}
         </select>
       </span>
+      <a class="btn gf-adv" href="search.html"><i class="fa-solid fa-sliders"></i> Advanced search</a>
     </div>
     <div class="chips" role="group" aria-label="Category">
       <span class="chip-indicator intro" aria-hidden="true"></span>
