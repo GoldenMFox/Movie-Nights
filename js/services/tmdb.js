@@ -1006,15 +1006,17 @@
   }
   // the highest-grossing films worldwide: all time, or of one year, of one genre ("Action").
   // 20 a page with their budget and gross (kept a day)
-  async function boxOffice({ year, genre, page } = {}) {
+  // (company: a studio's TMDB id, e.g. 420 = Marvel Studios)
+  async function boxOffice({ year, genre, page, company } = {}) {
     const g = genre && GENRES.find((x) => x[0] === genre);
-    const key = `bo:list:${year || "all"}:${g ? g[1] : "all"}:${page || 1}:${wantRu() ? "ru" : "en"}`;
+    const key = `bo:list:${year || "all"}:${g ? g[1] : "all"}:${company || "any"}:${page || 1}:${wantRu() ? "ru" : "en"}`;
     const cached = await cacheGet(key);
     if (cached && Date.now() - cached.savedAt < 86400000) return cached;
     const [d, ru] = await requestWithRu("/discover/movie", {
       sort_by: "revenue.desc",
       primary_release_year: year || "",
       with_genres: g ? g[1] : "",
+      with_companies: company || "",
       page: page || 1,
     });
     const films = await mapLimit(d.results || [], 5, async (r) => {
@@ -1024,6 +1026,74 @@
     const result = { results: applyRu(films.filter(Boolean), ru, "movie"), totalPages: Math.min(d.total_pages || 1, 25), savedAt: Date.now() };
     cacheSet(key, result);
     return result;
+  }
+
+  // a franchise's films that are out, in release order, with their budget and gross
+  async function franchiseBoxOffice(id) {
+    const c = await collection(id);
+    const today = new Date().toISOString().slice(0, 10);
+    const films = await mapLimit(c.parts.filter((p) => p.released && p.released <= today), 5, async (p) => {
+      const n = await boxOfficeOf(p.tmdbId, p.released).catch(() => null);
+      return n && n.revenue > 0 ? Object.assign({}, p, n) : null;
+    });
+    return { name: c.name, results: films.filter(Boolean) };
+  }
+  // franchises by name: [{ id, name, poster }]
+  async function searchCollections(query) {
+    const d = await request("/search/collection", { query });
+    return (d.results || []).slice(0, 8).map((c) => ({ id: c.id, name: c.name, poster: c.poster_path || "" }));
+  }
+  // the films a person directed that are out, in release order, with their budget and gross
+  // (their 25 best-known, so a long career doesn't mean a hundred lookups)
+  async function directorBoxOffice(personId) {
+    const key = `bo:dir2:${personId}:${wantRu() ? "ru" : "en"}`;
+    const cached = await cacheGet(key);
+    if (cached && Date.now() - cached.savedAt < 7 * 86400000) return cached;
+    const [d, ru] = await Promise.all([
+      request(`/person/${personId}`, { append_to_response: "movie_credits" }),
+      wantRu() ? request(`/person/${personId}/movie_credits`, { language: "ru-RU" }).catch(() => null) : null,
+    ]);
+    const today = new Date().toISOString().slice(0, 10);
+    const seen = new Set();
+    const directed = ((d.movie_credits && d.movie_credits.crew) || [])
+      // (not concert films or documentaries)
+      .filter((c) => c.job === "Director" && c.release_date && c.release_date <= today && !(c.genre_ids || []).some((g) => g === 99 || g === 10402) && !seen.has(c.id) && seen.add(c.id))
+      .sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))
+      .slice(0, 25);
+    const films = await mapLimit(directed, 5, async (r) => {
+      const n = await boxOfficeOf(r.id, r.release_date).catch(() => null);
+      return n && n.revenue > 0 ? Object.assign(simplify(r, "movie"), n) : null;
+    });
+    const list = applyRu(films.filter(Boolean), ru && { results: ru.crew || [] }, "movie").sort((a, b) => a.released.localeCompare(b.released));
+    const result = { name: d.name || "", photo: d.profile_path || "", results: list, savedAt: Date.now() };
+    cacheSet(key, result);
+    return result;
+  }
+  // directors by name: [{ id, name, photo }]
+  async function searchDirectors(query) {
+    const d = await request("/search/person", { query });
+    return (d.results || [])
+      .filter((p) => p.known_for_department === "Directing")
+      .slice(0, 8)
+      .map((p) => ({ id: p.id, name: p.name, photo: p.profile_path || "" }));
+  }
+  // each year's highest-grossing film (a year's #1 is kept a day while the year is recent, a month after)
+  async function yearTop(year) {
+    const key = `bo:top:${year}:${wantRu() ? "ru" : "en"}`;
+    const cached = await cacheGet(key);
+    const age = year >= new Date().getFullYear() - 1 ? 86400000 : 30 * 86400000;
+    if (cached && Date.now() - cached.savedAt < age) return cached.film;
+    const [d, ru] = await requestWithRu("/discover/movie", { sort_by: "revenue.desc", primary_release_year: year });
+    let film = null;
+    for (const r of (d.results || []).slice(0, 3)) {
+      const n = await boxOfficeOf(r.id, r.release_date).catch(() => null);
+      if (n && n.revenue > 0) {
+        film = Object.assign(applyRu([simplify(r, "movie")], ru, "movie")[0], n);
+        break;
+      }
+    }
+    cacheSet(key, { film, savedAt: Date.now() });
+    return film;
   }
 
   // every country TMDB has streaming data for: [{ code, name }] (Settings → Streaming), kept a month
@@ -1037,7 +1107,7 @@
   }
 
   window.TMDB = {
-    boxOffice, boxOfficeOf,
+    boxOffice, boxOfficeOf, franchiseBoxOffice, searchCollections, yearTop, directorBoxOffice, searchDirectors,
     knownRecommendations, collection, findByImdb, findFilm, providersFor, providerCatalog, nextUp, enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos,
     seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, findMatch, person, findPerson, test, CATEGORIES,
     genreNames, genresFor, country, countryName, sameCountry, regions, clearCache,

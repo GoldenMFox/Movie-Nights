@@ -16527,3 +16527,193 @@ a.by-card:hover .by-blur {
 .sk-chart {
   margin-top: 26px;
 }
+
+/* ---------- the skyline: which films to compare (chart / franchise / director / studio / years / yours) ---------- */
+.sk-controls {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.sk-modes {
+  justify-self: start;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.sk-modes::-webkit-scrollbar {
+  display: none;
+}
+
+.sk-modes .top10-tab {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.sk-modes .top10-tab i {
+  margin-right: 5px;
+  font-size: 12px;
+}
+
+.sk-picks:empty {
+  display: none;
+}
+
+.sk-picks {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sk-search {
+  position: relative;
+  flex: 0 0 220px;
+  display: flex;
+  align-items: center;
+}
+
+.sk-search i {
+  position: absolute;
+  left: 14px;
+  color: var(--text-muted);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.sk-search input {
+  width: 100%;
+  height: 38px;
+  padding: 0 14px 0 36px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sk-search input:focus {
+  border-color: rgba(229, 9, 20, 0.55);
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.12);
+}
+
+.sk-chips {
+  flex: 1;
+  flex-wrap: nowrap;
+  margin: 0;
+  padding: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 90%, transparent);
+  mask-image: linear-gradient(90deg, #000 90%, transparent);
+}
+
+.sk-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.sk-chips .chip {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sk-chips .sk-hit {
+  border-style: dashed;
+  animation: sk-read-in 0.3s ease both;
+}
+
+.sk-chips .sk-hit i {
+  margin-right: 4px;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.sk-chips .sk-none {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* loading: grey columns breathing */
+.sk-loading {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  padding: 10px 0 6px;
+}
+
+.sk-loading p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.sk-skel {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  width: 100%;
+  height: 300px;
+}
+
+.sk-skel span {
+  flex: 1;
+  height: var(--h);
+  border-radius: 10px 10px 4px 4px;
+  background: var(--glass-bg-hover);
+  animation: bo-pulse 1.4s ease-in-out infinite;
+}
+
+.sk-skel span:nth-child(odd) {
+  animation-delay: 0.2s;
+}
+
+.sk-empty {
+  margin: 0;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.sk-empty i {
+  margin-right: 6px;
+}
+
+/* a few films (a trilogy): wider columns, in the middle */
+.sk-chart.few .sk-cols {
+  justify-content: center;
+  gap: 14px;
+}
+
+.sk-chart.few .sk-col {
+  flex: 0 1 110px;
+}
+
+@media (max-width: 900px) {
+  .sk-chart.few .sk-cols {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .sk-chart.few .sk-lines {
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .sk-picks {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sk-search {
+    flex-basis: auto;
+  }
+}

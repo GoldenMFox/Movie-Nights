@@ -83,6 +83,7 @@
         <h2 class="section-title"><i class="fa-solid fa-city"></i> What they cost vs what they made</h2>
         <p class="bo-sub">Each column is a film: as tall as what it made, the striped part at its foot what it cost. Point at one (or tap it) for its numbers.</p>
       </div>
+      <div class="sk-controls"></div>
       <div class="bo-plot-wrap"></div>
     </section>
     <div class="bo-head bo-chart-head">
@@ -274,52 +275,108 @@
   }
 
   /* ---------------- what they cost vs what they made: the poster skyline ----------------
-     The top 20 by gross as columns made of their posters: a column's height is what the film
-     made worldwide, the striped band at its foot what it cost. The readout above tells the film
-     you point at (the #1 at first). The columns rise one after another. */
+     Films as columns made of their posters: a column's height is what the film made worldwide,
+     the striped band at its foot what it cost. The readout above tells the film you point at.
+     Which films: the chart above (the page's year / genre), a franchise, a director, a studio
+     (their films in release order, or a studio's biggest), the #1 of each of the last 20 years,
+     or the biggest films you've watched. */
 
   const SKY = 20;
   let skyFilms = [];
+  let skyOpts = {};
+  const sky = { mode: "chart", pick: {} }; // pick: the franchise / director / studio picked, by mode
+  let skyRun = 0;
+  let mineFilms = null; // (the films you've watched, once Your box office has added them up)
+
+  const FRANCHISES = [
+    [1241, "Harry Potter"], [10, "Star Wars"], [86311, "The Avengers"], [328, "Jurassic Park"], [9485, "Fast & Furious"], [645, "James Bond"],
+    [119, "The Lord of the Rings"], [87096, "Avatar"], [295, "Pirates of the Caribbean"], [10194, "Toy Story"], [87359, "Mission: Impossible"], [263, "The Dark Knight"],
+    [531241, "Spider-Man (MCU)"], [86066, "Despicable Me"], [2150, "Shrek"], [131635, "The Hunger Games"], [8650, "Transformers"], [404609, "John Wick"], [33514, "Twilight"],
+  ];
+  const DIRECTORS = [
+    [525, "Christopher Nolan"], [488, "Steven Spielberg"], [2710, "James Cameron"], [137427, "Denis Villeneuve"], [138, "Quentin Tarantino"], [19271, "Anthony Russo"],
+    [45400, "Greta Gerwig"], [108, "Peter Jackson"], [1032, "Martin Scorsese"], [578, "Ridley Scott"], [7467, "David Fincher"], [510, "Tim Burton"], [865, "Michael Bay"], [15217, "Zack Snyder"],
+  ];
+  const STUDIOS = [
+    [420, "Marvel Studios"], [3, "Pixar"], [2, "Walt Disney Pictures"], [174, "Warner Bros."], [33, "Universal"], [1, "Lucasfilm"], [4, "Paramount"], [5, "Columbia (Sony)"],
+    [25, "20th Century"], [6704, "Illumination"], [521, "DreamWorks Animation"], [923, "Legendary"], [128064, "DC"], [1632, "Lionsgate"], [3172, "Blumhouse"], [41077, "A24"], [10342, "Studio Ghibli"],
+  ];
+  const SKY_MODES = {
+    chart: { label: "This chart", icon: "fa-ranking-star" },
+    franchise: { label: "Franchises", icon: "fa-layer-group", picks: FRANCHISES, search: "Find a franchise…" },
+    director: { label: "Directors", icon: "fa-clapperboard", picks: DIRECTORS, search: "Find a director…" },
+    studio: { label: "Studios", icon: "fa-building", picks: STUDIOS },
+    years: { label: "Year by year", icon: "fa-calendar-days" },
+    mine: { label: "Your films", icon: "fa-ticket" },
+  };
+
+  function skyControlsHtml() {
+    return `<div class="top10-switch sk-modes" role="group" aria-label="Which films to compare">${Object.entries(SKY_MODES)
+      .map(([k, m]) => `<button type="button" class="top10-tab${k === sky.mode ? " active" : ""}" data-sky-mode="${k}"${k === "mine" && !(mineFilms && mineFilms.length > 2) ? " hidden" : ""}><i class="fa-solid ${m.icon}"></i> ${m.label}</button>`)
+      .join("")}</div>
+      <div class="sk-picks"></div>`;
+  }
+
+  function paintPicks() {
+    const m = SKY_MODES[sky.mode];
+    const box = $(".sk-picks");
+    if (!m.picks) return (box.innerHTML = "");
+    const on = sky.pick[sky.mode] || m.picks[0][0];
+    const extra = (sky.found || []).filter((f) => f.mode === sky.mode);
+    box.innerHTML = `
+      ${m.search ? `<label class="sk-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" placeholder="${m.search}" aria-label="${m.search.replace("…", "")}" autocomplete="off" /></label>` : ""}
+      <div class="chips sk-chips">${extra
+        .concat(m.picks.map(([id, name]) => ({ id, name })))
+        .filter((p, i, all) => all.findIndex((x) => x.id === p.id) === i)
+        .map((p) => `<button type="button" class="chip${String(p.id) === String(on) ? " active" : ""}" data-sky-pick="${p.id}">${esc(p.name)}</button>`)
+        .join("")}</div>`;
+  }
 
   function readoutHtml(f, n) {
     const r = ratioOf(f);
-    const v = verdictOf(r);
+    const v = verdictOf(r) || ["Budget unknown", "grey"];
+    const tag =
+      skyOpts.what === "year" ? `The biggest film of ${f.year || ""}` : skyOpts.axis === "year" ? `${f.year || ""} · film ${n + 1} of ${skyFilms.length}` : `#${n + 1} · ${f.year || ""}`;
     return `<div class="sk-read-in ${v[1]}">
         <img src="${posterOf(f, "w185")}" alt="" />
         <div class="sk-read-text">
-          <small>#${n + 1} · ${f.year || ""}</small>
+          <small>${esc(tag)}</small>
           <strong>${esc(Lang.title(f))}</strong>
           <span class="sk-flow">
-            <span><em>Cost</em><b>${money(f.budget)}</b></span>
+            <span><em>Cost</em><b>${f.budget ? money(f.budget) : "?"}</b></span>
             <i class="fa-solid fa-arrow-right-long"></i>
             <span><em>Made</em><b>${money(f.revenue)}</b></span>
-            <span class="sk-net"><em>${f.revenue >= f.budget ? "Profit" : "Loss"}</em><b>${f.revenue >= f.budget ? "+" : "−"}${money(Math.abs(f.revenue - f.budget))}</b></span>
+            ${f.budget ? `<span class="sk-net"><em>${f.revenue >= f.budget ? "Profit" : "Loss"}</em><b>${f.revenue >= f.budget ? "+" : "−"}${money(Math.abs(f.revenue - f.budget))}</b></span>` : ""}
           </span>
         </div>
-        <div class="sk-mult"><b>${r.toFixed(1)}×</b><small>${v[0]}</small></div>
+        <div class="sk-mult"><b>${r ? `${r.toFixed(1)}×` : "?"}</b><small>${v[0]}</small></div>
       </div>`;
   }
 
-  function plotHtml(list) {
-    skyFilms = list.filter((f) => f.budget > 0 && f.revenue > 0).slice(0, SKY);
-    if (skyFilms.length < 3) return "";
-    const top = Math.max(...skyFilms.map((f) => Math.max(f.revenue, f.budget)));
+  // (opts.axis: "rank" (1, 2, 3…) or "year" (under each column, in release order); opts.what: "year" for each year's #1)
+  function plotHtml(list, opts = {}) {
+    skyOpts = opts;
+    skyFilms = list.filter((f) => f.revenue > 0).slice(0, SKY);
+    if (skyFilms.length < 2) return "";
+    const top = Math.max(...skyFilms.map((f) => Math.max(f.revenue, f.budget || 0)));
     const lines = [0.25, 0.5, 0.75, 1].map((p) => top * p);
+    const first = opts.axis === "year" ? skyFilms.indexOf(skyFilms.slice().sort((a, b) => b.revenue - a.revenue)[0]) : 0;
     return `
-      <div class="sk-read" aria-live="polite">${readoutHtml(skyFilms[0], 0)}</div>
-      <div class="sk-chart">
+      <div class="sk-read" aria-live="polite" data-n="${first}">${readoutHtml(skyFilms[first], first)}</div>
+      <div class="sk-chart${skyFilms.length < 8 ? " few" : ""}">
         <div class="sk-lines" aria-hidden="true">${lines.map((v) => `<span style="bottom:${((v / top) * 100).toFixed(2)}%"><em>${money(v)}</em></span>`).join("")}</div>
         <div class="sk-cols">${skyFilms
           .map((f, n) => {
-            const v = verdictOf(ratioOf(f));
-            return `<a class="sk-col ${v[1]}${n === 0 ? " on" : ""}" href="${titleUrl(f)}" data-sk="${n}" style="--h:${((f.revenue / top) * 100).toFixed(2)}%;--b:${Math.min(100, (f.budget / f.revenue) * 100).toFixed(2)}%;--d:${n * 55}ms"
-                aria-label="${esc(Lang.title(f))}: cost ${money(f.budget)}, made ${money(f.revenue)}">
+            const r = ratioOf(f);
+            const v = verdictOf(r) || ["", "grey"];
+            return `<a class="sk-col ${v[1]}${n === first ? " on" : ""}" href="${titleUrl(f)}" data-sk="${n}" style="--h:${((f.revenue / top) * 100).toFixed(2)}%;--b:${f.budget ? Math.min(100, (f.budget / f.revenue) * 100).toFixed(2) : 0}%;--d:${n * 55}ms"
+                aria-label="${esc(Lang.title(f))}: ${f.budget ? `cost ${money(f.budget)}, ` : ""}made ${money(f.revenue)}">
               <span class="sk-bar">
                 <span class="sk-poster" style="background-image:url('${posterOf(f, "w342")}')"></span>
                 <span class="sk-budget"></span>
-                <span class="sk-tag">${ratioOf(f).toFixed(1)}×</span>
+                <span class="sk-tag">${r ? `${r.toFixed(1)}×` : "?"}</span>
               </span>
-              <span class="sk-rank">${n + 1}</span>
+              <span class="sk-rank">${opts.axis === "year" ? f.year || "" : n + 1}</span>
             </a>`;
           })
           .join("")}</div>
@@ -335,24 +392,99 @@
     const f = skyFilms[n];
     if (!f) return;
     const read = $(".sk-read");
-    if (read.dataset.n === String(n)) return;
+    if (!read || read.dataset.n === String(n)) return;
     read.dataset.n = n;
     read.innerHTML = readoutHtml(f, n);
     app.querySelectorAll(".sk-col").forEach((c) => c.classList.toggle("on", c.dataset.sk === String(n)));
   }
 
-  function paintPlot() {
-    const html = plotHtml(films.slice().sort((a, b) => b.revenue - a.revenue));
-    const sec = $(".bo-plot");
-    sec.hidden = !html;
-    if (!html) return;
+  function showSky(html, empty) {
     const wrap = $(".bo-plot-wrap");
-    wrap.innerHTML = html;
+    wrap.innerHTML = html || `<p class="sk-empty"><i class="fa-regular fa-face-meh"></i> ${empty || "Not enough box office numbers to compare here."}</p>`;
     const chart = wrap.querySelector(".sk-chart");
+    if (!chart) return;
     if ("IntersectionObserver" in window) {
       const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && (chart.classList.add("in"), io.disconnect()), { threshold: 0.2 });
       io.observe(chart);
     } else chart.classList.add("in");
+  }
+
+  const skyLoading = (text) =>
+    `<div class="sk-loading"><div class="sk-skel">${Array.from({ length: 14 }, (_, n) => `<span style="--h:${30 + ((n * 37) % 60)}%"></span>`).join("")}</div><p>${text || "Loading…"}</p></div>`;
+
+  // the films for the picked comparison
+  async function paintPlot() {
+    const me = ++skyRun;
+    $(".bo-plot").hidden = sky.mode === "chart" && !films.length;
+    app.querySelectorAll("[data-sky-mode]").forEach((b) => b.classList.toggle("active", b.dataset.skyMode === sky.mode));
+    paintPicks();
+    const m = SKY_MODES[sky.mode];
+    const pickId = m.picks ? Number(sky.pick[sky.mode] || m.picks[0][0]) : null;
+    try {
+      if (sky.mode === "chart") return showSky(plotHtml(films.slice().sort((a, b) => b.revenue - a.revenue)));
+      if (sky.mode === "mine") return showSky(plotHtml((mineFilms || []).slice().sort((a, b) => b.revenue - a.revenue)));
+      $(".bo-plot-wrap").innerHTML = skyLoading();
+      if (sky.mode === "franchise") {
+        const r = await TMDB.franchiseBoxOffice(pickId);
+        if (me !== skyRun) return;
+        return showSky(plotHtml(r.results, { axis: "year", what: "film" }), `No box office numbers for ${esc(r.name)} yet.`);
+      }
+      if (sky.mode === "director") {
+        const r = await TMDB.directorBoxOffice(pickId);
+        if (me !== skyRun) return;
+        return showSky(plotHtml(r.results, { axis: "year", what: "film" }), `No box office numbers for ${esc(r.name)}'s films yet.`);
+      }
+      if (sky.mode === "studio") {
+        const r = await TMDB.boxOffice({ company: pickId });
+        if (me !== skyRun) return;
+        return showSky(plotHtml(r.results));
+      }
+      if (sky.mode === "years") {
+        const years = Array.from({ length: SKY }, (_, n) => THIS_YEAR - SKY + 1 + n);
+        const tops = new Array(years.length);
+        let done = 0;
+        let next = 0;
+        await Promise.all(
+          Array.from({ length: 4 }, async () => {
+            while (next < years.length) {
+              const i = next++;
+              tops[i] = await TMDB.yearTop(years[i]).catch(() => null);
+              done++;
+              const p = me === skyRun && $(".sk-loading p");
+              if (p) p.textContent = `Finding each year's #1… ${done} of ${years.length}`;
+            }
+          })
+        );
+        if (me !== skyRun) return;
+        return showSky(plotHtml(tops.filter(Boolean), { axis: "year", what: "year" }));
+      }
+    } catch (e) {
+      if (me === skyRun) showSky("", `Couldn't load it right now (${esc(e.message)}).`);
+    }
+  }
+
+  // franchise / director search
+  let skyTyping;
+  async function skySearch(input) {
+    clearTimeout(skyTyping);
+    const q = input.value.trim();
+    const mode = sky.mode;
+    if (q.length < 2) return;
+    skyTyping = setTimeout(async () => {
+      try {
+        const found = mode === "franchise" ? await TMDB.searchCollections(q) : await TMDB.searchDirectors(q);
+        if (mode !== sky.mode || input.value.trim() !== q) return;
+        const chips = $(".sk-chips");
+        chips.querySelectorAll(".sk-hit").forEach((c) => c.remove());
+        chips.insertAdjacentHTML(
+          "afterbegin",
+          found.length
+            ? found.map((f) => `<button type="button" class="chip sk-hit" data-sky-pick="${f.id}" data-name="${esc(f.name)}"><i class="fa-solid fa-magnifying-glass"></i> ${esc(f.name)}</button>`).join("")
+            : `<span class="chip sk-hit sk-none">Nothing found for "${esc(q)}"</span>`
+        );
+        chips.scrollLeft = 0;
+      } catch (e) {}
+    }, 350);
   }
 
   /* ---------------- the chart ---------------- */
@@ -481,7 +613,7 @@
       if (!films.length) {
         $(".bo-stage").innerHTML = "";
         $(".bo-stats").innerHTML = "";
-        $(".bo-plot").hidden = true;
+        if (sky.mode === "chart") $(".bo-plot").hidden = true;
         $(".bo-chart").innerHTML = `<li class="bo-none">No box office numbers for ${state.genre ? `${esc(state.genre.toLowerCase())} films ` : "films "}${esc(scopeLabel())} yet.</li>`;
         return;
       }
@@ -492,7 +624,8 @@
       $(".bo-stats").innerHTML = statsHtml(films);
       watchCounts($(".bo-stats"));
       reveal([...app.querySelectorAll(".bo-stats .bo-stat")]);
-      paintPlot();
+      // (the skyline follows the chart only when it shows the chart; the others stay)
+      if (sky.mode === "chart" || !$(".sk-col, .sk-empty, .sk-loading")) paintPlot();
       paintChart();
     } catch (e) {
       if (me !== run) return;
@@ -516,7 +649,7 @@
       paintChart();
       // (the ones already there don't come in again)
       app.querySelectorAll(".bo-row").forEach((r) => known.has(r.dataset.id) && r.classList.add("in"));
-      paintPlot();
+      if (sky.mode === "chart") paintPlot();
     } catch (e) {
       btn.disabled = false;
       btn.textContent = "Try again";
@@ -536,6 +669,20 @@
       if (g.dataset.genre === state.genre) return;
       state.genre = g.dataset.genre;
       return load();
+    }
+    // the skyline: which films to compare, and which franchise / director / studio
+    const sm = e.target.closest("[data-sky-mode]");
+    if (sm) {
+      if (sm.dataset.skyMode === sky.mode) return;
+      sky.mode = sm.dataset.skyMode;
+      return paintPlot();
+    }
+    const sp = e.target.closest("[data-sky-pick]");
+    if (sp) {
+      sky.pick[sky.mode] = sp.dataset.skyPick;
+      // (one found by searching stays among the chips)
+      if (sp.dataset.name) (sky.found = sky.found || []).unshift({ mode: sky.mode, id: Number(sp.dataset.skyPick), name: sp.dataset.name });
+      return paintPlot();
     }
     const so = e.target.closest("[data-sort]");
     if (so) {
@@ -580,6 +727,7 @@
       toggleRow(line.closest(".bo-row"));
     }
   });
+  app.addEventListener("input", (e) => e.target.closest(".sk-search") && skySearch(e.target));
   app.addEventListener("change", (e) => {
     if (e.target.name !== "year") return;
     state.year = e.target.value ? Number(e.target.value) : null;
@@ -648,6 +796,10 @@
       })
     );
     if (found.length < 3) return (box.hidden = true);
+    // (the skyline's "Your films": now it has them)
+    mineFilms = found.map((f) => Object.assign({}, f.item, { tmdbId: f.tmdbId, budget: f.budget, revenue: f.revenue }));
+    const mineBtn = app.querySelector('[data-sky-mode="mine"]');
+    if (mineBtn) mineBtn.hidden = false;
 
     const total = found.reduce((s, f) => s + f.revenue, 0);
     const spent = found.reduce((s, f) => s + f.budget, 0);
@@ -722,6 +874,7 @@
     reveal([...box.querySelectorAll(".bo-stat, .bo-yours-hero")]);
   }
 
+  $(".sk-controls").innerHTML = skyControlsHtml();
   load();
   yours();
 })();
