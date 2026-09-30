@@ -15,27 +15,27 @@
   const THIS_YEAR = new Date().getFullYear();
   const calm = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  const choice = Object.assign({ from: "watch", what: "any", mood: "", age: "any", who: "", time: "any", mine: false }, Store.read(SAVED, {}));
+  const choice = Object.assign({ from: "discover", what: "any", mood: "", age: "any", who: "", time: "any", mine: false }, Store.read(SAVED, {}));
 
   // each mood: the genres that fit it, and the ones Discover asks TMDB for
   const MOODS = {
-    fun: { emoji: "😄", label: "Fun", genres: ["Comedy", "Adventure", "Animation", "Family", "Fantasy", "Music"], ask: ["Comedy"] },
-    intense: { emoji: "😨", label: "Intense", genres: ["Thriller", "Action", "Horror", "Crime", "War", "Mystery"], ask: ["Thriller", "Action", "Horror", "Crime"] },
-    think: { emoji: "🧠", label: "Thought-provoking", genres: ["Science Fiction", "Mystery", "Documentary", "History", "Drama"], ask: ["Science Fiction", "Mystery", "History"] },
-    emotional: { emoji: "❤️", label: "Emotional", genres: ["Drama", "Romance", "Family", "Music", "War"], ask: ["Romance", "Drama"] },
+    fun: { icon: "fa-face-laugh-beam", label: "Fun", word: "fun", genres: ["Comedy", "Adventure", "Animation", "Family", "Fantasy", "Music"], ask: ["Comedy"] },
+    intense: { icon: "fa-bolt", label: "Intense", word: "intense", genres: ["Thriller", "Action", "Horror", "Crime", "War", "Mystery"], ask: ["Thriller", "Action", "Horror", "Crime"] },
+    think: { icon: "fa-brain", label: "Thought-provoking", short: "Deep", word: "thought-provoking", genres: ["Science Fiction", "Mystery", "Documentary", "History", "Drama"], ask: ["Science Fiction", "Mystery", "History"] },
+    emotional: { icon: "fa-heart", label: "Emotional", word: "moving", genres: ["Drama", "Romance", "Family", "Music", "War"], ask: ["Romance", "Drama"] },
   };
   const AGES = {
-    new: { emoji: "🆕", label: "New", hint: `${THIS_YEAR - 2} or later`, from: THIS_YEAR - 2 },
-    any: { emoji: "📼", label: "Any", hint: "Any year" },
-    classic: { emoji: "🏆", label: "Classics", hint: "Before 2000", to: 1999 },
+    new: { icon: "fa-wand-magic-sparkles", label: "New", word: "new", hint: `${THIS_YEAR - 2} or later`, from: THIS_YEAR - 2 },
+    any: { icon: "fa-infinity", label: "Any year", hint: "Any year" },
+    classic: { icon: "fa-film", label: "Classics", word: "classic", hint: "Before 2000", to: 1999 },
   };
   // who's watching: genres that suit the company (a plus), and ones that don't (a minus;
   // with the family they're left out altogether)
   const WHO = {
-    alone: { emoji: "👤", label: "Alone", like: ["Drama", "Science Fiction", "Mystery", "Thriller"], avoid: [] },
-    date: { emoji: "❤️", label: "Date", like: ["Romance", "Comedy", "Drama"], avoid: ["War", "Documentary", "Kids"] },
-    family: { emoji: "👨‍👩‍👧", label: "Family", like: ["Family", "Animation", "Adventure", "Comedy", "Fantasy"], avoid: ["Horror", "War", "Crime", "Thriller"], strict: true },
-    friends: { emoji: "👥", label: "Friends", like: ["Comedy", "Horror", "Action", "Thriller"], avoid: ["Documentary", "Romance"] },
+    alone: { icon: "fa-user", label: "Alone", phrase: "to watch <b>alone</b>", like: ["Drama", "Science Fiction", "Mystery", "Thriller"], avoid: [] },
+    date: { icon: "fa-champagne-glasses", label: "Date", phrase: "for a <b>date night</b>", like: ["Romance", "Comedy", "Drama"], avoid: ["War", "Documentary", "Kids"] },
+    family: { icon: "fa-children", label: "Family", phrase: "for the whole <b>family</b>", like: ["Family", "Animation", "Adventure", "Comedy", "Fantasy"], avoid: ["Horror", "War", "Crime", "Thriller"], strict: true },
+    friends: { icon: "fa-user-group", label: "Friends", phrase: "to watch with <b>friends</b>", like: ["Comedy", "Horror", "Action", "Thriller"], avoid: ["Documentary", "Romance"] },
   };
   const TYPES = { any: () => true, movie: (i) => i.type === "movie", tv: (i) => i.type === "tv", anime: (i) => i.type === "anime" };
   const TIMES = { any: null, short: 105, long: 150, episode: "episode" };
@@ -124,17 +124,17 @@
     if (choice.mood) {
       const m = hasAny(i, MOODS[choice.mood].genres);
       s += Math.min(m.length, 2) * 3;
-      if (m.length) why.push(`${MOODS[choice.mood].emoji} ${m[0]}`);
+      if (m.length) why.push(`<i class="fa-solid ${MOODS[choice.mood].icon}"></i> ${esc(m[0])}`);
     }
     if (choice.who) {
       const w = WHO[choice.who];
       const like = hasAny(i, w.like);
       s += (like.length ? Math.min(like.length, 2) * 1.5 : -1) - hasAny(i, w.avoid).length * 3;
-      if (like.length && choice.who !== "alone") why.push(`${w.emoji} ${w.label} night`);
+      if (like.length && choice.who !== "alone") why.push(`<i class="fa-solid ${w.icon}"></i> ${esc(w.label)} night`);
     }
     if (i.score) s += (i.score - 6.5) * 0.8; // TMDB's score (Discover)
     if (i.rating) s += (i.rating - 7) * 0.4; // yours (a rewatch)
-    if (choice.age !== "any" && i.year) why.push(`${AGES[choice.age].emoji} ${i.year}`);
+    if (choice.age !== "any" && i.year) why.push(`<i class="fa-solid ${AGES[choice.age].icon}"></i> ${i.year}`);
     return { s, why };
   }
 
@@ -197,38 +197,37 @@
 
   /* ---------------- the pop-up ---------------- */
 
-  function seg(name, options) {
-    return `<div class="pk-seg" role="group" data-seg="${name}">${options
+  // a row of pill buttons (the site's switches: the red pill glides to the pick). open: the
+  // picked one can be tapped again to leave it open (mood, company)
+  function seg(name, options, open) {
+    return `<div class="pk-seg${open ? " open" : ""}" role="group" data-seg="${name}">${options
       .map(([v, label]) => `<button type="button" data-v="${v}" class="${choice[name] === v ? "on" : ""}">${label}</button>`)
       .join("")}</div>`;
   }
-
-  // big emoji tiles; mood and company can be left open (tap the picked one again)
-  function tiles(name, map, open) {
-    return `<div class="pk-tiles${open ? " open" : ""}" role="group" data-tiles="${name}" style="--n:${Object.keys(map).length}">${Object.entries(map)
-      .map(
-        ([v, t]) => `<button type="button" data-v="${v}" class="pk-tile${choice[name] === v ? " on" : ""}" aria-pressed="${choice[name] === v}"${
-          t.hint ? ` title="${esc(t.hint)}"` : ""
-        }><span class="pk-emoji" aria-hidden="true">${t.emoji}</span><span>${esc(t.label)}</span></button>`
-      )
-      .join("")}</div>`;
-  }
+  const opt = (icon, label, short) =>
+    `<i class="fa-solid ${icon}" aria-hidden="true"></i><span>${short ? `<span class="pk-l">${label}</span><span class="pk-s">${short}</span>` : label}</span>`;
+  const row = (icon, label, body, n) => `<div class="pk-row" style="--d:${n * 55}ms"><span class="pk-lab"><i class="fa-solid ${icon}"></i> ${label}</span>${body}</div>`;
 
   function build() {
     overlay = Cards.makeOverlay(
       "picker-modal",
       `<div class="pk-ask">
-         <div class="pk-top">
-           <div class="pk-icon"><i class="fa-solid fa-shuffle"></i></div>
-           <div><h3>What should I watch?</h3><p class="pk-sub">Tell me the mood, I'll make a shortlist.</p></div>
+         <div class="pk-stage">
+           <div class="pk-bg"></div><div class="pk-bg"></div><div class="pk-shade"></div>
+           <div class="pk-stage-text">
+             <span class="pk-kicker"><i class="fa-solid fa-shuffle"></i> What should I watch?</span>
+             <p class="pk-sentence" aria-live="polite"></p>
+           </div>
+           <div class="pk-tally"><b class="pk-num">0</b><small>fit</small></div>
+           <span class="pk-cap"></span>
          </div>
          <div class="pk-form">
-           <div class="pk-row"><span>From</span>${seg("from", [["watch", "Watchlist"], ["fav", "Favorites"], ["discover", "Discover"]])}</div>
-           <div class="pk-row"><span>What</span>${seg("what", [["any", "Anything"], ["movie", "Movie"], ["tv", "Series"], ["anime", "Anime"]])}</div>
-           <div class="pk-q"><span>Mood?</span>${tiles("mood", MOODS, true)}</div>
-           <div class="pk-q"><span>How old?</span>${tiles("age", AGES)}</div>
-           <div class="pk-q"><span>Who's watching?</span>${tiles("who", WHO, true)}</div>
-           <div class="pk-row"><span>Time</span>${seg("time", [["any", "Any"], ["short", '<span class="pk-l">Under </span><span class="pk-s">≤ </span>1h45'], ["long", '<span class="pk-l">Under </span><span class="pk-s">≤ </span>2h30'], ["episode", '<span class="pk-l">An episode</span><span class="pk-s">Episode</span>']])}</div>
+           ${row("fa-layer-group", "From", seg("from", [["watch", opt("fa-bookmark", "Watchlist")], ["fav", opt("fa-heart", "Favorites")], ["discover", opt("fa-compass", "Discover")]]), 1)}
+           ${row("fa-clapperboard", "What", seg("what", [["any", opt("fa-shuffle", "Anything", "Any")], ["movie", opt("fa-film", "Movie")], ["tv", opt("fa-tv", "Series")], ["anime", opt("fa-dragon", "Anime")]]), 2)}
+           ${row("fa-masks-theater", "Mood", seg("mood", Object.entries(MOODS).map(([k, m]) => [k, opt(m.icon, m.label, m.short)]), true), 3)}
+           ${row("fa-calendar", "Era", seg("age", Object.entries(AGES).map(([k, a]) => [k, opt(a.icon, a.label, k === "any" ? "Any" : "")])), 4)}
+           ${row("fa-couch", "With", seg("who", Object.entries(WHO).map(([k, w]) => [k, opt(w.icon, w.label)]), true), 5)}
+           ${row("fa-clock", "Time", seg("time", [["any", opt("fa-infinity", "Any")], ["short", opt("fa-hourglass-start", "Under 1h45", "≤ 1h45")], ["long", opt("fa-hourglass-half", "Under 2h30", "≤ 2h30")], ["episode", opt("fa-tv", "An episode", "Episode")]]), 6)}
            <label class="menu-switch pk-mine" hidden>
              <i class="fa-solid fa-tv"></i><span>Only on my streaming services</span>
              <input type="checkbox" class="pk-mine-input" />
@@ -236,7 +235,7 @@
            </label>
          </div>
          <div class="pk-actions">
-           <button class="btn btn-primary pk-go" type="button"><i class="fa-solid fa-wand-magic-sparkles"></i> <span>Make my shortlist</span><em class="pk-count"></em></button>
+           <button class="btn btn-primary pk-go" type="button"><i class="fa-solid fa-wand-magic-sparkles"></i> <span>Make my shortlist</span></button>
          </div>
        </div>
        <div class="pk-short" hidden></div>`
@@ -245,27 +244,12 @@
     overlay.addEventListener("click", (e) => {
       const b = e.target.closest(".pk-seg button:not(:disabled)");
       if (b) {
-        const name = b.parentElement.dataset.seg;
-        choice[name] = b.dataset.v;
-        b.parentElement.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b));
+        const box = b.parentElement;
+        const name = box.dataset.seg;
+        // (mood and company: tap the picked one again to leave it open)
+        choice[name] = box.classList.contains("open") && choice[name] === b.dataset.v ? "" : b.dataset.v;
+        box.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x.dataset.v === choice[name]));
         if (name === "from") seen = new Set();
-        changed();
-      }
-      const t = e.target.closest(".pk-tile");
-      if (t) {
-        const box = t.parentElement;
-        const name = box.dataset.tiles;
-        choice[name] = box.classList.contains("open") && choice[name] === t.dataset.v ? "" : t.dataset.v;
-        if (name === "age" && !choice.age) choice.age = "any";
-        box.querySelectorAll(".pk-tile").forEach((x) => {
-          x.classList.toggle("on", x.dataset.v === choice[name]);
-          x.setAttribute("aria-pressed", x.dataset.v === choice[name]);
-        });
-        if (choice[name] === t.dataset.v && !calm()) {
-          t.classList.remove("pop");
-          void t.offsetWidth;
-          t.classList.add("pop");
-        }
         changed();
       }
       if (e.target.closest(".pk-go")) make();
@@ -282,22 +266,121 @@
       choice.mine = e.target.checked;
       changed();
     });
-    overlay.onclose = stopSpin;
+    overlay.onclose = () => {
+      stopSpin();
+      clearInterval(stageTimer);
+    };
   }
 
-  // a choice changed: remember it, and count what fits
-  function changed() {
-    Store.write(SAVED, choice);
-    const count = overlay.querySelector(".pk-count");
-    if (choice.from === "discover") {
-      count.textContent = "";
-      count.hidden = true;
-      return;
+  /* ---------------- the stage: what you're after, in words, over titles that fit ---------------- */
+
+  // "A thought-provoking classic movie to watch alone, from Discover."
+  function sentence() {
+    const noun = { any: "pick", movie: "movie", tv: "series", anime: "anime" }[choice.what];
+    const words = [choice.mood && MOODS[choice.mood].word, AGES[choice.age].word, noun].filter(Boolean);
+    const a = /^[aeiou]/i.test(words[0]) ? "An" : "A";
+    const who = choice.who ? ` ${WHO[choice.who].phrase}` : "";
+    const time = { any: "", short: ", under <b>1h45</b>", long: ", under <b>2h30</b>", episode: ", <b>one episode</b> long" }[choice.time];
+    const from = { watch: "from your <b>Watchlist</b>", fav: "from your <b>Favorites</b>", discover: "fresh from <b>Discover</b>" }[choice.from];
+    return `${a} ${words.map((w) => `<b>${w}</b>`).join(" ")}${who}${time}, ${from}.`;
+  }
+
+  // the backdrops behind it: titles that fit what you've picked (Discover: this week's
+  // trending), a new one every few seconds, slowly zooming out (like the Box Office stage)
+  let trending = null;
+  let stageList = [];
+  let stageAt = 0;
+  let stageTimer = null;
+  let stageLayer = 0;
+  const artOf = (i) => (i.backdrop ? Store.img(i.backdrop, "w1280") : i.poster ? Store.poster(Cards.posterOf(i), "w780") : "");
+  function stagePool() {
+    if (choice.from !== "discover") return quickFit().filter(fitsMood).filter(artOf);
+    if (!trending) {
+      trending = [];
+      TMDB.list("trending")
+        .then((r) => {
+          trending = (r.results || []).filter((h) => h.backdrop);
+          if (choice.from === "discover" && !overlay.querySelector(".pk-ask").hidden) paintStage(true);
+        })
+        .catch(() => {});
     }
-    const fit = quickFit();
-    const n = fit.filter(fitsMood).length;
-    count.hidden = false;
-    count.textContent = !n && fit.length ? `${fit.length} close` : `${n} fit`;
+    return trending.filter((h) => TYPES[choice.what](h));
+  }
+  function showBackdrop() {
+    if (!overlay || !stageList.length) return;
+    const item = stageList[stageAt++ % stageList.length];
+    const layers = overlay.querySelectorAll(".pk-bg");
+    const next = layers[(stageLayer = 1 - stageLayer)];
+    next.style.backgroundImage = `url("${artOf(item)}")`;
+    next.style.backgroundPosition = item.backdrop ? "center 25%" : "center 20%";
+    layers.forEach((l) => l.classList.toggle("on", l === next));
+    // (restart the slow zoom on the one coming in)
+    next.style.animation = "none";
+    void next.offsetWidth;
+    next.style.animation = "";
+    overlay.querySelector(".pk-cap").innerHTML = `<i class="fa-solid fa-film"></i> ${esc(Lang.title(item))}${item.year ? ` · ${item.year}` : ""}`;
+  }
+  function paintStage(fresh) {
+    stageList = shuffle(stagePool());
+    stageAt = 0;
+    clearInterval(stageTimer);
+    if (!stageList.length) {
+      overlay.querySelectorAll(".pk-bg").forEach((l) => l.classList.remove("on"));
+      overlay.querySelector(".pk-cap").textContent = "";
+    } else {
+      showBackdrop();
+      if (!calm()) stageTimer = setInterval(showBackdrop, 5000);
+    }
+    const s = overlay.querySelector(".pk-sentence");
+    s.innerHTML = sentence();
+    if (!fresh && !calm()) {
+      s.classList.remove("again");
+      void s.offsetWidth;
+      s.classList.add("again");
+    }
+  }
+  const shuffle = (a) => {
+    const x = a.slice();
+    for (let i = x.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [x[i], x[j]] = [x[j], x[i]];
+    }
+    return x;
+  };
+
+  // the number on the stage counts to the new one
+  let shownCount = 0;
+  function tally(n) {
+    const box = overlay.querySelector(".pk-tally");
+    const num = box.querySelector(".pk-num");
+    box.hidden = n == null;
+    if (n == null) return;
+    const from = shownCount;
+    shownCount = n;
+    if (calm() || from === n) return (num.textContent = n);
+    const t0 = performance.now();
+    const step = (t) => {
+      const p = Math.min(1, (t - t0) / 500);
+      num.textContent = Math.round(from + (n - from) * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+    box.classList.remove("pop");
+    void box.offsetWidth;
+    box.classList.add("pop");
+  }
+
+  // a choice changed: remember it, count what fits, redraw the stage
+  function changed(fresh) {
+    Store.write(SAVED, choice);
+    if (choice.from === "discover") tally(null);
+    else {
+      const fit = quickFit();
+      const n = fit.filter(fitsMood).length;
+      tally(n || fit.length);
+      overlay.querySelector(".pk-tally small").textContent = !n && fit.length ? "close" : "fit";
+    }
+    paintStage(fresh);
   }
 
   function ask() {
@@ -305,13 +388,14 @@
     overlay.querySelector(".pk-short").hidden = true;
     overlay.querySelector(".pk-ask").hidden = false;
     overlay.querySelector(".picker-modal").classList.remove("pk-wide");
+    paintStage(true);
   }
 
   async function make(again) {
     const go = overlay.querySelector(again ? ".pk-again" : ".pk-go");
     const label = go.innerHTML;
     go.disabled = true;
-    go.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Thinking…</span>';
+    go.innerHTML = '<i class="fa-solid fa-compact-disc fa-spin"></i> <span>Picking…</span>';
     let found;
     let rated = [];
     try {
@@ -366,16 +450,17 @@
 
   function tagsHtml() {
     const tags = [
-      choice.mood && `${MOODS[choice.mood].emoji} ${MOODS[choice.mood].label}`,
-      choice.age !== "any" && `${AGES[choice.age].emoji} ${AGES[choice.age].label}`,
-      choice.who && `${WHO[choice.who].emoji} ${WHO[choice.who].label}`,
-      choice.what !== "any" && { movie: "Movies", tv: "Series", anime: "Anime" }[choice.what],
-      choice.time !== "any" && { short: "Under 1h45", long: "Under 2h30", episode: "An episode" }[choice.time],
+      choice.mood && [MOODS[choice.mood].icon, MOODS[choice.mood].label],
+      choice.age !== "any" && [AGES[choice.age].icon, AGES[choice.age].label],
+      choice.who && [WHO[choice.who].icon, WHO[choice.who].label],
+      choice.what !== "any" && [{ movie: "fa-film", tv: "fa-tv", anime: "fa-dragon" }[choice.what], { movie: "Movies", tv: "Series", anime: "Anime" }[choice.what]],
+      choice.time !== "any" && ["fa-clock", { short: "Under 1h45", long: "Under 2h30", episode: "An episode" }[choice.time]],
     ].filter(Boolean);
-    return tags.map((t) => `<span>${esc(t)}</span>`).join("") || `<span>Anything goes</span>`;
+    return tags.map(([i, t]) => `<span><i class="fa-solid ${i}"></i> ${esc(t)}</span>`).join("") || `<span>Anything goes</span>`;
   }
 
   function show(found, total) {
+    clearInterval(stageTimer);
     const box = overlay.querySelector(".pk-short");
     overlay.querySelector(".pk-ask").hidden = true;
     box.hidden = false;
@@ -385,7 +470,7 @@
       </div>`;
     if (!shortlist.length) {
       overlay.querySelector(".picker-modal").classList.remove("pk-wide");
-      box.innerHTML = `${head}<div class="pk-none"><span class="pk-emoji" aria-hidden="true">🤷</span><p>${
+      box.innerHTML = `${head}<div class="pk-none"><span class="pk-none-icon" aria-hidden="true"><i class="fa-solid fa-film"></i></span><p>${
         found.error ? "TMDB didn't answer. Try again in a moment." : `Nothing ${FROM_LABEL[choice.from]} matches all that. Try fewer choices.`
       }</p><button class="btn btn-primary pk-edit" type="button"><i class="fa-solid fa-sliders"></i> Change the mood</button></div>`;
       return;
@@ -431,7 +516,7 @@
     }</small>
           <h4><a href="${url}">${esc(Lang.title(item))}</a></h4>
           <p>${meta}</p>
-          ${x.why.length ? `<div class="pk-why">${x.why.map((w) => `<span>${esc(w)}</span>`).join("")}</div>` : ""}
+          ${x.why.length ? `<div class="pk-why">${x.why.map((w) => `<span>${w}</span>`).join("")}</div>` : ""}
           ${services.length ? `<p class="pk-on"><i class="fa-solid fa-tv"></i> On ${services.map((s) => esc(s.name)).join(", ")}</p>` : ""}
           ${hit && item.overview ? `<p class="pk-plot">${esc(item.overview)}</p>` : ""}
         </div>
@@ -498,7 +583,7 @@
     shortlist.splice(current, 1);
     if (!shortlist.length) {
       const box = overlay.querySelector(".pk-short");
-      box.querySelector(".pk-feature").innerHTML = `<div class="pk-none"><span class="pk-emoji" aria-hidden="true">🍿</span><p>That was the whole shortlist.</p></div>`;
+      box.querySelector(".pk-feature").innerHTML = `<div class="pk-none"><span class="pk-none-icon" aria-hidden="true"><i class="fa-solid fa-flag-checkered"></i></span><p>That was the whole shortlist.</p></div>`;
       box.querySelector(".pk-strip").innerHTML = "";
       box.querySelector(".pk-spin").disabled = true;
       box.querySelector(".pk-again").disabled = false;
@@ -556,6 +641,8 @@
     const count = { watch: 0, fav: 0 };
     if (!Store.guest) Store.all().forEach((i) => (i.watchlist && count.watch++, i.favorite && count.fav++));
     const can = { watch: count.watch > 0, fav: count.fav > 0, discover: discoverOn() };
+    // it opens on Discover (new titles); your other choices are as you left them
+    choice.from = "discover";
     // nothing where you picked last time: the next place that has something
     if (!can[choice.from]) choice.from = ["watch", "fav", "discover"].find((f) => can[f]);
     overlay.querySelectorAll('[data-seg="from"] button').forEach((x) => {
@@ -565,9 +652,17 @@
     });
     overlay.querySelector(".pk-mine").hidden = !myServices().length;
     overlay.querySelector(".pk-mine-input").checked = !!choice.mine && myServices().length > 0;
-    changed();
+    shownCount = 0;
+    changed(true);
     ask();
+    // the rows rise in, one after another
+    const form = overlay.querySelector(".pk-ask");
+    form.classList.remove("enter");
+    void form.offsetWidth;
+    form.classList.add("enter");
     Cards.openModal(overlay);
+    // (no focus ring on the first button when it opens with a tap)
+    setTimeout(() => document.activeElement && document.activeElement.closest(".pk-seg") && document.activeElement.blur(), 80);
   }
 
   document.addEventListener("click", (e) => {
