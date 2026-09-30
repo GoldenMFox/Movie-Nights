@@ -165,7 +165,7 @@
           .map(
             (c) => `<button type="button" class="av-pick${c.photo === cur ? " on" : ""}" data-av-path="${esc(c.photo)}"
                 data-av-character="${esc(charName(c))}" data-av-actor="${esc(c.name)}" data-av-title="${esc(title)}" title="${esc(charName(c))} · ${esc(c.name)}">
-              <img src="${Store.img(c.photo, "w185")}" alt="" loading="lazy" />
+              <span class="av-face" style="--av:url('${Store.img(c.photo, "w185")}')"><img src="${Store.img(c.photo, "w185")}" alt="" loading="lazy" /></span>
               <span>${esc(charName(c))}</span>
             </button>`
           )
