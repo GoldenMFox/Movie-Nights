@@ -14,6 +14,7 @@
     { id: "anime", href: "anime.html", label: "Anime", icon: "fa-solid fa-clapperboard" },
     { id: "watchlist", href: "watchlist.html", label: "Watchlist", icon: "fa-solid fa-bookmark" },
     { id: "tiers", href: "tier-list.html", label: "Tier List", icon: "fa-solid fa-ranking-star" },
+    { id: "boxoffice", href: "box-office.html", label: "Box Office", icon: "fa-solid fa-sack-dollar" },
   ];
 
   const current = document.body.dataset.page;
@@ -105,7 +106,7 @@
             </div>
             <div class="menu-group">
               <a href="tier-list.html" class="tablet-link"><i class="fa-solid fa-ranking-star"></i><span>Tier List</span><i class="fa-solid fa-chevron-right"></i></a>
-              <a href="box-office.html"><i class="fa-solid fa-sack-dollar"></i><span>Box Office</span><i class="fa-solid fa-chevron-right"></i></a>
+              <a href="box-office.html" class="bo-menu-link"><i class="fa-solid fa-sack-dollar"></i><span>Box Office</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="profile.html"><i class="fa-solid fa-user"></i><span>Profile &amp; stats</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="#" data-action="add-title" class="owner-only"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="settings.html"><i class="fa-solid fa-gear"></i><span>Settings</span><i class="fa-solid fa-chevron-right"></i></a>

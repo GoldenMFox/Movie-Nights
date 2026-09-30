@@ -5969,7 +5969,8 @@ html.tablet .lang-toggle.in-profile {
 /* upright iPad: Tier List moves into the profile menu, the dark-mode button hides
    (the bar has room for six links) */
 @media (max-width: 1000px) {
-  html.tablet .nav-links li:has(> a[href="tier-list.html"]) {
+  html.tablet .nav-links li:has(> a[href="tier-list.html"]),
+  html.tablet .nav-links li:has(> a[href="box-office.html"]) {
     display: none;
   }
 
@@ -17414,4 +17415,28 @@ a.by-card:hover .by-blur {
 /* (light theme: a deeper gold icon, so it shows on the light chip) */
 html[data-theme="light"] .bo-infl:not(.on) > .fa-scale-balanced {
   color: #b07d05;
+}
+
+/* (tablets under 1100px: Box Office moves from the bar into the profile menu, so the eight
+   links don't crowd the logo and the buttons; Tier List follows under 1000px) */
+@media (max-width: 1100px) {
+  html.tablet .nav-links li:has(> a[href="box-office.html"]) {
+    display: none;
+  }
+
+  html.tablet .profile-menu .menu-group a.bo-menu-link {
+    display: flex;
+  }
+}
+
+/* Box Office in the profile menu only where the navbar doesn't show it: phones (tab bar, no navbar
+   links) and tablets under 1100px; computers have it in the navbar (or its side menu) */
+html:not(.app-ui) .profile-menu .menu-group a.bo-menu-link {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  html.tablet .profile-menu .menu-group a.bo-menu-link {
+    display: flex;
+  }
 }
