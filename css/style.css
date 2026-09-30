@@ -3243,12 +3243,18 @@ label.field {
   /* top: the logo on the left and your profile picture on the right; search and the
      page links live in the tab bar */
   html.app-ui .nav-bar > :not(.nav-logo):not(.nav-tools),
-  html.app-ui .nav-tools > :not(.profile) {
+  html.app-ui .nav-tools > :not(.profile):not(.nav-pick) {
     display: none;
   }
 
   html.app-ui .nav-tools {
     margin-left: auto;
+  }
+
+  /* "What should I watch?" stays next to your picture */
+  html.app-ui .nav-tools .nav-pick {
+    width: 36px;
+    height: 36px;
   }
 
   /* EN / RU is in the profile menu here (there's no side menu in the app) */
@@ -5952,7 +5958,7 @@ html.tablet .lang-toggle.in-profile {
   }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   html.tablet .nav-bar {
     padding: 0 14px;
     gap: 10px;
@@ -8064,28 +8070,7 @@ html:not(.is-owner) .owner-only {
   }
 }
 
-/* ============================== Watchlist page: picker button, Coming up ============================== */
-
-.wl-head {
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
-
-.wl-head .random-pick {
-  border-radius: 999px;
-}
-
-@media (max-width: 520px) {
-  .wl-head .random-pick span {
-    display: none;
-  }
-
-  .wl-head .random-pick {
-    width: 44px;
-    height: 44px;
-    padding: 0;
-  }
-}
+/* ============================== Watchlist page: Coming up ============================== */
 
 .wl-coming {
   margin-top: 8px;

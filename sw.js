@@ -12,7 +12,7 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v111";
+const VERSION = "v112";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [

@@ -191,18 +191,7 @@
     : listHtml;
   const panel = root.querySelector(".wl-panel");
 
-  // Watchlist page: "What should I watch?" next to the page title (js/components/picker.js)
-  if (isLists) {
-    const title = document.querySelector(".page-title");
-    const head = document.createElement("div");
-    head.className = "page-head wl-head";
-    title.before(head);
-    head.append(title);
-    head.insertAdjacentHTML(
-      "beforeend",
-      '<button class="btn btn-primary random-pick" type="button"><i class="fa-solid fa-shuffle"></i><span>What should I watch?</span></button>'
-    );
-  }
+  // ("What should I watch?" is the shuffle button in the navbar: js/core/layout.js)
 
   const grid = root.querySelector(".movie-grid");
   const chipsBox = root.querySelector(".chips");

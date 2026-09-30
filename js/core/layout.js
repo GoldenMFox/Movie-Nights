@@ -82,6 +82,7 @@
         ${langToggle("in-menu")}
       </div>
       <div class="nav-tools">
+        <button class="icon-btn random-pick nav-pick" type="button" aria-label="What should I watch?" title="What should I watch?"><i class="fa-solid fa-shuffle"></i></button>
         <button class="icon-btn theme-toggle" aria-label="Toggle dark mode">
           <i class="fa-solid fa-moon"></i><i class="fa-solid fa-sun"></i>
         </button>

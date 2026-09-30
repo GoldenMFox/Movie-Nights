@@ -43,7 +43,7 @@ It updates by itself whenever the site is published.
 | Page | What it does |
 | --- | --- |
 | `discover.html` | Browse and search **all** movies, TV shows and anime on TMDB (trending, popular, in cinemas, coming soon, top rated, anime), or browse by genre. Search forgives typos ("forest gump" finds Forrest Gump) and hides shorts / posterless uploads. Unreleased titles get a "Coming soon · date" label (the cinema date in Romania). Add anything to your library or watchlist |
-| `index.html` | Home, live from TMDB: this week's trending titles in the slideshow, **Top 10 today** (movies / TV shows switch), then rows for in cinemas, coming soon, popular and top rated movies / TV / anime. At the bottom, "your own rows at the bottom (Continue watching, recently added, your top rated…); your numbers are on the Profile page, "What should I watch?" on the Watchlist page. (Without a TMDB key it shows your own list instead.) |
+| `index.html` | Home, live from TMDB: this week's trending titles in the slideshow, **Top 10 today** (movies / TV shows switch), then rows for in cinemas, coming soon, popular and top rated movies / TV / anime. At the bottom, "your own rows at the bottom (Continue watching, recently added, your top rated…); your numbers are on the Profile page, "What should I watch?" is the shuffle button in the navbar. (Without a TMDB key it shows your own list instead.) |
 | `movies.html`, `tv-shows.html`, `anime.html` | Full lists with search, genre, sort, rating and year filters, and chips (All, **Watched**, Rated, Not rated, Favorites, Watchlist, New releases) |
 | `watchlist.html` | **Coming up** (release dates of movies you're waiting for, new seasons / episodes of your shows), then two rows, **Plan to watch** and **Favorites**; "See all" opens the full list below them, with a switch between the two, search, filters and **On my services**. (`favorites.html` just forwards here.) |
 | `title.html?id=...` | Details for one title (in your library = watched: no Watchlist button; still on the Watchlist: **On Watchlist** + **Watched**): your score, **Watched on** (change the date), trailer, where to watch, overview, **Your progress** (shows: the episode you're at), **Your notes**, **Seasons** (TV: each season's trailer), cast, media, reviews, "more like this" (your titles sharing the most genres) |
@@ -55,7 +55,7 @@ It updates by itself whenever the site is published.
 
 The navbar search (or `/` on any page) searches your library and all of TMDB.
 
-**What should I watch?** (Home and Watchlist): pick the mood (movie / series / anime, under
+**What should I watch?** (the shuffle button in the navbar, on every page, next to your picture on phones): pick the mood (movie / series / anime, under
 1h45 / 2h30 / one episode, a genre, only your streaming services) and it picks one title from
 your Watchlist, or from your Favorites for a rewatch.
 
