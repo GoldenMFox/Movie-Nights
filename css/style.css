@@ -20761,3 +20761,30 @@ html.sm-lock {
     display: none;
   }
 }
+
+/* Soundtrack: the album centred over the player (computers; phones keep the cover beside the text) */
+@media (min-width: 761px) {
+  .st-cover {
+    justify-self: center;
+    /* (the cover itself in the middle; the record slides out to its right) */
+    margin: 0;
+  }
+
+  .st-info {
+    justify-items: center;
+    text-align: center;
+  }
+
+  .st-switch {
+    justify-self: center;
+  }
+
+  .st-buttons {
+    justify-content: center;
+  }
+
+  .st-now {
+    justify-self: stretch;
+    text-align: left;
+  }
+}
