@@ -55,9 +55,15 @@ It updates by itself whenever the site is published.
 
 The navbar search (or `/` on any page) searches your library and all of TMDB.
 
-**What should I watch?** (the shuffle button in the navbar, on every page, next to your picture on phones): pick the mood (movie / series / anime, under
-1h45 / 2h30 / one episode, a genre, only your streaming services) and it picks one title from
-your Watchlist, or from your Favorites for a rewatch.
+**What should I watch?** (the shuffle button in the navbar, on every page, next to your picture on phones): pick where from (your Watchlist, your
+Favorites for a rewatch, or Discover: well-liked titles from TMDB you haven't added), what
+(movie / series / anime), the mood (😄 Fun, 😨 Intense, 🧠 Thought-provoking, ❤️ Emotional),
+how old (🆕 New, 📼 Any, 🏆 Classics), who's watching (👤 Alone, ❤️ Date, 👨‍👩‍👧 Family: no horror,
+war, crime or thrillers, 👥 Friends), the time you have and, optionally, only your streaming
+services. It makes a shortlist of five, best fits first, each with why it fits, and spins to
+one: tap another poster to look at it, ✕ drops one ("Not tonight"), Spin picks again, New
+shortlist draws five more. Trailer and Watchlist buttons on the pick. Your answers are
+remembered (`mn:picker`).
 
 **Borrowed from Netflix, HBO Max, Plex and Prime Video:**
 

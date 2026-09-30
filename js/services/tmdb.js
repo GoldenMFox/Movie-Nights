@@ -1099,6 +1099,40 @@
     return film;
   }
 
+  // "What should I watch?" → Discover: well-liked titles for a mood (js/components/picker.js).
+  // type "movie" | "tv" | "anime"; genres: any of these names (with need: all of need, and
+  // the first of genres); without: none of these;
+  // from / to: years; maxRuntime: minutes (a movie, or a show's episode); providers: your
+  // streaming services' ids; family: movies rated PG at most. -> { results, totalPages }
+  async function moodPicks({ type, genres, need, without, from, to, maxRuntime, providers, family, page } = {}) {
+    const media = type === "movie" ? "movie" : "tv";
+    const col = media === "movie" ? 1 : 2;
+    const ids = (names) => [...new Set((names || []).map((n) => (GENRES.find((g) => g[0] === n) || [])[col]).filter(Boolean))];
+    const dateKey = media === "movie" ? "primary_release_date" : "first_air_date";
+    const params = {
+      page: page || 1,
+      sort_by: "popularity.desc",
+      "vote_average.gte": 6.5,
+      "vote_count.gte": type === "movie" ? 400 : type === "anime" ? 80 : 150,
+      [`${dateKey}.lte`]: to ? `${to}-12-31` : new Date().toISOString().slice(0, 10),
+    };
+    if (from) params[`${dateKey}.gte`] = `${from}-01-01`;
+    if (type === "anime") {
+      params.with_genres = ANIMATION;
+      params.with_original_language = "ja";
+    } else if (need && need.length) params.with_genres = ids([...need, ...(genres || []).slice(0, 1)]).join(",");
+    else if (ids(genres).length) params.with_genres = ids(genres).join("|");
+    const avoid = ids(without);
+    if (media === "tv") avoid.push(...NOT_SHOWS.split("|").map(Number));
+    if (avoid.length) params.without_genres = avoid.join(",");
+    if (maxRuntime) params["with_runtime.lte"] = maxRuntime;
+    if (family && media === "movie") Object.assign(params, { certification_country: "US", "certification.lte": "PG" });
+    if (providers && providers.length) Object.assign(params, { with_watch_providers: providers.join("|"), watch_region: country() });
+    const [data, ru] = await requestWithRu(`/discover/${media}`, params);
+    const results = (data.results || []).filter((r) => r.poster_path).map((r) => simplify(r, media));
+    return { results: applyRu(results, ru, media), totalPages: Math.min(data.total_pages || 1, 500) };
+  }
+
   // every country TMDB has streaming data for: [{ code, name }] (Settings → Streaming), kept a month
   async function regions() {
     const saved = Store.read("mn:regions", null);
@@ -1110,7 +1144,7 @@
   }
 
   window.TMDB = {
-    boxOffice, boxOfficeOf, franchiseBoxOffice, searchCollections, yearTop, directorBoxOffice, searchDirectors,
+    moodPicks, boxOffice, boxOfficeOf, franchiseBoxOffice, searchCollections, yearTop, directorBoxOffice, searchDirectors,
     knownRecommendations, collection, findByImdb, findFilm, providersFor, providerCatalog, nextUp, enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos,
     seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, findMatch, person, findPerson, test, CATEGORIES,
     genreNames, genresFor, country, countryName, sameCountry, regions, clearCache,
