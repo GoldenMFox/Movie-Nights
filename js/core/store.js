@@ -289,6 +289,8 @@
   // photo itself. raw: always the photo's own address (what goes into your account)
   function myPhoto(raw) {
     const av = account ? getProfile().avatar : null;
+    // (a picture of the character itself, from a character database: { url, character, title })
+    if (av && av.url) return av.url;
     if (av && av.path) {
       const framed = read("mn:myPicFramed", null);
       if (!raw && framed && framed.path === av.path && framed.url) return framed.url;

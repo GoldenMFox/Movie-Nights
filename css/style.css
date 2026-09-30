@@ -13592,3 +13592,53 @@ img[data-my-pic] {
     height: 66px;
   }
 }
+
+/* the gallery's tabs: Movie & TV cast, Superheroes, Harry Potter… (scroll sideways when narrow) */
+.av-tabs-wrap {
+  max-width: 100%;
+  margin: 0 0 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.av-tabs-wrap::-webkit-scrollbar {
+  display: none;
+}
+
+.av-tabs {
+  flex-wrap: nowrap;
+  margin: 0;
+}
+
+.av-tabs .top10-tab {
+  flex: none;
+  padding: 7px 14px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.av-set {
+  text-align: left;
+}
+
+.av-set[hidden],
+.av-groups[hidden],
+.av-picked[hidden] {
+  display: none;
+}
+
+/* a picture of the character itself (not a TMDB close-up): just fills the circle, framed a
+   little above the middle, where faces usually are */
+.av-face.ext::before {
+  content: none;
+}
+
+.av-face.ext img {
+  position: static;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 18%;
+  -webkit-mask-image: none;
+  mask-image: none;
+}

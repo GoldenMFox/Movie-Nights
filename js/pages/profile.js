@@ -120,11 +120,15 @@
     toast("Name saved");
   });
 
-  /* ---------------- your picture: a character from a movie or show ---------------- */
+  /* ---------------- your picture: a character ---------------- */
 
-  // Like picking a Netflix avatar: characters grouped by title (the actor's TMDB photo, named
-  // after the character), or search any movie / show and pick from its cast. Saved with your
-  // profile (so it follows your account): { path, character, title, actor }.
+  // Like picking a Netflix avatar. Tabs (the site's pill switch):
+  //  - Movie & TV cast: characters grouped by title (the actor's TMDB photo, named after the
+  //    character), or search any movie / show and pick from its cast
+  //  - Superheroes, Harry Potter, Star Wars, Game of Thrones, Rick and Morty, Disney: pictures
+  //    of the characters themselves, from free fan-made character databases
+  // Saved with your profile (so it follows your account): { path, character, title, actor }
+  // for a TMDB photo, { url, character, title } for the others.
   const AVATAR_TITLES = [
     ["tv", 1396], ["movie", 155], ["tv", 66732], ["movie", 671], ["tv", 1399], ["movie", 299534],
     ["tv", 1668], ["movie", 603], ["tv", 2316], ["movie", 11], ["tv", 100088], ["movie", 22],
@@ -134,6 +138,69 @@
   // "Walter White / Heisenberg" -> "Walter White"; "Hermione Granger (voice)" -> "Hermione Granger"
   const charName = (c) => String(c.character || "").split(/\s+\/\s+/)[0].replace(/\s*\((voice|uncredited)\)/gi, "").trim() || c.name;
   const googlePhoto = () => !!(window.Cloud && Cloud.account() && Cloud.account().photo);
+  const getJson = (url) => fetch(url).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`error ${r.status}`))));
+
+  // the best-known heroes first, then everyone else A to Z
+  const TOP_HEROES = ["Iron Man", "Captain America", "Thor", "Hulk", "Black Widow", "Spider-Man", "Black Panther", "Doctor Strange", "Wolverine", "Deadpool", "Scarlet Witch", "Vision", "Hawkeye", "Thanos", "Loki", "Groot", "Rocket Raccoon", "Star-Lord", "Venom", "Batman", "Superman", "Wonder Woman", "Joker", "Harley Quinn", "Flash", "Aquaman", "Green Lantern", "Catwoman", "Cyborg", "Robin"];
+  // Disney has no "best-known first" order: these are looked up by name
+  const TOP_DISNEY = ["Mickey Mouse", "Minnie Mouse", "Donald Duck", "Goofy", "Simba", "Elsa", "Anna", "Olaf", "Moana", "Stitch", "Woody", "Buzz Lightyear", "Ariel", "Aladdin", "Genie", "Belle", "Cinderella", "Mulan", "Rapunzel", "Nemo", "Dory", "Winnie the Pooh", "Baloo", "Pumbaa", "Timon", "Maui", "Jack Sparrow", "Hercules"];
+  const disneyPick = (list, name) => (list || []).find((c) => c.imageUrl && c.name.toLowerCase() === name.toLowerCase()) || (list || []).find((c) => c.imageUrl);
+  const disneyItem = (c) => ({ name: c.name, img: c.imageUrl, title: (c.films && c.films[0]) || (c.tvShows && c.tvShows[0]) || "Disney" });
+  const rickItem = (c) => ({ name: c.name, img: c.image, title: "Rick and Morty" });
+
+  // each set: load() -> [{ name, img, title }] (kept for this visit); find(q) searches the
+  // whole set when it's too big to load at once
+  const SETS = {
+    heroes: {
+      label: "Superheroes",
+      load: async () => {
+        const all = await getJson("https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/all.json");
+        const rank = (h) => (TOP_HEROES.includes(h.name) ? TOP_HEROES.indexOf(h.name) : 999);
+        const seen = new Set();
+        return all
+          .filter((h) => h.images && h.images.md && !seen.has(h.name) && seen.add(h.name))
+          .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
+          .map((h) => ({ name: h.name, img: h.images.md, title: (h.biography && h.biography.publisher) || "Superheroes" }));
+      },
+    },
+    hp: {
+      label: "Harry Potter",
+      load: async () => (await getJson("https://hp-api.onrender.com/api/characters")).filter((c) => c.image).map((c) => ({ name: c.name, img: c.image, title: "Harry Potter" })),
+    },
+    sw: {
+      label: "Star Wars",
+      load: async () => (await getJson("https://cdn.jsdelivr.net/gh/akabab/starwars-api@0.2.1/api/all.json")).filter((c) => c.image).map((c) => ({ name: c.name, img: c.image, title: "Star Wars" })),
+    },
+    got: {
+      label: "Game of Thrones",
+      load: async () => (await getJson("https://thronesapi.com/api/v2/Characters")).filter((c) => c.imageUrl).map((c) => ({ name: c.fullName, img: c.imageUrl, title: "Game of Thrones" })),
+    },
+    rick: {
+      label: "Rick and Morty",
+      load: async () => (await getJson("https://rickandmortyapi.com/api/character")).results.map(rickItem),
+      find: async (q) => {
+        try {
+          return (await getJson(`https://rickandmortyapi.com/api/character/?name=${encodeURIComponent(q)}`)).results.map(rickItem);
+        } catch (e) {
+          return []; // (nobody by that name: the API answers "not found")
+        }
+      },
+    },
+    disney: {
+      label: "Disney",
+      load: async () => {
+        const found = await Promise.all(
+          TOP_DISNEY.map((n) => getJson(`https://api.disneyapi.dev/character?name=${encodeURIComponent(n)}`).then((d) => disneyPick(Array.isArray(d.data) ? d.data : [d.data], n)).catch(() => null))
+        );
+        return found.filter(Boolean).map(disneyItem);
+      },
+      find: async (q) => {
+        const d = await getJson(`https://api.disneyapi.dev/character?name=${encodeURIComponent(q)}&pageSize=60`);
+        return (Array.isArray(d.data) ? d.data : [d.data]).filter((c) => c && c.imageUrl).map(disneyItem);
+      },
+    },
+  };
+  const loaded = {}; // set -> Promise of its characters
 
   // "as Cooper · Interstellar" under your name
   function paintAs() {
@@ -143,21 +210,22 @@
     if (av) as.innerHTML = `<i class="fa-solid fa-masks-theater"></i> as <b>${esc(av.character)}</b> · ${esc(av.title)}`;
   }
 
+  const avKey = (av) => (av ? av.path || av.url : "");
   function setAvatar(av) {
     Store.setProfile({ avatar: av || undefined });
     UI.paintMyPic();
-    // (then the version framed for a circle, a moment later)
+    // (a TMDB photo is then framed for a circle, a moment later)
     UI.frameMyPic().then((made) => made && UI.paintMyPic());
     paintAs();
     if (avOverlay) {
-      avOverlay.querySelectorAll(".av-pick").forEach((b) => b.classList.toggle("on", !!av && b.dataset.avPath === av.path));
+      avOverlay.querySelectorAll(".av-pick").forEach((b) => b.classList.toggle("on", !!av && (b.dataset.avPath || b.dataset.avUrl) === avKey(av)));
       avOverlay.querySelector(".av-google").hidden = !av;
     }
   }
 
-  // one title's characters (up to max)
+  // one title's cast (up to max): the photo framed in its circle (styles: .av-face)
   function avGroup(d, max) {
-    const cur = (Store.getProfile().avatar || {}).path;
+    const cur = avKey(Store.getProfile().avatar);
     const cast = (d.cast || []).filter((c) => c.photo).slice(0, max);
     if (!cast.length) return "";
     const title = Lang.title(d);
@@ -175,45 +243,114 @@
       </section>`;
   }
 
+  // a set's characters (pictures of the characters themselves)
+  function setGrid(list) {
+    const cur = avKey(Store.getProfile().avatar);
+    return `<div class="av-grid">${list
+      .map(
+        (c) => `<button type="button" class="av-pick${c.img === cur ? " on" : ""}" data-av-url="${esc(c.img)}" data-av-character="${esc(c.name)}" data-av-title="${esc(c.title)}" title="${esc(c.name)} · ${esc(c.title)}">
+            <span class="av-face ext"><img src="${esc(c.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" /></span>
+            <span>${esc(c.name)}</span>
+          </button>`
+      )
+      .join("")}</div>`;
+  }
+
   let avOverlay = null;
   let avTyping;
+  let avTab = "cast";
+  let avRun = 0; // (answers for a tab you've left are dropped)
+
   function openAvatars() {
     if (!TMDB.enabled()) return toast("Choosing a character needs TMDB");
     if (!avOverlay) {
+      const tabs = [["cast", "Movie & TV cast"]].concat(Object.entries(SETS).map(([k, s]) => [k, s.label]));
       avOverlay = Cards.makeOverlay(
         "avatar-modal",
         `<div class="pk-icon"><i class="fa-solid fa-user-astronaut"></i></div>
          <h3>Choose your profile picture</h3>
          <p class="pk-sub">A character from a movie or show you love.</p>
          <button class="btn av-google" type="button" hidden><i class="fa-brands fa-google"></i> Use my Google photo instead</button>
+         <div class="av-tabs-wrap"><div class="top10-switch av-tabs" role="group" aria-label="Characters">${tabs
+           .map(([k, l]) => `<button type="button" class="top10-tab${k === avTab ? " active" : ""}" data-av-tab="${k}">${l}</button>`)
+           .join("")}</div></div>
          <form class="glass-search av-search" role="search">
            <i class="fa-solid fa-magnifying-glass gs-icon" aria-hidden="true"></i>
-           <input type="search" name="q" placeholder="Search a movie or show for its cast…" aria-label="Search a movie or show" autocomplete="off" />
+           <input type="search" name="q" autocomplete="off" />
          </form>
          <div class="av-found" hidden></div>
          <div class="av-picked"></div>
-         <div class="av-groups"></div>`
+         <div class="av-groups"></div>
+         <div class="av-set" hidden></div>`
       );
-      // the popular titles, each filled in as it arrives (TMDB answers are kept a week)
-      const box = avOverlay.querySelector(".av-groups");
-      box.innerHTML = AVATAR_TITLES.map((_, n) => `<div class="av-slot" data-n="${n}"><div class="av-skel"></div></div>`).join("");
-      AVATAR_TITLES.forEach(([media, id], n) =>
-        TMDB.detailsById(media, id)
-          .then((d) => (box.querySelector(`[data-n="${n}"]`).outerHTML = avGroup(d, 6) || ""))
-          .catch(() => box.querySelector(`[data-n="${n}"]`).remove())
-      );
-
-      // search: titles first, then that title's whole cast on top
       const input = avOverlay.querySelector('[name="q"]');
       const found = avOverlay.querySelector(".av-found");
-      const search = async () => {
+      const picked = avOverlay.querySelector(".av-picked");
+      const groups = avOverlay.querySelector(".av-groups");
+      const setBox = avOverlay.querySelector(".av-set");
+
+      // Movie & TV cast: the popular titles, each filled in as it arrives (kept a week)
+      groups.innerHTML = AVATAR_TITLES.map((_, n) => `<div class="av-slot" data-n="${n}"><div class="av-skel"></div></div>`).join("");
+      AVATAR_TITLES.forEach(([media, id], n) =>
+        TMDB.detailsById(media, id)
+          .then((d) => (groups.querySelector(`[data-n="${n}"]`).outerHTML = avGroup(d, 6) || ""))
+          .catch(() => groups.querySelector(`[data-n="${n}"]`).remove())
+      );
+
+      // a character set: all of it, or the ones matching what you typed
+      async function showSet(key) {
+        const set = SETS[key];
+        const run = ++avRun;
+        const q = input.value.trim().toLowerCase();
+        setBox.innerHTML = '<div class="av-skel"></div><div class="av-skel"></div>';
+        try {
+          loaded[key] = loaded[key] || set.load().catch((e) => {
+            delete loaded[key];
+            throw e;
+          });
+          let list = await loaded[key];
+          if (q) {
+            const here = list.filter((c) => c.name.toLowerCase().includes(q));
+            // (a set too big to load at once: ask it about the rest)
+            const more = set.find ? await set.find(q).catch(() => []) : [];
+            const seen = new Set(here.map((c) => c.img));
+            list = here.concat(more.filter((c) => !seen.has(c.img) && seen.add(c.img)));
+          }
+          if (run !== avRun) return;
+          setBox.innerHTML = list.length ? setGrid(list) : `<p class="pv-empty">No ${esc(set.label)} character called "${esc(input.value.trim())}".</p>`;
+        } catch (e) {
+          if (run === avRun) setBox.innerHTML = `<p class="pv-empty">Couldn't load ${esc(set.label)} right now (${esc(e.message)}). Try again in a moment.</p>`;
+        }
+      }
+
+      function showTab(key) {
+        avTab = key;
+        avRun++;
+        avOverlay.querySelectorAll("[data-av-tab]").forEach((b) => b.classList.toggle("active", b.dataset.avTab === key));
+        // (the tab row scrolls sideways when narrow: bring the picked tab into view)
+        const wrap = avOverlay.querySelector(".av-tabs-wrap");
+        const on = avOverlay.querySelector(`[data-av-tab="${key}"]`);
+        const left = on.offsetLeft - wrap.clientWidth / 2 + on.offsetWidth / 2;
+        wrap.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+        const cast = key === "cast";
+        groups.hidden = picked.hidden = !cast;
+        found.hidden = true;
+        setBox.hidden = cast;
+        input.value = "";
+        input.placeholder = cast ? "Search a movie or show for its cast…" : `Search ${SETS[key].label}…`;
+        input.setAttribute("aria-label", input.placeholder.replace("…", ""));
+        if (!cast) showSet(key);
+      }
+
+      // Movie & TV cast search: titles first, then that title's whole cast on top
+      const searchCast = async () => {
         const q = input.value.trim();
         if (!q) return (found.hidden = true);
         found.hidden = false;
         found.innerHTML = '<p class="pv-empty"><i class="fa-solid fa-spinner fa-spin"></i> Searching…</p>';
         try {
           const { results } = await TMDB.searchSmart(q, "all", 1);
-          if (input.value.trim() !== q) return;
+          if (input.value.trim() !== q || avTab !== "cast") return;
           const hits = results.filter((h) => h.poster).slice(0, 8);
           found.innerHTML = hits.length
             ? hits
@@ -227,6 +364,7 @@
           found.innerHTML = `<p class="pv-empty">Couldn't search: ${esc(e.message)}</p>`;
         }
       };
+      const search = () => (avTab === "cast" ? searchCast() : showSet(avTab));
       avOverlay.querySelector(".av-search").addEventListener("submit", (e) => {
         e.preventDefault();
         clearTimeout(avTyping);
@@ -238,6 +376,8 @@
       });
 
       avOverlay.addEventListener("click", async (e) => {
+        const tab = e.target.closest("[data-av-tab]");
+        if (tab) return tab.dataset.avTab !== avTab && showTab(tab.dataset.avTab);
         if (e.target.closest(".av-google")) {
           setAvatar(null);
           toast(googlePhoto() ? "Back to your Google photo" : "Picture removed");
@@ -246,7 +386,6 @@
         const t = e.target.closest("[data-av-ref]");
         if (t) {
           const [media, id] = t.dataset.avRef.split("-");
-          const picked = avOverlay.querySelector(".av-picked");
           picked.innerHTML = '<div class="av-skel"></div>';
           try {
             const d = await TMDB.detailsById(media, Number(id));
@@ -258,12 +397,14 @@
           picked.scrollIntoView({ behavior: "smooth", block: "nearest" });
           return;
         }
-        const b = e.target.closest("[data-av-path]");
+        const b = e.target.closest("[data-av-path], [data-av-url]");
         if (!b) return;
-        setAvatar({ path: b.dataset.avPath, character: b.dataset.avCharacter, title: b.dataset.avTitle, actor: b.dataset.avActor });
-        toast(`You're ${b.dataset.avCharacter} now`);
+        const d = b.dataset;
+        setAvatar(d.avPath ? { path: d.avPath, character: d.avCharacter, title: d.avTitle, actor: d.avActor } : { url: d.avUrl, character: d.avCharacter, title: d.avTitle });
+        toast(`You're ${d.avCharacter} now`);
         setTimeout(() => Cards.closeModal(avOverlay), 350);
       });
+      showTab(avTab);
     }
     avOverlay.querySelector(".av-google").hidden = !Store.getProfile().avatar;
     Cards.openModal(avOverlay);
