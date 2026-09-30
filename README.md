@@ -65,6 +65,8 @@ your Watchlist, or from your Favorites for a rewatch.
   different each visit, without what you already have; anime only in the anime row. Only
   well-known titles (2,000+ votes on TMDB for movies, 500+ for shows / anime), best-known first;
   a title of yours with fewer than 6 of those makes way for another.
+  The page of a title you loved (8+ or a favorite) has its own row too, above "Recommended on
+  TMDB" (which then leaves out what that row already shows).
 - **Match %** ("92% match", `js/services/taste.js`): how much you'll probably like a title
   (every title, the ones you've seen too, so it's consistent), from how you rate its genres
   against your own average, nudged by its TMDB score. Shows after 5 rated titles: "86%" in the poster's bottom-right corner (Poster

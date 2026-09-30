@@ -554,8 +554,36 @@
       ${tmdbUrl ? `<p><a class="t-link" href="${esc(tmdbUrl)}/reviews" target="_blank" rel="noopener">All reviews on TMDB <i class="fa-solid fa-arrow-up-right-from-square"></i></a></p>` : ""}`;
   }
 
-  function recommendationsHtml(d) {
-    const recs = (d && d.recommendations) || [];
+  // "Because you liked …" (a favorite, or rated 8+): TMDB's well-known picks for it that aren't
+  // in your library yet (the same row as on Home). Loaded once, then the page redraws.
+  let because = null; // [picks], once loaded
+  let becauseLoading = false;
+  function becauseHtml(item) {
+    const liked = typeof item.rating === "number" ? item.rating >= 8 : item.favorite;
+    if (!liked || !TMDB.enabled() || !window.Watch) return "";
+    if (!because) {
+      if (!becauseLoading) {
+        becauseLoading = true;
+        Watch.refOf(item)
+          .then((ref) => (ref ? TMDB.knownRecommendations(...ref.split("-").map((x, n) => (n ? Number(x) : x))) : []))
+          .catch(() => [])
+          .then((list) => {
+            because = list;
+            if (Store.get(id)) renderLibrary();
+          });
+      }
+      return "";
+    }
+    const picks = because.filter((h) => !Cards.inLibrary(h)).slice(0, 20);
+    if (picks.length < 4) return "";
+    picks.forEach((h) => becauseShown.add(`${h.mediaType}-${h.tmdbId}`));
+    return `<h2 class="section-title">Because you liked ${esc(Lang.title(item))}</h2><div class="movie-row">${picks.map(Cards.tmdbCard).join("")}</div>`;
+  }
+  const becauseShown = new Set();
+
+  // (skip: what the "Because you liked" row above already shows)
+  function recommendationsHtml(d, skip) {
+    const recs = ((d && d.recommendations) || []).filter((h) => !(skip && skip.has(`${h.mediaType}-${h.tmdbId}`)));
     return recs.length ? `<h2 class="section-title">Recommended on TMDB</h2><div class="movie-row">${recs.map(Cards.tmdbCard).join("")}</div>` : "";
   }
 
@@ -696,7 +724,8 @@
     mainEl.innerHTML = `
       <div class="t-yours">${progressHtml(item, d)}${notesHtml(item)}</div>
       <div class="t-sections">${sectionsHtml(d, loading)}</div>
-      ${recommendationsHtml(extra)}
+      ${(becauseShown.clear(), becauseHtml(item))}
+      ${recommendationsHtml(extra, becauseShown)}
       ${similar.length ? `<h2 class="section-title">More like this in your library</h2><div class="movie-row">${similar.map(Cards.card).join("")}</div>` : ""}
       <p class="tmdb-note">${
         TMDB.enabled() ? TMDB_NOTE : 'Tip: add a free TMDB API key in <a href="settings.html#keys">Settings</a> to see the overview, cast, trailer and recommendations for every title.'
