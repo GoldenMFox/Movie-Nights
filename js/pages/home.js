@@ -2,8 +2,8 @@
  * Home page.
  *  - With a TMDB key: a real-world home page. The slideshow shows this week's
  *    trending titles, the rows show what's in cinemas, coming soon, popular and
- *    top rated (movies, TV, anime), all live from TMDB. Your own list is at the
- *    bottom ("Your Movie Nights").
+ *    top rated (movies, TV, anime), all live from TMDB. Your own rows are at the
+ *    bottom (your numbers are on the Profile page).
  *  - Without a key: everything comes from your own list.
  */
 (function () {
@@ -365,30 +365,13 @@
       mineEl.innerHTML = `<div class="mine-head"><h2 class="section-title">Your Movie Nights</h2></div>${UI.welcome()}`;
       return;
     }
-    const rated = all.filter((i) => i.rating != null);
-    const avg = rated.length ? rated.reduce((s, i) => s + i.rating, 0) / rated.length : 0;
-    const count = (fn) => all.filter(fn).length;
-    const tiles = [
-      ["Movies", count((i) => i.type === "movie"), "movies.html"],
-      ["TV Shows", count((i) => i.type === "tv"), "tv-shows.html"],
-      ["Anime", count((i) => i.type === "anime"), "anime.html"],
-      ["Favorites", count((i) => i.favorite), "watchlist.html?list=fav"],
-      ["Watchlist", count((i) => i.watchlist), "watchlist.html"],
-      ["My average", avg ? avg.toFixed(1) : "–", "profile.html"],
-    ];
+    // (your numbers live on the Profile page; "What should I watch?" on the Watchlist page)
 
     // keep each row's horizontal scroll position when re-rendering
     const scroll = {};
     mineEl.querySelectorAll(".row-section").forEach((s) => (scroll[s.dataset.row] = s.querySelector(".movie-row").scrollLeft));
 
     mineEl.innerHTML = `
-      <div class="mine-head">
-        <h2 class="section-title">Your Movie Nights</h2>
-        <button class="btn btn-primary random-pick" type="button"><i class="fa-solid fa-shuffle"></i> What should I watch?</button>
-      </div>
-      <div class="stat-strip">${tiles
-        .map(([label, num, href]) => `<a class="stat-tile" href="${href}"><div class="num">${num}</div><div class="label">${label}</div></a>`)
-        .join("")}</div>
       ${myRows(all)
         .map(
           (r) => `<section class="row-section" data-row="${esc(r.title)}">

@@ -991,37 +991,6 @@ label.field {
   padding: 0;
 }
 
-.stat-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 14px;
-  margin: 28px 0 8px;
-}
-
-.stat-tile {
-  display: block;
-  padding: 16px 18px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  text-decoration: none;
-}
-
-.stat-tile .num {
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1.1;
-}
-
-.stat-tile .label {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-a.stat-tile:hover {
-  border-color: var(--text-muted);
-}
-
 .row-section {
   margin-top: 36px;
 }
