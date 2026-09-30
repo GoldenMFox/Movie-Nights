@@ -51,6 +51,8 @@
         <div class="xr-grid pv-stats"></div>
         <div class="pv-wrapped-slot"></div>
 
+        <section class="pv-section pv-ach" id="achievements"></section>
+
         <section class="pv-section diary" id="diary">
           <div class="row-head"><h2><i class="fa-solid fa-book-open"></i> Watch diary</h2></div>
           <div class="diary-body"></div>
@@ -733,6 +735,8 @@
   renderStats();
   reveal(false);
   drawn = true;
+  // challenges & achievements (js/components/achievements.js)
+  if (!Store.guest && window.Achievements) Achievements.mount($(".pv-ach"));
 
   if (location.hash) {
     const target = document.querySelector(location.hash);
