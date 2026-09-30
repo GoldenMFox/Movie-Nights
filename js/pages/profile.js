@@ -125,14 +125,14 @@
   // Like picking a Netflix avatar. Tabs (the site's pill switch):
   //  - Movie & TV cast: characters grouped by title (the actor's TMDB photo, named after the
   //    character), or search any movie / show and pick from its cast
-  //  - Superheroes, Harry Potter, Star Wars, Game of Thrones, Rick and Morty, Disney: pictures
-  //    of the characters themselves, from free fan-made character databases (Superheroes: the
-  //    Marvel and DC movie fan wikis)
+  //  - Superheroes, Harry Potter, Star Wars, Game of Thrones, Disney: the 20 best-known
+  //    characters of each, pictures of the characters themselves from free fan-made character
+  //    databases (Superheroes: the Marvel and DC movie fan wikis)
   // Saved with your profile (so it follows your account): { path, character, title, actor }
   // for a TMDB photo, { url, character, title } for the others.
   const AVATAR_TITLES = [
     ["tv", 1396], ["movie", 155], ["tv", 66732], ["movie", 671], ["tv", 1399], ["movie", 299534],
-    ["tv", 1668], ["movie", 603], ["tv", 2316], ["movie", 11], ["tv", 100088], ["movie", 22],
+    ["tv", 1668], ["movie", 603], ["tv", 2316], ["movie", 11], ["movie", 22],
     ["tv", 60574], ["movie", 680], ["tv", 119051], ["movie", 238], ["tv", 76479], ["movie", 245891],
     ["tv", 93405], ["movie", 346698], ["tv", 19885], ["movie", 693134],
   ];
@@ -142,100 +142,72 @@
   const getJson = (url) => fetch(url).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`error ${r.status}`))));
 
   // Superheroes: the movie versions, from the fan wikis of the Marvel and DC films (the picture
-  // at the top of each character's page). [name shown, wiki page] - best-known first
-  const HERO_WIKIS = [
-    {
-      host: "marvelcinematicuniverse.fandom.com",
-      title: "Marvel",
-      names: ["Iron Man", "Captain America", "Thor", "Hulk", ["Black Widow", "Natasha Romanoff"], "Spider-Man", ["Black Panther", "T'Challa"], "Doctor Strange", ["Scarlet Witch", "Wanda Maximoff"], "Vision", "Hawkeye", "Thanos", "Loki", "Groot", ["Rocket", "Rocket Raccoon"], "Star-Lord", "Gamora", ["Drax", "Drax the Destroyer"], "Nebula", "Mantis", "Deadpool", "Wolverine", "Ant-Man", "Wasp", "Captain Marvel", "Falcon", "Winter Soldier", "War Machine", "Nick Fury", "Shang-Chi", "Ultron", "Hela", ["Killmonger", "Erik Killmonger"], "Valkyrie", "Wong", "Ms. Marvel", "Moon Knight", "She-Hulk", "Kate Bishop", "Yelena Belova", "Kang the Conqueror", "Peggy Carter", "Happy Hogan", "Pepper Potts", "Red Skull", "Agatha Harkness"],
-    },
-    {
-      host: "dcextendeduniverse.fandom.com",
-      title: "DC",
-      names: ["Batman", "Superman", "Wonder Woman", "Joker", "Harley Quinn", "Flash", "Aquaman", "Cyborg", "Shazam", "Black Adam", "Lex Luthor", ["General Zod", "Zod"], "Darkseid", "Steppenwolf", "Deathstroke", "Peacemaker", "Bloodsport", "King Shark", "Mera", "Riddler", "Alfred Pennyworth", "Martian Manhunter", "Blue Beetle", "Amanda Waller", "Enchantress", "Deadshot", "Rick Flag", "Ratcatcher 2", "Polka-Dot Man"],
-    },
+  // at the top of each character's page). [name shown, wiki, its page if named differently]
+  const HERO_WIKIS = { Marvel: "marvelcinematicuniverse.fandom.com", DC: "dcextendeduniverse.fandom.com" };
+  const HEROES = [
+    ["Iron Man", "Marvel"], ["Batman", "DC"], ["Spider-Man", "Marvel"], ["Superman", "DC"], ["Wonder Woman", "DC"],
+    ["Hulk", "Marvel"], ["Black Widow", "Marvel", "Natasha Romanoff"], ["Joker", "DC"], ["Black Panther", "Marvel", "T'Challa"],
+    ["Flash", "DC"], ["Doctor Strange", "Marvel"], ["Aquaman", "DC"], ["Scarlet Witch", "Marvel", "Wanda Maximoff"],
+    ["Deadpool", "Marvel"], ["Wolverine", "Marvel"], ["Loki", "Marvel"], ["Thanos", "Marvel"], ["Captain Marvel", "Marvel"],
+    ["Hawkeye", "Marvel"], ["Cyborg", "DC"],
   ];
-  const wikiApi = (host, params) => getJson(`https://${host}/api.php?action=query&prop=pageimages&pithumbsize=400&redirects=1&format=json&origin=*&${params}`);
-  // a wiki's listed characters, in order (up to 50 pages per question)
-  async function wikiLoad(w) {
-    const names = w.names.map((n) => (Array.isArray(n) ? n : [n, n]));
-    const pics = {};
-    for (let i = 0; i < names.length; i += 50) {
-      const d = await wikiApi(w.host, `titles=${encodeURIComponent(names.slice(i, i + 50).map((n) => n[1]).join("|"))}`);
-      const from = {}; // wiki's page -> the name asked for
-      ((d.query && d.query.normalized) || []).concat((d.query && d.query.redirects) || []).forEach((r) => (from[r.to] = r.from));
-      Object.values((d.query && d.query.pages) || {}).forEach((p) => {
-        let asked = p.title;
-        while (from[asked]) asked = from[asked];
-        if (p.thumbnail) pics[asked] = p.thumbnail.source;
-      });
-    }
-    return names.filter((n) => pics[n[1]]).map(([name, page]) => ({ name, img: pics[page], title: w.title }));
+  // each wiki's pictures, one question per wiki
+  async function heroesLoad() {
+    const pics = {}; // wiki page -> picture
+    await Promise.all(
+      Object.entries(HERO_WIKIS).map(async ([wiki, host]) => {
+        const pages = HEROES.filter((h) => h[1] === wiki).map((h) => h[2] || h[0]);
+        const d = await getJson(`https://${host}/api.php?action=query&prop=pageimages&pithumbsize=400&redirects=1&format=json&origin=*&titles=${encodeURIComponent(pages.join("|"))}`).catch(() => ({}));
+        const from = {}; // wiki's page -> the name asked for
+        const q = d.query || {};
+        (q.normalized || []).concat(q.redirects || []).forEach((r) => (from[r.to] = r.from));
+        Object.values(q.pages || {}).forEach((p) => {
+          let asked = p.title;
+          while (from[asked]) asked = from[asked];
+          if (p.thumbnail) pics[asked] = p.thumbnail.source;
+        });
+      })
+    );
+    const out = HEROES.filter((h) => pics[h[2] || h[0]]).map(([name, wiki, page]) => ({ name, img: pics[page || name], title: wiki }));
+    if (!out.length) throw new Error("no answer");
+    return out;
   }
-  // anyone else on the wikis: character pages with a picture (not actors, films, or the
-  // "Groot/Zombie Outbreak"-style alternate versions)
-  async function wikiFind(w, q) {
-    const d = await wikiApi(w.host, `prop=pageimages|categories&cllimit=max&generator=search&gsrnamespace=0&gsrlimit=20&gsrsearch=${encodeURIComponent(q)}`);
-    return Object.values((d.query && d.query.pages) || {})
-      .filter((p) => p.thumbnail && !/[/(]/.test(p.title) && (p.categories || []).some((c) => / Characters$/.test(c.title)))
-      .sort((a, b) => a.index - b.index)
-      .map((p) => ({ name: p.title, img: p.thumbnail.source, title: w.title }));
-  }
-  // Disney has no "best-known first" order: these are looked up by name
-  const TOP_DISNEY = ["Mickey Mouse", "Minnie Mouse", "Donald Duck", "Goofy", "Simba", "Elsa", "Anna", "Olaf", "Moana", "Stitch", "Woody", "Buzz Lightyear", "Ariel", "Aladdin", "Genie", "Belle", "Cinderella", "Mulan", "Rapunzel", "Nemo", "Dory", "Winnie the Pooh", "Baloo", "Pumbaa", "Timon", "Maui", "Jack Sparrow", "Hercules"];
-  const disneyPick = (list, name) => (list || []).find((c) => c.imageUrl && c.name.toLowerCase() === name.toLowerCase()) || (list || []).find((c) => c.imageUrl);
-  const disneyItem = (c) => ({ name: c.name, img: c.imageUrl, title: (c.films && c.films[0]) || (c.tvShows && c.tvShows[0]) || "Disney" });
-  const rickItem = (c) => ({ name: c.name, img: c.image, title: "Rick and Morty" });
 
-  // each set: load() -> [{ name, img, title }] (kept for this visit); find(q) searches the
-  // whole set when it's too big to load at once
+  // the other sets: these characters, in this order (each source names them its own way)
+  const TOP = {
+    hp: ["Harry Potter", "Hermione Granger", "Ron Weasley", "Severus Snape", "Rubeus Hagrid", "Lord Voldemort", "Draco Malfoy", "Sirius Black", "Minerva McGonagall", "Neville Longbottom", "Luna Lovegood", "Ginny Weasley", "Bellatrix Lestrange", "Remus Lupin", "Dolores Umbridge", "Cedric Diggory", "Lucius Malfoy", "Cho Chang", "Arthur Weasley", "Horace Slughorn"],
+    sw: ["Luke Skywalker", "Darth Vader", "Leia Organa", "Han Solo", "Yoda", "Obi-Wan Kenobi", "Chewbacca", "Anakin Skywalker", "Padmé Amidala", "Palpatine", "Boba Fett", "Darth Maul", "Qui-Gon Jinn", "Mace Windu", "Lando Calrissian", "C-3PO", "R2-D2", "Jabba Desilijic Tiure", "Dooku", "Jar Jar Binks"],
+    got: ["Jon Snow", "Daenerys Targaryen", "Tyrion Lannister", "Arya Stark", "Sansa Stark", "Cersei Lannister", "Jamie Lannister", "Ned Stark", "The Hound", "Brienne of Tarth", "Khal Drogo", "Brandon Stark", "Petyr Baelish", "Samwell Tarly", "Tywin Lannister", "Joffrey Baratheon", "Jorah Mormont", "Melisandre", "Robert Baratheon", "Hodor"],
+    disney: ["Mickey Mouse", "Minnie Mouse", "Donald Duck", "Simba", "Elsa", "Anna", "Olaf", "Moana", "Stitch", "Ariel", "Aladdin", "Genie", "Mulan", "Rapunzel", "Winnie the Pooh", "Pumbaa", "Timon", "Maui", "Jack Sparrow", "Hercules"],
+  };
+  // a source's list -> just the TOP ones that have a picture, in TOP's order
+  const pickTop = (key, list, nameOf, imgOf, title) =>
+    TOP[key].map((n) => list.find((c) => c && nameOf(c) === n && imgOf(c))).filter(Boolean).map((c) => ({ name: nameOf(c), img: imgOf(c), title }));
+  // (Disney is searched name by name, and its matches can be "Anna" from anywhere: the exact name first)
+  const disneyPick = (list, name) => (list || []).find((c) => c && c.imageUrl && c.name.toLowerCase() === name.toLowerCase()) || (list || []).find((c) => c && c.imageUrl);
+
+  // each set: load() -> [{ name, img, title }] (kept for this visit)
   const SETS = {
-    heroes: {
-      label: "Superheroes",
-      load: async () => {
-        const [marvel, dc] = await Promise.all(HERO_WIKIS.map((w) => wikiLoad(w).catch(() => [])));
-        if (!marvel.length && !dc.length) throw new Error("no answer");
-        // Marvel and DC taking turns, so both show up at the top
-        const out = [];
-        for (let i = 0; i < Math.max(marvel.length, dc.length); i++) out.push(...[marvel[i], dc[i]].filter(Boolean));
-        return out;
-      },
-      find: async (q) => [].concat(...(await Promise.all(HERO_WIKIS.map((w) => wikiFind(w, q).catch(() => []))))),
-    },
+    heroes: { label: "Superheroes", load: heroesLoad },
     hp: {
       label: "Harry Potter",
-      load: async () => (await getJson("https://hp-api.onrender.com/api/characters")).filter((c) => c.image).map((c) => ({ name: c.name, img: c.image, title: "Harry Potter" })),
+      load: async () => pickTop("hp", await getJson("https://hp-api.onrender.com/api/characters"), (c) => c.name, (c) => c.image, "Harry Potter"),
     },
     sw: {
       label: "Star Wars",
-      load: async () => (await getJson("https://cdn.jsdelivr.net/gh/akabab/starwars-api@0.2.1/api/all.json")).filter((c) => c.image).map((c) => ({ name: c.name, img: c.image, title: "Star Wars" })),
+      load: async () => pickTop("sw", await getJson("https://cdn.jsdelivr.net/gh/akabab/starwars-api@0.2.1/api/all.json"), (c) => c.name, (c) => c.image, "Star Wars"),
     },
     got: {
       label: "Game of Thrones",
-      load: async () => (await getJson("https://thronesapi.com/api/v2/Characters")).filter((c) => c.imageUrl).map((c) => ({ name: c.fullName, img: c.imageUrl, title: "Game of Thrones" })),
-    },
-    rick: {
-      label: "Rick and Morty",
-      load: async () => (await getJson("https://rickandmortyapi.com/api/character")).results.map(rickItem),
-      find: async (q) => {
-        try {
-          return (await getJson(`https://rickandmortyapi.com/api/character/?name=${encodeURIComponent(q)}`)).results.map(rickItem);
-        } catch (e) {
-          return []; // (nobody by that name: the API answers "not found")
-        }
-      },
+      load: async () => pickTop("got", await getJson("https://thronesapi.com/api/v2/Characters"), (c) => c.fullName, (c) => c.imageUrl, "Game of Thrones"),
     },
     disney: {
       label: "Disney",
       load: async () => {
         const found = await Promise.all(
-          TOP_DISNEY.map((n) => getJson(`https://api.disneyapi.dev/character?name=${encodeURIComponent(n)}`).then((d) => disneyPick(Array.isArray(d.data) ? d.data : [d.data], n)).catch(() => null))
+          TOP.disney.map((n) => getJson(`https://api.disneyapi.dev/character?name=${encodeURIComponent(n)}`).then((d) => disneyPick(Array.isArray(d.data) ? d.data : [d.data], n)).catch(() => null))
         );
-        return found.filter(Boolean).map(disneyItem);
-      },
-      find: async (q) => {
-        const d = await getJson(`https://api.disneyapi.dev/character?name=${encodeURIComponent(q)}&pageSize=60`);
-        return (Array.isArray(d.data) ? d.data : [d.data]).filter((c) => c && c.imageUrl).map(disneyItem);
+        return found.filter(Boolean).map((c) => ({ name: c.name, img: c.imageUrl, title: (c.films && c.films[0]) || (c.tvShows && c.tvShows[0]) || "Disney" }));
       },
     },
   };
