@@ -21455,3 +21455,34 @@ html.tablet .st-now,
 html.tablet .st-toggle {
   max-width: 560px;
 }
+
+/* "You've seen them in": spreading never changes the card's size: one row (the posters
+   shrink a little to fit, never wrap), and the titles' space is kept from the start */
+.xr-cast-titles.xr-deck,
+.xr-deck.spread,
+.xr-cast:hover .xr-deck {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  height: 178px;
+  min-height: 0;
+}
+
+.xr-deck .xr-mini-poster {
+  flex: 0 1 86px;
+  min-width: 0;
+}
+
+.xr-deck .xr-mini-poster span {
+  max-height: 20px;
+}
+
+.xr-deck.spread .xr-mini-poster,
+.xr-deck.single .xr-mini-poster {
+  margin-left: 8px;
+}
+
+@media (hover: hover) {
+  .xr-cast:hover .xr-deck .xr-mini-poster {
+    margin-left: 8px;
+  }
+}
