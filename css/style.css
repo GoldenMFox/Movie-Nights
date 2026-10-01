@@ -3287,11 +3287,11 @@ label.field {
   }
 
   html.app-ui body {
-    padding-bottom: calc(84px + var(--tab-gap));
+    padding-bottom: calc(74px + var(--tab-gap));
   }
 
   html.app-ui .toast {
-    bottom: calc(80px + var(--tab-gap));
+    bottom: calc(70px + var(--tab-gap));
   }
 
   /* floating frosted-glass pill, icon above the label; the current tab sits in its own
@@ -3321,8 +3321,8 @@ label.field {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    min-height: 54px;
+    gap: 3px;
+    min-height: 44px;
     padding: 4px 0;
     border: 0;
     border-radius: 999px;
@@ -3338,7 +3338,7 @@ label.field {
   }
 
   .tab-bar .tab i {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .tab-bar .tab:active {
@@ -4179,12 +4179,12 @@ html.app-ui .app-sheet.open {
 @media (max-width: 900px) {
   /* Tier List tray: sit above the tab bar, not behind it */
   html.app-ui .tl-tray {
-    bottom: calc(80px + var(--tab-gap));
+    bottom: calc(70px + var(--tab-gap));
   }
 
   /* when the page scrolls to something (e.g. a focused field), keep it clear of the tab bar */
   html.app-ui {
-    scroll-padding-bottom: calc(88px + var(--tab-gap));
+    scroll-padding-bottom: calc(78px + var(--tab-gap));
   }
 }
 
