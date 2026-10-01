@@ -18311,9 +18311,9 @@ html[data-theme="light"] .bo-infl:not(.on) > .fa-scale-balanced {
   }
 }
 
-/* Box Office in the profile menu only where the navbar doesn't show it: phones (tab bar, no navbar
-   links) and tablets under 1100px; computers have it in the navbar (or its side menu) */
-html:not(.app-ui) .profile-menu .menu-group a.bo-menu-link {
+/* Box Office in the profile menu only where nothing else shows it: tablets under 1100px.
+   Computers have it in the navbar (or its side menu), phones in the Library tab */
+.profile-menu .menu-group a.bo-menu-link {
   display: none;
 }
 
@@ -21046,14 +21046,50 @@ html.sm-lock {
   }
 }
 
+/* phones: Movies | TV shows across the top in two equal halves, then the sort and
+   Filters side by side, both the same height and shape */
 @media (max-width: 520px) {
-  .as-sort {
-    width: 100%;
-    margin-left: 0;
+  .as-top {
+    gap: 8px;
   }
 
   .as-type {
+    display: flex;
+    flex: 1 1 100%;
+    margin: 0;
+  }
+
+  .as-type .top10-tab {
+    display: inline-flex;
     flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 10px;
+    font-size: 14.5px;
+  }
+
+  .as-sort {
+    flex: 1 1 0;
+    order: 2;
+    min-width: 0;
+    height: 44px;
+    margin-left: 0;
+  }
+
+  .as-sort select {
+    width: 100%;
+    font-size: 14.5px;
+  }
+
+  .as-toggle {
+    flex: none;
+    order: 3;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 18px;
+    font-size: 14.5px;
   }
 }
 
