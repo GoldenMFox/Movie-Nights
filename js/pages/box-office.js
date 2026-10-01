@@ -1094,6 +1094,47 @@ ${skyFilms
   // the cards, in the films' own dollars or (adjusted for inflation) in today's: drawn again
   // when the switch changes, without adding everything up again
   let myFound = null; // [{ item, tmdbId, budget, revenue }]
+  let yourTops = null; // each card's ranking: { kind: { icon, label, shown, list, value, bar, sub } }
+
+  /* A card's top 10: a click on the card (not its poster: that opens the film, as before)
+     opens a pop-up with the ten films of that ranking; each row opens its film */
+  let topOverlay = null;
+  function openTop(kind) {
+    const t = yourTops && yourTops[kind];
+    if (!t) return;
+    if (!topOverlay) topOverlay = Cards.makeOverlay("by-top-modal", `<div class="byt-in"></div>`);
+    const list = t.list.slice(0, 10);
+    const max = t.bar ? Math.max(...list.map(t.bar)) || 1 : 0;
+    topOverlay.querySelector(".byt-in").innerHTML = `
+      <div class="byt-head by-${kind}">
+        <span class="xr-label"><i class="${t.icon}"></i> Your top ${list.length}</span>
+        <h3>${esc(t.label)}${state.real ? ` <small class="bo-real-tag"><i class="fa-solid fa-scale-balanced"></i> in ${CPI_BASE_YEAR} dollars</small>` : ""}</h3>
+      </div>
+      <ol class="byt-list by-${kind}">${list
+        .map(
+          (f, n) => `<li style="--d:${n * 40}ms">
+            <a class="byt-row${f === t.shown ? " on" : ""}" href="title.html?id=${encodeURIComponent(f.item.id)}">
+              <span class="byt-rank">${n + 1}</span>
+              <img src="${Store.poster(f.item.poster, "w154")}" alt="" loading="lazy" />
+              <span class="byt-text">
+                <strong>${esc(Lang.title(f.item))} <small>${f.item.year || ""}</small></strong>
+                <small>${esc(t.sub(f))}</small>
+                ${t.bar ? `<span class="byt-bar"><i style="--w:${Math.max(3, (t.bar(f) / max) * 100).toFixed(1)}%"></i></span>` : ""}
+              </span>
+              <b class="byt-value${t.loss ? " loss" : ""}">${t.value(f)}</b>
+            </a>
+          </li>`
+        )
+        .join("")}</ol>`;
+    Cards.openModal(topOverlay);
+  }
+  app.addEventListener("click", (e) => {
+    const cardEl = e.target.closest(".by-card[data-top]");
+    // the poster, or a click meant for a new tab: the film, as before
+    if (!cardEl || e.target.closest(".by-poster") || e.ctrlKey || e.metaKey || e.shiftKey || e.button) return;
+    e.preventDefault();
+    openTop(cardEl.dataset.top);
+  });
   function paintYours() {
     if (!myFound) return;
     const box = $(".bo-yours");
@@ -1129,7 +1170,7 @@ ${skyFilms
       `<span class="by-meter ${cls || ""}"><span class="by-track"><i style="--w:${Math.max(3, Math.min(100, pct)).toFixed(1)}%"></i></span><small>${caption}</small></span>`;
     const card = (kind, icon, label, count, f, sub, extra, opts = {}) => {
       const poster = Store.poster(f.item.poster, "w342");
-      return `<a class="xr-card bo-stat by-card by-${kind}" href="${url(f)}">
+      return `<a class="xr-card bo-stat by-card by-${kind}" href="${url(f)}" data-top="${kind}" title="See your top 10">
           <span class="by-blur" style="background-image:url('${poster}')"></span>
           <img class="by-poster" src="${poster}" alt="" loading="lazy" />
           <span class="by-body">
@@ -1155,6 +1196,24 @@ ${skyFilms
     const hidden = pick(rated.filter((f) => f.item.rating >= 8 && f.revenue >= 1e6).sort((a, b) => a.revenue - b.revenue));
     const best = pick(found.filter((f) => ratioOf(f) != null && f.revenue >= 1e6).sort((a, b) => ratioOf(b) - ratioOf(a)));
     const priciest = pick(found.filter((f) => f.budget).sort((a, b) => b.budget - a.budget));
+    // each card's whole ranking, for its top 10 pop-up (the card's own film is marked there)
+    const loved = rated.filter((f) => f.item.rating >= 8);
+    const x1 = (f) => `${ratioOf(f).toFixed(1)}×`;
+    yourTops = {
+      top: { icon: "fa-solid fa-crown", label: "Biggest you've seen", shown: top, list: byGross, value: (f) => money(f.revenue), bar: (f) => f.revenue,
+        sub: (f) => `${(f.revenue / avg).toFixed(1)}× your average film` },
+      flop: { icon: "fa-solid fa-arrow-trend-down", label: "Biggest flops you've seen", shown: flop, list: flops, value: (f) => `−${money(f.budget - f.revenue)}`,
+        bar: (f) => f.budget - f.revenue, sub: (f) => `made ${money(f.revenue)} of its ${money(f.budget)} budget`, loss: true },
+      love: { icon: "fa-solid fa-heart", label: "Your 8+ money makers", shown: love, list: loved.slice().sort((a, b) => b.revenue - a.revenue),
+        value: (f) => money(f.revenue), bar: (f) => f.revenue, sub: (f) => `★ ${Cards.formatRating(f.item.rating)}` },
+      gem: { icon: "fa-solid fa-gem", label: "Your 8+ hidden gems", shown: hidden, list: loved.filter((f) => f.revenue >= 1e6).sort((a, b) => a.revenue - b.revenue),
+        value: (f) => money(f.revenue), sub: (f) => `★ ${Cards.formatRating(f.item.rating)} · the smallest grosses you loved` },
+      roi: { icon: "fa-solid fa-rocket", label: "Best returns you've seen", shown: best,
+        list: found.filter((f) => ratioOf(f) != null && f.revenue >= 1e6).sort((a, b) => ratioOf(b) - ratioOf(a)),
+        value: x1, bar: (f) => ratioOf(f), sub: (f) => `${money(f.budget)} → ${money(f.revenue)}` },
+      cost: { icon: "fa-solid fa-coins", label: "Most expensive you've seen", shown: priciest, list: found.filter((f) => f.budget).sort((a, b) => b.budget - a.budget),
+        value: (f) => money(f.budget), bar: (f) => f.budget, sub: (f) => `it made ${money(f.revenue)}${ratioOf(f) ? ` (${x1(f)})` : ""}` },
+    };
     const cards = [
       card("top", "fa-solid fa-crown", "Biggest you've seen", top.revenue, top, "", meter(100, `${(top.revenue / avg).toFixed(1)}× your average film (${money(avg)})`)),
       flop

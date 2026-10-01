@@ -22601,3 +22601,162 @@ html.app-ui.tabs-away .t-shared {
 :root[data-theme="light"] .chip-sep {
   background: rgba(0, 0, 0, 0.14);
 }
+
+/* Box Office, "Your box office": a card's top 10 pop-up (a click on the card; its poster opens
+   the film). Each ranking in its card's colour (--tint from .by-top / .by-flop / ...). */
+.by-top-modal {
+  max-width: 560px;
+}
+
+.byt-head {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding-right: 44px;
+}
+
+.byt-head .xr-label i {
+  color: rgb(var(--tint));
+}
+
+.byt-head h3 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.byt-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.byt-list li {
+  animation: wl-settle 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: var(--d, 0ms);
+}
+
+.byt-row {
+  display: grid;
+  grid-template-columns: 26px 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px 8px 8px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.byt-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* the film on the card */
+.byt-row.on {
+  border-color: rgba(var(--tint), 0.45);
+  background: rgba(var(--tint), 0.1);
+}
+
+.byt-rank {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 15px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.byt-list li:nth-child(1) .byt-rank {
+  color: #f5c518;
+}
+
+.byt-list li:nth-child(2) .byt-rank {
+  color: #c9d1d9;
+}
+
+.byt-list li:nth-child(3) .byt-rank {
+  color: #d08b4f;
+}
+
+.byt-row img {
+  width: 44px;
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
+}
+
+.byt-text {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.byt-text strong {
+  overflow: hidden;
+  font-size: 14.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.byt-text strong small {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+.byt-text > small {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.byt-bar {
+  height: 4px;
+  margin-top: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.byt-bar i {
+  display: block;
+  width: var(--w);
+  height: 100%;
+  border-radius: inherit;
+  background: rgb(var(--tint));
+}
+
+.byt-value {
+  font-size: 16px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.byt-value.loss {
+  color: #ff6b63;
+}
+
+@media (max-width: 520px) {
+  .byt-row {
+    grid-template-columns: 20px 38px minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .byt-row img {
+    width: 38px;
+  }
+
+  .byt-value {
+    font-size: 14.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .byt-list li {
+    animation: none;
+  }
+}
