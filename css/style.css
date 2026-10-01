@@ -13261,6 +13261,30 @@ html .modal .menu-switch:not([hidden]) {
   font-size: 14px;
 }
 
+/* Movies / TV / Anime */
+.qr-types {
+  max-width: 100%;
+  margin: 0 auto 14px;
+}
+
+.qr-types[hidden],
+.qr-types [hidden] {
+  display: none;
+}
+
+.qr-types .top10-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.qr-types .top10-tab small {
+  opacity: 0.7;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .qr-pwrap {
   position: relative;
 }
@@ -13535,6 +13559,22 @@ html .modal .menu-switch:not([hidden]) {
   .qr-score {
     right: -10px;
     font-size: 15px;
+  }
+
+  .qr-types {
+    display: flex;
+    width: 100%;
+  }
+
+  .qr-types .top10-tab {
+    flex: 1;
+    justify-content: center;
+    gap: 5px;
+    padding: 7px 4px;
+  }
+
+  .qr-types .top10-tab i {
+    display: none;
   }
 }
 

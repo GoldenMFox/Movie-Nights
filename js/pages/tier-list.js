@@ -565,11 +565,52 @@
 
   /* ---------- Quick rank: one poster at a time ---------- */
 
-  let qr = null; // { overlay, queue: [ids], done: [{ id }], current }
+  let qr = null; // { overlay, type, queue: [ids], done: [{ id }], current }
+  const QR_TYPES = [
+    ["", "fa-layer-group", "All"],
+    ["movie", "fa-film", "Movies"],
+    ["tv", "fa-tv", "TV"],
+    ["anime", "fa-dragon", "Anime"],
+  ];
+  const QR_WORD = { movie: ["movie", "movies"], tv: ["TV show", "TV shows"], anime: ["anime", "anime"] };
+
+  // the Movies / TV / Anime switch: what's left of each (a kind with nothing left hides,
+  // unless it's the one you're on)
+  function qrTypes() {
+    const left = unranked(true);
+    const count = (v) => (v ? left.filter((i) => i.type === v).length : left.length);
+    const shown = QR_TYPES.filter(([v]) => v && count(v)).length;
+    const sw = qr.overlay.querySelector(".qr-types");
+    sw.hidden = shown < 2 && !qr.type;
+    sw.querySelectorAll("[data-qrtype]").forEach((b) => {
+      const v = b.dataset.qrtype;
+      const n = count(v);
+      b.classList.toggle("active", v === qr.type);
+      b.setAttribute("aria-selected", v === qr.type);
+      b.hidden = !!v && !n && v !== qr.type;
+      b.querySelector("small").textContent = n;
+    });
+  }
+
+  // a new kind: the queue starts over with what's left of it (the tray follows along)
+  function qrType(v) {
+    if (v === qr.type) return;
+    qr.type = v;
+    typeSel.value = v;
+    qr.queue = unranked(true)
+      .filter((i) => !v || i.type === v)
+      .map((i) => i.id);
+    qrShow("right");
+  }
 
   function quickRank() {
+    if (!unranked(true).length) return toast("Nothing left to rank");
+    // the tray's filter leaves nothing? Then start with everything
+    if (!unranked(false).length) {
+      typeSel.value = "";
+      q.value = "";
+    }
     const queue = unranked(false).map((i) => i.id);
-    if (!queue.length) return toast("Nothing left to rank");
     if (!qr) {
       const overlay = Cards.makeOverlay(
         "qr-modal",
@@ -577,6 +618,9 @@
            <span class="xr-label"><i class="fa-solid fa-bolt"></i> Quick rank</span>
            <small class="qr-left"></small>
          </div>
+         <div class="top10-switch qr-types" role="tablist" aria-label="Rank">${QR_TYPES.map(
+           ([v, icon, label]) => `<button class="top10-tab" type="button" data-qrtype="${v}"><i class="fa-solid ${icon}"></i> ${label} <small></small></button>`
+         ).join("")}</div>
          <div class="qr-stage"></div>
          <div class="qr-tiers">${TIERS.map(
            (t) => `<button class="qr-tier" type="button" data-qr="${t.id}" style="--tc:${t.color}"><b>${t.id}</b><small>${t.name}</small></button>`
@@ -591,6 +635,8 @@
       overlay.addEventListener("click", (e) => {
         const b = e.target.closest("[data-qr]");
         if (b) return qrPlace(b.dataset.qr);
+        const t = e.target.closest("[data-qrtype]");
+        if (t) return qrType(t.dataset.qrtype);
         if (e.target.closest(".qr-skip")) return qrSkip();
         if (e.target.closest(".qr-undo")) return qrUndo();
         if (e.target.closest(".qr-close")) return Cards.closeModal(overlay);
@@ -610,8 +656,12 @@
           qrUndo();
         }
       });
-      overlay.onclose = () => render();
+      overlay.onclose = () => {
+        if (!unranked(false).length) typeSel.value = ""; // that kind is all ranked: the tray shows everything again
+        render();
+      };
     }
+    qr.type = typeSel.value;
     qr.queue = queue;
     qr.done = [];
     qr.total = queue.length;
@@ -627,9 +677,12 @@
     qr.overlay.querySelector(".qr-skip").disabled = qr.queue.length < 2;
     qr.overlay.querySelector(".qr-tiers").hidden = !item;
     qr.overlay.querySelector(".qr-left").textContent = item ? `${qr.queue.length} left · ${qr.done.length} ranked` : "";
+    qrTypes();
     if (!item) {
-      stage.innerHTML = `<div class="qr-done"><i class="fa-solid fa-trophy"></i><h3>All ranked!</h3>
-        <p>${qr.done.length} title${qr.done.length === 1 ? "" : "s"} placed.</p>
+      const word = QR_WORD[qr.type];
+      const others = qr.type ? unranked(true).length : 0;
+      stage.innerHTML = `<div class="qr-done"><i class="fa-solid fa-trophy"></i><h3>${word ? `Every ${word[0]} ranked!` : "All ranked!"}</h3>
+        <p>${qr.done.length} title${qr.done.length === 1 ? "" : "s"} placed.${others ? ` ${others} other title${others === 1 ? "" : "s"} still wait: pick them above.` : ""}</p>
         <button class="btn btn-primary qr-close" type="button">See the tiers</button></div>`;
       return;
     }
