@@ -1412,11 +1412,10 @@
     el.innerHTML = `
       <span class="t-shared-av">${initial ? esc(initial) : '<i class="fa-solid fa-gift"></i>'}</span>
       <div class="t-shared-text">
-        <p><span>${shared.from ? `<b>${esc(shared.from)}</b> shared this with you` : "Someone shared this with you"}</span>${
-      shared.score != null ? `<span class="t-shared-score"><i class="fa-solid fa-star"></i>${Cards.formatRating(shared.score)}<small>/10</small></span>` : ""
-    }</p>
+        <p><span>${shared.from ? `<b>${esc(shared.from)}</b> shared this with you` : "Someone shared this with you"}</span></p>
         ${shared.note ? `<q>${esc(shared.note)}</q>` : ""}
       </div>
+      ${shared.score != null ? `<span class="t-shared-score"><i class="fa-solid fa-star"></i>${Cards.formatRating(shared.score)}<small>/10</small></span>` : ""}
       <button type="button" class="t-shared-x" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>`;
     el.querySelector(".t-shared-x").addEventListener("click", () => {
       el.classList.add("out");

@@ -22478,3 +22478,25 @@ html.app-ui.tabs-away .t-shared {
     display: none;
   }
 }
+
+/* (the score sits at the right, just before the close button) */
+.t-shared-score {
+  flex: none;
+}
+
+/* (phones: the name on its own line, "shared this with you" under it) */
+@media (max-width: 520px) {
+  .t-shared {
+    gap: 10px;
+    padding: 12px 12px 12px 14px;
+  }
+
+  .t-shared-text p {
+    font-size: 13.5px;
+  }
+
+  .t-shared-text b {
+    display: block;
+    font-size: 15px;
+  }
+}
