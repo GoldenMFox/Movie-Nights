@@ -653,7 +653,7 @@
         travel += d;
         const atEnd = y + innerHeight >= root.scrollHeight - 40;
         if (y < 60 || atEnd || document.querySelector(".app-sheet.open") || travel < -10) tabsAway(false);
-        else if (travel > 24) tabsAway(true);
+        else if (travel > 60) tabsAway(true);
       },
       { passive: true }
     );

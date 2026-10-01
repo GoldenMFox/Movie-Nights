@@ -4190,22 +4190,33 @@ html.app-ui .app-sheet.open {
 
 /* phones: the tab bar slides down out of sight while you scroll down, and back up when you
    scroll up; what sits above it (the tier list tray, a message) follows it down and up */
+/* (coming back: a little quicker, settling gently into place) */
 html.app-ui .tab-bar {
-  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease-out;
 }
 
+/* (going away: a slow, soft glide down; the fade starts late, so you see it slide) */
 html.app-ui.tabs-away .tab-bar {
   opacity: 0;
   transform: translateY(calc(100% + var(--tab-gap) + 16px));
   pointer-events: none;
+  transition: transform 0.6s cubic-bezier(0.45, 0, 0.25, 1), opacity 0.35s ease-in 0.25s;
 }
 
 html.app-ui .tl-tray {
-  transition: bottom 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: bottom 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.app-ui.tabs-away .tl-tray {
+  transition: bottom 0.6s cubic-bezier(0.45, 0, 0.25, 1);
 }
 
 html.app-ui .toast {
-  transition: opacity 0.25s, transform 0.25s, bottom 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: opacity 0.25s, transform 0.25s, bottom 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.app-ui.tabs-away .toast {
+  transition: opacity 0.25s, transform 0.25s, bottom 0.6s cubic-bezier(0.45, 0, 0.25, 1);
 }
 
 @media (max-width: 900px) {
@@ -4220,7 +4231,9 @@ html.app-ui .toast {
 
 @media (prefers-reduced-motion: reduce) {
   html.app-ui .tab-bar,
-  html.app-ui .tl-tray {
+  html.app-ui.tabs-away .tab-bar,
+  html.app-ui .tl-tray,
+  html.app-ui.tabs-away .tl-tray {
     transition: opacity 0.2s;
   }
 }
