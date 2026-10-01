@@ -658,6 +658,14 @@
       { passive: true }
     );
 
+    // typing in a text field (the keyboard is up): the tab bar steps aside until you're done
+    const typingIn = (el) =>
+      el && (el.isContentEditable || el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && /^(text|search|email|url|tel|number|password)$/.test(el.type)));
+    document.addEventListener("focusin", (e) => root.classList.toggle("typing", !!typingIn(e.target)));
+    document.addEventListener("focusout", () =>
+      setTimeout(() => root.classList.toggle("typing", !!typingIn(document.activeElement)), 0)
+    );
+
     // a panel that slides up from the bottom; only one is open at a time
     const sheets = [];
     function makeSheet(tabId, title, html) {

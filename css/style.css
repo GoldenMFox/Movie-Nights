@@ -21908,3 +21908,77 @@ html.tablet .st-toggle {
     margin-left: 8px;
   }
 }
+
+/* ============================== Phone tweaks (from screenshots) ============================== */
+
+/* sideways rows on phones: no scrollbars at all (you swipe). Android drew the styled desktop
+   ones: a thin vertical bar beside each row and a white corner square */
+html.app-ui .movie-row,
+html.app-ui .t-cast,
+html.app-ui .t-media-row,
+html.app-ui .tl-pool {
+  scrollbar-width: none;
+}
+
+html.app-ui .movie-row::-webkit-scrollbar,
+html.app-ui .t-cast::-webkit-scrollbar,
+html.app-ui .t-media-row::-webkit-scrollbar,
+html.app-ui .tl-pool::-webkit-scrollbar {
+  display: none;
+}
+
+/* typing (the keyboard is up): the tab bar steps aside, so it doesn't sit on top of the
+   Search panel or a form */
+html.app-ui.typing .tab-bar {
+  opacity: 0;
+  transform: translateY(calc(100% + var(--tab-gap) + 16px));
+  pointer-events: none;
+  transition: transform 0.25s ease, opacity 0.2s;
+}
+
+/* Discover: Movies | TV shows | Anime picks in the site's red, like every other switch */
+.glass-filters .seg-indicator {
+  background: var(--accent);
+  box-shadow: 0 4px 14px rgba(144, 13, 9, 0.45);
+}
+
+.glass-filters .segmented button.active {
+  color: #fff;
+}
+
+@media (max-width: 700px) {
+  /* Discover on phones: the sort and Advanced search share one row, the same height */
+  .glass-filters .glass-select:not(.grow) {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .glass-filters .glass-select:not(.grow) select {
+    width: 100%;
+  }
+
+  .glass-filters .gf-adv {
+    flex: none;
+    align-self: stretch;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 16px;
+  }
+
+  .gf-adv-w {
+    display: none;
+  }
+
+  /* Watchlist on phones: the type switch and the order switch fit side by side under the title */
+  .wl-type .top10-tab {
+    padding: 6px 9px;
+  }
+
+  .wl-sort .top10-tab {
+    padding: 6px 9px;
+  }
+
+  .wl-sort .top10-tab i {
+    display: none;
+  }
+}
