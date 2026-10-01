@@ -47,6 +47,35 @@
   // what's synced to your account (js/core/cloud.js)
   const SYNCED = [KEYS.overrides, KEYS.custom, KEYS.tiers, KEYS.profile];
 
+  /* ---------- problems on this device (Settings → Problems on this device) ----------
+     The site's own errors, the last 20, so "it didn't work" can be looked into later. Not the
+     browser extensions' (Gmail, Acrobat… report theirs on every site). Only in this browser. */
+  const ERRORS = "mn:errors";
+  function logError(message, where) {
+    try {
+      const msg = String(message || "Unknown error").slice(0, 300);
+      const list = read(ERRORS, []);
+      if (list[0] && list[0].msg === msg && Date.now() - list[0].at < 60000) return; // the same one again
+      list.unshift({ at: Date.now(), msg, where: String(where || "").slice(0, 120), page: location.pathname.split("/").pop() || "index.html" });
+      localStorage.setItem(ERRORS, JSON.stringify(list.slice(0, 20)));
+    } catch (e) {}
+  }
+  const ours = (file) => !!file && file.startsWith(location.origin);
+  window.addEventListener("error", (e) => {
+    if (e.message && ours(e.filename)) logError(e.message, `${e.filename.split("/").pop()}:${e.lineno || ""}`);
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    const r = e.reason;
+    if (/extension:\/\//.test((r && r.stack) || "")) return;
+    logError((r && r.message) || String(r), "a background task");
+  });
+  const errors = () => read(ERRORS, []);
+  const clearErrors = () => {
+    try {
+      localStorage.removeItem(ERRORS);
+    } catch (e) {}
+  };
+
   // Every person has their own private library, kept in their account (js/core/cloud.js):
   //   signed in: your library ("empty" = all yours in the account; "library" = the owner's
   //     from before it moved into the account: data/library.js plus your changes)
@@ -466,6 +495,9 @@
     get,
     isRecent,
     isWatched,
+    logError,
+    errors,
+    clearErrors,
     releaseOf,
     update,
     toggle,

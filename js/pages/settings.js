@@ -117,6 +117,18 @@
             </div>`,
             guest ? " hidden" : ""
           )}
+
+          ${card(
+            "problems",
+            "fa-stethoscope",
+            "Problems on this device",
+            `<p class="sv-note sv-lead">When something doesn't work, the site notes it here (only in this browser), so it can be looked into. Copy the list and send it along.</p>
+            <ol class="sv-errors"></ol>
+            <div class="sv-buttons sv-errors-buttons">
+              <button class="btn copy-errors" type="button"><i class="fa-regular fa-copy"></i> Copy</button>
+              <button class="btn clear-errors" type="button"><i class="fa-solid fa-broom"></i> Clear</button>
+            </div>`
+          )}
         </div>
       </div>
     </div>`;
@@ -125,6 +137,36 @@
   root.querySelectorAll("[data-owner]").forEach((el) => el.classList.add("owner-only"));
 
   const $ = (s) => root.querySelector(s);
+
+  /* ---------------- problems on this device (js/core/store.js keeps them) ---------------- */
+
+  const when = (t) => new Date(t).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  function paintErrors() {
+    const list = Store.errors();
+    $(".sv-errors").innerHTML = list.length
+      ? list
+          .map((e) => `<li><b>${esc(e.msg)}</b><small>${esc(when(e.at))} · ${esc(e.page)}${e.where ? ` · ${esc(e.where)}` : ""}</small></li>`)
+          .join("")
+      : '<li class="sv-errors-none"><i class="fa-solid fa-circle-check"></i> Nothing has gone wrong on this device.</li>';
+    $(".sv-errors-buttons").hidden = !list.length;
+  }
+  paintErrors();
+  $(".copy-errors").addEventListener("click", async () => {
+    const text = Store.errors()
+      .map((e) => `${new Date(e.at).toISOString()} ${e.page}${e.where ? ` (${e.where})` : ""}: ${e.msg}`)
+      .join("\n");
+    try {
+      await navigator.clipboard.writeText(`Movie Nights problems (${navigator.userAgent})\n${text}`);
+      toast("Copied: paste it in a message");
+    } catch (err) {
+      toast("Couldn't copy the list");
+    }
+  });
+  $(".clear-errors").addEventListener("click", () => {
+    Store.clearErrors();
+    paintErrors();
+    toast("Cleared");
+  });
 
   /* ---------------- appearance ---------------- */
 

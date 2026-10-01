@@ -22768,3 +22768,44 @@ html.app-ui.tabs-away .t-shared {
     animation: none;
   }
 }
+
+/* Settings: Problems on this device (the site's own recent errors) */
+.sv-errors {
+  display: grid;
+  gap: 6px;
+  max-height: 260px;
+  margin: 12px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.sv-errors li {
+  display: grid;
+  gap: 2px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--glass-bg);
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
+
+.sv-errors li small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.sv-errors .sv-errors-none {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+
+.sv-errors .sv-errors-none i {
+  color: #4caf7a;
+}
+
+.sv-errors-buttons[hidden] {
+  display: none;
+}

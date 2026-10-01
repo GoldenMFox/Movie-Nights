@@ -275,6 +275,7 @@
       .catch((err) => {
         console.warn("Sync:", err.message);
         const s = statusOf(err);
+        if (s !== "offline") Store.logError(`Sync: ${err.message}`, "saving to your account");
         setStatus(s);
         if (s === "refused") refused();
       });
@@ -417,6 +418,7 @@
     } catch (err) {
       console.warn("Sync:", err.message);
       const s = statusOf(err);
+      if (s !== "offline") Store.logError(`Sync: ${err.message}`, "opening your account");
       setStatus(s);
       if (s === "signed-out") toast(`${first(account.name)}, please sign in again to keep syncing`);
       // (refused while loading it: the account itself said no, e.g. not on the guest list any more)

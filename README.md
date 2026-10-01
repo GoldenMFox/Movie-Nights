@@ -184,6 +184,15 @@ anyway) instead of asking TMDB again. Fonts load from each page's `<head>`, alon
 devices' changes, the check before saving (with a pretend Firestore), sync errors, the spare copy,
 and short share links. No installs; this browser's data is put back afterwards.
 
+**Problems on this device** (Settings): the site's own recent errors (the last 20, kept only in
+this browser by `js/core/store.js`; browser extensions' errors left out), plus a refused save or
+an ended session from syncing. Copy the list to send it along, or Clear it.
+
+**Search engines**: the private pages (your library, Watchlist, tier list, profile, settings,
+short share links) carry `<meta name="robots" content="noindex">`; the home page has a
+canonical address and a link preview (Open Graph). (A `robots.txt` here would be ignored: search
+engines only read one at the root of `goldenmfox.github.io`.)
+
 **Never published**: `.gitignore` keeps library backups (`*.json`), IMDb / Letterboxd exports
 (`*.csv`) and `*.zip` files out of GitHub, so a backup left in this folder stays private.
 
