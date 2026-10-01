@@ -1385,6 +1385,7 @@
      Esc, and typing a letter jumps to it. */
   let menuEl = null;
   let menuSelect = null;
+  let touchedAt = 0; // the last finger on the screen (Apple: no focus on a <select> after it)
   let menuAt = -1;
   let menuTyped = "";
   let menuTypedAt = 0;
@@ -1423,7 +1424,10 @@
     const sel = menuSelect;
     menuSelect = null;
     document.documentElement.classList.remove("sm-lock");
-    sel.focus({ preventScroll: true });
+    // (back to the list for the keyboard; not after a finger: on an iPhone or iPad, focusing a
+    // <select> during a tap opens Apple's own picker wheel on top of ours)
+    if (Date.now() - touchedAt > 1500) sel.focus({ preventScroll: true });
+    else sel.blur();
   }
   function pickFromMenu(i) {
     const sel = menuSelect;
@@ -1495,14 +1499,22 @@
       if (!sel || e.button !== 0) return;
       e.preventDefault();
       if (menuSelect === sel) return closeMenu();
-      sel.focus({ preventScroll: true });
+      // (a mouse: the list keeps the focus; a mousedown right after a finger is the tap's echo)
+      if (Date.now() - touchedAt > 1500) sel.focus({ preventScroll: true });
       openMenu(sel);
     },
     true
   );
   // (a finger that starts on a list but scrolls the page doesn't open it: only a tap does)
   let touchFrom = null;
-  document.addEventListener("touchstart", (e) => (touchFrom = e.touches[0] ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null), { capture: true, passive: true });
+  document.addEventListener(
+    "touchstart",
+    (e) => {
+      touchedAt = Date.now();
+      touchFrom = e.touches[0] ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+    },
+    { capture: true, passive: true }
+  );
   document.addEventListener(
     "touchend",
     (e) => {
@@ -1511,6 +1523,8 @@
       e.preventDefault();
       const t = e.changedTouches[0];
       if (touchFrom && t && Math.hypot(t.clientX - touchFrom.x, t.clientY - touchFrom.y) > 10) return;
+      // (and the <select> itself doesn't keep the focus: Apple's picker would open)
+      sel.blur();
       openMenu(sel);
     },
     { capture: true, passive: false }
