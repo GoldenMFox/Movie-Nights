@@ -170,6 +170,12 @@ changes kept), and the save only goes through if the account hasn't changed agai
 (Firestore's `currentDocument.updateTime`; if it has, it looks again, three tries). The spare
 copy of the library made before a merge (`mn:localBackup`) is dropped after a week.
 
+**TMDB requests** (`js/services/tmdb.js`): the same request asked for several times at once goes
+out once (they share it), and none waits forever: after 15 seconds a bad connection gets a
+message instead of an endless spinner. Box Office's "Your box office" takes each film's budget
+and gross from the film facts when they're there (Profile, Wrapped and the tier list load them
+anyway) instead of asking TMDB again. Fonts load from each page's `<head>`, alongside the page.
+
 **Tests**: open `tools/tests.html` (e.g. `http://localhost:8080/tools/tests.html`): merging two
 devices' changes, the check before saving (with a pretend Firestore), sync errors, the spare copy,
 and short share links. No installs; this browser's data is put back afterwards.

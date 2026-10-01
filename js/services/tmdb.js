@@ -121,18 +121,39 @@
     return window.MN_CONFIG && MN_CONFIG.TMDB_KEY ? "config" : "";
   }
 
-  async function request(path, params) {
+  // The same request already on its way (the title page, trivia and the soundtrack asking for
+  // the same details at once): they share it instead of each going out. And none waits forever:
+  // after TIMEOUT a bad connection gets a message instead of an endless spinner.
+  const pending = new Map();
+  const TIMEOUT = 15000;
+  function request(path, params) {
     const k = key();
-    if (!k) throw new Error("No TMDB key set");
+    if (!k) return Promise.reject(new Error("No TMDB key set"));
     const url = new URL(API + path);
     Object.entries(params || {}).forEach(([p, v]) => v != null && v !== "" && url.searchParams.set(p, v));
     const headers = {};
     // Works with both the short "API key" and the long "read access token"
     if (k.startsWith("eyJ")) headers.Authorization = `Bearer ${k}`;
     else url.searchParams.set("api_key", k);
-    const res = await fetch(url, { headers });
-    if (!res.ok) throw new Error(res.status === 401 ? "TMDB rejected the API key" : `TMDB error ${res.status}`);
-    return res.json();
+    const id = url.toString();
+    if (pending.has(id)) return pending.get(id);
+    const job = (async () => {
+      const stop = new AbortController();
+      const timer = setTimeout(() => stop.abort(), TIMEOUT);
+      try {
+        const res = await fetch(url, { headers, signal: stop.signal });
+        if (!res.ok) throw new Error(res.status === 401 ? "TMDB rejected the API key" : `TMDB error ${res.status}`);
+        return await res.json();
+      } catch (err) {
+        if (err.name === "AbortError") throw new Error("TMDB is taking too long to answer. Check your connection and try again");
+        throw err;
+      } finally {
+        clearTimeout(timer);
+        pending.delete(id);
+      }
+    })();
+    pending.set(id, job);
+    return job;
   }
 
   function yearOf(date) {
@@ -983,8 +1004,18 @@
   async function boxOfficeOf(id, released) {
     const map = await boMap();
     const had = map[id];
-    const fresh = released && Date.now() - new Date(released).getTime() < 365 * 86400000 ? 3 * 86400000 : 30 * 86400000;
+    const age = released ? Date.now() - new Date(released).getTime() : 0;
+    const fresh = released && age < 365 * 86400000 ? 3 * 86400000 : 30 * 86400000;
     if (had && Date.now() - had[2] < fresh) return { budget: had[0], revenue: had[1] };
+    // the film facts (Profile, Wrapped, the tier list) already hold its budget and gross: no
+    // need to ask TMDB again. (A film over two years old doesn't earn any more: facts up to
+    // half a year old will do; a newer one needs fresh numbers.)
+    const f = (await factsAll())[`movie-${id}`];
+    if (f && (f.b || f.v) && Date.now() - f.at < (age > 2 * 365 * 86400000 ? 180 * 86400000 : fresh)) {
+      map[id] = [f.b || 0, f.v || 0, f.at];
+      boStore();
+      return { budget: f.b || 0, revenue: f.v || 0 };
+    }
     const d = await request(`/movie/${id}`);
     map[id] = [d.budget || 0, d.revenue || 0, Date.now()];
     boStore();

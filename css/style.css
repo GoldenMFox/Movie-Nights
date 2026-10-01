@@ -1,5 +1,4 @@
-/* Inter: the closest free match to Netflix Sans (Netflix's own font can't be used elsewhere) */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@800&display=swap");
+/* Inter: the closest free match to Netflix Sans (Netflix's own font can't be used elsewhere). Loaded by each page's <head> (a <link>, not an @import here: an @import only starts once this whole file has arrived) */
 
 /* ============================== Theme ============================== */
 
