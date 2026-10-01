@@ -164,6 +164,16 @@ clock far off) the profile menu says so in red ("Couldn't save to your account")
 explains why; the changes stay on the device and are tried again. No internet shows as
 "Offline: will sync later".
 
+**Two devices open at once**: before every save, the site checks the account's save time (a few
+bytes). If another device saved since, its version is read and merged in first (each side's
+changes kept), and the save only goes through if the account hasn't changed again meanwhile
+(Firestore's `currentDocument.updateTime`; if it has, it looks again, three tries). The spare
+copy of the library made before a merge (`mn:localBackup`) is dropped after a week.
+
+**Tests**: open `tools/tests.html` (e.g. `http://localhost:8080/tools/tests.html`): merging two
+devices' changes, the check before saving (with a pretend Firestore), sync errors, the spare copy,
+and short share links. No installs; this browser's data is put back afterwards.
+
 **Never published**: `.gitignore` keeps library backups (`*.json`), IMDb / Letterboxd exports
 (`*.csv`) and `*.zip` files out of GitHub, so a backup left in this folder stays private.
 

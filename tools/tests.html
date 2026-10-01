@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>Tests · Movie Nights</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px 16px 60px;
+        background: #111214;
+        color: #eee;
+        font: 15px/1.5 system-ui, sans-serif;
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 24px;
+      }
+      .sum {
+        margin: 0 0 18px;
+        color: #aaa;
+      }
+      .sum b.ok {
+        color: #5ed493;
+      }
+      .sum b.bad {
+        color: #ff6b63;
+      }
+      h2 {
+        margin: 22px 0 8px;
+        font-size: 16px;
+        color: #bbb;
+      }
+      .t {
+        display: flex;
+        gap: 10px;
+        padding: 6px 10px;
+        border-radius: 8px;
+      }
+      .t:nth-child(odd) {
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .t i {
+        flex: none;
+        width: 18px;
+        font-style: normal;
+        font-weight: 800;
+      }
+      .t.ok i {
+        color: #5ed493;
+      }
+      .t.bad i {
+        color: #ff6b63;
+      }
+      .t small {
+        display: block;
+        color: #ff8a80;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Movie Nights tests</h1>
+      <p class="sum">Running…</p>
+      <div id="out"></div>
+    </main>
+    <!-- the site's own scripts, as the pages load them (no account here: nothing is synced) -->
+    <script src="../js/config.js"></script>
+    <script src="../js/core/store.js"></script>
+    <script src="../js/core/cloud.js"></script>
+    <script src="tests.js"></script>
+  </body>
+</html>

@@ -30,7 +30,8 @@
     account: "mn:account", // who's watching right now
     syncAt: "mn:syncAt", // time of the account version this browser has
     dirty: "mn:dirty", // changes not uploaded yet
-    backup: "mn:localBackup", // what this browser had before signing in
+    backup: "mn:localBackup", // what this browser had before its version was replaced or merged
+    backupAt: "mn:localBackupAt", // when that copy was made (it's dropped a week later)
     base: "mn:syncBase", // the last version this browser and the account agreed on (for merging)
   };
   try {
@@ -50,6 +51,17 @@
         localStorage.removeItem(k);
       } catch (e) {}
     });
+  // A spare copy of this browser's library, made before it's replaced by (or merged with) the
+  // account's version: kept a week as a safety net, then dropped (it's the size of the whole
+  // library, and the browser's storage is small, especially on iPhone)
+  const WEEK = 7 * 24 * 3600 * 1000;
+  function keepBackup() {
+    write(K.backup, Store.snapshot());
+    write(K.backupAt, Date.now());
+  }
+  function dropOldBackup() {
+    if (read(K.backup, null) && Date.now() - read(K.backupAt, 0) > WEEK) drop(K.backup, K.backupAt);
+  }
   const first = (name) => String(name || "").trim().split(/\s+/)[0] || "Someone";
   const toast = (msg) => window.UI && UI.toast(msg);
 
@@ -118,7 +130,7 @@
     const headers = {};
     if (tok) headers.Authorization = `Bearer ${tok}`;
     if (body) headers["Content-Type"] = "application/json";
-    const res = await fetch(`${DB}/${path}${tok ? "" : `?key=${encodeURIComponent(cfg.apiKey)}`}`, {
+    const res = await fetch(`${DB}/${path}${tok ? "" : `${path.includes("?") ? "&" : "?"}key=${encodeURIComponent(cfg.apiKey)}`}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
@@ -126,10 +138,13 @@
     if (res.status === 404) return null;
     if (!res.ok) {
       let msg = res.statusText;
+      let reason = "";
       try {
-        msg = (await res.json()).error.message;
+        const e = (await res.json()).error;
+        msg = e.message;
+        reason = e.status || ""; // e.g. "FAILED_PRECONDITION": the document changed meanwhile
       } catch (e) {}
-      throw Object.assign(new Error(msg), { status: res.status });
+      throw Object.assign(new Error(msg), { status: res.status, reason });
     }
     return res.json();
   }
@@ -177,6 +192,7 @@
   let lastSize = 0; // the last upload's size, to explain a refusal
   function statusOf(err) {
     if (err.signedOut || err.status === 401) return "signed-out";
+    if (err.reason === "FAILED_PRECONDITION") return "offline"; // the other device kept saving: tried again later
     if (err.status === 400 || err.status === 403 || err.status === 413) return "refused";
     return "offline";
   }
@@ -191,17 +207,41 @@
     if (window.UI) UI.toast(`Couldn't save to your account. ${why} Your changes are kept on this device.`);
   }
 
-  async function upload(acct, tok, data) {
+  // cond: only save if the document is still the one we read ("currentDocument.updateTime=…",
+  // or "currentDocument.exists=false" for a first save). Firestore refuses it otherwise
+  // (FAILED_PRECONDITION) and push() reads it again.
+  async function upload(acct, tok, data, cond) {
     const at = Date.now();
     const text = JSON.stringify(data);
     lastSize = text.length;
-    await api(`users/${acct.uid}`, {
+    await api(`users/${acct.uid}${cond ? `?${cond}` : ""}`, {
       method: "PATCH",
       tok,
       // (your picture: the character you picked, else your Google photo; shown in Members)
       body: toDoc({ data: text, name: acct.name, photo: (acct === account ? Store.myPhoto(true) : acct.photo) || "", base: acct.base, updatedAt: at }),
     });
     return at;
+  }
+
+  // Before saving, a quick look at the account (just its save time, a few bytes): another device
+  // saved since this one last synced (both open at once)? Then its version is read and merged
+  // with this one (mergeData: each side's changes kept), so nothing it saved is overwritten.
+  // The save only goes through if the account didn't change again meanwhile; if it did, look again.
+  async function catchUp(tok, acct = account) {
+    const head = await api(`users/${acct.uid}?mask.fieldPaths=updatedAt`, { tok });
+    if (!head) return "currentDocument.exists=false";
+    const remoteAt = Number(((head.fields || {}).updatedAt || {}).integerValue || 0);
+    if (remoteAt <= read(K.syncAt, 0)) return `currentDocument.updateTime=${encodeURIComponent(head.updateTime)}`;
+    const full = await api(`users/${acct.uid}`, { tok });
+    if (!full) return "currentDocument.exists=false";
+    const theirs = dataOf(fromDoc(full));
+    const before = JSON.stringify(Store.snapshot());
+    keepBackup();
+    Store.replaceData(mergeData(read(K.base, null) || {}, Store.snapshot(), theirs));
+    write(K.syncAt, remoteAt);
+    write(K.base, theirs);
+    if (JSON.stringify(Store.snapshot()) !== before) toast("Synced with your other device: both sets of changes are kept");
+    return `currentDocument.updateTime=${encodeURIComponent(full.updateTime)}`;
   }
 
   function push() {
@@ -211,10 +251,22 @@
       .then(async () => {
         if (!read(K.dirty, false)) return setStatus("synced");
         const seen = edits;
-        const data = Store.snapshot();
-        const at = await upload(account, await token(account), data);
-        write(K.syncAt, at);
-        write(K.base, data);
+        const tok = await token(account);
+        for (let attempt = 1; ; attempt++) {
+          const cond = await catchUp(tok);
+          const data = Store.snapshot();
+          try {
+            const at = await upload(account, tok, data, cond);
+            write(K.syncAt, at);
+            write(K.base, data);
+            break;
+          } catch (err) {
+            // saved on the other device at that very moment: read it again (three tries)
+            if (err.reason === "FAILED_PRECONDITION" && attempt < 3) continue;
+            throw err;
+          }
+        }
+        dropOldBackup();
         // changed again while it was uploading: stays "to upload" (its own timer sends it)
         if (edits !== seen) return;
         drop(K.dirty);
@@ -335,7 +387,7 @@
         const base = read(K.base, null);
         if (read(K.dirty, false) && base) {
           // both this browser and another device changed things: keep both
-          write(K.backup, Store.snapshot());
+          keepBackup();
           const before = JSON.stringify(Store.snapshot());
           const merged = mergeData(base, Store.snapshot(), theirs);
           Store.replaceData(merged);
@@ -351,7 +403,7 @@
         } else {
           // (changes here with nothing to compare against: the account's version wins,
           // and a copy of this browser's is kept in mn:localBackup)
-          if (read(K.dirty, false)) write(K.backup, Store.snapshot());
+          if (read(K.dirty, false)) keepBackup();
           apply(theirs, remote.updatedAt);
           setStatus("synced");
         }
@@ -359,6 +411,7 @@
         await push();
       } else {
         setStatus("synced");
+        dropOldBackup();
       }
       await checkOwner(tok);
     } catch (err) {
@@ -564,7 +617,7 @@
       const acct = { uid: user.uid, name: user.displayName || user.email, email: user.email, photo: user.photoURL || "", app: app.name };
       const tok = await user.getIdToken();
       const remote = fromDoc(await api(`users/${acct.uid}`, { tok })); // refused if this account isn't allowed
-      write(K.backup, Store.snapshot());
+      keepBackup();
 
       if (remote) {
         // signed in before on another device: your library comes from your account
@@ -680,7 +733,7 @@
     write(K.accounts, accounts().filter((a) => a.uid !== account.uid));
     // this device shows no library until someone signs in (not even the spare copies);
     // your data stays in your account
-    drop(K.account, K.syncAt, K.dirty, K.backup, K.base, "mn:myPicFramed", ...Store.SYNCED);
+    drop(K.account, K.syncAt, K.dirty, K.backup, K.backupAt, K.base, "mn:myPicFramed", ...Store.SYNCED);
     location.reload();
   }
 
@@ -709,5 +762,7 @@
     isOwner,
     onOwner: (fn) => ownerListeners.push(fn),
     members,
+    // for tools/tests.html only
+    _test: { mergeData, statusOf, catchUp, keepBackup, dropOldBackup, K },
   };
 })();
