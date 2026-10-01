@@ -616,7 +616,7 @@
   // and these five tabs sit at the bottom in a floating pill, like a native app.
   // Search and Library open panels that slide up from the bottom.
   if (appUi) {
-    const LIBRARY_PAGES = ["movie", "tv", "anime", "tiers"];
+    const LIBRARY_PAGES = ["movie", "tv", "anime", "tiers", "boxoffice"];
     const TABS = [
       { id: "home", href: "index.html", label: "Home", icon: "fa-house", on: ["home"] },
       { id: "discover", href: "discover.html", label: "Discover", icon: "fa-compass", on: ["discover"] },
@@ -772,6 +772,7 @@
       { href: "anime.html", label: "Anime", icon: "fa-clapperboard", n: count((i) => i.type === "anime") },
       { href: "watchlist.html?list=fav", label: "Favorites", icon: "fa-heart", n: count((i) => i.favorite) },
       { href: "tier-list.html", label: "Tier List", icon: "fa-ranking-star", n: null },
+      { href: "box-office.html", label: "Box Office", icon: "fa-sack-dollar", n: null },
     ];
     makeSheet(
       "library",
