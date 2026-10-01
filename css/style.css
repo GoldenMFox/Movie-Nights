@@ -22500,3 +22500,22 @@ html.app-ui.tabs-away .t-shared {
     font-size: 15px;
   }
 }
+
+/* (the score in the middle of the room between the text and the close button: the text takes
+   only the room it needs, the score's equal margins share the rest; no score: the close button
+   keeps to the right) */
+.t-shared-text {
+  flex: 0 1 auto;
+}
+
+.t-shared-score {
+  margin: 0 auto;
+}
+
+.t-shared-x {
+  margin-left: auto;
+}
+
+.t-shared-score + .t-shared-x {
+  margin-left: 0;
+}
