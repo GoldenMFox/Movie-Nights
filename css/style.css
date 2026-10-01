@@ -22587,3 +22587,17 @@ html.app-ui.tabs-away .t-shared {
     margin-right: 4px;
   }
 }
+
+/* library chips: a thin line between All / Watched / Watchlist and the filters inside them */
+.chip-sep {
+  flex: none;
+  align-self: center;
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+:root[data-theme="light"] .chip-sep {
+  background: rgba(0, 0, 0, 0.14);
+}

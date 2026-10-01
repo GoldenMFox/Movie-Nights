@@ -64,15 +64,52 @@
   // watched = in your library, unless it's only on your Watchlist (a score or a watch date
   // always counts)
   const seen = (i) => i.rating != null || !!i.watchedAt || !i.watchlist;
+  // Two groups: All = Watched + Watchlist (every title is in exactly one of those two), then
+  // filters inside them: Rated + Not rated = Watched (a title you haven't seen can't be rated)
   const STATUS_CHIPS = [
-    { id: "all", label: "All", test: () => true },
-    { id: "watched", label: "Watched", test: seen },
-    { id: "rated", label: "Rated", test: (i) => i.rating != null },
-    { id: "unrated", label: "Not rated", test: (i) => i.rating == null },
-    { id: "fav", label: "Favorites", test: (i) => i.favorite },
-    { id: "watch", label: "Watchlist", test: (i) => i.watchlist },
-    { id: "new", label: "New releases", test: (i) => Store.isRecent(i) },
+    { id: "all", label: "All", tip: "Everything in your library: watched and on your Watchlist", test: () => true },
+    { id: "watched", label: "Watched", tip: "Everything you've seen (rated or not)", test: seen },
+    { id: "watch", label: "Watchlist", tip: "On your Watchlist, not watched yet", test: (i) => !seen(i) },
+    { id: "rated", label: "Rated", tip: "Watched and rated", test: (i) => i.rating != null, refine: true },
+    { id: "unrated", label: "Not rated", tip: "Watched, but not rated yet", test: (i) => seen(i) && i.rating == null },
+    { id: "fav", label: "Favorites", tip: "Your favorites", test: (i) => i.favorite },
+    { id: "new", label: "New releases", tip: "Released in the last 6 months", test: (i) => Store.isRecent(i) },
   ];
+  const NOUN = { movie: "movies", tv: "TV shows", anime: "anime" }[page] || "titles";
+
+  // the line under the chips: what the picked chip's number is made of
+  function countText(items) {
+    const list = baseList();
+    const n = (test) => list.filter(test).length;
+    const chip = CHIPS.find((c) => c.id === state.chip) || CHIPS[0];
+    const inChip = n(chip.test);
+    if (PAGE.chips !== "status") return items.length === list.length ? `${list.length} titles` : `Showing ${items.length} of ${list.length} titles`;
+    // a search or a filter on top: just how many of the chip's titles show
+    if (items.length !== inChip) {
+      const what = { all: NOUN, watched: "watched", watch: "on your Watchlist", rated: "rated", unrated: "not rated yet", fav: "favorites", new: "new releases" }[chip.id] || NOUN;
+      return `Showing ${items.length} of ${inChip} ${what}`;
+    }
+    const watched = n(seen);
+    const rated = n((i) => i.rating != null);
+    switch (chip.id) {
+      case "all":
+        return `${inChip} ${NOUN} · ${watched} watched · ${inChip - watched} on your Watchlist`;
+      case "watched":
+        return `${inChip} watched · ${rated} rated · ${inChip - rated} not rated yet`;
+      case "watch":
+        return `${inChip} on your Watchlist, not watched yet`;
+      case "rated":
+        return `${inChip} rated, of ${watched} watched`;
+      case "unrated":
+        return `${inChip} watched but not rated yet`;
+      case "fav":
+        return `${inChip} favorites`;
+      case "new":
+        return `${inChip} released in the last 6 months`;
+      default:
+        return `${inChip} ${NOUN}`;
+    }
+  }
   const TYPE_CHIPS = [
     { id: "all", label: "All", test: () => true },
     { id: "movie", label: "Movies", test: (i) => i.type === "movie" },
@@ -262,11 +299,12 @@
     // scrolls sideways: it stays where it was, then the picked chip glides into view.)
     const scrolled = chipsBox.scrollLeft;
     const first = !chipsBox.querySelector(".chip");
-    chipsBox.querySelectorAll(".chip").forEach((c) => c.remove());
+    chipsBox.querySelectorAll(".chip, .chip-sep").forEach((c) => c.remove());
     chipsBox.insertAdjacentHTML("beforeend", CHIPS.map((c) => {
       const n = list.filter(c.test).length;
       if (!n && c.id !== "all") return "";
-      return `<button class="chip${c.id === state.chip ? " active" : ""}" data-chip="${c.id}" aria-pressed="${c.id === state.chip}">
+      // (a thin line between All / Watched / Watchlist and the filters inside them)
+      return `${c.refine ? '<span class="chip-sep" aria-hidden="true"></span>' : ""}<button class="chip${c.id === state.chip ? " active" : ""}" data-chip="${c.id}" aria-pressed="${c.id === state.chip}"${c.tip ? ` title="${c.tip}"` : ""}>
         ${c.label}<span class="count">${n}</span></button>`;
     }).join(""));
     chipsBox.scrollLeft = scrolled;
@@ -506,7 +544,7 @@
     renderChips();
     renderGenres();
     tools.mark(state.q.trim(), filtersInUse());
-    const count = items.length === total ? `${total} titles` : `Showing ${items.length} of ${total} titles`;
+    const count = countText(items);
     if (count !== countEl.textContent) {
       countEl.textContent = count;
       // the count slides in afresh when it changes
