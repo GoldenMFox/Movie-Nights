@@ -12,7 +12,7 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v156";
+const VERSION = "v157";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [
@@ -29,6 +29,7 @@ const APP_FILES = [
   "box-office.html",
   "title.html",
   "share.html",
+  "s/index.html",
   "person.html",
   "profile.html",
   "settings.html",

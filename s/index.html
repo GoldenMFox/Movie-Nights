@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A pick for you · Movie Nights</title>
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Movie Nights" />
+    <meta property="og:title" content="🎬 A pick for you on Movie Nights" />
+    <meta property="og:description" content="Someone thinks you'll love this. Tap to see the trailer, the cast and where to stream it." />
+    <meta property="og:image" content="https://goldenmfox.github.io/Movie-Nights/images/icons/icon-512.png" />
+    <link rel="icon" href="../images/brand/favicon.png" type="image/png" />
+    <style>
+      body {
+        margin: 0;
+        background: #17181c;
+      }
+    </style>
+    <!--
+      A short share link (js/components/share.js):  s/?m14.10.Mirzac_Nicolae.Watch_it_loud
+        m / t + TMDB id (a movie / a show) . your score (9,5 = 9.5) . your name . your note
+      (each may be empty; spaces as "_"). It opens the title page with those.
+    -->
+    <script>
+      (function () {
+        var bits = location.search.slice(1).split(".");
+        var id = /^([mt])(\d+)$/.exec(bits[0] || "");
+        if (!id) return location.replace("../discover.html");
+        var dec = function (s) {
+          try {
+            return decodeURIComponent((s || "").replace(/_/g, " ")).trim();
+          } catch (e) {
+            return "";
+          }
+        };
+        var p = new URLSearchParams();
+        p.set("tmdb", (id[1] === "t" ? "tv" : "movie") + "-" + id[2]);
+        var score = (bits[1] || "").replace(",", ".");
+        if (/^\d+(\.\d+)?$/.test(score)) p.set("r", score);
+        if (dec(bits[2])) p.set("from", dec(bits[2]));
+        var note = dec(bits.slice(3).join("."));
+        if (note) p.set("note", note);
+        location.replace("../title.html?" + p.toString());
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>

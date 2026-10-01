@@ -23,26 +23,36 @@
 
   // the title page by TMDB's id (title.html?tmdb=movie-157336), which anyone can open; someone
   // with the title in their own library is taken to theirs
+  // A short link: s/?m14.10.Mirzac_Nicolae.Watch_it_loud  (s/index.html opens the title page)
+  //   m / t + TMDB's id (a movie / a show), then your score, your name, your note: each only if
+  //   you chose to add it (left empty when a later one follows), spaces as "_"
+  const part = (s) => encodeURIComponent(String(s).replace(/[._]/g, " ").trim().replace(/\s+/g, "_")).replace(/%2C/g, ",");
   function linkOf(c) {
-    const u = new URL("title.html", location.href);
-    u.search = "";
-    u.hash = "";
-    u.searchParams.set("tmdb", `${c.details.mediaType}-${c.details.tmdbId}`);
-    if (c.useName && c.name) u.searchParams.set("from", c.name);
-    if (c.useRating && c.rating != null) u.searchParams.set("r", Cards.formatRating(c.rating));
-    const note = c.note.trim();
-    if (note) u.searchParams.set("note", note.slice(0, 140));
-    return u.toString();
+    const bits = [`${c.details.mediaType === "tv" ? "t" : "m"}${c.details.tmdbId}`];
+    bits.push(c.useRating && c.rating != null ? Cards.formatRating(c.rating).replace(".", ",") : ""); // 9.5 → 9,5
+    bits.push(c.useName && c.name ? part(c.name) : "");
+    const note = c.note.trim().slice(0, 140);
+    bits.push(note ? encodeURIComponent(note.replace(/_/g, " ").replace(/\s+/g, "_")).replace(/%2C/g, ",") : "");
+    while (bits.length > 1 && !bits[bits.length - 1]) bits.pop();
+    return `${new URL("s/", location.href).href}?${bits.join(".")}`;
   }
 
-  // the message that goes with it: "Nicu recommends Interstellar (2014) ★ 9/10 ..."
+  // the message that goes with it:
+  //   🎬 Interstellar (2014)
+  //   ⭐ 9/10 from Nicolae
+  //   “Watch it loud”
+  //
+  //   Trailer, cast and where to stream it:
+  //   https://…/s/?m157336.9.Nicolae
   function textOf(c) {
     const d = c.details;
-    const name = `${Lang.title(d)}${d.year ? ` (${d.year})` : ""}`;
-    const head = c.useName && c.name ? `${c.name} recommends ${name}` : `Check out ${name}`;
-    const score = c.useRating && c.rating != null ? ` · ★ ${Cards.formatRating(c.rating)}/10` : "";
-    const note = c.note.trim() ? `\n“${c.note.trim().slice(0, 140)}”` : "";
-    return `${head}${score}${note}`;
+    const lines = [`🎬 ${Lang.title(d)}${d.year ? ` (${d.year})` : ""}`];
+    const score = c.useRating && c.rating != null ? `⭐ ${Cards.formatRating(c.rating)}/10` : "";
+    const who = c.useName && c.name ? c.name : "";
+    if (score || who) lines.push(score && who ? `${score} from ${who}` : score || `Recommended by ${who}`);
+    if (c.note.trim()) lines.push(`“${c.note.trim().slice(0, 140)}”`);
+    lines.push("", "Trailer, cast and where to stream it:", c.url);
+    return lines.join("\n");
   }
 
   /* ---------------- the picture card ---------------- */
@@ -351,12 +361,12 @@
     const text = textOf(c);
     const file = c.blob ? new File([c.blob], fileName(), { type: "image/jpeg" }) : null;
     try {
-      // phones: the picture card and the link together (the link also goes in the text: some
-      // apps drop the url field when there's a picture)
+      // phones: the picture card with the message (the link is in it, at the end: apps put
+      // a separate url field in different places, or drop it when there's a picture)
       if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: Lang.title(c.details), text: `${text}\n${c.url}` });
+        await navigator.share({ files: [file], title: Lang.title(c.details), text });
       } else {
-        await navigator.share({ title: Lang.title(c.details), text, url: c.url });
+        await navigator.share({ title: Lang.title(c.details), text });
       }
     } catch (e) {
       if (e && e.name === "AbortError") return; // closed the share sheet
