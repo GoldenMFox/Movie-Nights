@@ -12,7 +12,7 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v160";
+const VERSION = "v161";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [
@@ -112,11 +112,14 @@ self.addEventListener("fetch", (event) => {
   // everything else (TMDB API, OMDb, YouTube...) goes straight to the network
 });
 
-// fresh from the network, saved copy when offline
+// fresh from the network, saved copy when offline. ("no-cache": the browser asks the site
+// whether its copy is still current, every time. Without it, GitHub Pages lets browsers reuse a
+// file for 10 minutes, so right after a publish a page could get the new script with the old
+// styles.)
 async function networkFirst(req) {
   const cache = await caches.open(APP_CACHE);
   try {
-    const res = await fetch(req);
+    const res = await fetch(req, { cache: "no-cache" });
     if (res.ok) cache.put(req, res.clone());
     return res;
   } catch (e) {
