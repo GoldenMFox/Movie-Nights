@@ -16,6 +16,7 @@
   const heroEl = document.getElementById("title-hero");
   const mainEl = document.getElementById("title-main");
   let extra = null; // details fetched from TMDB
+  let tmdbDetails = null; // a title.html?tmdb= page: its TMDB details (for Share)
 
   let overviewOpen = false;
 
@@ -776,14 +777,13 @@
     if (t) {
       if (t.dataset.t === "back") history.length > 1 ? history.back() : (location.href = "index.html");
       if (t.dataset.t === "share") {
-        const data = { title: document.title, url: location.href };
-        try {
-          if (navigator.share) await navigator.share(data);
-          else {
-            await navigator.clipboard.writeText(location.href);
-            toast("Link copied");
-          }
-        } catch (err) {} // share sheet closed
+        // the share sheet (js/components/share.js): a link anyone can open, by TMDB's id (a
+        // library id only means something in your own library), and a picture card
+        let details = tmdbDetails || (extra && extra.tmdbId ? extra : null);
+        const item = id ? Store.get(id) : details && Cards.inLibrary(details);
+        if (!details && item && TMDB.enabled()) details = await TMDB.details(item).catch(() => null);
+        if (window.Share && details && details.tmdbId) return Share.open({ details, item });
+        toast("This title isn't on TMDB, so it can't be shared");
       }
       return;
     }
@@ -1288,6 +1288,7 @@
       return !!lib;
     };
     if (goToLibrary()) return;
+    tmdbDetails = d;
 
     Cards.tmdbCard(d); // registers it so the buttons below work
     document.title = `${Lang.title(d)}${d.year ? ` (${d.year})` : ""} · Movie Nights`;

@@ -3,8 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Movie Nights</title>
-    <meta name="description" content="Title details." />
+    <title>A pick for you · Movie Nights</title>
+    <meta name="description" content="Someone shared a movie or show with you on Movie Nights. Open it to see what it is, watch the trailer and find where to stream it." />
+    <!-- the preview chats show for the link (one for every shared title: the site is static) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Movie Nights" />
+    <meta property="og:title" content="🎬 A pick for you on Movie Nights" />
+    <meta property="og:description" content="Someone thinks you'll love this. Tap to see what it is, watch the trailer and find where to stream it." />
+    <meta property="og:image" content="https://goldenmfox.github.io/Movie-Nights/images/icons/icon-512.png" />
+    <meta name="twitter:card" content="summary" />
     <link rel="icon" href="images/brand/favicon.png" type="image/png" />
     <link rel="manifest" href="manifest.webmanifest" />
     <meta name="theme-color" content="#17181c" />
@@ -27,9 +34,8 @@
       } catch (e) {}
     </script>
   </head>
-  <body data-page="title">
-    <section id="title-hero" class="title-hero"></section>
-    <main id="title-main" class="container"></main>
+  <body data-page="share">
+    <main id="share-page" class="sp"></main>
     <script src="data/library.js"></script>
     <script src="js/config.js"></script>
     <script src="js/core/store.js"></script>
@@ -39,16 +45,7 @@
     <script src="js/services/tmdb.js"></script>
     <script src="js/services/ratings.js"></script>
     <script src="js/components/cards.js"></script>
-    <script src="js/components/add-title.js"></script>
-    <script src="js/components/preview.js"></script>
-    <script src="js/components/scrollbars.js"></script>
-    <script src="js/services/watch.js"></script>
-    <script src="js/services/taste.js"></script>
-    <script src="js/services/facts.js"></script>
-    <script src="js/components/picker.js"></script>
-    <script src="js/components/trivia.js"></script>
-    <script src="js/components/soundtrack.js"></script>
     <script src="js/components/share.js"></script>
-    <script src="js/pages/title.js"></script>
+    <script src="js/pages/share.js"></script>
   </body>
 </html>

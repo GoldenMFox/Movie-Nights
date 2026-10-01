@@ -21995,3 +21995,694 @@ html.app-ui.typing .app-sheet.open .sheet-panel {
   bottom: var(--kb, 0px);
   max-height: calc(var(--vvh, 100vh) - 24px);
 }
+
+/* ============================== Share: the sheet (title page) ============================== */
+/* a live preview of the picture card, your score / name to add or leave out, a note, the link */
+
+.share-modal {
+  max-width: 440px;
+}
+
+.sh-top {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding-right: 44px;
+}
+
+.sh-title {
+  margin: 0;
+  overflow: hidden;
+  font-size: 19px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sh-preview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: min(46vh, 400px);
+  margin: 0 auto;
+  aspect-ratio: 4 / 5;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background: linear-gradient(160deg, #1d1d23, #111115);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+}
+
+.sh-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.25s;
+}
+
+.sh-img:not([src]) {
+  opacity: 0;
+}
+
+.sh-wait {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 22px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.sh-preview.busy .sh-wait {
+  opacity: 1;
+}
+
+.sh-preview.busy .sh-img {
+  opacity: 0.45;
+}
+
+.sh-opts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.sh-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  padding: 8px 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.55);
+  font: inherit;
+  font-size: 13.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.sh-opt[hidden] {
+  display: none;
+}
+
+.sh-opt b {
+  font-weight: 800;
+}
+
+.sh-opt.on {
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: #fff;
+}
+
+.sh-opt.on .fa-star {
+  color: #f5b82e;
+}
+
+.sh-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.sh-note input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: #fff;
+  font: inherit;
+  font-size: 14.5px;
+}
+
+.sh-note:focus-within {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.sh-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 6px 6px 6px 16px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.3);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12.5px;
+}
+
+.sh-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sh-copy {
+  flex: none;
+  padding: 7px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sh-copy.btn-primary {
+  border-color: transparent;
+  background: var(--accent);
+}
+
+.sh-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.sh-buttons .btn {
+  flex: 1;
+  justify-content: center;
+  min-height: 46px;
+}
+
+.sh-buttons .btn[hidden] {
+  display: none;
+}
+
+.sh-hint {
+  margin: 12px 0 0;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .sh-preview {
+    height: min(40vh, 340px);
+  }
+
+  /* the two options stay on one row; a long name shortens */
+  .sh-opts {
+    flex-wrap: nowrap;
+  }
+
+  .sh-opt {
+    flex: 0 1 auto;
+    min-width: 0;
+    padding: 8px 12px;
+  }
+
+  .sh-opt[data-opt="rating"] {
+    flex: none;
+  }
+
+  .sh-opt b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* ============================== Share: the page a link opens (share.html) ============================== */
+/* the title as a glass card over its own backdrop; who sent it, their score and note, where to
+   stream it, the trailer. Always light-on-dark (it sits on a picture). */
+
+.sp {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 18px;
+  min-height: calc(100vh - 80px);
+  padding: 28px 16px 60px;
+  color: #fff;
+}
+
+.sp-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: #0b0b0e;
+}
+
+.sp-bg::before {
+  content: "";
+  position: absolute;
+  inset: -6%;
+  background: var(--bg) center / cover no-repeat;
+  filter: blur(22px) saturate(1.3) brightness(0.75);
+  animation: sp-drift 30s ease-in-out infinite alternate;
+}
+
+.sp-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 120%, rgba(229, 9, 20, 0.28), transparent 60%),
+    linear-gradient(180deg, rgba(11, 11, 14, 0.35), rgba(11, 11, 14, 0.85));
+}
+
+@keyframes sp-drift {
+  to {
+    transform: scale(1.08) translate(-1.5%, -1%);
+  }
+}
+
+.sp-card {
+  position: relative;
+  width: min(100%, 820px);
+  padding: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 30px;
+  background: rgba(18, 18, 22, 0.62);
+  -webkit-backdrop-filter: saturate(160%) blur(24px);
+  backdrop-filter: saturate(160%) blur(24px);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+}
+
+/* who sent it */
+.sp-from {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 15.5px;
+}
+
+.sp-from b {
+  color: #fff;
+}
+
+.sp-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #e50914, #7d0a07);
+  box-shadow: 0 6px 18px rgba(229, 9, 20, 0.4);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.sp-main {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  align-items: center;
+  gap: 28px;
+}
+
+.sp-poster {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 40px;
+}
+
+.sp-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sp-info {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sp-kind {
+  color: var(--accent-hover);
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.sp-kind .t-cert {
+  margin-left: 6px;
+  color: #fff;
+  letter-spacing: 0;
+}
+
+.sp-info h1 {
+  margin: 0;
+  font-size: clamp(28px, 4.4vw, 44px);
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.sp-tagline {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  font-style: italic;
+}
+
+.sp-meta {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 14.5px;
+}
+
+.sp-meta .dot {
+  margin: 0 7px;
+  opacity: 0.5;
+}
+
+.sp-scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.sp-score {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 7px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 13px;
+}
+
+.sp-score b {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.sp-score small {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12.5px;
+}
+
+.sp-score .fa-star {
+  align-self: center;
+  color: #f5b82e;
+  font-size: 13px;
+}
+
+.sp-score.mine {
+  border-color: rgba(245, 184, 46, 0.55);
+  background: rgba(245, 184, 46, 0.12);
+}
+
+.sp-score .tmdb-tag {
+  align-self: center;
+}
+
+/* their note */
+.sp-note {
+  position: relative;
+  margin: 22px 0 0;
+  padding: 16px 20px 16px 50px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 17px;
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.sp-note > i {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  color: var(--accent-hover);
+  font-size: 18px;
+}
+
+.sp-note cite {
+  display: block;
+  margin-top: 6px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.sp-note cite::before {
+  content: "— ";
+}
+
+.sp-overview {
+  display: -webkit-box;
+  margin: 18px 0 0;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.sp-where {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 18px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13.5px;
+}
+
+.sp-logos {
+  display: flex;
+  gap: 8px;
+}
+
+.sp-logos img {
+  display: block;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s;
+}
+
+.sp-logos a:hover img {
+  transform: translateY(-2px);
+}
+
+.sp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.sp-actions .btn {
+  min-height: 46px;
+  border-radius: 999px;
+}
+
+.sp-keep.on {
+  border-color: rgba(70, 200, 120, 0.5);
+  background: rgba(70, 200, 120, 0.14);
+}
+
+.sp-keep.on i {
+  color: #5ed493;
+}
+
+.sp-round {
+  justify-content: center;
+  width: 46px;
+  margin-left: auto;
+  padding: 0;
+}
+
+/* for someone without an account: what Movie Nights is */
+.sp-pitch {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: min(100%, 520px);
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  background: rgba(18, 18, 22, 0.5);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  text-align: center;
+}
+
+.sp-pitch img {
+  height: 26px;
+}
+
+.sp-pitch p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.sp-pitch div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* the link did not work */
+.sp-oops {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  max-width: 460px;
+  text-align: center;
+}
+
+.sp-oops > i {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 40px;
+}
+
+.sp-oops h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.sp-oops p {
+  margin: 0 0 8px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* loading: the card outline */
+.sp-skel .sk {
+  display: block;
+  border-radius: 10px;
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0.05) 30%, rgba(255, 255, 255, 0.11) 50%, rgba(255, 255, 255, 0.05) 70%) 0 0 / 300% 100%;
+  animation: as-shimmer 1.3s linear infinite;
+}
+
+.sp-skel .sk-l {
+  width: 30%;
+  height: 14px;
+}
+
+.sp-skel .sk-t {
+  width: 75%;
+  height: 40px;
+}
+
+.sp-skel .sk-m {
+  width: 55%;
+  height: 16px;
+}
+
+/* the card comes in: each part rises in turn */
+.sp-in {
+  animation: sp-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--d, 0ms);
+}
+
+.sp-card:not(.sp-skel):not(.sp-oops) {
+  animation: sp-card 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.sp-again .sp-in,
+.sp-again .sp-card {
+  animation: none !important;
+}
+
+@keyframes sp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@keyframes sp-card {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.97);
+  }
+}
+
+/* phones: one column, the poster on top */
+@media (max-width: 640px) {
+  .sp {
+    align-content: start;
+    padding-top: 14px;
+  }
+
+  .sp-card {
+    padding: 20px 18px;
+    border-radius: 26px;
+  }
+
+  .sp-from {
+    margin-bottom: 18px;
+    font-size: 14.5px;
+  }
+
+  .sp-main {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 18px;
+    text-align: center;
+  }
+
+  .sp-poster {
+    width: 170px;
+  }
+
+  .sp-scores {
+    justify-content: center;
+  }
+
+  .sp-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .sp-round {
+    flex: 0 0 46px !important;
+  }
+
+  .sp-where {
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-bg::before,
+  .sp-in,
+  .sp-card {
+    animation: none !important;
+  }
+}

@@ -12,7 +12,7 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v153";
+const VERSION = "v154";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [
@@ -28,6 +28,7 @@ const APP_FILES = [
   "tier-list.html",
   "box-office.html",
   "title.html",
+  "share.html",
   "person.html",
   "profile.html",
   "settings.html",
@@ -54,11 +55,13 @@ const APP_FILES = [
   "js/components/achievements.js",
   "js/components/trivia.js",
   "js/components/soundtrack.js",
+  "js/components/share.js",
   "js/pages/browse.js",
   "js/pages/home.js",
   "js/pages/discover.js",
   "js/pages/search.js",
   "js/pages/title.js",
+  "js/pages/share.js",
   "js/pages/person.js",
   "js/pages/tier-list.js",
   "js/pages/box-office.js",
