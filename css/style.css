@@ -22388,3 +22388,12 @@ html.app-ui.tabs-away .t-shared {
     order: -1;
   }
 }
+
+/* (the "shared with you" card: the avatar, the text and the close button on one centre line) */
+.t-shared {
+  align-items: center;
+}
+
+.t-shared-text {
+  padding-top: 0;
+}

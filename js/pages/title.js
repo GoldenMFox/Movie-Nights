@@ -1383,7 +1383,7 @@
     el.innerHTML = `
       <span class="t-shared-av">${initial ? esc(initial) : '<i class="fa-solid fa-gift"></i>'}</span>
       <div class="t-shared-text">
-        <p>${shared.from ? `<b>${esc(shared.from)}</b> shared this with you` : "Someone shared this with you"}${
+        <p><span>${shared.from ? `<b>${esc(shared.from)}</b> shared this with you` : "Someone shared this with you"}</span>${
       shared.score != null ? `<span class="t-shared-score"><i class="fa-solid fa-star"></i>${Cards.formatRating(shared.score)}<small>/10</small></span>` : ""
     }</p>
         ${shared.note ? `<q>${esc(shared.note)}</q>` : ""}
