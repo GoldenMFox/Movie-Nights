@@ -666,6 +666,19 @@
       setTimeout(() => root.classList.toggle("typing", !!typingIn(document.activeElement)), 0)
     );
 
+    // the room the keyboard leaves (--vvh) and how much of the screen's foot it covers (--kb),
+    // so the panels fit above it instead of growing past the top of the screen
+    const vv = window.visualViewport;
+    if (vv) {
+      const fit = () => {
+        root.style.setProperty("--vvh", `${Math.round(vv.height)}px`);
+        root.style.setProperty("--kb", `${Math.max(0, Math.round(innerHeight - vv.height - vv.offsetTop))}px`);
+      };
+      vv.addEventListener("resize", fit);
+      vv.addEventListener("scroll", fit);
+      fit();
+    }
+
     // a panel that slides up from the bottom; only one is open at a time
     const sheets = [];
     function makeSheet(tabId, title, html) {

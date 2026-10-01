@@ -21985,6 +21985,13 @@ html.app-ui.typing .tab-bar {
 
 /* typing in a panel (Search): the tab bar is away, so the panel's room for it goes too and the
    boxes sit just above the keyboard */
-html.app-ui.typing .sheet-panel {
+html.app-ui.typing .app-sheet.open .sheet-panel {
   padding-bottom: 18px;
+}
+
+/* typing in a panel: it stays above the keyboard and never taller than the room left, so its
+   top (the title and the search box) stays on screen; the results scroll inside it */
+html.app-ui.typing .app-sheet.open .sheet-panel {
+  bottom: var(--kb, 0px);
+  max-height: calc(var(--vvh, 100vh) - 24px);
 }
