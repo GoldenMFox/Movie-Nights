@@ -13261,10 +13261,11 @@ html .modal .menu-switch:not([hidden]) {
   font-size: 14px;
 }
 
-/* Movies / TV / Anime */
+/* Movies / TV / Anime: the tabs share the window's width (big counts like 1049 still fit) */
 .qr-types {
-  max-width: 100%;
-  margin: 0 auto 14px;
+  display: flex;
+  width: 100%;
+  margin: 0 0 14px;
 }
 
 .qr-types[hidden],
@@ -13274,8 +13275,12 @@ html .modal .menu-switch:not([hidden]) {
 
 .qr-types .top10-tab {
   display: inline-flex;
+  flex: 1 1 auto;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  min-width: 0;
+  padding: 8px 6px;
   white-space: nowrap;
 }
 
@@ -13561,18 +13566,14 @@ html .modal .menu-switch:not([hidden]) {
     font-size: 15px;
   }
 
-  .qr-types {
-    display: flex;
-    width: 100%;
-  }
-
   .qr-types .top10-tab {
-    flex: 1;
-    justify-content: center;
-    gap: 5px;
+    gap: 4px;
     padding: 7px 4px;
   }
+}
 
+/* narrow phones: the counts keep their room, the icons step aside */
+@media (max-width: 440px) {
   .qr-types .top10-tab i {
     display: none;
   }
