@@ -510,6 +510,15 @@ label.field {
   color: #e8a33d;
 }
 
+/* (the account refused the save: red, so it's noticed) */
+.profile-menu .sync-status[data-status="refused"] {
+  color: #ff8a80;
+}
+
+.profile-menu .sync-status[data-status="refused"] i {
+  color: #ff5a50;
+}
+
 .profile-menu .menu-label {
   font-weight: 600;
   text-transform: uppercase;

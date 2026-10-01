@@ -156,7 +156,16 @@ with your profile; 7 or more counts for the **Movie Buff** achievement (`js/comp
 
 **Sync**: several tabs stay in step, and when two devices both changed things before syncing
 (e.g. the phone offline), both sets of changes are kept (`js/core/cloud.js`). TMDB details are
-cached in the browser's database (IndexedDB), a week each.
+cached in the browser's database (IndexedDB), a week each. Your whole library is one document
+in your account, which holds at most 900,000 characters (`docs/firestore.rules`), so titles are
+kept lean: no description (the title page gets it from TMDB; older titles lost it once, on
+the first visit after the change). When the account refuses a save (too big, or the device's
+clock far off) the profile menu says so in red ("Couldn't save to your account") and a message
+explains why; the changes stay on the device and are tried again. No internet shows as
+"Offline: will sync later".
+
+**Never published**: `.gitignore` keeps library backups (`*.json`), IMDb / Letterboxd exports
+(`*.csv`) and `*.zip` files out of GitHub, so a backup left in this folder stays private.
 
 In the **profile menu**:
 
@@ -196,7 +205,7 @@ as a local list. Each line is one title:
 - `type`: `"movie"`, `"tv"` or `"anime"`
 - `rating`: your score from 0 to 10, or `null` if not rated yet
 - `poster`: the TMDB image path (the end of a TMDB poster URL)
-- optional: `isNew`, `favorite`, `watchlist`, `trailer` (YouTube video id), `overview`, `genres`, `runtime`, `director`, `cast`, `backdrop`
+- optional: `isNew`, `favorite`, `watchlist`, `trailer` (YouTube video id), `genres`, `runtime`, `director`, `cast`, `backdrop`
 
 The **NEW** label on cards (and the "New releases" filter) is automatic: it shows on titles
 released in the last 6 months (exact dates looked up on TMDB; for movies the cinema date in

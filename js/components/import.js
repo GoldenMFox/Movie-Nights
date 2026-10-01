@@ -236,7 +236,6 @@
         }
         const item = { title: hit.title, year: hit.year || e.year || new Date().getFullYear(), type: hit.type, rating: e.rating ?? null, poster: hit.poster, tmdbId: hit.tmdbId, tmdbMedia: hit.mediaType };
         if (hit.backdrop) item.backdrop = hit.backdrop;
-        if (hit.overview) item.overview = hit.overview;
         if (hit.genres && hit.genres.length) item.genres = hit.genres;
         if (e.watchlist) item.watchlist = true;
         if (e.watchedAt) item.watchedAt = e.watchedAt;

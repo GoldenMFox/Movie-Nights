@@ -170,9 +170,31 @@
     pushTimer = setTimeout(push, 1200);
   }
 
+  // what went wrong, as a status: no internet ("offline"), signed out, or the account
+  // refused the save ("refused": the rules said no, e.g. the library is over the size limit
+  // or this device's clock is far off). Only "offline" is something that fixes itself.
+  const LIMIT = 900000; // the most the account takes (docs/firestore.rules)
+  let lastSize = 0; // the last upload's size, to explain a refusal
+  function statusOf(err) {
+    if (err.signedOut || err.status === 401) return "signed-out";
+    if (err.status === 400 || err.status === 403 || err.status === 413) return "refused";
+    return "offline";
+  }
+  let refusedTold = false;
+  function refused() {
+    if (refusedTold) return;
+    refusedTold = true;
+    const why =
+      lastSize >= LIMIT
+        ? "Your library is bigger than your account can hold."
+        : "Check that this device's date and time are set automatically, then reload.";
+    if (window.UI) UI.toast(`Couldn't save to your account. ${why} Your changes are kept on this device.`);
+  }
+
   async function upload(acct, tok, data) {
     const at = Date.now();
     const text = JSON.stringify(data);
+    lastSize = text.length;
     await api(`users/${acct.uid}`, {
       method: "PATCH",
       tok,
@@ -200,7 +222,9 @@
       })
       .catch((err) => {
         console.warn("Sync:", err.message);
-        setStatus(err.signedOut ? "signed-out" : "offline");
+        const s = statusOf(err);
+        setStatus(s);
+        if (s === "refused") refused();
       });
     return pushing;
   }
@@ -339,10 +363,12 @@
       await checkOwner(tok);
     } catch (err) {
       console.warn("Sync:", err.message);
-      if (err.signedOut) {
-        setStatus("signed-out");
-        toast(`${first(account.name)}, please sign in again to keep syncing`);
-      } else setStatus("offline");
+      const s = statusOf(err);
+      setStatus(s);
+      if (s === "signed-out") toast(`${first(account.name)}, please sign in again to keep syncing`);
+      // (refused while loading it: the account itself said no, e.g. not on the guest list any more)
+      else if (s === "refused" && !lastSize) toast("Couldn't open your account. Ask the site's owner if you're still on the guest list.");
+      else if (s === "refused") refused();
     }
   }
 

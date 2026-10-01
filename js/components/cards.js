@@ -213,7 +213,6 @@
       tmdbMedia: hit.mediaType,
     };
     if (hit.backdrop) item.backdrop = hit.backdrop;
-    if (hit.overview) item.overview = hit.overview;
     if (hit.genres && hit.genres.length) item.genres = hit.genres;
     if (hit.titleRu) item.titleRu = hit.titleRu;
     Object.assign(item, extra || {});

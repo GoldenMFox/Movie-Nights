@@ -274,6 +274,8 @@
       synced: '<i class="fa-solid fa-cloud"></i> Synced',
       offline: '<i class="fa-solid fa-cloud-arrow-up"></i> Offline: will sync later',
       "signed-out": '<i class="fa-solid fa-triangle-exclamation"></i> Sign in again to sync',
+      // the account refused the save (js/core/cloud.js): kept on this device, tried again
+      refused: '<i class="fa-solid fa-circle-exclamation"></i> Couldn\'t save to your account',
     };
     const show = (s) => {
       syncEl.innerHTML = LABELS[s] || "";

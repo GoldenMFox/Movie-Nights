@@ -64,6 +64,23 @@
   let overrides = guest ? {} : read(KEYS.overrides, {});
   let custom = guest ? [] : read(KEYS.custom, []);
   let cache = null;
+
+  // A lighter library: a title's description (overview) isn't kept in your library any more.
+  // It was about half of everything saved and synced, and the title page gets it from TMDB
+  // anyway. Titles saved before lose it once, here, and that goes up to your account
+  // (mn:dirty: js/core/cloud.js uploads it when the page starts).
+  if (!guest && custom.some((c) => c && "overview" in c)) {
+    custom = custom.map((c) => {
+      if (!c || !("overview" in c)) return c;
+      const lean = Object.assign({}, c);
+      delete lean.overview;
+      return lean;
+    });
+    try {
+      localStorage.setItem(KEYS.custom, JSON.stringify(custom));
+      if (account) localStorage.setItem("mn:dirty", "true");
+    } catch (e) {}
+  }
   const listeners = [];
   const saveListeners = [];
 

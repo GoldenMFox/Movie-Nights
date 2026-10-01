@@ -119,7 +119,6 @@
       if (f.favorite.checked) item.favorite = true;
       if (f.watchlist.checked) item.watchlist = true;
       if (picked && picked.backdrop) item.backdrop = picked.backdrop;
-      if (picked && picked.overview) item.overview = picked.overview;
       if (picked && picked.genres && picked.genres.length) item.genres = picked.genres;
       if (picked) {
         item.tmdbId = picked.tmdbId;

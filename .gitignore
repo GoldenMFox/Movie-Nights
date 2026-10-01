@@ -2,3 +2,10 @@
 Thumbs.db
 desktop.ini
 *.lnk
+
+# Private files that must never be published (the site is public on GitHub):
+# library backups (Settings -> Backup: movie-nights-backup-<date>.json),
+# IMDb / Letterboxd exports, and anything zipped
+*.json
+*.csv
+*.zip
