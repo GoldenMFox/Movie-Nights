@@ -4188,6 +4188,43 @@ html.app-ui .app-sheet.open {
   }
 }
 
+/* phones: the tab bar slides down out of sight while you scroll down, and back up when you
+   scroll up; what sits above it (the tier list tray, a message) follows it down and up */
+html.app-ui .tab-bar {
+  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s;
+}
+
+html.app-ui.tabs-away .tab-bar {
+  opacity: 0;
+  transform: translateY(calc(100% + var(--tab-gap) + 16px));
+  pointer-events: none;
+}
+
+html.app-ui .tl-tray {
+  transition: bottom 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+html.app-ui .toast {
+  transition: opacity 0.25s, transform 0.25s, bottom 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (max-width: 900px) {
+  html.app-ui.tabs-away .tl-tray {
+    bottom: var(--tab-gap);
+  }
+
+  html.app-ui.tabs-away .toast {
+    bottom: calc(16px + var(--tab-gap));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.app-ui .tab-bar,
+  html.app-ui .tl-tray {
+    transition: opacity 0.2s;
+  }
+}
+
 /* ============================== Title page: glass redesign (matches the home slideshow) ============================== */
 
 .t-backdrop img {

@@ -172,7 +172,7 @@ Trailers play in the best quality available; if YouTube blocks one on other site
 
 ## Phones and tablets
 
-- **Phones** (browser and installed app): a floating tab bar at the bottom, and poster-only cards, 2 per row.
+- **Phones** (browser and installed app): a floating tab bar at the bottom (it slides away while you scroll down and comes back when you scroll up, near the top or at the end of a page), and poster-only cards, 2 per row.
 - **Tablets / iPad**: the pill navbar on top, a full-width slideshow and poster-only cards (4 per row
   upright). Add `?tablet=1` to any address to preview it on a computer (`?tablet=0` to stop).
 

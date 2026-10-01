@@ -636,6 +636,28 @@
     }).join("");
     document.body.append(bar);
 
+    // the tab bar slides away while you scroll down (more room for the page) and comes back
+    // as soon as you scroll up a little, near the top, or at the end of the page
+    const root = document.documentElement;
+    const tabsAway = (away) => root.classList.toggle("tabs-away", away);
+    let lastY = Math.max(0, scrollY);
+    let travel = 0; // how far you've scrolled the same way
+    addEventListener(
+      "scroll",
+      () => {
+        const y = Math.max(0, scrollY);
+        const d = y - lastY;
+        lastY = y;
+        if (!d) return;
+        if (d > 0 !== travel > 0) travel = 0;
+        travel += d;
+        const atEnd = y + innerHeight >= root.scrollHeight - 40;
+        if (y < 60 || atEnd || document.querySelector(".app-sheet.open") || travel < -10) tabsAway(false);
+        else if (travel > 24) tabsAway(true);
+      },
+      { passive: true }
+    );
+
     // a panel that slides up from the bottom; only one is open at a time
     const sheets = [];
     function makeSheet(tabId, title, html) {
@@ -654,6 +676,7 @@
         el,
         open() {
           sheets.forEach((s) => s !== sheet && s.close());
+          tabsAway(false);
           el.classList.add("open");
           tab.classList.add("open");
         },
