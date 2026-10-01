@@ -4,9 +4,9 @@
  *   Share.open({ details, item })   details: TMDB.detailsById(...), item: your library title (if any)
  *
  * Two things to send, both made here:
- *  - a link to share.html?t=movie-157336 (TMDB's id, so it works for everyone, not just for
- *    you), with what you choose to add: from=your name, r=your score, note=a few words.
- *    share.html shows the title as a card with all that.
+ *  - a link to the title page by TMDB's id (title.html?tmdb=movie-157336: it works for everyone,
+ *    not just for you), with what you choose to add: from=your name, r=your score, note=a few
+ *    words. The title page shows those in a small "shared with you" card.
  *  - a picture card (1080 × 1350, the shape chats and stories like): the backdrop, the
  *    poster, the title, your score and your note, and the Movie Nights logo. Drawn here
  *    on a canvas, to send with the link (phones) or save.
@@ -21,11 +21,13 @@
 
   /* ---------------- the link ---------------- */
 
+  // the title page by TMDB's id (title.html?tmdb=movie-157336), which anyone can open; someone
+  // with the title in their own library is taken to theirs
   function linkOf(c) {
-    const u = new URL("share.html", location.href);
+    const u = new URL("title.html", location.href);
     u.search = "";
     u.hash = "";
-    u.searchParams.set("t", `${c.details.mediaType}-${c.details.tmdbId}`);
+    u.searchParams.set("tmdb", `${c.details.mediaType}-${c.details.tmdbId}`);
     if (c.useName && c.name) u.searchParams.set("from", c.name);
     if (c.useRating && c.rating != null) u.searchParams.set("r", Cards.formatRating(c.rating));
     const note = c.note.trim();

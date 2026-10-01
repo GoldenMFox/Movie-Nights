@@ -15,6 +15,19 @@
   const tmdbRef = params.get("tmdb");
   const heroEl = document.getElementById("title-hero");
   const mainEl = document.getElementById("title-main");
+  // opened from a shared link (js/components/share.js): who sent it, their score, their note
+  const shared = (() => {
+    const from = (params.get("from") || "").trim().slice(0, 30);
+    const r = parseFloat(params.get("r"));
+    const note = (params.get("note") || "").trim().slice(0, 140);
+    const score = Number.isFinite(r) && r >= 0 && r <= 10 ? r : null;
+    if (!from && score == null && !note) return null;
+    const keep = new URLSearchParams();
+    if (from) keep.set("from", from);
+    if (score != null) keep.set("r", params.get("r"));
+    if (note) keep.set("note", note);
+    return { from, score, note, query: `&${keep}` };
+  })();
   let extra = null; // details fetched from TMDB
   let tmdbDetails = null; // a title.html?tmdb= page: its TMDB details (for Share)
 
@@ -176,7 +189,7 @@
           <div class="t-meta">${metaHtml(t, d, e)}</div>
           <div class="t-genres">${genresHtml(t, d)}</div>
           ${providersHtml(d.providers, t)}
-          <div class="t-cta">${buttons}</div>
+          <div class="t-cta">${buttons}<button class="btn t-share-btn" type="button" data-t="share" title="Share it with anyone"><i class="fa-solid fa-arrow-up-from-bracket"></i> Share</button></div>
           ${aboutHtml(d)}
         </div>
       </div>`;
@@ -1284,7 +1297,7 @@
 
     const goToLibrary = () => {
       const lib = Cards.inLibrary(d);
-      if (lib) location.replace(`title.html?id=${encodeURIComponent(lib.id)}`);
+      if (lib) location.replace(`title.html?id=${encodeURIComponent(lib.id)}${shared ? shared.query : ""}`);
       return !!lib;
     };
     if (goToLibrary()) return;
@@ -1310,7 +1323,7 @@
         if (!e.target.closest(".tp-add")) return;
         if (Store.guest) return UI.needSignIn();
         const lib = Cards.addHit(d, { watchlist: true, progress: { s: 1, e: 1, eps }, progressAt: Date.now() });
-        location.replace(`title.html?id=${encodeURIComponent(lib.id)}`);
+        location.replace(`title.html?id=${encodeURIComponent(lib.id)}${shared ? shared.query : ""}`);
       });
     const renderMain = () => {
       const keep = rowScrolls();
@@ -1359,6 +1372,31 @@
     heroEl.innerHTML = heroHtml(d, d, Ratings.entry(tmdbRef), buttons, "t-lists", 0);
   }
 
+  // opened from a shared link: a small card at the foot of the screen with who sent it, their
+  // score and their note, until it's closed
+  function showShared() {
+    if (!shared) return;
+    const el = document.createElement("aside");
+    el.className = "t-shared";
+    el.setAttribute("aria-label", "Shared with you");
+    const initial = shared.from ? shared.from.charAt(0).toUpperCase() : "";
+    el.innerHTML = `
+      <span class="t-shared-av">${initial ? esc(initial) : '<i class="fa-solid fa-gift"></i>'}</span>
+      <div class="t-shared-text">
+        <p>${shared.from ? `<b>${esc(shared.from)}</b> shared this with you` : "Someone shared this with you"}${
+      shared.score != null ? `<span class="t-shared-score"><i class="fa-solid fa-star"></i>${Cards.formatRating(shared.score)}<small>/10</small></span>` : ""
+    }</p>
+        ${shared.note ? `<q>${esc(shared.note)}</q>` : ""}
+      </div>
+      <button type="button" class="t-shared-x" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>`;
+    el.querySelector(".t-shared-x").addEventListener("click", () => {
+      el.classList.add("out");
+      setTimeout(() => el.remove(), 350);
+    });
+    document.body.append(el);
+  }
+
   if (tmdbRef) initTmdb();
   else initLibrary();
+  showShared();
 })();

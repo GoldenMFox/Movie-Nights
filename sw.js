@@ -12,7 +12,7 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v154";
+const VERSION = "v156";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [
@@ -61,7 +61,6 @@ const APP_FILES = [
   "js/pages/discover.js",
   "js/pages/search.js",
   "js/pages/title.js",
-  "js/pages/share.js",
   "js/pages/person.js",
   "js/pages/tier-list.js",
   "js/pages/box-office.js",

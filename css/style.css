@@ -22226,79 +22226,58 @@ html.app-ui.typing .app-sheet.open .sheet-panel {
   }
 }
 
-/* ============================== Share: the page a link opens (share.html) ============================== */
-/* the title as a glass card over its own backdrop; who sent it, their score and note, where to
-   stream it, the trailer. Always light-on-dark (it sits on a picture). */
-
-.sp {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 18px;
-  min-height: calc(100vh - 80px);
-  padding: 28px 16px 60px;
+/* Title page on computers and tablets: Share beside the other buttons (phones have it in the
+   round buttons over the picture) */
+.btn.t-share-btn {
+  justify-content: center;
+  border-color: rgba(255, 255, 255, 0.14);
   color: #fff;
+  font-size: 15px;
 }
 
-.sp-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  background: #0b0b0e;
-}
-
-.sp-bg::before {
-  content: "";
-  position: absolute;
-  inset: -6%;
-  background: var(--bg) center / cover no-repeat;
-  filter: blur(22px) saturate(1.3) brightness(0.75);
-  animation: sp-drift 30s ease-in-out infinite alternate;
-}
-
-.sp-bg::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at 50% 120%, rgba(229, 9, 20, 0.28), transparent 60%),
-    linear-gradient(180deg, rgba(11, 11, 14, 0.35), rgba(11, 11, 14, 0.85));
-}
-
-@keyframes sp-drift {
-  to {
-    transform: scale(1.08) translate(-1.5%, -1%);
+@media (max-width: 700px) {
+  .btn.t-share-btn {
+    display: none;
   }
 }
 
-.sp-card {
-  position: relative;
-  width: min(100%, 820px);
-  padding: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 30px;
-  background: rgba(18, 18, 22, 0.62);
-  -webkit-backdrop-filter: saturate(160%) blur(24px);
-  backdrop-filter: saturate(160%) blur(24px);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
-}
-
-/* who sent it */
-.sp-from {
+/* Title page opened from a shared link: who sent it, their score and their note, in a glass
+   card floating at the foot of the screen (above the tab bar on phones) until it is closed */
+.t-shared {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 140;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
-  margin-bottom: 22px;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 15.5px;
-}
-
-.sp-from b {
+  width: min(calc(100% - 32px), 520px);
+  padding: 14px 14px 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 22px;
+  background: rgba(22, 22, 27, 0.82);
+  -webkit-backdrop-filter: saturate(170%) blur(22px);
+  backdrop-filter: saturate(170%) blur(22px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
   color: #fff;
+  transform: translateX(-50%);
+  animation: t-shared-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.5s backwards;
+  transition: bottom 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s, transform 0.35s;
 }
 
-.sp-avatar {
+.t-shared.out {
+  opacity: 0;
+  transform: translate(-50%, 20px);
+}
+
+@keyframes t-shared-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 30px) scale(0.96);
+  }
+}
+
+.t-shared-av {
   display: grid;
   flex: none;
   place-items: center;
@@ -22306,383 +22285,106 @@ html.app-ui.typing .app-sheet.open .sheet-panel {
   height: 40px;
   border-radius: 50%;
   background: linear-gradient(140deg, #e50914, #7d0a07);
-  box-shadow: 0 6px 18px rgba(229, 9, 20, 0.4);
-  color: #fff;
+  box-shadow: 0 6px 16px rgba(229, 9, 20, 0.4);
   font-size: 17px;
   font-weight: 800;
 }
 
-.sp-main {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  align-items: center;
-  gap: 28px;
-}
-
-.sp-poster {
-  display: grid;
-  place-items: center;
-  aspect-ratio: 2 / 3;
-  overflow: hidden;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.3);
-  font-size: 40px;
-}
-
-.sp-poster img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.sp-info {
-  display: grid;
-  gap: 8px;
+.t-shared-text {
+  flex: 1;
   min-width: 0;
+  padding-top: 2px;
 }
 
-.sp-kind {
-  color: var(--accent-hover);
-  font-size: 12.5px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.sp-kind .t-cert {
-  margin-left: 6px;
-  color: #fff;
-  letter-spacing: 0;
-}
-
-.sp-info h1 {
-  margin: 0;
-  font-size: clamp(28px, 4.4vw, 44px);
-  font-weight: 900;
-  line-height: 1.05;
-}
-
-.sp-tagline {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 16px;
-  font-style: italic;
-}
-
-.sp-meta {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 14.5px;
-}
-
-.sp-meta .dot {
-  margin: 0 7px;
-  opacity: 0.5;
-}
-
-.sp-scores {
+.t-shared-text p {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 6px;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14.5px;
+  line-height: 1.35;
 }
 
-.sp-score {
+.t-shared-text b {
+  color: #fff;
+}
+
+.t-shared-score {
   display: inline-flex;
   align-items: baseline;
-  gap: 5px;
-  padding: 7px 13px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  gap: 4px;
+  padding: 3px 10px;
+  border: 1px solid rgba(245, 184, 46, 0.55);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  font-size: 13px;
-}
-
-.sp-score b {
-  font-size: 16px;
+  background: rgba(245, 184, 46, 0.12);
+  color: #fff;
+  font-size: 14px;
   font-weight: 800;
 }
 
-.sp-score small {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 12.5px;
-}
-
-.sp-score .fa-star {
+.t-shared-score i {
   align-self: center;
   color: #f5b82e;
-  font-size: 13px;
+  font-size: 11.5px;
 }
 
-.sp-score.mine {
-  border-color: rgba(245, 184, 46, 0.55);
-  background: rgba(245, 184, 46, 0.12);
+.t-shared-score small {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11.5px;
+  font-weight: 600;
 }
 
-.sp-score .tmdb-tag {
-  align-self: center;
-}
-
-/* their note */
-.sp-note {
-  position: relative;
-  margin: 22px 0 0;
-  padding: 16px 20px 16px 50px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.06);
-  font-size: 17px;
-  font-style: italic;
-  line-height: 1.45;
-}
-
-.sp-note > i {
-  position: absolute;
-  top: 18px;
-  left: 18px;
-  color: var(--accent-hover);
-  font-size: 18px;
-}
-
-.sp-note cite {
+.t-shared-text q {
   display: block;
   margin-top: 6px;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 13px;
-  font-style: normal;
-}
-
-.sp-note cite::before {
-  content: "— ";
-}
-
-.sp-overview {
-  display: -webkit-box;
-  margin: 18px 0 0;
-  overflow: hidden;
-  color: rgba(255, 255, 255, 0.78);
+  color: rgba(255, 255, 255, 0.92);
   font-size: 15px;
-  line-height: 1.55;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
+  font-style: italic;
+  line-height: 1.4;
 }
 
-.sp-where {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 14px;
-  margin-top: 18px;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 13.5px;
-}
-
-.sp-logos {
-  display: flex;
-  gap: 8px;
-}
-
-.sp-logos img {
-  display: block;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  transition: transform 0.2s;
-}
-
-.sp-logos a:hover img {
-  transform: translateY(-2px);
-}
-
-.sp-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 22px;
-}
-
-.sp-actions .btn {
-  min-height: 46px;
-  border-radius: 999px;
-}
-
-.sp-keep.on {
-  border-color: rgba(70, 200, 120, 0.5);
-  background: rgba(70, 200, 120, 0.14);
-}
-
-.sp-keep.on i {
-  color: #5ed493;
-}
-
-.sp-round {
-  justify-content: center;
-  width: 46px;
-  margin-left: auto;
-  padding: 0;
-}
-
-/* for someone without an account: what Movie Nights is */
-.sp-pitch {
+.t-shared-x {
   display: grid;
-  justify-items: center;
-  gap: 12px;
-  width: min(100%, 520px);
-  padding: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
-  background: rgba(18, 18, 22, 0.5);
-  -webkit-backdrop-filter: blur(18px);
-  backdrop-filter: blur(18px);
-  text-align: center;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
 }
 
-.sp-pitch img {
-  height: 26px;
+.t-shared-x:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
 }
 
-.sp-pitch p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 14.5px;
-  line-height: 1.5;
+/* phones: above the tab bar, and down with it when it slides away */
+html.app-ui .t-shared {
+  bottom: calc(70px + var(--tab-gap));
 }
 
-.sp-pitch div {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-}
-
-/* the link did not work */
-.sp-oops {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-  max-width: 460px;
-  text-align: center;
-}
-
-.sp-oops > i {
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 40px;
-}
-
-.sp-oops h1 {
-  margin: 0;
-  font-size: 22px;
-}
-
-.sp-oops p {
-  margin: 0 0 8px;
-  color: rgba(255, 255, 255, 0.65);
-}
-
-/* loading: the card outline */
-.sp-skel .sk {
-  display: block;
-  border-radius: 10px;
-  background: linear-gradient(100deg, rgba(255, 255, 255, 0.05) 30%, rgba(255, 255, 255, 0.11) 50%, rgba(255, 255, 255, 0.05) 70%) 0 0 / 300% 100%;
-  animation: as-shimmer 1.3s linear infinite;
-}
-
-.sp-skel .sk-l {
-  width: 30%;
-  height: 14px;
-}
-
-.sp-skel .sk-t {
-  width: 75%;
-  height: 40px;
-}
-
-.sp-skel .sk-m {
-  width: 55%;
-  height: 16px;
-}
-
-/* the card comes in: each part rises in turn */
-.sp-in {
-  animation: sp-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-  animation-delay: var(--d, 0ms);
-}
-
-.sp-card:not(.sp-skel):not(.sp-oops) {
-  animation: sp-card 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-}
-
-.sp-again .sp-in,
-.sp-again .sp-card {
-  animation: none !important;
-}
-
-@keyframes sp-rise {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-}
-
-@keyframes sp-card {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.97);
-  }
-}
-
-/* phones: one column, the poster on top */
-@media (max-width: 640px) {
-  .sp {
-    align-content: start;
-    padding-top: 14px;
-  }
-
-  .sp-card {
-    padding: 20px 18px;
-    border-radius: 26px;
-  }
-
-  .sp-from {
-    margin-bottom: 18px;
-    font-size: 14.5px;
-  }
-
-  .sp-main {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    gap: 18px;
-    text-align: center;
-  }
-
-  .sp-poster {
-    width: 170px;
-  }
-
-  .sp-scores {
-    justify-content: center;
-  }
-
-  .sp-actions .btn {
-    flex: 1 1 auto;
-    justify-content: center;
-  }
-
-  .sp-round {
-    flex: 0 0 46px !important;
-  }
-
-  .sp-where {
-    justify-content: center;
-  }
+html.app-ui.tabs-away .t-shared {
+  bottom: calc(16px + var(--tab-gap));
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sp-bg::before,
-  .sp-in,
-  .sp-card {
-    animation: none !important;
+  .t-shared {
+    animation: none;
+  }
+}
+
+/* (computers and tablets: Share sits beside Trailer, the other buttons on the row below) */
+@media (min-width: 701px) {
+  .t-cta .btn.t-trailer {
+    order: -2;
+  }
+
+  .t-cta .btn.t-share-btn {
+    order: -1;
   }
 }
