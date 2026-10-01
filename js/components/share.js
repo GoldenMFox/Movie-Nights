@@ -42,7 +42,6 @@
   //   ⭐ 9/10 from Nicolae
   //   “Watch it loud”
   //
-  //   Trailer, cast and where to stream it:
   //   https://…/s/?m157336.9.Nicolae
   function textOf(c) {
     const d = c.details;
@@ -51,7 +50,7 @@
     const who = c.useName && c.name ? c.name : "";
     if (score || who) lines.push(score && who ? `${score} from ${who}` : score || `Recommended by ${who}`);
     if (c.note.trim()) lines.push(`“${c.note.trim().slice(0, 140)}”`);
-    lines.push("", "Trailer, cast and where to stream it:", c.url);
+    lines.push("", c.url);
     return lines.join("\n");
   }
 
