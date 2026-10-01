@@ -69,7 +69,8 @@
       const rotten = parseInt(e.rt, 10) < 60;
       parts.push(`<span class="t-rt${rotten ? " rotten" : ""}" title="Rotten Tomatoes Tomatometer (critics)"><span class="rt-icon">🍅</span>${esc(e.rt)}</span>`);
     }
-    return parts.join('<span class="dot">·</span>');
+    // (each part in its own span: on phones they turn into small pills, no dots)
+    return parts.map((p) => `<span class="t-mi">${p}</span>`).join('<span class="dot">·</span>');
   }
 
   // "[14+] Animation • Comedy • Adventure"

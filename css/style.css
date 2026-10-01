@@ -22519,3 +22519,72 @@ html.app-ui.tabs-away .t-shared {
 .t-shared-score + .t-shared-x {
   margin-left: 0;
 }
+
+/* ============================== Title page: one family of buttons, tidy facts ============================== */
+/* Favorite / On Watchlist when on: tinted glass with a red edge (like the gold of a rated title),
+   not a solid red block, so the buttons read as one set */
+.t-actions .btn.is-on {
+  border-color: rgba(229, 9, 20, 0.6);
+  background: rgba(229, 9, 20, 0.2);
+}
+
+.t-actions .btn.is-on:hover {
+  background: rgba(229, 9, 20, 0.3);
+}
+
+.t-actions .btn.is-on i {
+  color: #ff4d57;
+}
+
+@media (max-width: 700px) {
+  /* phones: every button a pill of the same height as Trailer, the icon beside its label */
+  .btn.t-trailer {
+    height: 50px;
+  }
+
+  .t-actions .btn {
+    flex-direction: row;
+    gap: 7px;
+    height: 50px;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 13.5px;
+    white-space: nowrap;
+  }
+
+  .t-actions .btn i {
+    font-size: 15px;
+  }
+
+  /* the facts (match, IMDb, length, year, Rotten Tomatoes): small pills that wrap neatly,
+     instead of a line of dots that breaks in odd places */
+  .t-meta {
+    gap: 6px;
+  }
+
+  .t-meta .dot {
+    display: none;
+  }
+
+  .t-mi {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 30px;
+    padding: 0 11px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    font-size: 13.5px;
+    white-space: nowrap;
+  }
+
+  .t-mi .match {
+    font-weight: 700;
+  }
+
+  .t-mi .imdb-tag,
+  .t-mi .tmdb-tag {
+    margin-right: 2px;
+  }
+}
