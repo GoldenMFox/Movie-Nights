@@ -13261,6 +13261,85 @@ html .modal .menu-switch:not([hidden]) {
   font-size: 14px;
 }
 
+.qr-pwrap {
+  position: relative;
+}
+
+/* your own rating, on the poster's corner */
+.qr-score {
+  position: absolute;
+  top: -10px;
+  right: -14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border: 1px solid rgba(245, 184, 46, 0.55);
+  border-radius: 999px;
+  background: rgba(20, 16, 8, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.qr-score i {
+  color: #f5b82e;
+  font-size: 14px;
+}
+
+.qr-score.unrated {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.qr-score.unrated i {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.qr-card p.qr-mine {
+  margin-top: 6px;
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+}
+
+.qr-mine b {
+  color: #fff;
+}
+
+.qr-mine .qr-hint {
+  text-shadow: 0 0 10px var(--tc);
+}
+
+/* the tier your score points to: a ring and a small gold star */
+.qr-tier.suggest {
+  position: relative;
+  border-color: var(--tc);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tc) 45%, transparent), 0 0 18px color-mix(in srgb, var(--tc) 40%, transparent);
+}
+
+.qr-tier.suggest::after {
+  content: "★";
+  position: absolute;
+  top: -7px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f5b82e;
+  color: #1a1206;
+  font-size: 11px;
+  line-height: 1;
+}
+
 .qr-tiers {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -13451,6 +13530,11 @@ html .modal .menu-switch:not([hidden]) {
 
   .qr-poster {
     width: 160px;
+  }
+
+  .qr-score {
+    right: -10px;
+    font-size: 15px;
   }
 }
 

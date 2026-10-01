@@ -633,11 +633,24 @@
         <button class="btn btn-primary qr-close" type="button">See the tiers</button></div>`;
       return;
     }
-    const meta = [item.year, Store.TYPE_LABEL[item.type], item.rating != null ? `★ ${Cards.formatRating(item.rating)}` : ""].filter(Boolean).join(" · ");
+    const meta = [item.year, Store.TYPE_LABEL[item.type]].filter(Boolean).join(" · ");
+    // your own score, so you know where it belongs: on the poster, and the tier it points to lights up
+    const rated = item.rating != null;
+    const hint = rated ? tierFor(item.rating) : null;
+    const tier = hint && TIERS.find((t) => t.id === hint);
+    qr.overlay.querySelectorAll(".qr-tier").forEach((b) => b.classList.toggle("suggest", b.dataset.qr === hint));
     stage.innerHTML = `<div class="qr-card${dir ? ` from-${dir}` : ""}">
-        <img class="qr-poster" src="${Store.poster(Cards.posterOf(item), "w342")}" alt="" />
+        <div class="qr-pwrap">
+          <img class="qr-poster" src="${Store.poster(Cards.posterOf(item), "w342")}" alt="" />
+          <span class="qr-score${rated ? "" : " unrated"}" title="My rating"><i class="fa-solid fa-star"></i>${rated ? Cards.formatRating(item.rating) : "–"}</span>
+        </div>
         <h3>${esc(Lang.title(item))}</h3>
         <p>${esc(meta)}</p>
+        <p class="qr-mine">${
+          rated
+            ? `You rated it <b>${Cards.formatRating(item.rating)}</b>/10 · by your score that's <b class="qr-hint" style="--tc:${tier.color}">${hint}</b>`
+            : `<i class="fa-regular fa-star"></i> You haven't rated this one yet`
+        }</p>
       </div>`;
   }
 
