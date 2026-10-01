@@ -13005,6 +13005,103 @@ html .modal .menu-switch:not([hidden]) {
   animation: tl-glow 1.4s ease-in-out infinite;
 }
 
+/* a franchise: the edges of its other films peek out behind, and how many */
+.tl-item.tl-group {
+  margin-right: 10px;
+  overflow: visible;
+  box-shadow: 6px 0 0 -3px #6c6c78, 12px 0 0 -6px #44444d, 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.tl-group img {
+  border-radius: 12px;
+}
+
+.tl-group .tl-cap {
+  border-radius: 0 0 12px 12px;
+}
+
+.tl-group.selected {
+  box-shadow: 6px 0 0 -3px #6c6c78, 12px 0 0 -6px #44444d, 0 0 0 3px var(--accent), 0 0 22px rgba(229, 9, 20, 0.55);
+}
+
+.tl-fr {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(10, 10, 14, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.tl-fr i {
+  color: var(--accent-hover);
+  font-size: 9.5px;
+}
+
+/* the switch in the tray: franchises as one, or every film on its own */
+.tl-frs {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  color: var(--glass-muted);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s, color 0.25s, border-color 0.25s;
+}
+
+.tl-frs[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: #fff;
+}
+
+/* (less room: just the icon, the same one as on a franchise's poster) */
+@media (max-width: 1000px) {
+  .tl-frs {
+    justify-content: center;
+    width: 38px;
+    padding: 0;
+  }
+
+  .tl-frs span {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .tl-frs {
+    flex: none;
+    order: 7;
+  }
+}
+
+.tl-frs.busy i {
+  animation: tl-busy 1s ease-in-out infinite;
+}
+
+@keyframes tl-busy {
+  50% {
+    opacity: 0.35;
+  }
+}
+
 /* a poster that just moved lands with a pop */
 .tl-item.landed {
   animation: tl-land 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -13328,6 +13425,116 @@ html .modal .menu-switch:not([hidden]) {
   color: rgba(255, 255, 255, 0.45);
 }
 
+/* a franchise in Quick rank: its posters fanned out, every film with your score */
+.qr-fan .qr-back {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  filter: brightness(0.75);
+}
+
+/* (a franchise card has more to show: a smaller poster keeps it in the window) */
+.qr-fr .qr-poster {
+  width: 150px;
+}
+
+.qr-fr h3 {
+  font-size: 19px;
+}
+
+.qr-fan .qr-back.b1 {
+  transform: translateX(-34px) rotate(-7deg) scale(0.92);
+}
+
+.qr-fan .qr-back.b2 {
+  transform: translateX(34px) rotate(7deg) scale(0.92);
+}
+
+.qr-fan {
+  isolation: isolate;
+}
+
+.qr-frtag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  color: var(--accent-hover);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.qr-fr h3 {
+  margin-top: 2px;
+}
+
+.qr-films {
+  display: grid;
+  gap: 3px;
+  width: min(100%, 340px);
+  max-height: 94px;
+  margin: 6px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.qr-films li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 13px;
+  text-align: left;
+}
+
+.qr-films span {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.85);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qr-films b {
+  flex: none;
+  color: #fff;
+  font-size: 12.5px;
+}
+
+.qr-films b i {
+  color: #f5b82e;
+  font-size: 10.5px;
+}
+
+.qr-films b.none {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.qr-apart {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: rgba(255, 255, 255, 0.6);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.qr-apart:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
 .qr-card p.qr-mine {
   margin-top: 6px;
   padding: 6px 14px;
@@ -13564,6 +13771,10 @@ html .modal .menu-switch:not([hidden]) {
   .qr-score {
     right: -10px;
     font-size: 15px;
+  }
+
+  .qr-fr .qr-poster {
+    width: 116px;
   }
 
   .qr-types .top10-tab {

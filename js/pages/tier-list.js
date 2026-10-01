@@ -7,6 +7,9 @@
  *  - Quick rank: one poster at a time, tap S / A / B / C / D (or press the key), with
  *    Skip and Undo.
  *  - Fill from my ratings: 10 → S, 9 → A, 8 → B, 7 → C, below → D, with Undo.
+ *  - Franchises: two or more films of one series (TMDB's collection, from Facts) in the
+ *    same place show as one stacked tile, which moves and quick-ranks as one. Each film is
+ *    still kept on its own, so a franchise can be split (Split), and grouping turned off.
  *
  * Only watched titles can be ranked: in your library, and not only on your Watchlist.
  * Saved with your account (Store.setTiers). Save keeps the board as a named tier list
@@ -45,8 +48,70 @@
   let tiers = load();
   const save = () => Store.setTiers(tiers);
   const copy = (t) => JSON.parse(JSON.stringify(t));
-  let selected = null; // the poster picked by a tap (phones)
-  let landed = null; // the poster that just moved: it lands with a little pop
+  let selected = null; // the tile picked by a tap (phones): a title id or a franchise key
+  let landed = null; // the titles that just moved: they land with a little pop
+
+  /* ---------- franchises: two or more films of one series rank as one ---------- */
+
+  const fr = new Map(); // library id -> [collection id, name]
+  let grouping = Store.read("mn:tierGroup", true) !== false;
+  const split = new Set(Store.read("mn:tierSplit", [])); // franchises you rank film by film
+  const frName = (n) => n.replace(/\s*[-–:]?\s*collection$/i, "");
+  const cidOf = (id) => (grouping && fr.has(id) && !split.has(fr.get(id)[0]) ? fr.get(id)[0] : null);
+
+  // titles in one place (a tier, or the tray) as tiles: a franchise with 2+ films there is one
+  function unitsOf(ids, loc) {
+    const count = new Map();
+    ids.forEach((id) => {
+      const c = cidOf(id);
+      if (c) count.set(c, (count.get(c) || 0) + 1);
+    });
+    const groups = new Map();
+    const out = [];
+    ids.forEach((id) => {
+      const c = cidOf(id);
+      if (!c || count.get(c) < 2) return out.push({ key: id, ids: [id] });
+      let u = groups.get(c);
+      if (!u) {
+        u = { key: `f:${c}@${loc}`, cid: c, name: frName(fr.get(id)[1]), ids: [] };
+        groups.set(c, u);
+        out.push(u);
+      }
+      u.ids.push(id);
+    });
+    // a franchise shows its first film's poster, and lists them oldest first
+    groups.forEach((u) => u.ids.sort((a, b) => (Store.get(a).year || 0) - (Store.get(b).year || 0)));
+    return out;
+  }
+
+  // the titles behind a tile: a franchise key -> its films in that place
+  function idsOf(key) {
+    const m = /^f:(\d+)@(\w+)$/.exec(key || "");
+    if (!m) return key ? [key] : [];
+    const list = m[2] === "pool" ? unranked(false).map((i) => i.id) : tiers[m[2]] || [];
+    return list.filter((id) => String(cidOf(id)) === m[1]).sort((a, b) => (Store.get(a).year || 0) - (Store.get(b).year || 0));
+  }
+
+  // your average score for some titles (null when none is rated)
+  function avgOf(ids) {
+    const r = ids.map((id) => Store.get(id)).filter((i) => i && i.rating != null).map((i) => i.rating);
+    return r.length ? r.reduce((a, b) => a + b, 0) / r.length : null;
+  }
+
+  // which franchise each film belongs to: from the film facts (kept in this browser after the first time)
+  let frLoading = false;
+  const frChecked = new Set();
+  async function loadFranchises() {
+    if (frLoading || !window.Facts || !window.TMDB || !TMDB.enabled()) return;
+    const films = Store.all().filter((i) => seen(i) && i.type !== "tv" && !frChecked.has(i.id));
+    if (!films.length) return;
+    frLoading = true;
+    films.forEach((i) => frChecked.add(i.id));
+    const map = await Facts.forItems(films);
+    map.forEach((f, id) => f && f.f && fr.set(id, f.f));
+    frLoading = false;
+    render();
+  }
 
   document.querySelector(".tier-help").textContent = touch
     ? "Tap a poster, then tap a tier. Or use Quick rank to go through them one by one."
@@ -77,6 +142,7 @@
         <span class="tl-pick-name"></span>
         <div class="tl-pick-buttons">
           ${TIERS.map((t) => `<button class="tl-pick-tier" type="button" data-move="${t.id}" style="--tc:${t.color}">${t.id}</button>`).join("")}
+          <button class="btn tl-split" type="button" data-move="split" hidden></button>
           <button class="btn" type="button" data-move="pool" aria-label="Unrank" title="Back to Unranked"><i class="fa-solid fa-inbox"></i><span class="tl-word"> Unrank</span></button>
           <button class="btn" type="button" data-move="open" aria-label="Open" title="Open its page"><i class="fa-solid fa-circle-info"></i></button>
           <button class="btn" type="button" data-move="cancel" aria-label="Cancel"><i class="fa-solid fa-xmark"></i></button>
@@ -94,6 +160,7 @@
         <span class="glass-select small"><select name="order" aria-label="Order">
           <option value="rating">My rating</option><option value="title">Title A-Z</option><option value="year">Newest</option>
         </select></span>
+        <button class="tl-frs" type="button" aria-pressed="${grouping}" title="Rank the films of a franchise as one"><i class="fa-solid fa-layer-group"></i> <span>Franchises</span></button>
         <button class="tl-fold" type="button" aria-label="Hide the tray" title="Hide the tray"><i class="fa-solid fa-chevron-down"></i></button>
       </div>
       <div class="tl-pool" data-tier="pool"></div>
@@ -107,12 +174,27 @@
   const typeSel = $('[name="type"]');
   const orderSel = $('[name="order"]');
 
-  function tile(item) {
-    const cls = `tl-item${selected === item.id ? " selected" : ""}${landed === item.id ? " landed" : ""}`;
+  function tile(u) {
+    if (u.ids.length > 1) return groupTile(u);
+    const item = Store.get(u.key);
+    const cls = `tl-item${selected === item.id ? " selected" : ""}${landed && landed.includes(item.id) ? " landed" : ""}`;
     const tip = `${Lang.title(item)}${item.year ? ` (${item.year})` : ""}${item.rating != null ? ` · ★ ${Cards.formatRating(item.rating)}` : ""}`;
     return `<button class="${cls}" type="button" draggable="true" data-id="${esc(item.id)}" title="${esc(tip)}">
       <img src="${Store.poster(Cards.posterOf(item), "w185")}" alt="${esc(Lang.title(item))}" loading="lazy" draggable="false" />
       <span class="tl-cap"><b>${esc(Lang.title(item))}</b>${item.rating != null ? `<small><i class="fa-solid fa-star"></i> ${Cards.formatRating(item.rating)}</small>` : ""}</span>
+    </button>`;
+  }
+
+  // a franchise: its first film's poster, the edges of the others behind it, how many
+  function groupTile(u) {
+    const first = Store.get(u.ids[0]);
+    const avg = avgOf(u.ids);
+    const cls = `tl-item tl-group${selected === u.key ? " selected" : ""}${landed && u.ids.some((id) => landed.includes(id)) ? " landed" : ""}`;
+    const tip = `${u.name} · ${u.ids.length} films${avg != null ? ` · ★ ${Cards.formatRating(avg)}` : ""}`;
+    return `<button class="${cls}" type="button" draggable="true" data-id="${esc(u.key)}" title="${esc(tip)}">
+      <img src="${Store.poster(Cards.posterOf(first), "w185")}" alt="${esc(u.name)}" loading="lazy" draggable="false" />
+      <span class="tl-fr" aria-hidden="true"><i class="fa-solid fa-layer-group"></i>${u.ids.length}</span>
+      <span class="tl-cap"><b>${esc(u.name)}</b><small>${u.ids.length} films${avg != null ? ` · <i class="fa-solid fa-star"></i> ${Cards.formatRating(avg)}` : ""}</small></span>
     </button>`;
   }
 
@@ -135,14 +217,17 @@
 
   function render() {
     TIERS.forEach((t) => {
-      const list = tiers[t.id].map((id) => Store.get(id)).filter(Boolean);
+      const list = tiers[t.id].filter((id) => Store.get(id));
       root.querySelector(`.tl-drop[data-tier="${t.id}"]`).innerHTML = list.length
-        ? list.map(tile).join("")
+        ? unitsOf(list, t.id).map(tile).join("")
         : `<p class="tl-empty"><i class="fa-regular fa-hand-pointer"></i> ${touch ? "Pick a poster, then tap the letter" : "Drop titles here"}</p>`;
       root.querySelector(`.tl-row[data-tier="${t.id}"] .tl-count`).textContent = `${list.length} title${list.length === 1 ? "" : "s"}`;
     });
 
-    const list = unranked(false);
+    const list = unitsOf(
+      unranked(false).map((i) => i.id),
+      "pool"
+    );
     const total = unranked(true).length;
     pool.innerHTML = list.length
       ? list.slice(0, POOL_LIMIT).map(tile).join("")
@@ -150,30 +235,55 @@
     $(".tl-left").textContent = total;
     $(".tl-more").textContent = list.length > POOL_LIMIT ? `Showing ${POOL_LIMIT} of ${list.length}: search to find the rest.` : "";
     $(".tl-quick").disabled = !total;
+    const frs = $(".tl-frs");
+    frs.setAttribute("aria-pressed", grouping);
+    frs.classList.toggle("busy", frLoading);
     renderSaved();
 
     // a poster picked (phones): the bar with the tiers, and the tiers light up
+    if (selected && !idsOf(selected).length) selected = null;
     root.classList.toggle("picking", !!selected);
     tray.classList.toggle("picking", !!selected);
     if (selected) {
-      const item = Store.get(selected);
-      $(".tl-pick-name").textContent = item ? `Move "${Lang.title(item)}" to` : "";
+      const ids = idsOf(selected);
+      const item = Store.get(ids[0]);
+      const name = ids.length > 1 ? `${frName(fr.get(ids[0])[1])} (${ids.length} films)` : Lang.title(item);
+      $(".tl-pick-name").textContent = item ? `Move "${name}" to` : "";
+      // a franchise: Split it; a film of a split franchise: put it back together
+      const sp = $(".tl-split");
+      const f = fr.get(ids[0]);
+      sp.hidden = !grouping || !f || (ids.length < 2 && !split.has(f[0]));
+      sp.dataset.move = ids.length > 1 ? "split" : "join";
+      sp.innerHTML = ids.length > 1 ? '<i class="fa-solid fa-scissors"></i><span class="tl-word"> Split</span>' : '<i class="fa-solid fa-layer-group"></i><span class="tl-word"> Group</span>';
+      sp.title = ids.length > 1 ? "Rank these films one by one" : `Rank ${frName(f ? f[1] : "")} as one again`;
+      sp.setAttribute("aria-label", sp.title);
     }
     landed = null;
   }
 
-  function move(id, target, beforeId) {
-    IDS.forEach((t) => (tiers[t] = tiers[t].filter((x) => x !== id)));
+  // move a tile (a title, or a franchise's films) to a tier, before another tile, or back to the tray
+  function move(key, target, beforeKey) {
+    const ids = idsOf(key);
+    if (!ids.length) return;
+    const before = beforeKey ? idsOf(beforeKey)[0] : null;
+    IDS.forEach((t) => (tiers[t] = tiers[t].filter((x) => !ids.includes(x))));
     if (target !== "pool") {
       const list = tiers[target];
-      const at = beforeId ? list.indexOf(beforeId) : -1;
-      if (at >= 0) list.splice(at, 0, id);
-      else list.push(id);
+      const at = before ? list.indexOf(before) : -1;
+      if (at >= 0) list.splice(at, 0, ...ids);
+      else list.push(...ids);
     }
     selected = null;
-    landed = id;
+    landed = ids;
     save();
     render();
+  }
+
+  // Split a franchise (its films rank one by one), or Group it again
+  function setSplit(cid, on) {
+    if (on) split.add(cid);
+    else split.delete(cid);
+    Store.write("mn:tierSplit", [...split]);
   }
 
   /* ---------- drag and drop (computers) ---------- */
@@ -235,9 +345,23 @@
       if (target === "cancel") {
         selected = null;
         render();
-      } else if (target === "open") location.href = `title.html?id=${encodeURIComponent(selected)}`;
-      else move(selected, target);
+      } else if (target === "open") location.href = `title.html?id=${encodeURIComponent(idsOf(selected)[0])}`;
+      else if (target === "split" || target === "join") {
+        const f = fr.get(idsOf(selected)[0]);
+        if (!f) return;
+        setSplit(f[0], target === "split");
+        selected = null;
+        render();
+        toast(target === "split" ? `${frName(f[1])}: rank the films one by one` : `${frName(f[1])}: ranked as one again`);
+      } else move(selected, target);
       return;
+    }
+    if (e.target.closest(".tl-frs")) {
+      grouping = !grouping;
+      Store.write("mn:tierGroup", grouping);
+      selected = null;
+      render();
+      return toast(grouping ? "Franchises rank as one" : "Every film on its own");
     }
     if (e.target.closest(".tl-fold")) {
       const folded = tray.classList.toggle("folded");
@@ -267,7 +391,7 @@
 
   root.addEventListener("dblclick", (e) => {
     const itemEl = e.target.closest(".tl-item");
-    if (itemEl) location.href = `title.html?id=${encodeURIComponent(itemEl.dataset.id)}`;
+    if (itemEl) location.href = `title.html?id=${encodeURIComponent(idsOf(itemEl.dataset.id)[0])}`;
   });
 
   // the tray scrolls sideways: a normal mouse wheel moves it too
@@ -576,9 +700,17 @@
 
   // the Movies / TV / Anime switch: what's left of each (a kind with nothing left hides,
   // unless it's the one you're on)
+  // what's left to rank of a kind, as cards (a franchise is one card)
+  const qrUnits = (v) =>
+    unitsOf(
+      unranked(true)
+        .filter((i) => !v || i.type === v)
+        .map((i) => i.id),
+      "pool"
+    );
+
   function qrTypes() {
-    const left = unranked(true);
-    const count = (v) => (v ? left.filter((i) => i.type === v).length : left.length);
+    const count = (v) => qrUnits(v).length;
     const shown = QR_TYPES.filter(([v]) => v && count(v)).length;
     const sw = qr.overlay.querySelector(".qr-types");
     sw.hidden = shown < 2 && !qr.type;
@@ -597,9 +729,7 @@
     if (v === qr.type) return;
     qr.type = v;
     typeSel.value = v;
-    qr.queue = unranked(true)
-      .filter((i) => !v || i.type === v)
-      .map((i) => i.id);
+    qr.queue = qrUnits(v);
     qrShow("right");
   }
 
@@ -610,7 +740,10 @@
       typeSel.value = "";
       q.value = "";
     }
-    const queue = unranked(false).map((i) => i.id);
+    const queue = unitsOf(
+      unranked(false).map((i) => i.id),
+      "pool"
+    );
     if (!qr) {
       const overlay = Cards.makeOverlay(
         "qr-modal",
@@ -639,6 +772,7 @@
         if (t) return qrType(t.dataset.qrtype);
         if (e.target.closest(".qr-skip")) return qrSkip();
         if (e.target.closest(".qr-undo")) return qrUndo();
+        if (e.target.closest(".qr-apart")) return qrApart();
         if (e.target.closest(".qr-close")) return Cards.closeModal(overlay);
       });
       document.addEventListener("keydown", (e) => {
@@ -671,8 +805,8 @@
 
   function qrShow(dir) {
     const stage = qr.overlay.querySelector(".qr-stage");
-    const id = qr.queue[0];
-    const item = id && Store.get(id);
+    const u = qr.queue[0];
+    const item = u && Store.get(u.ids[0]);
     qr.overlay.querySelector(".qr-undo").disabled = !qr.done.length;
     qr.overlay.querySelector(".qr-skip").disabled = qr.queue.length < 2;
     qr.overlay.querySelector(".qr-tiers").hidden = !item;
@@ -681,17 +815,17 @@
     if (!item) {
       const word = QR_WORD[qr.type];
       const others = qr.type ? unranked(true).length : 0;
+      const placed = qr.done.reduce((n, d) => n + d.u.ids.length, 0);
       stage.innerHTML = `<div class="qr-done"><i class="fa-solid fa-trophy"></i><h3>${word ? `Every ${word[0]} ranked!` : "All ranked!"}</h3>
-        <p>${qr.done.length} title${qr.done.length === 1 ? "" : "s"} placed.${others ? ` ${others} other title${others === 1 ? "" : "s"} still wait: pick them above.` : ""}</p>
+        <p>${placed} title${placed === 1 ? "" : "s"} placed.${others ? ` ${others} other title${others === 1 ? "" : "s"} still wait: pick them above.` : ""}</p>
         <button class="btn btn-primary qr-close" type="button">See the tiers</button></div>`;
       return;
     }
+    if (u.ids.length > 1) return qrFranchise(u, stage, dir);
     const meta = [item.year, Store.TYPE_LABEL[item.type]].filter(Boolean).join(" · ");
     // your own score, so you know where it belongs: on the poster, and the tier it points to lights up
     const rated = item.rating != null;
-    const hint = rated ? tierFor(item.rating) : null;
-    const tier = hint && TIERS.find((t) => t.id === hint);
-    qr.overlay.querySelectorAll(".qr-tier").forEach((b) => b.classList.toggle("suggest", b.dataset.qr === hint));
+    const hint = qrHint(item.rating);
     stage.innerHTML = `<div class="qr-card${dir ? ` from-${dir}` : ""}">
         <div class="qr-pwrap">
           <img class="qr-poster" src="${Store.poster(Cards.posterOf(item), "w342")}" alt="" />
@@ -701,19 +835,72 @@
         <p>${esc(meta)}</p>
         <p class="qr-mine">${
           rated
-            ? `You rated it <b>${Cards.formatRating(item.rating)}</b>/10 · by your score that's <b class="qr-hint" style="--tc:${tier.color}">${hint}</b>`
+            ? `You rated it <b>${Cards.formatRating(item.rating)}</b>/10 · by your score that's ${hint}`
             : `<i class="fa-regular fa-star"></i> You haven't rated this one yet`
         }</p>
       </div>`;
   }
 
+  // the tier a score points to: it lights up, and comes back as the letter in its colour
+  function qrHint(score) {
+    const id = score != null ? tierFor(score) : null;
+    qr.overlay.querySelectorAll(".qr-tier").forEach((b) => b.classList.toggle("suggest", b.dataset.qr === id));
+    const t = id && TIERS.find((x) => x.id === id);
+    return t ? `<b class="qr-hint" style="--tc:${t.color}">${id}</b>` : "";
+  }
+
+  // a franchise: its posters fanned out, every film with your score, the average's tier
+  function qrFranchise(u, stage, dir) {
+    const films = u.ids.map((id) => Store.get(id));
+    const avg = avgOf(u.ids);
+    const rated = films.filter((i) => i.rating != null).length;
+    const years = films.map((i) => i.year).filter(Boolean);
+    const span = years.length ? (Math.min(...years) === Math.max(...years) ? Math.min(...years) : `${Math.min(...years)}–${Math.max(...years)}`) : "";
+    const hint = qrHint(avg != null ? Math.round(avg) : null); // (9.7 on average is a 10: S)
+    const back = films.slice(1, 3);
+    stage.innerHTML = `<div class="qr-card qr-fr${dir ? ` from-${dir}` : ""}">
+        <div class="qr-pwrap qr-fan">
+          ${back
+            .map((i, n) => `<img class="qr-poster qr-back b${n + 1}" src="${Store.poster(Cards.posterOf(i), "w342")}" alt="" />`)
+            .reverse()
+            .join("")}
+          <img class="qr-poster" src="${Store.poster(Cards.posterOf(films[0]), "w342")}" alt="" />
+          <span class="qr-score${avg != null ? "" : " unrated"}" title="My average"><i class="fa-solid fa-star"></i>${avg != null ? Cards.formatRating(avg) : "–"}</span>
+        </div>
+        <span class="qr-frtag"><i class="fa-solid fa-layer-group"></i> Franchise · ${films.length} films</span>
+        <h3>${esc(u.name)}</h3>
+        <p>${esc(span)}</p>
+        <ul class="qr-films">${films
+          .map(
+            (i) => `<li><span>${esc(Lang.title(i))}</span>${
+              i.rating != null ? `<b><i class="fa-solid fa-star"></i> ${Cards.formatRating(i.rating)}</b>` : `<b class="none">–</b>`
+            }</li>`
+          )
+          .join("")}</ul>
+        <p class="qr-mine">${
+          avg != null
+            ? `Your average <b>${Cards.formatRating(avg)}</b>${rated < films.length ? ` (${rated} of ${films.length} rated)` : ""} · that's ${hint}`
+            : `<i class="fa-regular fa-star"></i> You haven't rated these yet`
+        }</p>
+        <button class="qr-apart" type="button"><i class="fa-solid fa-scissors"></i> Rank them one by one</button>
+      </div>`;
+  }
+
+  // this franchise, film by film (just this once: on the board they still stack when together)
+  function qrApart() {
+    const u = qr.queue[0];
+    if (!u || u.ids.length < 2) return;
+    qr.queue.splice(0, 1, ...u.ids.map((id) => ({ key: id, ids: [id] })));
+    qrShow("right");
+  }
+
   function qrPlace(tier) {
-    const id = qr.queue.shift();
-    if (!id) return;
-    IDS.forEach((t) => (tiers[t] = tiers[t].filter((x) => x !== id)));
-    tiers[tier].push(id);
+    const u = qr.queue.shift();
+    if (!u) return;
+    IDS.forEach((t) => (tiers[t] = tiers[t].filter((x) => !u.ids.includes(x))));
+    tiers[tier].push(...u.ids);
     save();
-    qr.done.push({ id, tier });
+    qr.done.push({ u, tier });
     // the tier you picked flashes
     const b = qr.overlay.querySelector(`[data-qr="${tier}"]`);
     b.classList.remove("hit");
@@ -731,18 +918,20 @@
   function qrUndo() {
     const last = qr.done.pop();
     if (!last) return;
-    tiers[last.tier] = tiers[last.tier].filter((x) => x !== last.id);
+    tiers[last.tier] = tiers[last.tier].filter((x) => !last.u.ids.includes(x));
     save();
-    qr.queue.unshift(last.id);
+    qr.queue.unshift(last.u);
     qrShow("left");
   }
 
   // your library changed (a title rated or removed, another tab / device): read the tiers again
   Store.onChange(() => {
     tiers = load();
-    if (selected && !Store.get(selected)) selected = null;
+    if (selected && !idsOf(selected).length) selected = null;
     render();
+    loadFranchises(); // (a film just added: which franchise it's from)
   });
 
   render();
+  loadFranchises();
 })();
