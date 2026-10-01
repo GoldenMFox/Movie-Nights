@@ -21982,3 +21982,9 @@ html.app-ui.typing .tab-bar {
     display: none;
   }
 }
+
+/* typing in a panel (Search): the tab bar is away, so the panel's room for it goes too and the
+   boxes sit just above the keyboard */
+html.app-ui.typing .sheet-panel {
+  padding-bottom: 18px;
+}
