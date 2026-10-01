@@ -181,6 +181,10 @@
     return days >= 0 && days <= RECENT_DAYS;
   }
 
+  // Watched: in your library, unless it's only on your Watchlist (a score or a watch date always
+  // counts). The one rule every page uses (stats, lists, tier list, Box Office, achievements…).
+  const isWatched = (i) => !!i && (i.rating != null || !!i.watchedAt || !i.watchlist);
+
   // today as "2026-09-29" (local time)
   function today() {
     const d = new Date();
@@ -461,6 +465,7 @@
     all,
     get,
     isRecent,
+    isWatched,
     releaseOf,
     update,
     toggle,

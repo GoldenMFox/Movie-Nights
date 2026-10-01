@@ -79,6 +79,15 @@
     m = T.mergeData({}, { custom: [title("a")], overrides: { a: { rating: 9 } } }, { custom: [title("b")], overrides: {} });
     eq("no common version known (first sync): nothing is lost", m.custom.map((i) => i.id).sort(), ["a", "b"]);
 
+    /* ---------------- watched (js/core/store.js: the one rule every page uses) ---------------- */
+    group("What counts as watched");
+    eq("in the library, not on the Watchlist → watched", Store.isWatched(title("a")), true);
+    eq("only on the Watchlist → not watched", Store.isWatched(title("a", { watchlist: true })), false);
+    eq("on the Watchlist but rated → watched", Store.isWatched(title("a", { watchlist: true, rating: 8 })), true);
+    eq("on the Watchlist with a watch date → watched", Store.isWatched(title("a", { watchlist: true, watchedAt: "2026-01-01" })), true);
+    eq("rated 0 still counts as rated → watched", Store.isWatched(title("a", { watchlist: true, rating: 0 })), true);
+    eq("nothing (a title that isn't there) → not watched", Store.isWatched(null), false);
+
     /* ---------------- sync errors ---------------- */
     group("What a sync error is called");
     eq("no internet → offline (tried again later)", T.statusOf(new TypeError("Failed to fetch")), "offline");

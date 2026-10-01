@@ -19,7 +19,7 @@
   const TIERS = ["Bronze", "Silver", "Gold"];
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  const seen = (i) => i.rating != null || !!i.watchedAt || !i.watchlist;
+  const seen = Store.isWatched;
   const isFilm = (i) => i.type === "movie" || (i.type === "anime" && i.tmdbMedia === "movie");
   const byDate = (a, b) => String(a.watchedAt || "9999").localeCompare(String(b.watchedAt || "9999")) || (a.order || 0) - (b.order || 0);
   const minutes = (runtime) => {

@@ -277,7 +277,7 @@
     // a score or a watch date always counts
     const seen = (p) => {
       const lib = Cards.inLibrary(p);
-      return !!(lib && (lib.rating != null || lib.watchedAt || !lib.watchlist));
+      return Store.isWatched(lib);
     };
     const n = out.filter(seen).length;
     const planned = c.parts.filter((p) => Cards.inLibrary(p) && !seen(p)).length;
@@ -478,7 +478,7 @@
       if (seenLoading || seenBefore) return;
       seenLoading = true;
       // watched = in your library, unless it's only on your Watchlist (same as the franchise counter)
-      const mine = new Set(Store.all().filter((i) => i.rating != null || i.watchedAt || !i.watchlist).map((i) => i.id));
+      const mine = new Set(Store.all().filter(Store.isWatched).map((i) => i.id));
       const here = tmdbRef || (Store.get(id) && Ratings.refOf(Store.get(id)));
       const out = [];
       for (const c of castWithIds(d).slice(0, 8)) {
@@ -1126,7 +1126,7 @@
 
   /* ---------------- yours: trivia (js/components/trivia.js), for what you've watched ---------------- */
 
-  const seenIt = (i) => !!i && (i.rating != null || !!i.watchedAt || !i.watchlist);
+  const seenIt = Store.isWatched;
   function triviaHtml(item) {
     if (!window.Trivia || !TMDB.enabled() || !seenIt(item)) return "";
     const b = Trivia.best(item);

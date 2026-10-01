@@ -37,7 +37,7 @@
   }
 
   // watched = in your library, unless it's only on your Watchlist (a score or a watch date always counts)
-  const seen = (i) => i.rating != null || !!i.watchedAt || !i.watchlist;
+  const seen = Store.isWatched;
 
   function load() {
     const t = Store.getTiers();

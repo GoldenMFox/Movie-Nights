@@ -65,7 +65,7 @@
     const needScore = (window.Ratings && Ratings.needsWork(item)) || needsRuName(item);
     // watched = in your library, unless it's only on your Watchlist (a score or a watch date
     // always counts): Discover can dim these ("Dim watched on Discover" in the profile menu)
-    const seen = item.rating != null || !!item.watchedAt || !item.watchlist;
+    const seen = Store.isWatched(item);
     return `<article class="movie-item" data-id="${esc(item.id)}"${seen ? " data-seen" : ""}${needScore ? " data-need-score" : ""}>
       <a class="poster-link" href="${url}" tabindex="-1" aria-hidden="true">
         <img class="movie-poster" src="${Store.poster(posterOf(item))}" alt="" loading="lazy" decoding="async" />
@@ -892,23 +892,62 @@
     return overlay;
   }
 
-  let lastFocus = null;
+  // Pop-ups, for the keyboard and screen readers: each one is named by its own heading, Tab goes
+  // round inside it (not into the page behind), and closing it puts the focus back where it was,
+  // one pop-up over another too (a stack, not one remembered place)
+  const focusStack = [];
+  let named = 0;
   function open(overlay) {
-    lastFocus = document.activeElement;
+    if (!overlay._focusBack) {
+      overlay._focusBack = true; // (only pop-ups opened here give the focus back: UI.confirm does its own)
+      focusStack.push(document.activeElement);
+    }
     overlay.classList.add("active");
+    const modal = overlay.querySelector(".modal");
+    if (modal && !modal.hasAttribute("aria-label")) {
+      const heading = modal.querySelector("h1, h2, h3, .xr-label");
+      if (heading) {
+        if (!heading.id) heading.id = `dialog-title-${++named}`;
+        modal.setAttribute("aria-labelledby", heading.id);
+      }
+    }
     const first = overlay.querySelector(".star, input, button:not(.modal-close)");
     if (first) setTimeout(() => first.focus(), 60);
   }
 
   function close(overlay) {
+    if (!overlay.classList.contains("active")) return;
     overlay.classList.remove("active");
     if (overlay.onclose) overlay.onclose();
-    if (lastFocus && lastFocus.focus) lastFocus.focus();
+    if (!overlay._focusBack) return;
+    overlay._focusBack = false;
+    const back = focusStack.pop();
+    if (back && back.focus && document.contains(back)) back.focus();
   }
 
   document.addEventListener("keydown", (e) => {
-    if (e.key !== "Escape") return;
-    document.querySelectorAll(".overlay.active").forEach(close);
+    if (e.key === "Escape") return document.querySelectorAll(".overlay.active").forEach(close);
+    if (e.key !== "Tab") return;
+    // Tab / Shift+Tab stay inside the pop-up on top
+    const open = document.querySelectorAll(".overlay.active");
+    const top = open[open.length - 1];
+    if (!top) return;
+    const items = [...top.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea, [tabindex]:not([tabindex="-1"])')].filter(
+      (el) => el.getClientRects().length && !el.closest("[hidden]")
+    );
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (!top.contains(document.activeElement)) {
+      e.preventDefault();
+      first.focus();
+    } else if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
   });
 
   /* ---------------- rating pop-up ---------------- */

@@ -176,7 +176,11 @@ message instead of an endless spinner. Box Office's "Your box office" takes each
 and gross from the film facts when they're there (Profile, Wrapped and the tier list load them
 anyway) instead of asking TMDB again. Fonts load from each page's `<head>`, alongside the page.
 
-**Tests**: open `tools/tests.html` (e.g. `http://localhost:8080/tools/tests.html`): merging two
+**Watched**: one rule for every page, `Store.isWatched` (`js/core/store.js`): in your library unless it's only on your Watchlist; a score or a watch date always counts.
+
+**Pop-ups** (`js/components/cards.js`): each is named by its own heading for screen readers, Tab and Shift+Tab stay inside the one on top, and closing one puts the focus back on what opened it (one over another too).
+
+**Tests**: open `tools/tests.html` (e.g. `http://localhost:8080/tools/tests.html`): what counts as watched, merging two
 devices' changes, the check before saving (with a pretend Firestore), sync errors, the spare copy,
 and short share links. No installs; this browser's data is put back afterwards.
 

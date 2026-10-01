@@ -63,13 +63,13 @@
 
   // watched = in your library, unless it's only on your Watchlist (a score or a watch date
   // always counts)
-  const seen = (i) => i.rating != null || !!i.watchedAt || !i.watchlist;
+  const seen = Store.isWatched;
   // Two groups: All = Watched + Watchlist (every title is in exactly one of those two), then
   // filters inside them: Rated + Not rated = Watched (a title you haven't seen can't be rated)
   const STATUS_CHIPS = [
     { id: "all", label: "All", tip: "Everything in your library: watched and on your Watchlist", test: () => true },
     { id: "watched", label: "Watched", tip: "Everything you've seen (rated or not)", test: seen },
-    { id: "watch", label: "Watchlist", tip: "On your Watchlist, not watched yet", test: (i) => !seen(i) },
+    { id: "watch", label: "Watchlist", tip: "On your Watchlist, not watched yet (one you put back on it to watch again is under Watched)", test: (i) => !seen(i) },
     { id: "rated", label: "Rated", tip: "Watched and rated", test: (i) => i.rating != null, refine: true },
     { id: "unrated", label: "Not rated", tip: "Watched, but not rated yet", test: (i) => seen(i) && i.rating == null },
     { id: "fav", label: "Favorites", tip: "Your favorites", test: (i) => i.favorite },

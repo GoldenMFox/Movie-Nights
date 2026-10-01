@@ -608,7 +608,7 @@ ${skyFilms
 
   const libOf = (f) => {
     const lib = Cards.inLibrary(f);
-    return { lib, seen: !!lib && (lib.rating != null || !!lib.watchedAt || !lib.watchlist) };
+    return { lib, seen: Store.isWatched(lib) };
   };
 
   function sorted() {
@@ -1051,7 +1051,7 @@ ${skyFilms
 
   async function yours() {
     if (Store.guest || !window.Watch) return;
-    const mine = Store.all().filter((i) => i.type === "movie" && (i.rating != null || !!i.watchedAt || !i.watchlist));
+    const mine = Store.all().filter((i) => i.type === "movie" && Store.isWatched(i));
     if (mine.length < 3) return;
     const box = $(".bo-yours");
     box.hidden = false;
