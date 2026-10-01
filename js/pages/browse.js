@@ -143,11 +143,13 @@
     title: { label: "Title A-Z", fn: (a, b) => Lang.title(a).localeCompare(Lang.title(b)) },
   };
 
-  // state lives in the URL, so refresh / back button keep your filters
+  // state lives in the URL, so refresh / back button keep your filters.
+  // Movies / TV shows / anime open on Watched (All is a tap away); the Watchlist page on All
+  const DEFAULT_CHIP = PAGE.chips === "status" ? "watched" : "all";
   const params = new URLSearchParams(location.search);
   const state = {
     q: params.get("q") || "",
-    chip: params.get("show") || "all",
+    chip: params.get("show") || DEFAULT_CHIP,
     sort: SORTS[params.get("sort")] ? params.get("sort") : "default",
     from: params.get("from") || "",
     to: params.get("to") || "",
@@ -539,6 +541,8 @@
 
   function render() {
     if (isLists) renderRows();
+    // nothing watched yet (only Watchlist titles): open on All instead of an empty Watched
+    if (state.chip === "watched" && !params.get("show") && !baseList().some(seen)) state.chip = "all";
     const items = filtered();
     const total = baseList().length;
     renderChips();
@@ -576,7 +580,7 @@
   function syncUrl() {
     const p = new URLSearchParams();
     if (state.q) p.set("q", state.q);
-    if (state.chip !== "all") p.set("show", state.chip);
+    if (state.chip !== DEFAULT_CHIP) p.set("show", state.chip);
     if (state.sort !== "default") p.set("sort", state.sort);
     if (state.from) p.set("from", state.from);
     if (state.to) p.set("to", state.to);
@@ -614,7 +618,7 @@
     root.querySelectorAll(".list-search input, .list-filters input").forEach((i) => (i.value = ""));
     root.querySelector('[name="sort"]').value = "default";
     root.querySelector('[name="min"]').value = "";
-    set({ q: "", chip: "all", sort: "default", from: "", to: "", min: "", genre: "" });
+    set({ q: "", chip: DEFAULT_CHIP, sort: "default", from: "", to: "", min: "", genre: "" });
   }
 
   root.addEventListener("click", (e) => {
