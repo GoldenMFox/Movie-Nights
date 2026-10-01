@@ -170,6 +170,34 @@
     </div>`;
   }
 
+  // computers and tablets: the ⋯ menu at the picture's top right (Share, Add to a list); phones
+  // have the same in the round buttons of the top bar
+  function moreMenuHtml(listAction, inLists) {
+    return `<div class="t-more">
+      <button class="t-more-btn" type="button" aria-label="More" title="More" aria-haspopup="menu" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+      <div class="t-more-menu" role="menu">
+        <button type="button" role="menuitem" data-t="share"><i class="fa-solid fa-arrow-up-from-bracket"></i><span>Share</span></button>
+        <button type="button" role="menuitem" data-action="${listAction}"><i class="fa-solid fa-list-ul"></i><span>Add to a list</span>${
+          inLists ? `<b>${inLists}</b>` : ""
+        }</button>
+      </div>
+    </div>`;
+  }
+  // open / close it (a tap anywhere else, or Escape, closes it)
+  function moreMenu(open) {
+    const box = heroEl.querySelector(".t-more");
+    if (!box) return;
+    box.classList.toggle("open", open);
+    box.querySelector(".t-more-btn").setAttribute("aria-expanded", open);
+  }
+  document.addEventListener("click", (e) => {
+    const box = heroEl.querySelector(".t-more");
+    if (!box) return;
+    if (e.target.closest(".t-more-btn")) return moreMenu(!box.classList.contains("open"));
+    moreMenu(false);
+  });
+  document.addEventListener("keydown", (e) => e.key === "Escape" && moreMenu(false));
+
   // the whole top block: backdrop, title, info, buttons, overview
   function heroHtml(t, d, e, buttons, listAction, inLists) {
     const backdrop = d.backdrop ? Store.img(d.backdrop, "w1280") : Store.img(t.poster, "w780");
@@ -181,6 +209,7 @@
           : ""
       }</div>
       ${topbarHtml(listAction, inLists)}
+      ${moreMenuHtml(listAction, inLists)}
       <div class="container t-hero-inner">
         <img class="t-poster" src="${Store.poster(Lang.isRu() && d.posterRu ? d.posterRu : Cards.posterOf(t), "w500")}" alt="${esc(Lang.title(t))} poster" />
         <div class="t-head">
@@ -189,7 +218,7 @@
           <div class="t-meta">${metaHtml(t, d, e)}</div>
           <div class="t-genres">${genresHtml(t, d)}</div>
           ${providersHtml(d.providers, t)}
-          <div class="t-cta">${buttons}<button class="btn t-share-btn" type="button" data-t="share" title="Share it with anyone"><i class="fa-solid fa-arrow-up-from-bracket"></i> Share</button></div>
+          <div class="t-cta">${buttons}</div>
           ${aboutHtml(d)}
         </div>
       </div>`;
