@@ -58,19 +58,20 @@
       if (m) parts.push(m);
     }
     if (e && typeof e.imdb === "number") {
-      parts.push(`<span class="t-score" title="${e.votes ? `IMDb rating from ${esc(e.votes)} votes` : "IMDb rating"}"><span class="imdb-tag">IMDb</span>${Cards.formatRating(e.imdb)} / 10</span>`);
+      parts.push(`<span class="t-score" title="${e.votes ? `IMDb rating from ${esc(e.votes)} votes` : "IMDb rating"}"><span class="imdb-tag">IMDb</span>${Cards.formatRating(e.imdb)}<span class="t-long"> / 10</span></span>`);
     } else {
       const tmdb = e && typeof e.tmdb === "number" ? e.tmdb : d.tmdbScore;
-      if (typeof tmdb === "number") parts.push(`<span class="t-score" title="TMDB rating"><span class="tmdb-tag">TMDB</span>${tmdb.toFixed(1)} / 10</span>`);
+      if (typeof tmdb === "number") parts.push(`<span class="t-score" title="TMDB rating"><span class="tmdb-tag">TMDB</span>${tmdb.toFixed(1)}<span class="t-long"> / 10</span></span>`);
     }
-    if (d.runtime) parts.push(esc(d.runtime));
+    // (phones: "2h 25m", "8.1" without "/ 10": the whole row fits on one line; .t-long hides)
+    if (d.runtime) parts.push(esc(d.runtime).replace(/(\d)min\b/g, '$1m<span class="t-long">in</span>'));
     if (t.year) parts.push(t.year);
     if (e && e.rt) {
       const rotten = parseInt(e.rt, 10) < 60;
       parts.push(`<span class="t-rt${rotten ? " rotten" : ""}" title="Rotten Tomatoes Tomatometer (critics)"><span class="rt-icon">🍅</span>${esc(e.rt)}</span>`);
     }
-    // (each part in its own span: on phones they turn into small pills, no dots)
-    return parts.map((p) => `<span class="t-mi">${p}</span>`).join('<span class="dot">·</span>');
+    // (each in a span of its own: the row lays them out side by side, "2h 25min" stays one piece)
+    return parts.map((p) => `<span>${p}</span>`).join('<span class="dot">·</span>');
   }
 
   // "[14+] Animation • Comedy • Adventure"
@@ -170,6 +171,21 @@
       }</button>
     </div>`;
   }
+
+  // phones: the facts row stays on one line; when it's still too wide (a show's "5 seasons",
+  // a narrow phone) its text gets a little smaller until it fits, 11.5px at the least
+  function fitMeta() {
+    const row = heroEl.querySelector(".t-meta");
+    if (!row) return;
+    row.style.fontSize = "";
+    if (getComputedStyle(row).flexWrap !== "nowrap") return; // (computers: it may wrap)
+    let size = parseFloat(getComputedStyle(row).fontSize);
+    while (row.scrollWidth > row.clientWidth + 1 && size > 11.5) {
+      size -= 0.5;
+      row.style.fontSize = `${size}px`;
+    }
+  }
+  addEventListener("resize", () => fitMeta());
 
   // computers and tablets: the ⋯ menu at the picture's top right (Share, Add to a list); phones
   // have the same in the round buttons of the top bar
@@ -952,6 +968,7 @@
       ${watchedOnHtml(item)}`;
     const inLists = Store.lists().filter((l) => l.items.includes(item.id)).length;
     heroEl.innerHTML = heroHtml(item, d, e, buttons, "lists", inLists);
+    fitMeta();
 
     // more like this: the titles of yours that share the most genres with it (the same kind of
     // title counts a little too), then your likely favourites (Match %) and the closest years
@@ -1400,6 +1417,7 @@
         }
       </div>`;
     heroEl.innerHTML = heroHtml(d, d, Ratings.entry(tmdbRef), buttons, "t-lists", 0);
+    fitMeta();
   }
 
   // opened from a shared link: a small card at the foot of the screen with who sent it, their
