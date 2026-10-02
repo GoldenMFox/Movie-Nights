@@ -21415,9 +21415,14 @@ html.sm-lock {
   align-items: center;
   justify-content: space-between;
   gap: 10px 16px;
+  margin-top: 36px; /* (the heading's own top margin, moved here: with it on the heading, the switch beside it sat higher) */
 }
 
 .t-more-head .section-title {
+  margin: 0;
+}
+
+.t-more-head .t-more-switch {
   margin-bottom: 0;
 }
 
@@ -21426,8 +21431,10 @@ html.sm-lock {
   cursor: default;
 }
 
+/* (rows keep 56px of room above the posters for lifting on hover, taken back by a -44px
+   margin; here 14px more under the switch, not 14px instead of the -44px: that left a gap) */
 .t-more-like .movie-row {
-  margin-top: 14px;
+  margin-top: -30px;
 }
 
 /* ---------- X-Ray: "You've seen them in" as a fanned deck of posters (like the Profile's
