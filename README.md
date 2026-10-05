@@ -379,9 +379,9 @@ which turns into a **Coming soon** countdown (days to go, the exact date) for a 
 **TV shows + TVmaze** (`js/services/tvmaze.js`): **Episodes** on a show's page: the next and the latest
 episode as cards, a season switch, a card per episode (still, title, when it aired / airs in your time,
 runtime, rating, the story on a tap, a tick for the ones you've seen), Share an episode
-(`title.html?tmdb=tv-125935&ep=5-3` opens the show at that episode). X-Ray: **First aired** (the date, the last
-and next episode and the seasons, each a tap into Episodes) and **When it airs** (the week with its days lit,
-the time and your time, runtime, and the next episode counted down live; tap it for the episode). Who's in charge of what:
+(`title.html?tmdb=tv-125935&ep=5-3` opens the show at that episode). X-Ray, two square cards: **First aired** (the date,
+large, how long ago, its seasons to tap into Episodes) and, while it's still running, **When it airs** (the next
+episode counted down live, or when it usually airs; the days of the week, the time and yours; tap it for the episode). Who's in charge of what:
 TMDB for titles, pictures, cast, ratings and streaming; TVmaze for the schedule, episodes and the
 next / last episode. TVmaze has no "related shows": those stay TMDB's recommendations.
 

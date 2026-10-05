@@ -27596,381 +27596,6 @@ body[data-page="admin"] main.container {
   overflow-wrap: anywhere;
 }
 
-/* ============================== X-Ray, shows: "The run" and "When it airs" (js/pages/title.js) ==============================
-   The Box Office's look: the show's picture behind, a red pill, a large number, a podium of bars. */
-.xr-show {
-  position: relative;
-  grid-column: span 2;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 250px;
-  overflow: hidden;
-  padding: 20px 22px;
-  border-color: rgba(229, 9, 20, 0.22);
-  background: radial-gradient(120% 120% at 0% 0%, rgba(185, 34, 34, 0.24), transparent 60%), var(--glass-bg);
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  isolation: isolate;
-}
-
-button.xr-show {
-  cursor: pointer;
-  transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
-}
-
-button.xr-show:hover {
-  border-color: rgba(229, 9, 20, 0.5);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
-  transform: translateY(-2px);
-}
-
-.xr-show-bg {
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.22;
-  transform: scale(1.05);
-  transition: opacity 0.4s ease, transform 0.8s ease;
-  -webkit-mask-image: linear-gradient(to left, #000 10%, transparent 90%);
-  mask-image: linear-gradient(to left, #000 10%, transparent 90%);
-}
-
-.xr-show:hover .xr-show-bg {
-  opacity: 0.38;
-  transform: scale(1.12);
-}
-
-.xr-show-pill {
-  align-self: flex-start;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 6px 20px rgba(229, 9, 20, 0.4);
-  color: #fff;
-  font-size: 11.5px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.xr-show-pill i {
-  margin-right: 5px;
-  color: var(--gold);
-}
-
-.xr-show-pill.quiet {
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: none;
-}
-
-.xr-show-big {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  line-height: 1;
-}
-
-.xr-show-big b {
-  font-size: clamp(40px, 4.4vw, 58px);
-  font-weight: 900;
-  letter-spacing: -0.035em;
-  font-variant-numeric: tabular-nums;
-  background: linear-gradient(180deg, #fff 30%, #f5c518 150%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.xr-show-big > span {
-  display: grid;
-  padding-bottom: 4px;
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 18px;
-  font-weight: 800;
-}
-
-.xr-show-big small {
-  color: var(--text-muted);
-  font-size: 12.5px;
-  font-weight: 500;
-}
-
-.xr-show-sub {
-  margin: -4px 0 0;
-  color: var(--text-muted);
-  font-size: 14px;
-}
-
-.xr-show-sub b {
-  color: var(--text);
-}
-
-/* the seasons, a podium: taller with more episodes, the one on now in gold */
-.xr-pods {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  height: 96px;
-  margin-top: auto;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.xr-pods::-webkit-scrollbar {
-  display: none;
-}
-
-.xr-pod {
-  display: grid;
-  flex: 1 1 34px;
-  grid-template-rows: 1fr auto;
-  justify-items: stretch;
-  gap: 4px;
-  max-width: 64px;
-  height: 100%;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--text-muted);
-  font: inherit;
-  cursor: pointer;
-}
-
-.xr-pods.many .xr-pod {
-  flex-basis: 26px;
-}
-
-.xr-pod-bar {
-  position: relative;
-  align-self: end;
-  display: grid;
-  place-items: start center;
-  height: var(--h);
-  padding-top: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px 10px 4px 4px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
-  color: var(--text);
-  font-size: 12px;
-  transition: transform 0.2s, background 0.2s, border-color 0.2s;
-  transform-origin: bottom;
-}
-
-.xr-pod:hover .xr-pod-bar {
-  border-color: rgba(229, 9, 20, 0.6);
-  background: linear-gradient(180deg, rgba(229, 9, 20, 0.45), rgba(185, 34, 34, 0.12));
-  transform: scaleY(1.05);
-}
-
-.xr-pod.now .xr-pod-bar {
-  border-color: var(--gold);
-  background: linear-gradient(180deg, rgba(245, 197, 24, 0.55), rgba(245, 197, 24, 0.08));
-  box-shadow: 0 0 22px rgba(245, 197, 24, 0.25);
-  color: #fff;
-}
-
-.xr-pod.soon .xr-pod-bar {
-  border-style: dashed;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.xr-pod small {
-  font-size: 11px;
-  font-weight: 700;
-  text-align: center;
-}
-
-.xr-pod.now small {
-  color: var(--gold);
-}
-
-.xr-show-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.xr-show-chips:empty {
-  display: none;
-}
-
-.xr-show-chip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 7px;
-  padding: 7px 13px;
-  border: 1px solid var(--glass-border);
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.3);
-  color: var(--text);
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  transition: border-color 0.2s, background 0.2s;
-}
-
-.xr-show-chip:hover,
-.xr-show-chip.next {
-  border-color: rgba(229, 9, 20, 0.55);
-  background: rgba(185, 34, 34, 0.2);
-}
-
-.xr-show-chip small {
-  color: var(--text-muted);
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.xr-show-chip span {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-/* the week, as bars: its days raised and lit, today marked */
-.xr-weekbars {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  align-items: end;
-  gap: 6px;
-  height: 64px;
-  margin-top: auto;
-}
-
-.xr-weekbars span {
-  display: grid;
-  grid-template-rows: 1fr auto;
-  gap: 4px;
-  height: 100%;
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 700;
-  text-align: center;
-}
-
-.xr-weekbars i {
-  align-self: end;
-  height: 26%;
-  border-radius: 6px 6px 3px 3px;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.xr-weekbars span.on i {
-  height: 100%;
-  background: linear-gradient(180deg, #ff5a52, var(--accent));
-  box-shadow: 0 8px 20px rgba(185, 34, 34, 0.45);
-}
-
-.xr-weekbars span.on {
-  color: var(--text);
-}
-
-.xr-weekbars span.today small {
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-}
-
-.xr-show-facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  color: var(--text);
-  font-size: 13.5px;
-  font-weight: 600;
-}
-
-.xr-show-facts i {
-  margin-right: 4px;
-  color: var(--accent-hover);
-}
-
-.xr-show-facts em {
-  color: var(--text-muted);
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 500;
-}
-
-/* a countdown that's running: a soft pulse on the pill */
-.xr-air2.live .xr-show-pill {
-  animation: xr-pulse 2.4s ease-in-out infinite;
-}
-
-@keyframes xr-pulse {
-  50% {
-    box-shadow: 0 6px 26px rgba(229, 9, 20, 0.7);
-  }
-}
-
-:root[data-theme="light"] .xr-show-big > span {
-  color: var(--text);
-}
-
-:root[data-theme="light"] .xr-show-big b {
-  background: linear-gradient(180deg, #1b1b1f 40%, #b8860b 150%);
-  -webkit-background-clip: text;
-  background-clip: text;
-}
-
-@media (max-width: 700px) {
-  .xr-show {
-    grid-column: 1 / -1;
-    min-height: 0;
-    padding: 18px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .xr-air2.live .xr-show-pill {
-    animation: none;
-  }
-}
-
-.xr-pod.more .xr-pod-bar {
-  border-style: dashed;
-  background: rgba(255, 255, 255, 0.04);
-  font-size: 11px;
-}
-
-.xr-pods.many {
-  gap: 5px;
-}
-
-.xr-pods.many .xr-pod {
-  flex-basis: 22px;
-}
-
-.xr-pod {
-  min-width: 0;
-}
-
-/* title page: every row in .t-sections, in the owner's order (Admin → Title page) */
-#title-main .t-sections > :first-child {
-  margin-top: 0;
-}
-
-.t-sections > .t-yours {
-  margin: 40px 0 0;
-}
-
-.t-sections > .t-yours:first-child {
-  margin-bottom: 4px;
-}
-
-.t-sections > .t-more-like,
-.t-sections > .t-recs {
-  margin-top: 40px;
-}
-
 /* ============================== Admin → Title page: the order of its rows ============================== */
 .ad-grid-one {
   grid-template-columns: minmax(0, 860px) !important;
@@ -28211,89 +27836,186 @@ button.xr-show:hover {
   }
 }
 
-/* (calmer: smaller numbers, fainter pictures, a quieter pill, a shorter podium) */
-.xr-show {
+/* ============================== X-Ray, shows: First aired and When it airs, square (js/pages/title.js) ==============================
+   One cell each, like every X-Ray card; one job each. A faint picture behind, the Box Office's
+   white-to-gold number. */
+.xr-sq {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  min-height: 0;
-  padding: 18px 20px;
-  border-color: var(--glass-border);
-  background: radial-gradient(110% 110% at 0% 0%, rgba(185, 34, 34, 0.12), transparent 55%), var(--glass-bg);
+  overflow: hidden;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  isolation: isolate;
+}
+
+button.xr-sq {
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+button.xr-sq:hover {
+  border-color: rgba(229, 9, 20, 0.45);
+  transform: translateY(-2px);
 }
 
 .xr-show-bg {
-  opacity: 0.12;
-  -webkit-mask-image: linear-gradient(to left, rgba(0, 0, 0, 0.9), transparent 75%);
-  mask-image: linear-gradient(to left, rgba(0, 0, 0, 0.9), transparent 75%);
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.1;
+  transform: scale(1.05);
+  transition: opacity 0.4s ease, transform 0.8s ease;
+  -webkit-mask-image: linear-gradient(to left, rgba(0, 0, 0, 0.9), transparent 80%);
+  mask-image: linear-gradient(to left, rgba(0, 0, 0, 0.9), transparent 80%);
 }
 
-.xr-show:hover .xr-show-bg {
-  opacity: 0.2;
+.xr-sq:hover .xr-show-bg {
+  opacity: 0.18;
+  transform: scale(1.1);
 }
 
-.xr-show-pill {
-  padding: 4px 10px;
-  background: rgba(185, 34, 34, 0.75);
-  box-shadow: none;
-  font-size: 10.5px;
+.xr-sq-main {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  margin: auto 0;
+  padding: 4px 0;
+  text-align: center;
 }
 
-.xr-show-big b {
-  font-size: clamp(30px, 2.8vw, 38px);
+.xr-sq-kicker {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.xr-sq-date {
+  display: grid;
+  justify-items: center;
+  line-height: 1.05;
+}
+
+.xr-sq-date b {
+  font-size: 30px;
+  font-weight: 900;
   letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, #fff 35%, #f5c518 170%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-.xr-show-big > span {
-  padding-bottom: 2px;
-  font-size: 15px;
+.xr-sq-date b.xr-sq-word {
+  font-size: 22px;
 }
 
-.xr-show-big small {
-  font-size: 12px;
+.xr-sq-date span {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 17px;
+  font-weight: 800;
 }
 
-.xr-show-sub {
-  margin: 0;
+.xr-sq-main small {
+  color: var(--text-muted);
   font-size: 13px;
 }
 
-.xr-pods {
-  gap: 6px;
-  height: 64px;
+.xr-sq-seasons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
 }
 
-.xr-pod {
-  max-width: 34px;
+.xr-sq-season {
+  min-width: 32px;
+  padding: 3px 7px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
-.xr-pod-bar {
-  padding-top: 4px;
-  border-radius: 7px 7px 3px 3px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03));
+.xr-sq-season:hover {
+  border-color: rgba(229, 9, 20, 0.5);
+  color: var(--text);
+}
+
+.xr-sq-season.now {
+  border-color: rgba(245, 197, 24, 0.7);
+  background: rgba(245, 197, 24, 0.14);
+  color: var(--gold);
+}
+
+.xr-sq-season.more {
+  border-style: dashed;
+}
+
+.xr-sq-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.xr-sq-week span {
+  padding: 4px 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
   font-size: 11px;
+  font-weight: 800;
+  text-align: center;
 }
 
-.xr-pod.now .xr-pod-bar {
-  background: linear-gradient(180deg, rgba(245, 197, 24, 0.4), rgba(245, 197, 24, 0.05));
-  box-shadow: none;
+.xr-sq-week span.on {
+  background: var(--accent);
+  color: #fff;
 }
 
-.xr-pod small {
-  font-size: 10px;
+.xr-sq-week span.today {
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
-.xr-show-chip {
-  padding: 5px 11px;
-  font-size: 12.5px;
+.xr-sq-time {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
 }
 
-.xr-weekbars {
-  height: 46px;
+.xr-sq-time i {
+  margin-right: 4px;
+  color: var(--accent-hover);
 }
 
-.xr-weekbars span.on i {
-  box-shadow: none;
+.xr-sq-time em {
+  color: var(--text-muted);
+  font-style: normal;
+  font-weight: 500;
 }
 
-.xr-air2.live .xr-show-pill {
-  animation: none;
+:root[data-theme="light"] .xr-sq-date b {
+  background: linear-gradient(180deg, #1b1b1f 45%, #b8860b 170%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+:root[data-theme="light"] .xr-sq-date span {
+  color: var(--text);
 }
