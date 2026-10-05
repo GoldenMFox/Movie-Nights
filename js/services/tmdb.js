@@ -62,7 +62,7 @@
       label: "On the air",
       path: "/discover/tv",
       media: "tv",
-      params: { sort_by: "popularity.desc", without_genres: NOT_SHOWS, "vote_count.gte": 30 },
+      params: { sort_by: "popularity.desc", without_genres: `${NOT_SHOWS}|${ANIMATION}`, "vote_count.gte": 30 },
       airing: true,
     },
     // shows that haven't started yet, most anticipated first
@@ -70,7 +70,7 @@
       label: "Premiering soon",
       path: "/discover/tv",
       media: "tv",
-      params: { sort_by: "popularity.desc", without_genres: NOT_SHOWS },
+      params: { sort_by: "popularity.desc", without_genres: `${NOT_SHOWS}|${ANIMATION}` },
       futureTv: true,
     },
     "popular-movies": { label: "Popular movies", path: "/movie/popular", media: "movie" },
@@ -294,7 +294,8 @@
   async function searchIn(query, type, page) {
     if (type === "movie" || type === "tv") {
       const [data, ru] = await requestWithRu(`/search/${type}`, { query, page });
-      return { results: applyRu(data.results.filter(worthShowing).map((r) => simplify(r, type)), ru, type), totalPages: data.total_pages || 1 };
+      const keep = (r) => worthShowing(r) && (type !== "tv" || !(r.genre_ids || []).includes(ANIMATION)); // (TV shows: no anime, no cartoons)
+      return { results: applyRu(data.results.filter(keep).map((r) => simplify(r, type)), ru, type), totalPages: data.total_pages || 1 };
     }
     if (type === "anime") {
       // anime can be a series or a film: search both, keep Japanese animation,
@@ -392,9 +393,11 @@
     // be out in one country and not another: coming soon = not out yet, in cinemas = out
     const byDate = (r) =>
       category === "upcoming" ? !!r.release_date && r.release_date > today : category === "now-playing" ? !r.release_date || r.release_date <= today : true;
-    // (titles without a poster yet are left out, like on Home's Top 10)
+    // (titles without a poster yet are left out, like on Home's Top 10; TV lists leave out
+    // animation: anime has its own page, and cartoons aren't what the TV Shows page is for)
+    const notCartoon = (r) => c.media !== "tv" || !(r.genre_ids || []).includes(ANIMATION);
     return {
-      results: applyRu(data.results.filter((r) => r.poster_path && (c.media || isTitle(r)) && byDate(r)).map((r) => simplify(r, c.media)), ru, c.media),
+      results: applyRu(data.results.filter((r) => r.poster_path && (c.media || isTitle(r)) && byDate(r) && notCartoon(r)).map((r) => simplify(r, c.media)), ru, c.media),
       totalPages: Math.min(data.total_pages || 1, 500),
     };
   }
@@ -418,7 +421,7 @@
     const today = new Date().toISOString().slice(0, 10);
     const params = { page: page || 1, with_genres: type === "anime" ? `${ANIMATION},${id}` : id };
     if (type === "anime") params.with_original_language = "ja";
-    if (media === "tv") params.without_genres = NOT_SHOWS;
+    if (type === "tv") params.without_genres = `${NOT_SHOWS}|${ANIMATION}`; // (no anime, no cartoons)
     if (sort === "top") {
       params.sort_by = "vote_average.desc";
       params["vote_count.gte"] = type === "movie" ? 2000 : type === "tv" ? 500 : 300;

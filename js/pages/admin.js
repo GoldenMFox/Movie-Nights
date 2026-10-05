@@ -49,6 +49,7 @@
     anilist: ["AniList", "Everything anime: the explorer and the anime card on title pages", "hours"],
     googlebooks: ["Google Books", "Books on title and person pages, featured books (needs a key)", "days"],
     news: ["News feeds (rss2json)", "Movie News", "minutes"],
+    itunes: ["Apple Music (iTunes)", "Soundtracks and their previews on title pages", "days"],
   };
 
   // not the owner: nothing to see here

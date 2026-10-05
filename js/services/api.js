@@ -2,6 +2,7 @@
  * Api: one way to ask every outside service (TMDB has its own, js/services/tmdb.js).
  *
  *   Api.get("tvmaze", url, { hours: 12 })  -> Promise of the answer (JSON)
+ *   (opts.first: ahead of what's waiting, for the next step of something already under way)
  *
  * For every service:
  *  - answers kept in the browser's database (IndexedDB "mn-api"), for as long as the service's
@@ -13,8 +14,8 @@
  *  - when a service is down, the last answer it gave (even an old one) is used instead;
  *  - a service switched off in the Admin Control Center isn't asked at all;
  *  - how each one is doing (answers, failures, the last error) for Admin → API status.
- * Pages never call fetch() for these services themselves: tvmaze.js, anime.js, books.js and
- * news.js do it through here.
+ * Pages never call fetch() for these services themselves: tvmaze.js, anime.js, books.js,
+ * news.js and the soundtrack (js/components/soundtrack.js) do it through here.
  */
 (function () {
   // gap: the least time between two requests (ms); burst: requests let out at once
@@ -23,6 +24,7 @@
     anilist: { label: "AniList", gap: 750, burst: 1, site: "https://anilist.co" },
     googlebooks: { label: "Google Books", gap: 300, burst: 2, site: "https://developers.google.com/books" },
     news: { label: "News feeds (rss2json)", gap: 600, burst: 2, site: "https://rss2json.com" },
+    itunes: { label: "Apple Music (iTunes)", gap: 150, burst: 3, site: "https://performance-partners.apple.com/search-api" },
   };
   const TIMEOUT = 12000;
   const LIMIT = 1500; // answers kept
@@ -163,11 +165,13 @@
   /* ---------------- a queue per service ---------------- */
 
   const queues = {};
-  function slot(provider) {
+  // (first: to the front of the queue, e.g. the rest of something already started)
+  function slot(provider, first) {
     const p = PROVIDERS[provider] || { gap: 300, burst: 2 };
     const q = queues[provider] || (queues[provider] = { next: 0, active: 0, waiting: [], pausedUntil: 0 });
     return new Promise((resolve) => {
-      q.waiting.push(resolve);
+      if (first) q.waiting.unshift(resolve);
+      else q.waiting.push(resolve);
       pump(provider, q, p);
     });
   }
@@ -216,7 +220,7 @@
     const job = (async () => {
       let lastErr;
       for (let attempt = 0; attempt < 3; attempt++) {
-        const done = await slot(provider);
+        const done = await slot(provider, opts.first);
         const stop = new AbortController();
         const timer = setTimeout(() => stop.abort(), (PROVIDERS[provider] || {}).timeout || TIMEOUT);
         try {
@@ -241,8 +245,15 @@
           return v;
         } catch (err) {
           lastErr = err.name === "AbortError" ? new Error(`${PROVIDERS[provider] ? PROVIDERS[provider].label : provider} is taking too long to answer`) : err;
-          // offline or blocked: no point trying again straight away
-          if (err.name === "AbortError" || err instanceof TypeError) break;
+          if (err.name === "AbortError" || navigator.onLine === false) break; // (offline: no point trying again now)
+          // online but no answer at all: a service that's had too much (AniList then answers
+          // without the headers browsers need, so it looks like a network error): once more, later
+          if (err instanceof TypeError) {
+            if (attempt >= 1) break;
+            pause(provider, 8000);
+            await sleep(8000);
+            continue;
+          }
         } finally {
           clearTimeout(timer);
           done();

@@ -115,7 +115,6 @@
               <a href="news.html" class="news-menu-link" data-nav="news"><i class="fa-solid fa-newspaper"></i><span>Movie News</span><i class="fa-solid fa-chevron-right"></i></a>
               ${window.Cloud && Cloud.isOwner() ? '<a href="admin.html"><i class="fa-solid fa-sliders"></i><span>Admin Control Center</span><i class="fa-solid fa-chevron-right"></i></a>' : ""}
               <a href="profile.html"><i class="fa-solid fa-user"></i><span>Profile &amp; stats</span><i class="fa-solid fa-chevron-right"></i></a>
-              <a href="search.html"><i class="fa-solid fa-sliders"></i><span>Advanced search</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="settings.html"><i class="fa-solid fa-gear"></i><span>Settings</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="#" class="install-app" hidden><i class="fa-solid fa-mobile-screen"></i><span>Install the app</span><i class="fa-solid fa-chevron-right"></i></a>
             </div>
@@ -726,6 +725,9 @@
         el,
         open() {
           sheets.forEach((s) => s !== sheet && s.close());
+          // (two links a row: one left alone on the last row takes the whole row)
+          const links = [...el.querySelectorAll(".sheet-links > a")].filter((a) => !a.hidden);
+          links.forEach((a, i) => a.classList.toggle("wide", i === links.length - 1 && links.length % 2 === 1));
           tabsAway(false);
           el.classList.add("open");
           tab.classList.add("open");
@@ -852,7 +854,6 @@
       { href: "watchlist.html?list=fav", label: "Favorites", icon: "fa-heart", n: count((i) => i.favorite) },
       { href: "tier-list.html", label: "Tier List", icon: "fa-ranking-star", n: null },
       { href: "box-office.html", label: "Box Office", icon: "fa-sack-dollar", n: null, nav: "boxoffice" },
-      { href: "anime-explore.html", label: "Explore anime", icon: "fa-dragon", n: null, nav: "animeExplore" },
       { href: "news.html", label: "Movie News", icon: "fa-newspaper", n: null, nav: "news" },
     ];
     makeSheet(
@@ -1688,5 +1689,9 @@
   window.addEventListener("resize", menuPlace);
   window.addEventListener("scroll", (e) => menuSelect && !menuEl.contains(e.target) && !menuEl.classList.contains("sheet") && closeMenu(), true);
 
-  window.UI = { esc, toast, download, copyText, shareLink, PAGES, foldTools, signInPrompt, needSignIn, welcome, confirm: confirmBox, ask, paintMyPic, frameMyPic, pickDate, chipIntoView };
+  // the Advanced search button inside a page's search bar (Movies / TV Shows / Anime pages)
+  const advLink = (kind) =>
+    `<a class="gs-adv" href="search.html${kind === "tv" ? "?type=tv" : kind === "anime" ? "?type=tv&g=Animation&lang=ja" : ""}" title="Advanced search: genre, year, director, streaming…"><i class="fa-solid fa-sliders"></i><span>Advanced</span></a>`;
+
+  window.UI = { advLink, esc, toast, download, copyText, shareLink, PAGES, foldTools, signInPrompt, needSignIn, welcome, confirm: confirmBox, ask, paintMyPic, frameMyPic, pickDate, chipIntoView };
 })();

@@ -105,7 +105,7 @@
   const featured = (window.Site && Site.get().anime.featured) || [];
   root.innerHTML = `${switchHtml}
     <form class="ax-search" role="search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-      <input class="input" name="q" type="search" placeholder="Search all anime…" aria-label="Search all anime" autocomplete="off" /></form>
+      <input class="input" name="q" type="search" placeholder="Search all anime…" aria-label="Search all anime" autocomplete="off" />${UI.advLink("anime")}</form>
     ${featured.length ? `<section class="ax-row" data-row="featured"><div class="row-head"><h2><i class="fa-solid fa-star"></i> Our picks</h2></div><div class="movie-row">${featured.map(card).join("")}</div></section>` : ""}
     ${ROWS.map(
       ([k, icon, label]) => `<section class="ax-row" data-row="${k}">
@@ -177,7 +177,8 @@
         row.innerHTML = failed(e, k);
       });
   }
-  const io = "IntersectionObserver" in window ? new IntersectionObserver((entries) => entries.forEach((en) => en.isIntersecting && (io.unobserve(en.target), loadRow(en.target))), { rootMargin: "400px" }) : null;
+  // (rows asked for as they come near: the ones on screen first, AniList allows 30 requests a minute)
+  const io = "IntersectionObserver" in window ? new IntersectionObserver((entries) => entries.forEach((en) => en.isIntersecting && (io.unobserve(en.target), loadRow(en.target))), { rootMargin: "150px" }) : null;
   root.querySelectorAll(".ax-row").forEach((sec) => (io ? io.observe(sec) : loadRow(sec)));
   root.addEventListener("click", (e) => {
     const b = e.target.closest("[data-retry]");
@@ -224,7 +225,7 @@
     document.title = `${title} · Anime · Movie Nights`;
     root.innerHTML = `${switchHtml}
       <form class="ax-search" role="search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-        <input class="input" name="q" type="search" placeholder="Search all anime…" aria-label="Search all anime" value="${esc(params.get("q") || "")}" autocomplete="off" /></form>
+        <input class="input" name="q" type="search" placeholder="Search all anime…" aria-label="Search all anime" value="${esc(params.get("q") || "")}" autocomplete="off" />${UI.advLink("anime")}</form>
       <div class="ax-grid-head"><a class="t-link" href="anime-explore.html"><i class="fa-solid fa-arrow-left"></i> Explore</a><h2>${esc(title)}</h2></div>
       ${kind === "season" ? `<div class="ax-chips ax-season-chips">${seasonLinks()}</div>` : ""}
       <div class="movie-grid ax-grid">${skeleton(12)}</div>
@@ -340,6 +341,7 @@
         </div>
         ${a.synonyms.length ? `<p class="ax-syn"><b>Also known as:</b> ${esc(a.synonyms.slice(0, 6).join(" · "))}</p>` : ""}
       </section>
+      <section class="t-section ax-lazy" data-part="seasons"><h2 class="t-section-title">Seasons</h2><div class="ax-part"><div class="movie-row">${skeleton(4)}</div></div></section>
       <section class="t-section ax-lazy" data-part="characters"><h2 class="t-section-title">Characters &amp; voice actors</h2><div class="ax-part">${skeleton(6)}</div></section>
       <section class="t-section ax-lazy" data-part="staff"><h2 class="t-section-title">Staff</h2><div class="ax-part">${skeleton(6)}</div></section>
       ${relationsHtml(a)}
@@ -408,9 +410,28 @@
       sec.dataset.loaded = "1";
       const part = sec.dataset.part;
       const box = sec.querySelector(".ax-part");
-      const job = part === "characters" ? Anime.characters(key) : part === "staff" ? Anime.staff(key) : Anime.recommendations(key);
+      const job =
+        part === "seasons" ? Anime.franchise(key) : part === "characters" ? Anime.characters(key) : part === "staff" ? Anime.staff(key) : Anime.recommendations(key);
       job
         .then((list) => {
+          // its seasons in order (this one marked), then its films and specials
+          if (part === "seasons") {
+            const all = list.seasons.concat(list.extras);
+            if (all.length < 2) return (sec.hidden = true);
+            const here = (c) => c.key === key || (key.startsWith("mal-") && `mal-${c.mal}` === key);
+            const row = (cards, label) =>
+              cards.length
+                ? `<div class="movie-row ax-seasons">${cards
+                    .map((c, i) =>
+                      card(c)
+                        .replace('<article class="movie-item ax-card"', `<article data-tp class="movie-item ax-card${here(c) ? " ax-here" : ""}"`) // (data-tp: its own cover, each season's own, not TMDB's one poster for the show)
+                        .replace('<span class="badges">', `${label(c, i) ? `<span class="ax-season-tag">${esc(label(c, i))}</span>` : ""}<span class="badges">`)
+                    )
+                    .join("")}</div>`
+                : "";
+            box.innerHTML = `${row(list.seasons, (c, i) => `Season ${i + 1}`)}${list.extras.length ? `<h3 class="xr-sub">Films &amp; specials</h3>${row(list.extras, (c) => c.type || "")}` : ""}`;
+            return;
+          }
           if (part === "characters") {
             chars = list;
             return drawCharacters();
@@ -432,7 +453,9 @@
 
   // related anime by kind (Sequel, Prequel, Side story…); manga etc. listed without a link
   function relationsHtml(a) {
-    const groups = (a.relations || []).filter((g) => g.entries.length);
+    // (seasons, films and side stories are in Seasons)
+    const IN_SEASONS = ["Prequel", "Sequel", "Parent story", "Side Story", "Spin-Off", "Summary"];
+    const groups = (a.relations || []).filter((g) => g.entries.length && !IN_SEASONS.includes(g.relation));
     if (!groups.length) return "";
     const order = ["Prequel", "Sequel", "Parent story", "Side Story", "Spin-Off", "Alternative version", "Summary", "Adaptation", "Character", "Other"];
     groups.sort((x, y) => (order.indexOf(x.relation) + 1 || 99) - (order.indexOf(y.relation) + 1 || 99));

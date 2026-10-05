@@ -57,19 +57,13 @@
       special: e.type && e.type !== "regular",
     };
 
-  // the show: its facts, seasons, the next / last episode, and the people behind it
+  // the show: its facts, seasons, the next / last episode
   async function show(id) {
-    const s = await ask(`/shows/${id}?embed[]=seasons&embed[]=nextepisode&embed[]=previousepisode&embed[]=crew`);
+    const s = await ask(`/shows/${id}?embed[]=seasons&embed[]=nextepisode&embed[]=previousepisode`);
     if (!s) return null;
     const em = s._embedded || {};
     const net = s.network || null;
     const web = s.webChannel || null;
-    const crew = {};
-    (em.crew || []).forEach((c) => {
-      if (!c || !c.person) return;
-      const role = c.type || "Crew";
-      (crew[role] = crew[role] || []).push({ name: c.person.name, image: c.person.image ? c.person.image.medium : "", url: c.person.url || "" });
-    });
     return {
       id: s.id,
       url: s.url || "",
@@ -99,7 +93,6 @@
       })),
       next: epOf(em.nextepisode),
       previous: epOf(em.previousepisode),
-      crew,
       summary: text(s.summary),
     };
   }

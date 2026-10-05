@@ -54,7 +54,9 @@
     run: 0, // ignores answers that arrive after you've switched to something else
     seen: new Set(),
   };
-  if (state.genre && !TMDB.genresFor(state.gtype).includes(state.genre)) state.genre = "";
+  // (TV Shows → Explore: no Animation genre, the page has no anime or cartoons)
+  const genresFor = (t) => TMDB.genresFor(t).filter((g) => !(KIND === "tv" && g === "Animation"));
+  if (state.genre && !genresFor(state.gtype).includes(state.genre)) state.genre = "";
 
   root.innerHTML = `
     <form class="glass-search discover-search" role="search">
@@ -65,6 +67,7 @@
           ${Object.entries(SEARCH_IN).map(([k, l]) => `<option value="${k}"${k === state.sin ? " selected" : ""}>${l}</option>`).join("")}
         </select>
       </span>
+      ${UI.advLink(KIND || "movie")}
       <button class="gs-btn" type="submit" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
     </form>
     <div class="glass-filters genre-bar">
@@ -83,7 +86,6 @@
           ${Object.entries(GSORTS).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}
         </select>
       </span>
-      <a class="btn gf-adv" href="search.html${KIND === "tv" ? "?type=tv" : ""}" aria-label="Advanced search"><i class="fa-solid fa-sliders"></i> Advanced<span class="gf-adv-w"> search</span></a>
     </div>
     <div class="chips" role="group" aria-label="Category">
       <span class="chip-indicator intro" aria-hidden="true"></span>
@@ -116,7 +118,7 @@
   });
 
   function fillGenres() {
-    const list = TMDB.genresFor(state.gtype);
+    const list = genresFor(state.gtype);
     genreSel.innerHTML =
       `<option value="">Pick a genre…</option>` + list.map((g) => `<option value="${esc(g)}"${g === state.genre ? " selected" : ""}>${esc(g)}</option>`).join("");
   }
@@ -384,7 +386,7 @@
     const typeBtn = e.target.closest("[data-gtype]");
     if (typeBtn) {
       state.gtype = typeBtn.dataset.gtype;
-      if (state.genre && !TMDB.genresFor(state.gtype).includes(state.genre)) {
+      if (state.genre && !genresFor(state.gtype).includes(state.genre)) {
         UI.toast(`TMDB has no ${state.genre} category for ${TYPES[state.gtype]}`);
         state.genre = "";
       }

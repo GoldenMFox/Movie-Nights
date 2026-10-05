@@ -10,6 +10,11 @@
  *            streaming, next, banner }
  * An anime's key is AniList's id: "al-21". Older links with a MyAnimeList id ("mal-5114") still open:
  * AniList finds an anime by that number too.
+ *
+ * The explorer lists anime themselves, not their parts: only series, web series and films (no
+ * OVAs, specials, music videos), and a later season, a film or a side story of a series is shown
+ * as the series it belongs to ("Dandadan 3rd Season" -> Dandadan; see mainOnly). Its seasons,
+ * films and specials are on its own page (franchise).
  */
 (function () {
   const ANILIST = "https://graphql.anilist.co";
@@ -21,9 +26,11 @@
     for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
     return (h >>> 0).toString(36);
   };
-  async function anilist(query, variables) {
+  // (first: ahead of the queue, the next step of a list that's already been asked for)
+  async function anilist(query, variables, first) {
     if (!Api.enabled("anilist")) throw new Error("Anime data is switched off for now");
     const r = await Api.get("anilist", ANILIST, {
+      first,
       hours: hours(),
       key: `${hash(query)}|${JSON.stringify(variables)}`,
       init: { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ query, variables }) },
@@ -158,11 +165,9 @@
 
   // what fans of it also like: [card]
   async function recommendations(key) {
-    const q = `query ($id: Int, $idMal: Int) { Media(id: $id, idMal: $idMal, type: ANIME) { recommendations(sort: RATING_DESC, perPage: 16) { nodes { rating mediaRecommendation { ${CARD_FIELDS} } } } } }`;
+    const q = `query ($id: Int, $idMal: Int) { Media(id: $id, idMal: $idMal, type: ANIME) { recommendations(sort: RATING_DESC, perPage: 16) { nodes { rating mediaRecommendation { ${LIST_FIELDS} } } } } }`;
     const res = await anilist(q, vars(key));
-    return ((res && res.Media && res.Media.recommendations.nodes) || [])
-      .filter((x) => x.mediaRecommendation && !adult(x.mediaRecommendation))
-      .map((x) => Object.assign(card(x.mediaRecommendation), { votes: x.rating }));
+    return mainOnly(((res && res.Media && res.Media.recommendations.nodes) || []).map((x) => x.mediaRecommendation).filter(Boolean));
   }
 
   /* ---------------- lists (the explorer's rows) ---------------- */
@@ -173,6 +178,173 @@
   }
   const PER = 24;
 
+  /* ---------------- the anime itself, not its parts ---------------- */
+
+  const MAIN_FORMATS = ["TV", "TV_SHORT", "ONA", "MOVIE"];
+  const UP = ["PREQUEL", "PARENT"]; // where a season / film / side story comes from
+  // (a list's anime come with their prequel / parent, and where that one comes from: most
+  // seasons find their series in the list's own answer, with no more requests; AniList allows
+  // only 30 a minute)
+  const LIST_FIELDS = `${CARD_FIELDS} relations { edges { relationType node { ${CARD_FIELDS} type relations { edges { relationType node { id type format } } } } } }`;
+  // where it comes from: its prequel / parent (followed through OVAs and specials too, but the
+  // series is never one of those: One Piece's "prequel" is a 1998 special, so it stays One Piece)
+  const upEdge = (m) => ((m && m.relations && m.relations.edges) || []).find((x) => UP.includes(x.relationType) && x.node && x.node.type === "ANIME");
+
+  // an anime's series, remembered in this browser (a month): { id: [seriesId, at] }
+  const ROOTS = "mn:animeSeries";
+  let roots = null;
+  const rootsLoad = () => {
+    if (roots) return roots;
+    try {
+      roots = JSON.parse(localStorage.getItem(ROOTS) || "{}") || {};
+    } catch (e) {
+      roots = {};
+    }
+    const old = Date.now() - 30 * 864e5;
+    Object.keys(roots).forEach((k) => roots[k][1] < old && delete roots[k]);
+    return roots;
+  };
+  const rootsSave = () => {
+    try {
+      localStorage.removeItem("mn:animeRoots"); // (an earlier, wrong version)
+      const all = Object.entries(rootsLoad()).sort((a, b) => b[1][1] - a[1][1]).slice(0, 3000);
+      localStorage.setItem(ROOTS, JSON.stringify(Object.fromEntries(all)));
+    } catch (e) {}
+  };
+  // two steps back at a time (AniList answers links two deep, no further), many anime at once.
+  // The series is the first series / web series in the chain; a film when there's none. Each
+  // anime met on the way is kept (met), so the series' card is usually known without asking
+  const STEPS = `${CARD_FIELDS} relations { edges { relationType node { ${CARD_FIELDS} type relations { edges { relationType node { id type format } } } } } }`;
+  const met = new Map(); // id -> AniList's anime (only with its card: a bare id is not kept)
+  const meet = (m) => m && m.id && m.title && met.set(m.id, m);
+  async function seriesOf(ids) {
+    const map = rootsLoad();
+    const out = {};
+    const chain = {}; // anime asked about -> [{ id, format }] back to where it's got to
+    let todo = [];
+    ids.forEach((id) => (map[id] ? (out[id] = map[id][0]) : (todo.push(id), (chain[id] = [{ id, format: null }]))));
+    for (let round = 0; round < 8 && todo.length; round++) {
+      const ask = [...new Set(todo.map((id) => chain[id][chain[id].length - 1].id))];
+      const res = await anilist(`query ($ids: [Int]) { Page(perPage: 50) { media(id_in: $ids, type: ANIME) { id ${STEPS} } } }`, { ids: ask }, true);
+      const got = {};
+      ((res && res.Page && res.Page.media) || []).forEach((m) => {
+        got[m.id] = m;
+        meet(m);
+        ((m.relations && m.relations.edges) || []).forEach((e) => e.node && e.node.type === "ANIME" && meet(e.node));
+      });
+      todo = todo.filter((id) => {
+        const c = chain[id];
+        const m = got[c[c.length - 1].id];
+        if (!m) return false; // (not answered: left as it is, not remembered)
+        c[c.length - 1].format = m.format;
+        const e1 = upEdge(m);
+        if (!e1) return (c.done = true), false;
+        c.push({ id: e1.node.id, format: e1.node.format });
+        const e2 = upEdge(e1.node);
+        if (!e2) return (c.done = true), false;
+        c.push({ id: e2.node.id, format: e2.node.format });
+        return !c.some((x, i) => c.findIndex((y) => y.id === x.id) !== i); // (a loop: stop)
+      });
+    }
+    ids.forEach((id) => {
+      const c = chain[id];
+      if (!c) return;
+      const series = c.slice().reverse().find((x) => ["TV", "TV_SHORT", "ONA"].includes(x.format));
+      const film = c.slice().reverse().find((x) => x.format === "MOVIE");
+      out[id] = (series || film || c[0]).id;
+      if (c.done) map[id] = [out[id], Date.now()];
+    });
+    rootsSave();
+    return out;
+  }
+
+  // a list's anime -> the anime themselves: parts swapped for their series (each once), and no
+  // OVAs / specials / music videos
+  async function mainOnly(media) {
+    const list = media.filter((m) => !adult(m) && MAIN_FORMATS.includes(m.format));
+    const isSeries = (f) => ["TV", "TV_SHORT", "ONA"].includes(f);
+    // each one's way back, as far as the answer goes: [{ id, format }], and anime met on the way
+    const chains = new Map();
+    const further = [];
+    list.forEach((m) => {
+      meet(m);
+      const c = [{ id: m.id, format: m.format }];
+      const e1 = upEdge(m);
+      if (e1) {
+        meet(e1.node);
+        c.push({ id: e1.node.id, format: e1.node.format });
+        const e2 = upEdge(e1.node);
+        if (e2) {
+          c.push({ id: e2.node.id, format: e2.node.format });
+          further.push(e2.node.id);
+        }
+      }
+      chains.set(m.id, c);
+    });
+    // farther back (a third season or later): one more request for all of them at once
+    let beyond = {};
+    if (further.length) beyond = await seriesOf([...new Set(further)]).catch(() => ({}));
+    const seriesId = (m) => {
+      const c = chains.get(m.id);
+      const last = c[c.length - 1];
+      // (where it goes from there: its card is asked for below if it isn't known yet)
+      if (c.length === 3 && beyond[last.id]) return beyond[last.id];
+      const s = c.slice().reverse().find((x) => isSeries(x.format));
+      const film = c.slice().reverse().find((x) => x.format === "MOVIE");
+      return (s || film || c[0]).id;
+    };
+    const ids = list.map(seriesId);
+    const need = [...new Set(ids)].filter((id) => !met.has(id));
+    if (need.length) {
+      const res = await anilist(`query ($ids: [Int]) { Page(perPage: 50) { media(id_in: $ids, type: ANIME) { ${CARD_FIELDS} } } }`, { ids: need }, true).catch(() => null);
+      ((res && res.Page && res.Page.media) || []).forEach((m) => met.set(m.id, m));
+    }
+    const seen = new Set();
+    const out = [];
+    ids.forEach((id) => {
+      const s = met.get(id);
+      if (!s || seen.has(id) || adult(s)) return;
+      seen.add(id);
+      out.push(card(s));
+    });
+    return out;
+  }
+
+  // an anime's seasons, films and specials, in order: { seasons: [card], extras: [card] }
+  // (from the series, season after season; films and side stories along the way)
+  const FRANCHISE_FIELDS = `${CARD_FIELDS} relations { edges { relationType node { ${CARD_FIELDS} type relations { edges { relationType node { id type } } } } } }`;
+  async function franchise(key) {
+    const start = vars(key);
+    const first = await anilist(`query ($id: Int, $idMal: Int) { Media(id: $id, idMal: $idMal, type: ANIME) { id } }`, start);
+    const id0 = first && first.Media && first.Media.id;
+    if (!id0) return { seasons: [], extras: [] };
+    const top = (await seriesOf([id0]))[id0] || id0;
+    const seasons = [];
+    const extras = [];
+    const seen = new Set();
+    let id = top;
+    for (let step = 0; step < 15 && id && !seen.has(id); step++) {
+      const res = await anilist(`query ($id: Int) { Media(id: $id, type: ANIME) { ${FRANCHISE_FIELDS} } }`, { id });
+      const m = res && res.Media;
+      if (!m) break;
+      seen.add(m.id);
+      if (!adult(m)) (m.format === "MOVIE" || !MAIN_FORMATS.includes(m.format) ? extras : seasons).push(card(m));
+      const edges = (m.relations && m.relations.edges) || [];
+      // its side stories and specials (not its sequel: that's the next step)
+      edges
+        .filter((e) => e.node && e.node.type === "ANIME" && ["SIDE_STORY", "SPIN_OFF", "SUMMARY"].includes(e.relationType))
+        .forEach((e) => {
+          if (seen.has(e.node.id) || adult(e.node)) return;
+          seen.add(e.node.id);
+          extras.push(card(e.node));
+        });
+      const next = edges.find((e) => e.relationType === "SEQUEL" && e.node && e.node.type === "ANIME" && !seen.has(e.node.id));
+      id = next ? next.node.id : null;
+    }
+    const byDate = (a, b) => (a.year || 9999) - (b.year || 9999);
+    return { seasons, extras: extras.sort(byDate) };
+  }
+
   // kind: "trending" | "airing" | "season" | "upcoming" | "top" | "popular" | "completed" |
   //       "genre" | "studio" | "search". opts: { page, year, season, genreName, studioAl, q }
   // -> { list: [card], more: boolean }
@@ -181,14 +353,14 @@
     const now = seasonNow();
     if (kind === "studio") {
       if (!opts.studioAl) return { list: [], more: false };
-      const sq = `query ($studio: Int, $page: Int, $perPage: Int) { Studio(id: $studio) { media(sort: POPULARITY_DESC, isMain: true, page: $page, perPage: $perPage) { pageInfo { hasNextPage } nodes { ${CARD_FIELDS} type } } } }`;
+      const sq = `query ($studio: Int, $page: Int, $perPage: Int) { Studio(id: $studio) { media(sort: POPULARITY_DESC, isMain: true, page: $page, perPage: $perPage) { pageInfo { hasNextPage } nodes { ${LIST_FIELDS} type } } } }`;
       const res = await anilist(sq, { studio: opts.studioAl, page, perPage: PER });
       const m = res && res.Studio && res.Studio.media;
-      return { list: ((m && m.nodes) || []).filter((x) => (!x.type || x.type === "ANIME") && !adult(x)).map(card), more: !!(m && m.pageInfo.hasNextPage) };
+      return { list: await mainOnly(((m && m.nodes) || []).filter((x) => !x.type || x.type === "ANIME")), more: !!(m && m.pageInfo.hasNextPage) };
     }
     const q = `query ($page: Int, $perPage: Int, $sort: [MediaSort], $season: MediaSeason, $seasonYear: Int, $status: MediaStatus, $genre: String, $search: String) {
       Page(page: $page, perPage: $perPage) { pageInfo { hasNextPage }
-        media(type: ANIME, isAdult: false, genre_not_in: ["Ecchi", "Hentai"], sort: $sort, season: $season, seasonYear: $seasonYear, status: $status, genre: $genre, search: $search) { ${CARD_FIELDS} } } }`;
+        media(type: ANIME, isAdult: false, genre_not_in: ["Ecchi", "Hentai"], format_in: [TV, TV_SHORT, ONA, MOVIE], sort: $sort, season: $season, seasonYear: $seasonYear, status: $status, genre: $genre, search: $search) { ${LIST_FIELDS} } } }`;
     const S = (s) => String(s || "").toUpperCase();
     const routes = {
       trending: { sort: ["TRENDING_DESC", "POPULARITY_DESC"] },
@@ -203,9 +375,7 @@
     };
     const res = await anilist(q, Object.assign({ page, perPage: PER }, routes[kind] || routes.top));
     const p = res && res.Page;
-    const seen = new Set();
-    const listed = ((p && p.media) || []).filter((m) => !adult(m)).map(card).filter((c) => !seen.has(c.key) && seen.add(c.key));
-    return { list: listed, more: !!(p && p.pageInfo.hasNextPage) };
+    return { list: await mainOnly((p && p.media) || []), more: !!(p && p.pageInfo.hasNextPage) };
   }
 
   // genres to browse by (AniList's own names)
@@ -245,5 +415,5 @@
     return ok.find((c) => [c.titleEn, c.titleRomaji, c.title].some((t) => norm(t) === norm(name)) && near(c)) || ok.find(near) || null;
   }
 
-  window.Anime = { details: detailsOf, characters, staff, recommendations, list, topCharacters, findFor, seasonNow, SEASONS, GENRES, STUDIOS };
+  window.Anime = { details: detailsOf, characters, staff, recommendations, franchise, list, topCharacters, findFor, seasonNow, SEASONS, GENRES, STUDIOS };
 })();

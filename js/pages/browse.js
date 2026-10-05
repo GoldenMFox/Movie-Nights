@@ -163,6 +163,7 @@
     <form class="glass-search list-search" role="search">
       <i class="fa-solid fa-magnifying-glass gs-icon" aria-hidden="true"></i>
       <input type="search" name="q" placeholder="Search this list…" aria-label="Search this list" value="${esc(state.q)}" autocomplete="off" />
+      ${["movie", "tv", "anime"].includes(page) ? UI.advLink(page) : ""}
       <button class="gs-btn" type="submit" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
     </form>
     <div class="glass-filters list-filters">

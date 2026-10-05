@@ -50,6 +50,7 @@
       anilist: { on: true, hours: 24 },
       googlebooks: { on: true, days: 30, key: "" },
       news: { on: true, minutes: 30 },
+      itunes: { on: true, days: 30 },
     },
     themes: { siteDefault: "dark", listThemes: true, animations: true, available: ["halloween", "christmas", "winter", "spring", "summer", "noir", "space"] },
     notifications: { on: true, release: true, season: true, episode: true, recommendation: true },

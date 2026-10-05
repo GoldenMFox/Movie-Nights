@@ -239,7 +239,6 @@
           ${Lang.altTitle(t) ? `<div class="t-alt-title">${esc(Lang.altTitle(t))}</div>` : ""}
           <div class="t-meta">${metaHtml(t, d, e)}</div>
           <div class="t-genres">${genresHtml(t, d)}</div>
-          ${releaseHtml(d)}
           ${providersHtml(d.providers, t)}
           <div class="t-cta">${buttons}</div>
           ${aboutHtml(d)}
@@ -359,7 +358,7 @@
   };
   const NOT_YET = /^(Rumored|Planned|In Production|Post Production|Pilot)$/;
 
-  // Where a title stands, in one place (the line under the genres and X-Ray's date card):
+  // Where a title stands (X-Ray's date card):
   //  movies: "released" | "soon" (a date ahead) | "unknown" (no date announced yet)
   //  shows: "soon" (premieres ahead) | "airing" (a next episode / returning) | "ended" | "released"
   // The cinema date in your country counts for movies (as on Discover's labels), the worldwide
@@ -384,30 +383,6 @@
     if (premiere > today) return Object.assign(base, { state: "soon", date: premiere });
     if (/^(Ended|Canceled)$/i.test(status)) return Object.assign(base, { state: "ended" });
     return Object.assign(base, { state: next ? "airing" : "returning" });
-  }
-
-  // the line under the genres: a small pill that says where it stands
-  function releaseHtml(d) {
-    if (!d || (!d.xray && !d.released)) return "";
-    const r = releaseOf(d);
-    const pill = (cls, icon, html, title) => `<div class="t-release ${cls}"${title ? ` title="${esc(title)}"` : ""}><i class="fa-solid ${icon}" aria-hidden="true"></i><span>${html}</span></div>`;
-    if (d.media !== "tv") {
-      if (r.state === "unknown") return pill("unknown", "fa-circle-question", `Release date not announced${r.status && NOT_YET.test(r.status) ? ` · <b>${esc(r.status)}</b>` : ""}`);
-      if (r.state === "soon")
-        return pill("soon", "fa-hourglass-half", `Coming <b>${niceDay(r.date)}</b> · ${countdown(r.date)}`, r.world ? `Worldwide: ${niceDay(r.world)}` : "");
-      const stream = r.digital && r.digital > Store.today() ? ` · streaming / digital <b>${countdown(r.digital)}</b>` : "";
-      return pill("out", "fa-circle-check", `Released <b>${niceDay(r.date)}</b>${stream}`);
-    }
-    if (r.state === "unknown") return pill("unknown", "fa-circle-question", "Premiere date not announced");
-    if (r.state === "soon") return pill("soon", "fa-hourglass-half", `Premieres <b>${niceDay(r.date)}</b> · ${countdown(r.date)}`);
-    const years = `${r.premiere.slice(0, 4)}${r.ended ? `–${r.ended.slice(0, 4)}` : ""}`;
-    if (r.state === "ended") return pill("ended", "fa-flag-checkered", `Ended · ${years}${r.seasons ? ` · ${r.seasons} season${r.seasons === 1 ? "" : "s"}` : ""}`);
-    if (r.state === "airing") {
-      const n = r.next;
-      const what = n.e === 1 ? `Season ${n.s} premiere` : `S${n.s} E${n.e}`;
-      return pill("soon airing", "fa-tower-broadcast", `<b>${what}</b> ${epDay(n.date)} · ${countdown(n.date)}`, n.name || "");
-    }
-    return pill("out", "fa-rotate", `Returning series · next episode not announced${r.last ? ` · last aired ${epDay(r.last.date)}` : ""}`);
   }
 
   /* Studio / network logos (TMDB: mostly transparent PNGs, some with a white box of their own).
@@ -592,13 +567,7 @@
           <div class="xr-body">
             <div class="xr-big">${niceDay(x.released)}</div>
             <small>${fromNow(x.released)}${status}</small>
-            ${
-              tv && (x.episodes || x.lastAir)
-                ? `<div class="xr-mini">${x.episodes ? `<span><b>${x.episodes}</b> episodes</span>` : ""}${x.lastAir ? `<span>Last aired <b>${niceDay(x.lastAir)}</b></span>` : ""}${
-                    rel.next ? `<span>Next <b>S${rel.next.s} E${rel.next.e}</b> ${epDay(rel.next.date)}</span>` : ""
-                  }</div>`
-                : ""
-            }
+            ${tv ? firstAiredExtras(d, x, rel) : ""}
           </div>
         </div>`);
     }
@@ -751,8 +720,8 @@
       const eps = episodesPanel(d);
       if (eps) html += block("Episodes", 0, eps, "t-episodes");
     }
-    if (cast.length || (d.tvmaze && Object.keys(d.tvmaze.crew || {}).length))
-      html += block("Cast &amp; Crew", 0, (cast.length ? castPanel(cast) : "") + (d.tvmaze ? crewHtml(d.tvmaze) : ""));
+    if (cast.length)
+      html += block("Cast &amp; Crew", 0, cast.length ? castPanel(cast) : "");
     if (loading) return html + '<p class="muted t-empty">Loading more details…</p>';
     if (d.xray) html += block('<i class="fa-solid fa-bolt"></i> X-Ray', 0, xrayPanel(d), "t-xray");
     if (videos.length || images.length) html += block("Media", 0, mediaPanel(videos, images));
@@ -880,15 +849,20 @@
       .catch(() => epData.set(seasonId, "error"))
       .then(() => {
         redrawEpisodes();
-        if (!epTarget) return;
-        const card = mainEl.querySelector(`.ep-list .ep-card[data-se="${epTarget.s}-${epTarget.e}"]`);
-        epTarget = null;
-        if (!card) return;
-        card.classList.add("target");
-        const p = card.querySelector(".ep-sum");
-        if (p) p.classList.remove("clamp");
-        setTimeout(() => card.scrollIntoView({ block: "center", behavior: "smooth" }), 200);
+        focusEpisode();
       });
+  }
+  // the episode asked for (a shared link, or tapped in X-Ray): marked and brought into view
+  function focusEpisode() {
+    if (!epTarget) return;
+    const card = mainEl.querySelector(`.ep-list .ep-card[data-se="${epTarget.s}-${epTarget.e}"]`);
+    epTarget = null;
+    if (!card) return;
+    mainEl.querySelectorAll(".ep-card.target").forEach((c) => c.classList.remove("target"));
+    card.classList.add("target");
+    const p = card.querySelector(".ep-sum");
+    if (p) p.classList.remove("clamp");
+    setTimeout(() => card.scrollIntoView({ block: "center", behavior: "smooth" }), 200);
   }
   // only the Episodes section is drawn again (not the whole page)
   function redrawEpisodes() {
@@ -905,6 +879,14 @@
   const currentDetails = () => (tmdbDetails ? tmdbDetails : extra);
 
   document.addEventListener("click", (e) => {
+    // X-Ray: a season, or an episode, of the show
+    const xs = e.target.closest("[data-xr-season]");
+    if (xs) return goToEpisode(Number(xs.dataset.xrSeason), 0);
+    const xe = e.target.closest("[data-xr-ep]");
+    if (xe) {
+      const [sn, en] = xe.dataset.xrEp.split("-").map(Number);
+      return goToEpisode(sn, en);
+    }
     const s = e.target.closest("[data-ep-season]");
     if (s) {
       epSeason = Number(s.dataset.epSeason);
@@ -970,141 +952,145 @@
       </div>`;
   }
 
-  // X-Ray's "On air" card: when it airs (in your time), where, what kind of show
+  // a show's "First aired" card, below the date: the last / next episode and its seasons, each a
+  // way into the Episodes section (see goToEpisode)
+  function firstAiredExtras(d, x, rel) {
+    const tm = d.tvmaze || null;
+    const last = (tm && tm.previous) || null;
+    const ep = (e, what) =>
+      e && e.s && e.e
+        ? `<button type="button" class="xr-ep-chip" data-xr-ep="${e.s}-${e.e}"><small>${what}</small><b>S${e.s} E${e.e}</b><span>${esc(e.date ? epDay(e.date) : "")}</span></button>`
+        : "";
+    const chips = [ep(last, "Last aired"), ep(rel.next, "Next")].filter(Boolean).join("");
+    const lastDay = !last && x.lastAir ? `<div class="xr-mini"><span>Last aired <b>${niceDay(x.lastAir)}</b></span></div>` : "";
+    const seasons = tm ? (tm.seasons || []).filter((s) => s.n && (s.episodes || s.start)) : [];
+    const strip = seasons.length
+      ? `<div class="xr-season-strip" role="group" aria-label="Seasons">${seasons
+          .map((s) => {
+            const on = tm.next && tm.next.s === s.n;
+            return `<button type="button" class="xr-season-dot${on ? " now" : ""}" data-xr-season="${s.n}" title="Season ${s.n}${s.start ? ` · ${s.start.slice(0, 4)}` : ""}">S${s.n}</button>`;
+          })
+          .join("")}</div>`
+      : "";
+    return `${chips ? `<div class="xr-ep-chips">${chips}</div>` : lastDay}${strip}`;
+  }
+
+  // the Episodes section, at a season (and an episode in it): it opens there and comes into view
+  function goToEpisode(sn, en) {
+    const d = currentDetails();
+    const tm = d && d.tvmaze;
+    const season = tm && (tm.seasons || []).find((s) => s.n === sn);
+    const box = mainEl.querySelector(".t-episodes");
+    if (!season || !box) return;
+    epSeason = season.id;
+    epAll = false;
+    epTarget = en ? { s: sn, e: en } : null;
+    if (epData.get(season.id) === "error") epData.delete(season.id);
+    const list = epData.get(season.id);
+    if (Array.isArray(list)) {
+      if (epTarget && list.findIndex((x) => x.s === sn && x.e === en) >= EP_SHOWN) epAll = true;
+      redrawEpisodes();
+      focusEpisode();
+    } else redrawEpisodes(); // (it loads the season, then goes to the episode)
+    if (!epTarget) box.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+
+  // the next episode, counted down live on the "When it airs" card
+  const countdownText = (stamp) => {
+    const ms = new Date(stamp) - Date.now();
+    if (isNaN(ms)) return "";
+    if (ms <= 0) return "Out now";
+    const m = Math.floor(ms / 60000);
+    const dd = Math.floor(m / 1440);
+    const hh = Math.floor((m % 1440) / 60);
+    const mm = m % 60;
+    return dd ? `${dd}d ${hh}h ${String(mm).padStart(2, "0")}m` : hh ? `${hh}h ${String(mm).padStart(2, "0")}m` : `${mm}m`;
+  };
+  setInterval(() => document.querySelectorAll("[data-xr-count]").forEach((el) => (el.textContent = countdownText(el.dataset.xrCount))), 30000);
+
+  // X-Ray's "When it airs" card: the week it airs on, the time (and yours), how long, and the
+  // next episode counted down (tap it: the episode)
   function airingCard(tm, label) {
     const days = tm.schedule.days || [];
     const short = days.length === 7 ? "Every day" : days.length === 5 && !days.includes("Saturday") && !days.includes("Sunday") ? "Weekdays" : days.map((x) => `${x}s`).join(", ");
-    const where = tm.network ? `${tm.network.name}${tm.network.country ? ` (${tm.network.country})` : ""}` : tm.web ? `${tm.web.name} (streaming)` : "";
     const yourTime = tm.next && tm.next.stamp ? localTime(tm.next.stamp) : "";
     const live = !/^(Ended)$/i.test(tm.status);
     const rows = [
       live && (short || tm.schedule.time) ? ["fa-calendar-week", "Airs", `${esc(short || "")}${tm.schedule.time ? ` at ${esc(tm.schedule.time)}${tm.network && tm.network.zone ? ` <small>(${esc(tm.network.zone.split("/").pop().replace(/_/g, " "))})</small>` : ""}` : ""}`] : null,
       live && yourTime ? ["fa-clock", "Your time", `${esc(yourTime)}`] : null,
-      where ? ["fa-tower-broadcast", tm.network ? "Network" : "Streaming", esc(where)] : null,
-      tm.type ? ["fa-masks-theater", "Type", esc(tm.type)] : null,
       tm.averageRuntime || tm.runtime ? ["fa-hourglass-half", "Runtime", `${tm.averageRuntime || tm.runtime} min${tm.averageRuntime && tm.runtime && tm.runtime !== tm.averageRuntime ? " on average" : ""}`] : null,
-      tm.rating ? ["fa-star", "TVmaze rating", `${tm.rating.toFixed(1)} / 10`] : null,
     ].filter(Boolean);
-    if (!rows.length) return "";
+    const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const today = DAYS[(new Date().getDay() + 6) % 7];
+    const week =
+      live && days.length
+        ? `<div class="xr-week" aria-label="Airs on ${esc(days.join(", "))}">${DAYS.map((x) => `<span class="${days.includes(x) ? "on" : ""}${x === today ? " today" : ""}" title="${x}">${x.slice(0, 2)}</span>`).join("")}</div>`
+        : "";
+    const n = tm.next;
+    const next =
+      n && n.s && n.e
+        ? `<button type="button" class="xr-next" data-xr-ep="${n.s}-${n.e}">
+            <span class="xr-next-what"><small>${n.e === 1 ? `Season ${n.s} premiere` : "Next episode"}</small><b>S${n.s} E${n.e}${n.name && !/^Episode \d+$/i.test(n.name) ? ` · ${esc(n.name)}` : ""}</b></span>
+            ${n.stamp ? `<span class="xr-next-count" data-xr-count="${esc(n.stamp)}">${countdownText(n.stamp)}</span>` : n.date ? `<span class="xr-next-count">${esc(epDay(n.date))}</span>` : ""}
+          </button>`
+        : "";
+    if (!rows.length && !next) return "";
     const status = tm.status === "Running" ? ["On air", "green"] : tm.status === "Ended" ? ["Ended", "grey"] : tm.status === "To Be Determined" ? ["Waiting for news", "gold"] : tm.status === "In Development" ? ["In development", "gold"] : [tm.status, "grey"];
     return `<div class="xr-card xr-air">
         <div class="xr-head">${label("fa-satellite-dish", "When it airs")}${status[0] ? `<span class="xr-verdict ${status[1]}">${esc(status[0])}</span>` : ""}</div>
+        ${week}
         <dl class="xr-air-rows">${rows.map(([icon, k, v]) => `<div><dt><i class="fa-solid ${icon}"></i> ${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
-        <div class="xr-air-links">${safeUrl(tm.officialSite) ? `<a href="${esc(safeUrl(tm.officialSite))}" target="_blank" rel="noopener"><i class="fa-solid fa-globe"></i> Official site</a>` : ""}${
-          safeUrl(tm.url) ? `<a href="${esc(safeUrl(tm.url))}" target="_blank" rel="noopener"><i class="fa-solid fa-tv"></i> TVmaze</a>` : ""
-        }</div>
+        ${next}
       </div>`;
   }
 
-  // the people behind the show (TVmaze): creators first, then producers
-  function crewHtml(tm) {
-    const order = ["Creator", "Developer", "Executive Producer", "Co-Executive Producer", "Producer", "Showrunner", "Music"];
-    const groups = Object.entries(tm.crew || {}).sort((a, b) => (order.indexOf(a[0]) + 1 || 99) - (order.indexOf(b[0]) + 1 || 99));
-    if (!groups.length) return "";
-    return `<div class="t-crew"><h3 class="xr-sub"><i class="fa-solid fa-clapperboard"></i> Behind the show</h3><div class="t-crew-groups">${groups
-      .slice(0, 4)
-      .map(
-        ([role, people]) => `<div class="t-crew-group"><span>${esc(role)}${people.length > 1 && !/s$/.test(role) ? "s" : ""}</span><div>${people
-          .slice(0, 6)
-          .map((p) => `<a class="t-crew-chip" href="person.html?name=${encodeURIComponent(p.name)}">${safeUrl(p.image) ? `<img src="${esc(safeUrl(p.image))}" alt="" loading="lazy" />` : '<i class="fa-solid fa-user"></i>'}${esc(p.name)}</a>`)
-          .join("")}</div></div>`
-      )
-      .join("")}</div></div>`;
-  }
 
-  /* ---------------- Books (js/services/books.js, Google Books): Based on, Related novels, Further reading ----------------
-     Looked for once, when the section comes near the screen; a title with no books has no section. */
-  let booksData = null; // { based, related, reference } once looked for
+  /* ---------------- Books (js/services/books.js, Google Books): the book it's based on ----------------
+     Only for a title adapted from a book (TMDB says so); looked for as soon as the page opens. Not
+     found: no section. */
+  let booksData = null; // { based } once looked for
   let booksBusy = false;
-  let booksTab = null;
-  const booksOn = (d) => !!(window.Books && window.Site && Site.feature("books") && Books.ready() && d && d.tmdbId && d.xray);
+  const booksOn = (d) => !!(window.Books && window.Site && Site.feature("books") && Books.ready() && d && d.tmdbId && d.xray && Books.fromBook(d));
   const bookUrl = (u) => (/^https:\/\//.test(u || "") ? u : "");
-  function bookCard(b) {
-    return `<a class="bk-card" href="${esc(bookUrl(b.url) || "#")}" target="_blank" rel="noopener" title="${esc(b.title)}">
-        <span class="bk-cover">${bookUrl(b.cover) ? `<img src="${esc(b.cover)}" alt="" loading="lazy" />` : '<i class="fa-solid fa-book"></i>'}</span>
-        <strong>${esc(b.title)}</strong>
-        <small>${esc([b.authors[0], b.year].filter(Boolean).join(" · "))}</small>
-        ${b.rating ? `<small class="bk-rate"><i class="fa-solid fa-star"></i> ${b.rating.toFixed(1)}</small>` : ""}
-      </a>`;
-  }
   function booksHtml(d) {
     if (!booksOn(d)) return "";
-    const head = '<h2 class="t-section-title"><i class="fa-solid fa-book-open"></i> Books</h2>';
-    if (!booksData) return `<section class="t-section t-books">${head}<p class="muted"><i class="fa-solid fa-spinner fa-spin"></i> Looking for books…</p></section>`;
-    const { based, related, reference } = booksData;
-    const tabs = [based && ["based", "fa-book", "Based on"], related && ["related", "fa-book-bookmark", "Related novels"], reference && ["reference", "fa-flask", "Further reading"]].filter(Boolean);
-    if (!tabs.length) return "";
-    if (!booksTab || !tabs.some((t) => t[0] === booksTab)) booksTab = tabs[0][0];
-    let body = "";
-    if (booksTab === "based") {
-      const b = based.book;
-      const kind = String(based.kind || "novel").toLowerCase();
-      body = b
-        ? `<div class="bk-main">
-            <a class="bk-main-cover" href="${esc(bookUrl(b.url) || "#")}" target="_blank" rel="noopener">${bookUrl(b.coverBig) ? `<img src="${esc(b.coverBig)}"${bookUrl(b.cover) ? ` data-small="${esc(b.cover)}"` : ""} alt="${esc(b.title)} cover" loading="lazy" />` : '<i class="fa-solid fa-book"></i>'}</a>
-            <div class="bk-main-text">
-              <span class="xr-label"><i class="fa-solid fa-book"></i> ${esc(kind === "characters" ? "Based on characters from" : `Based on the ${kind}`)}</span>
-              <h3>${esc(b.title)}</h3>
-              <p class="bk-by">by <b>${esc(b.authors.join(", ") || based.author)}</b>${b.year ? ` · this edition ${b.year}` : ""}</p>
-              <div class="bk-facts">${[
-                b.rating ? `<span><i class="fa-solid fa-star"></i> ${b.rating.toFixed(1)} <small>(${b.ratings.toLocaleString()} ratings)</small></span>` : "",
-                b.pages ? `<span><i class="fa-solid fa-file-lines"></i> ${b.pages} pages</span>` : "",
-                b.editions ? `<span><i class="fa-solid fa-layer-group"></i> ${b.editions} editions</span>` : "",
-                b.isbn ? `<span><i class="fa-solid fa-barcode"></i> ISBN ${esc(b.isbn)}</span>` : "",
-              ].join("")}</div>
-              ${b.description ? `<p class="bk-desc clamp">${esc(b.description)}</p>${b.description.length > 260 ? '<button class="t-link bk-more" type="button">Read more</button>' : ""}` : ""}
-              ${bookUrl(b.url) ? `<a class="btn bk-ol" href="${esc(b.url)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> On Google Books</a>` : ""}
-            </div>
-          </div>`
-        : `<p class="muted">Based on the work of <b>${esc(based.author)}</b>. Their best-known books:</p><div class="movie-row bk-row">${(based.others || []).map(bookCard).join("")}</div>`;
-    } else if (booksTab === "related") {
-      body = `<p class="muted bk-why">Novels on the same themes: ${esc(related.subject)}</p><div class="movie-row bk-row">${related.books.map(bookCard).join("")}</div>`;
-    } else {
-      body = `<p class="muted bk-why"><i class="fa-solid fa-circle-info"></i> Reading around the subject, for the curious: not a check of how accurate the film is.</p>${reference.topics
-        .map((t) => `<h3 class="xr-sub">${esc(t.label)}</h3><div class="movie-row bk-row">${t.books.map(bookCard).join("")}</div>`)
-        .join("")}`;
-    }
+    const head = '<h2 class="t-section-title"><i class="fa-solid fa-book-open"></i> Based on the book</h2>';
+    if (!booksData) return `<section class="t-section t-books">${head}<p class="muted"><i class="fa-solid fa-spinner fa-spin"></i> Looking for the book…</p></section>`;
+    const based = booksData.based;
+    const b = based && based.book;
+    if (!b) return "";
+    const kind = String(based.kind || "novel").toLowerCase();
     return `<section class="t-section t-books">${head}
-        ${tabs.length > 1 ? `<div class="top10-switch bk-tabs" role="tablist" aria-label="Books">${tabs.map(([k, icon, l]) => `<button class="top10-tab${k === booksTab ? " active" : ""}" type="button" role="tab" aria-selected="${k === booksTab}" data-books="${k}"><i class="fa-solid ${icon}"></i> ${l}</button>`).join("")}</div>` : ""}
-        <div class="bk-body">${body}</div>
+        <div class="bk-main">
+          <a class="bk-main-cover" href="${esc(bookUrl(b.url) || "#")}" target="_blank" rel="noopener">${bookUrl(b.coverBig) ? `<img src="${esc(b.coverBig)}"${bookUrl(b.cover) ? ` data-small="${esc(b.cover)}"` : ""} alt="${esc(b.title)} cover" loading="lazy" />` : '<i class="fa-solid fa-book"></i>'}</a>
+          <div class="bk-main-text">
+            <span class="xr-label"><i class="fa-solid fa-book"></i> ${esc(kind === "characters" ? "Based on characters from" : `Based on the ${kind}`)}</span>
+            <h3>${esc(b.title)}</h3>
+            <p class="bk-by">by <b>${esc(b.authors.join(", ") || based.author)}</b>${b.year ? ` · this edition ${b.year}` : ""}</p>
+            <div class="bk-facts">${[
+              b.rating ? `<span><i class="fa-solid fa-star"></i> ${b.rating.toFixed(1)} <small>(${b.ratings.toLocaleString()} ratings)</small></span>` : "",
+              b.pages ? `<span><i class="fa-solid fa-file-lines"></i> ${b.pages} pages</span>` : "",
+              b.isbn ? `<span><i class="fa-solid fa-barcode"></i> ISBN ${esc(b.isbn)}</span>` : "",
+            ].join("")}</div>
+            ${b.description ? `<p class="bk-desc clamp">${esc(b.description)}</p>${b.description.length > 260 ? '<button class="t-link bk-more" type="button">Read more</button>' : ""}` : ""}
+            ${bookUrl(b.url) ? `<a class="btn bk-ol" href="${esc(b.url)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> On Google Books</a>` : ""}
+          </div>
+        </div>
         <p class="ep-credit">Books from <a href="https://books.google.com" target="_blank" rel="noopener">Google Books</a></p>
       </section>`;
   }
   function watchBooks(d, done) {
-    const box = mainEl.querySelector(".t-books");
-    if (!box || booksData || booksBusy) return;
-    const start = async () => {
-      if (booksBusy || booksData) return;
-      booksBusy = true;
-      const based = await Books.basedOn(d).catch(() => null);
-      const related = await Books.related(d, based && based.book ? [based.book.key] : []).catch(() => null);
-      const reference = await Books.reference(d).catch(() => null);
-      booksData = { based, related, reference };
-      booksBusy = false;
-      done();
-    };
-    if (!("IntersectionObserver" in window)) return start();
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some((en) => en.isIntersecting)) {
-        io.disconnect();
-        start();
-      }
-    }, { rootMargin: "500px" });
-    io.observe(box);
+    if (booksData || booksBusy) return;
+    booksBusy = true;
+    Books.basedOn(d)
+      .catch(() => null)
+      .then((based) => {
+        booksData = { based };
+        booksBusy = false;
+        done();
+      });
   }
   document.addEventListener("click", (e) => {
-    const t = e.target.closest("[data-books]");
-    if (t) {
-      booksTab = t.dataset.books;
-      const box = mainEl.querySelector(".t-books");
-      const d = currentDetails();
-      if (box && d) {
-        const tmp = document.createElement("div");
-        tmp.innerHTML = booksHtml(d);
-        if (tmp.firstElementChild) box.replaceWith(tmp.firstElementChild);
-      }
-      return;
-    }
     const more = e.target.closest(".bk-more");
     if (more) {
       const p = more.previousElementSibling;

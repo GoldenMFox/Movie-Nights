@@ -5,11 +5,11 @@
  * a preview plays; when one ends, the next one starts. Soundtrack and score albums both
  * found: a switch between them. Nothing on Apple Music: no section.
  *
- * Asked only when the section comes near the screen, then kept for this visit
- * (sessionStorage mn:st:<movie-603>).
+ * Asked as soon as the page opens, through js/services/api.js: the answers are kept a month in
+ * this browser (Admin → API integrations), so a title opened again shows its soundtrack at once.
  *
  *   Soundtrack.html(d)          the section (d: the title's TMDB details)
- *   Soundtrack.mount(root, d)   after the page is drawn: fills it in when it's near
+ *   Soundtrack.mount(root, d)   after the page is drawn: fills it in
  */
 (function () {
   const { esc } = UI;
@@ -64,16 +64,16 @@
     return s;
   }
 
+  const days = () => (window.Site ? Site.api("itunes").days : 30) || 30;
+  // (straight to Apple when the Api layer isn't on the page)
+  const ask = (url) => (window.Api ? Api.get("itunes", url, { days: days() }) : fetch(url).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`iTunes ${r.status}`)))));
+
   async function search(term) {
-    const r = await fetch(`${API}/search?term=${encodeURIComponent(term)}&media=music&entity=album&limit=25&country=US`);
-    if (!r.ok) throw new Error(`iTunes ${r.status}`);
-    return (await r.json()).results || [];
+    const j = await ask(`${API}/search?term=${encodeURIComponent(term)}&media=music&entity=album&limit=25&country=US`);
+    return (j && j.results) || [];
   }
 
   async function find(d) {
-    const key = keyOf(d);
-    const saved = sessionStorage.getItem(`mn:st:${key}`);
-    if (saved) return JSON.parse(saved);
     const title = d.title;
     const year = d.year;
     let found = [];
@@ -107,24 +107,16 @@
         tracks: null,
       });
     });
-    const out = albums.length ? { albums, pick: 0 } : "none";
-    try {
-      sessionStorage.setItem(`mn:st:${key}`, JSON.stringify(out));
-    } catch (e) {}
-    return out;
+    return albums.length ? { albums, pick: 0 } : "none";
   }
 
   async function tracks(key, album) {
     if (album.tracks) return album.tracks;
-    const r = await fetch(`${API}/lookup?id=${album.id}&entity=song&limit=200&country=US`);
-    const j = await r.json();
-    album.tracks = (j.results || [])
+    const j = await ask(`${API}/lookup?id=${album.id}&entity=song&limit=200&country=US`);
+    album.tracks = ((j && j.results) || [])
       .filter((t) => t.wrapperType === "track" && t.kind === "song")
       .sort((a, b) => (a.discNumber || 1) - (b.discNumber || 1) || (a.trackNumber || 0) - (b.trackNumber || 0))
       .map((t) => ({ name: t.trackName, artist: t.artistName, ms: t.trackTimeMillis || 0, preview: t.previewUrl || "", url: t.trackViewUrl || "" }));
-    try {
-      sessionStorage.setItem(`mn:st:${key}`, JSON.stringify(cache.get(key)));
-    } catch (e) {}
     return album.tracks;
   }
 
@@ -313,26 +305,12 @@
     }
   }
 
-  let io = null;
-  const pending = new Map(); // key -> d
   function mount(root, d) {
     const sec = root.querySelector(".t-sound");
     if (!sec) return;
     const key = sec.dataset.st;
     if (cache.has(key)) return paintPlayer();
-    pending.set(key, d);
-    if (!io)
-      io = new IntersectionObserver(
-        (entries) =>
-          entries.forEach((en) => {
-            if (!en.isIntersecting) return;
-            io.unobserve(en.target);
-            const k = en.target.dataset.st;
-            if (pending.has(k)) load(k, pending.get(k));
-          }),
-        { rootMargin: "400px 0px" }
-      );
-    io.observe(sec);
+    load(key, d);
   }
 
   document.addEventListener("click", async (e) => {
