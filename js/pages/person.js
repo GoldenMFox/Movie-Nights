@@ -467,8 +467,10 @@
       const r = await Books.forPerson(p.name).catch(() => null);
       if (!r || (!r.by.length && !r.about.length)) return;
       box.innerHTML = `<h2 class="t-section-title"><i class="fa-solid fa-book-open"></i> Books</h2>
-        ${r.by.length ? `<h3 class="xr-sub">By ${esc(p.name)}</h3>${shelf(r.by)}` : ""}
-        ${r.about.length ? `<h3 class="xr-sub">About ${esc(p.name)}</h3>${shelf(r.about)}` : ""}
+        <div class="bk-shelves" data-by="${r.by.length}" data-about="${r.about.length}">
+          ${r.by.length ? `<div class="bk-shelf-wrap"><h3 class="xr-sub">By ${esc(p.name)}</h3>${shelf(r.by)}</div>` : ""}
+          ${r.about.length ? `<div class="bk-shelf-wrap"><h3 class="xr-sub">About ${esc(p.name)}</h3>${shelf(r.about)}</div>` : ""}
+        </div>
         <p class="ep-credit">Books from <a href="https://openlibrary.org" target="_blank" rel="noopener">Open Library</a></p>`;
       box.hidden = false;
       // the lifted book: its name under the shelf; on a touch screen the first tap lifts it, the
@@ -489,6 +491,28 @@
           }
         });
       });
+      // a shelf with few books: their spines a little wider, so the shelf isn't left half empty
+      // one shelf with few books (8 or fewer): the two side by side on one row, each as wide as its
+      // books need (the short one at least wide enough for its title), so neither stands half empty
+      const fill = () => {
+        const wrap = box.querySelector(".bk-shelves");
+        const by = Number(wrap.dataset.by);
+        const about = Number(wrap.dataset.about);
+        const side = window.innerWidth > 900 && wrap.children.length === 2 && Math.min(by, about) <= 8;
+        wrap.classList.toggle("side", side);
+        // (the short shelf: just as wide as its books at their widest, its title fitting; the other: the rest)
+        const snug = (n) => `${Math.max(190, n * 74 + 70)}px`;
+        wrap.style.gridTemplateColumns = !side ? "" : by <= about ? `${snug(by)} minmax(0, 1fr)` : `minmax(0, 1fr) ${snug(about)}`;
+        box.querySelectorAll(".bk-shelf-books").forEach((row) => {
+          const n = row.querySelectorAll(".bk-book").length;
+          const room = row.clientWidth - 40; // (the bookend)
+          const phone = window.innerWidth <= 700;
+          const per = Math.floor(room / Math.max(1, n)) - 4;
+          row.style.setProperty("--bw", `${Math.max(phone ? 44 : 52, Math.min(phone ? 58 : 96, per))}px`);
+        });
+      };
+      fill();
+      window.addEventListener("resize", fill);
       box.querySelectorAll(".bk-shelf").forEach((sh) => {
         sh.addEventListener("mouseleave", () => {
           sh.querySelectorAll(".bk-book.up").forEach((x) => x.classList.remove("up"));

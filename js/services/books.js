@@ -14,6 +14,8 @@
   const API = "https://openlibrary.org";
   const COVERS = "https://covers.openlibrary.org/b/id";
   const FIELDS = "key,title,author_name,first_publish_year,cover_i,number_of_pages_median,ratings_average,ratings_count,edition_count,isbn,subject,publish_year";
+  // (a shelf of someone's books needs less: a tenth of the size)
+  const SHELF_FIELDS = "key,title,author_name,first_publish_year,cover_i,edition_count,publish_year";
   const days = () => (window.Site ? Site.api("openlibrary").days : 30) || 30;
   // books can be shown: the service is on (no key needed)
   const ready = () => !!window.Api && Api.enabled("openlibrary");
@@ -53,11 +55,11 @@
 
   // a few books for a search: [book] (books with a cover, the same one once). q: words, or
   // { title, author } for a search by title and writer
-  async function search(q, max) {
+  async function search(q, max, fields) {
     if (!ready()) throw new Error("Books are switched off for now");
     const params = new URLSearchParams(typeof q === "string" ? { q } : Object.fromEntries(Object.entries(q).filter(([, v]) => v)));
-    params.set("limit", String(Math.min(30, (max || 10) * 2))); // (some have no cover: a few more asked for)
-    params.set("fields", FIELDS);
+    params.set("limit", String(Math.min(100, (max || 10) * 2))); // (some have no cover: a few more asked for)
+    params.set("fields", fields || FIELDS);
     const r = await Api.get("openlibrary", `${API}/search.json?${params}`, { days: days() });
     const seen = new Set();
     return ((r && r.docs) || [])
@@ -119,10 +121,14 @@
 
   // a person's books: written by them, and about them (biographies)
   async function forPerson(name) {
-    const [by, about] = await Promise.all([search({ author: name }, 12).catch(() => []), search(`person:"${String(name).replace(/"/g, "")}"`, 12).catch(() => [])]);
+    // (enough to fill a bookshelf: up to 40 of theirs, the most published first)
+    const [by, about] = await Promise.all([
+      search({ author: name, sort: "editions" }, 40, SHELF_FIELDS).catch(() => []),
+      search(`person:"${String(name).replace(/"/g, "")}"`, 24, SHELF_FIELDS).catch(() => []),
+    ]);
     const mine = by.filter((b) => b.authors.some((a) => norm(a) === norm(name))).sort((x, y) => y.editions - x.editions);
     const aboutThem = about.filter((b) => !b.authors.some((a) => norm(a) === norm(name)));
-    return { by: mine.slice(0, 10), about: aboutThem.filter((b) => !mine.some((m) => m.key === b.key)).slice(0, 10) };
+    return { by: mine.slice(0, 40), about: aboutThem.filter((b) => !mine.some((m) => m.key === b.key)).slice(0, 24) };
   }
 
   window.Books = { ready, search, fromBook, basedOn, forPerson };
