@@ -560,6 +560,8 @@
             ${x.status ? `<small>${esc(x.status)}</small>` : ""}
           </div>
         </div>`);
+    } else if (x.released && tv && d.tvmaze && (d.tvmaze.seasons || []).some((s) => s.n)) {
+      cards.push(runCard(d, x, rel));
     } else if (x.released) {
       const status = x.status && !/^(Released|Ended|Returning Series)$/.test(x.status) ? ` · ${esc(x.status)}` : "";
       cards.push(`<div class="xr-card xr-date">
@@ -567,7 +569,6 @@
           <div class="xr-body">
             <div class="xr-big">${niceDay(x.released)}</div>
             <small>${fromNow(x.released)}${status}</small>
-            ${tv ? firstAiredExtras(d, x, rel) : ""}
           </div>
         </div>`);
     }
@@ -577,7 +578,7 @@
 
     // shows: when and where it airs (TVmaze)
     if (tv && d.tvmaze) {
-      const air = airingCard(d.tvmaze, label);
+      const air = airingCard(d.tvmaze, label, d);
       if (air) cards.push(air);
     }
 
@@ -952,29 +953,6 @@
       </div>`;
   }
 
-  // a show's "First aired" card, below the date: the last / next episode and its seasons, each a
-  // way into the Episodes section (see goToEpisode)
-  function firstAiredExtras(d, x, rel) {
-    const tm = d.tvmaze || null;
-    const last = (tm && tm.previous) || null;
-    const ep = (e, what) =>
-      e && e.s && e.e
-        ? `<button type="button" class="xr-ep-chip" data-xr-ep="${e.s}-${e.e}"><small>${what}</small><b>S${e.s} E${e.e}</b><span>${esc(e.date ? epDay(e.date) : "")}</span></button>`
-        : "";
-    const chips = [ep(last, "Last aired"), ep(rel.next, "Next")].filter(Boolean).join("");
-    const lastDay = !last && x.lastAir ? `<div class="xr-mini"><span>Last aired <b>${niceDay(x.lastAir)}</b></span></div>` : "";
-    const seasons = tm ? (tm.seasons || []).filter((s) => s.n && (s.episodes || s.start)) : [];
-    const strip = seasons.length
-      ? `<div class="xr-season-strip" role="group" aria-label="Seasons">${seasons
-          .map((s) => {
-            const on = tm.next && tm.next.s === s.n;
-            return `<button type="button" class="xr-season-dot${on ? " now" : ""}" data-xr-season="${s.n}" title="Season ${s.n}${s.start ? ` · ${s.start.slice(0, 4)}` : ""}">S${s.n}</button>`;
-          })
-          .join("")}</div>`
-      : "";
-    return `${chips ? `<div class="xr-ep-chips">${chips}</div>` : lastDay}${strip}`;
-  }
-
   // the Episodes section, at a season (and an episode in it): it opens there and comes into view
   function goToEpisode(sn, en) {
     const d = currentDetails();
@@ -995,7 +973,63 @@
     if (!epTarget) box.scrollIntoView({ block: "start", behavior: "smooth" });
   }
 
-  // the next episode, counted down live on the "When it airs" card
+
+  /* X-Ray, shows: two big cards in the Box Office's look (the show's picture behind, a red pill,
+     a large number, a podium of bars). Everything on them is a way into the Episodes section. */
+
+  // the show's picture behind a card (its own still for an episode, else the backdrop)
+  const showBg = (src) => (safeUrl(src) ? `<img class="xr-show-bg" src="${esc(safeUrl(src))}" alt="" loading="lazy" />` : "");
+  const backdropOf = (d) => (d.backdrop ? Store.img(d.backdrop, "w780") : "");
+  const howLong = (from, to) => {
+    const days = Math.max(0, Math.round((new Date(`${to}T00:00:00`) - new Date(`${from}T00:00:00`)) / 86400000));
+    if (days < 60) return [days, days === 1 ? "day" : "days"];
+    if (days < 730) return [Math.round(days / 30.4), "months"];
+    const y = days / 365.25;
+    // (3.5 years; past 10, whole years: 36 years)
+    return [y >= 10 ? Math.floor(y) : Math.round(y * 10) / 10, "years"];
+  };
+
+  // "The run": how long it's been on, and a podium of its seasons (taller: more episodes; the one
+  // on now in gold). Tap a season: its episodes; tap the last / next episode: that one
+  function runCard(d, x, rel) {
+    const tm = d.tvmaze;
+    const seasons = (tm.seasons || []).filter((s) => s.n && (s.episodes || s.start));
+    const ended = /^(Ended|Canceled)$/i.test(tm.status || "");
+    // (when the series itself ended: TMDB's last episode date, not a film or special that came later)
+    const until = ended ? x.lastAir || tm.ended || Store.today() : Store.today();
+    const [n, unit] = howLong(x.released, until);
+    const current = (tm.next && tm.next.s) || (tm.previous && tm.previous.s) || (seasons[seasons.length - 1] || {}).n;
+    const most = Math.max(1, ...seasons.map((s) => s.episodes || 0));
+    const pill = ended
+      ? `<i class="fa-solid fa-flag-checkered"></i> Ended · ${String(x.released).slice(0, 4)}–${String(until).slice(0, 4)}`
+      : `<i class="fa-solid fa-tower-broadcast"></i> ${tm.next ? "On air" : "Running"} · Season ${current}`;
+    // (a long-running show: its latest 10 seasons, the earlier ones behind one "+28" bar)
+    const LAST = 10;
+    const earlier = seasons.length > LAST ? seasons.slice(0, seasons.length - LAST) : [];
+    const shown = earlier.length ? seasons.slice(-LAST) : seasons;
+    const bars = (earlier.length ? `<button type="button" class="xr-pod more" data-xr-season="${earlier[0].n}" title="Seasons ${earlier[0].n}–${earlier[earlier.length - 1].n}"><span class="xr-pod-bar" style="--h:40%"><b>+${earlier.length}</b></span><small>${(earlier[0].start || "").slice(0, 4) || "…"}</small></button>` : "") + shown
+      .map((s) => {
+        const h = s.episodes ? Math.max(18, Math.round((s.episodes / most) * 100)) : 18;
+        const now = s.n === current;
+        const year = s.start ? s.start.slice(0, 4) : "";
+        return `<button type="button" class="xr-pod${now ? " now" : ""}${!s.start || s.start > Store.today() ? " soon" : ""}" data-xr-season="${s.n}" title="Season ${s.n}${year ? ` · ${year}` : ""}${s.episodes ? ` · ${s.episodes} episodes` : ""}">
+            <span class="xr-pod-bar" style="--h:${h}%"><b>${s.n}</b></span><small>${year ? `’${year.slice(2)}` : "soon"}</small>
+          </button>`;
+      })
+      .join("");
+    const chip = (e, what, cls) =>
+      e && e.s && e.e && !e.special ? `<button type="button" class="xr-show-chip ${cls || ""}" data-xr-ep="${e.s}-${e.e}"><small>${what}</small><b>S${e.s} E${e.e}</b><span>${esc(e.date ? epDay(e.date) : "")}</span></button>` : "";
+    return `<div class="xr-card xr-show xr-run">
+        ${showBg(backdropOf(d))}
+        <span class="xr-show-pill">${pill}</span>
+        <div class="xr-show-big"><b>${n}</b><span>${unit}<small>${ended ? "on the air" : "and counting"}</small></span></div>
+        <p class="xr-show-sub">First aired <b>${niceDay(x.released)}</b></p>
+        <div class="xr-pods${shown.length > 10 ? " many" : ""}" role="group" aria-label="Seasons">${bars}</div>
+        <div class="xr-show-chips">${chip(tm.previous, "Last aired")}${chip(rel.next, "Next", "next")}</div>
+      </div>`;
+  }
+
+  // the next episode counted down, live
   const countdownText = (stamp) => {
     const ms = new Date(stamp) - Date.now();
     if (isNaN(ms)) return "";
@@ -1008,42 +1042,52 @@
   };
   setInterval(() => document.querySelectorAll("[data-xr-count]").forEach((el) => (el.textContent = countdownText(el.dataset.xrCount))), 30000);
 
-  // X-Ray's "When it airs" card: the week it airs on, the time (and yours), how long, and the
-  // next episode counted down (tap it: the episode)
-  function airingCard(tm, label) {
+  // "When it airs": the next episode counted down (or where the show stands), the week as bars
+  // (its days raised, today marked), the time there and yours. Tap it: that episode
+  function airingCard(tm, label, d) {
     const days = tm.schedule.days || [];
-    const short = days.length === 7 ? "Every day" : days.length === 5 && !days.includes("Saturday") && !days.includes("Sunday") ? "Weekdays" : days.map((x) => `${x}s`).join(", ");
-    const yourTime = tm.next && tm.next.stamp ? localTime(tm.next.stamp) : "";
-    const live = !/^(Ended)$/i.test(tm.status);
-    const rows = [
-      live && (short || tm.schedule.time) ? ["fa-calendar-week", "Airs", `${esc(short || "")}${tm.schedule.time ? ` at ${esc(tm.schedule.time)}${tm.network && tm.network.zone ? ` <small>(${esc(tm.network.zone.split("/").pop().replace(/_/g, " "))})</small>` : ""}` : ""}`] : null,
-      live && yourTime ? ["fa-clock", "Your time", `${esc(yourTime)}`] : null,
-      tm.averageRuntime || tm.runtime ? ["fa-hourglass-half", "Runtime", `${tm.averageRuntime || tm.runtime} min${tm.averageRuntime && tm.runtime && tm.runtime !== tm.averageRuntime ? " on average" : ""}`] : null,
-    ].filter(Boolean);
+    const ended = /^(Ended|Canceled)$/i.test(tm.status || "");
+    const n = tm.next && tm.next.s && tm.next.e ? tm.next : null;
+    const last = tm.previous && tm.previous.s ? tm.previous : null;
+    const ep = n || last;
+    if (!ep && !days.length) return "";
     const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     const today = DAYS[(new Date().getDay() + 6) % 7];
+    const zone = tm.network && tm.network.zone ? tm.network.zone.split("/").pop().replace(/_/g, " ") : "";
+    const yours = n && n.stamp ? localTime(n.stamp) : "";
+    const runtime = tm.averageRuntime || tm.runtime;
+    const name = (e) => (e && e.name && !/^Episode \d+$/i.test(e.name) ? e.name : "");
+    const code = (e) => (e.e && !e.special ? `S${e.s} E${e.e}` : "Special"); // (a special has no number)
+    let pill, big, sub;
+    if (n) {
+      pill = `<i class="fa-solid fa-satellite-dish"></i> ${n.e === 1 ? `Season ${n.s} premiere` : "Next episode"}`;
+      big = n.stamp ? `<b class="xr-count" data-xr-count="${esc(n.stamp)}">${countdownText(n.stamp)}</b>` : `<b>${esc(n.date ? epDay(n.date) : "Soon")}</b>`;
+      sub = `<b>${code(n)}</b>${name(n) ? ` · ${esc(name(n))}` : ""}`;
+    } else {
+      pill = ended ? '<i class="fa-solid fa-flag-checkered"></i> Ended' : `<i class="fa-solid fa-pause"></i> ${/To Be Determined/i.test(tm.status) ? "Waiting for news" : "Between seasons"}`;
+      big = `<b>${ended ? "Finished" : "On a break"}</b>`;
+      sub = last ? `Last: <b>${code(last)}</b>${name(last) ? ` · ${esc(name(last))}` : ""}${last.date ? ` · ${esc(epDay(last.date))}` : ""}` : "";
+    }
     const week =
-      live && days.length
-        ? `<div class="xr-week" aria-label="Airs on ${esc(days.join(", "))}">${DAYS.map((x) => `<span class="${days.includes(x) ? "on" : ""}${x === today ? " today" : ""}" title="${x}">${x.slice(0, 2)}</span>`).join("")}</div>`
+      !ended && days.length
+        ? `<div class="xr-weekbars" aria-label="Airs on ${esc(days.join(", "))}">${DAYS.map(
+            (x) => `<span class="${days.includes(x) ? "on" : ""}${x === today ? " today" : ""}" title="${x}"><i></i><small>${x.slice(0, 2)}</small></span>`
+          ).join("")}</div>`
         : "";
-    const n = tm.next;
-    const next =
-      n && n.s && n.e
-        ? `<button type="button" class="xr-next" data-xr-ep="${n.s}-${n.e}">
-            <span class="xr-next-what"><small>${n.e === 1 ? `Season ${n.s} premiere` : "Next episode"}</small><b>S${n.s} E${n.e}${n.name && !/^Episode \d+$/i.test(n.name) ? ` · ${esc(n.name)}` : ""}</b></span>
-            ${n.stamp ? `<span class="xr-next-count" data-xr-count="${esc(n.stamp)}">${countdownText(n.stamp)}</span>` : n.date ? `<span class="xr-next-count">${esc(epDay(n.date))}</span>` : ""}
-          </button>`
-        : "";
-    if (!rows.length && !next) return "";
-    const status = tm.status === "Running" ? ["On air", "green"] : tm.status === "Ended" ? ["Ended", "grey"] : tm.status === "To Be Determined" ? ["Waiting for news", "gold"] : tm.status === "In Development" ? ["In development", "gold"] : [tm.status, "grey"];
-    return `<div class="xr-card xr-air">
-        <div class="xr-head">${label("fa-satellite-dish", "When it airs")}${status[0] ? `<span class="xr-verdict ${status[1]}">${esc(status[0])}</span>` : ""}</div>
+    const facts = [
+      !ended && tm.schedule.time ? `<span><i class="fa-regular fa-clock"></i> ${esc(tm.schedule.time)}${zone ? ` <em>${esc(zone)}</em>` : ""}</span>` : "",
+      yours ? `<span><i class="fa-solid fa-location-dot"></i> ${esc(yours)} <em>your time</em></span>` : "",
+      runtime ? `<span><i class="fa-solid fa-hourglass-half"></i> ${runtime} min</span>` : "",
+    ].join("");
+    return `<${ep ? `button type="button" data-xr-ep="${ep.s}-${ep.e || 1}"` : "div"} class="xr-card xr-show xr-air2${n ? " live" : ""}">
+        ${showBg((ep && ep.imageBig) || (ep && ep.image) || backdropOf(d))}
+        <span class="xr-show-pill${n ? "" : " quiet"}">${pill}</span>
+        <div class="xr-show-big">${big}</div>
+        ${sub ? `<p class="xr-show-sub">${sub}</p>` : ""}
         ${week}
-        <dl class="xr-air-rows">${rows.map(([icon, k, v]) => `<div><dt><i class="fa-solid ${icon}"></i> ${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
-        ${next}
-      </div>`;
+        ${facts ? `<div class="xr-show-facts">${facts}</div>` : ""}
+      </${ep ? "button" : "div"}>`;
   }
-
 
   /* ---------------- Books (js/services/books.js, Open Library): the book it's based on ----------------
      Only for a title adapted from a book (TMDB says so); looked for as soon as the page opens. Not

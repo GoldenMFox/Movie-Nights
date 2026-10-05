@@ -814,7 +814,10 @@
           veil.setPointerCapture(e.pointerId);
         } catch (err) {}
       }, 300);
-    else veil.setPointerCapture(e.pointerId);
+    else
+      try {
+        veil.setPointerCapture(e.pointerId);
+      } catch (err) {}
   });
   // (while a finger drags a box, the page doesn't scroll under it)
   document.addEventListener("touchmove", (e) => drag && drag.armed && e.cancelable && e.preventDefault(), { passive: false });
