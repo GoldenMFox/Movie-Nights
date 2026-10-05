@@ -23160,6 +23160,8 @@ html.app-ui.tabs-away .t-shared {
 
 .ep-list {
   display: grid;
+  /* two episodes a row when there's room (each needs about 560px), one on narrower screens */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 560px), 1fr));
   gap: 10px;
 }
 
