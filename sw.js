@@ -15,7 +15,7 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v184";
+const VERSION = "v185";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [

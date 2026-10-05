@@ -5911,6 +5911,17 @@ button.p-lib-line:hover .p-lib-arrow {
   max-width: none;
 }
 
+/* the library / Explore / Watchlist pages are full width from the start (their grid is drawn
+   a moment later, and the page jumped sideways when it appeared) */
+body:is([data-page="movie"], [data-page="tv"], [data-page="anime"], [data-page="watchlist"]) main.container {
+  max-width: none;
+}
+
+/* (but an anime's own page keeps the usual width, like a title page) */
+body[data-page="anime"] main.container:has(> .ax-detail-wait, > .ax-hero) {
+  max-width: 1550px;
+}
+
 .movie-row {
   grid-auto-columns: 226px;
 }
