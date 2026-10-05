@@ -4,7 +4,8 @@
  *  - Saved in the account as one document, site/config (js/core/cloud.js: siteLoad / siteSave),
  *    which everyone may read and only the owner may change (docs/firestore.rules).
  *  - Every page uses this browser's copy straight away (mn:site) and asks for a fresh one in
- *    the background (at most every 5 minutes), so a setting never slows a page down.
+ *    the background (at most once a minute; every page while maintenance is on), so a setting never
+ *    slows a page down.
  *  - Anything not set falls back to DEFAULTS, so the site works the same with no settings at all.
  *
  * What's in it: branding, maintenance mode and a notice across the top, which pages show in the
@@ -15,7 +16,7 @@
 (function () {
   const KEY = "mn:site"; // { data, blocked, updatedAt, at, state }
   const LOCAL = "mn:siteLocal"; // the owner's settings when the account couldn't take them yet
-  const FRESH = 5 * 60 * 1000;
+  const FRESH = 60 * 1000; // asked again at most once a minute (every page while maintenance is on)
 
   const DEFAULTS = {
     branding: { name: "Movie Nights", tagline: "Your own private diary of movies, TV shows and anime.", accent: "" },
@@ -96,7 +97,7 @@
   let loading = null;
   function refresh(force) {
     if (!window.Cloud || !Cloud.enabled) return Promise.resolve(config);
-    if (!force && saved && Date.now() - (saved.at || 0) < FRESH) return Promise.resolve(config);
+    if (!force && !config.maintenance.on && saved && Date.now() - (saved.at || 0) < FRESH) return Promise.resolve(config);
     if (loading) return loading;
     loading = Cloud.siteLoad()
       .then((doc) => {
