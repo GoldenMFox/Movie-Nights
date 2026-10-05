@@ -53,7 +53,7 @@
     ["tvmaze", "Episodes & air times", "TVmaze's episode guide on show pages"],
     ["animeDetails", "Anime details", "The AniList card on anime title pages"],
     ["animeExplore", "Anime explorer", "anime-explore.html"],
-    ["books", "Books", "Based on, related novels, further reading"],
+    ["books", "Books", "The book a title is based on, a person's books (Open Library)"],
     ["news", "Movie News", "news.html"],
     ["boxOffice", "Box Office", "box-office.html"],
     ["listThemes", "List themes", "Halloween, Christmas… on your own lists"],
@@ -63,7 +63,7 @@
   const API_NAMES = {
     tvmaze: ["TVmaze", "Show schedules, episodes, networks", "hours"],
     anilist: ["AniList", "Everything anime: the explorer and the anime card on title pages", "hours"],
-    googlebooks: ["Google Books", "Books on title and person pages, featured books (needs a key)", "days"],
+    openlibrary: ["Open Library", "Books on title and person pages, featured books", "days"],
     news: ["News feeds (rss2json)", "Movie News", "minutes"],
     itunes: ["Apple Music (iTunes)", "Soundtracks and their previews on title pages", "days"],
   };
@@ -282,7 +282,7 @@
           <div class="ad-search" data-search="anime"><input class="input" placeholder="Find an anime to feature…" /><div class="ad-results"></div></div>`, "Shown first on the anime explorer, as “Our picks”.")}
         ${card("fa-book", "Featured books", `${text("home.featuredBooksTitle", "Row title", draft.home.featuredBooksTitle)}
           <div class="ad-chips">${books.map((b, i) => chip(b.title, `data-rm="home.featuredBooks" data-i="${i}"`)).join("") || '<span class="muted">Nothing yet</span>'}</div>
-          <div class="ad-search" data-search="books"><input class="input" placeholder="Find a book on Google Books…" /><div class="ad-results"></div></div>`, "A row of books on Home, under your picks.")}
+          <div class="ad-search" data-search="books"><input class="input" placeholder="Find a book on Open Library…" /><div class="ad-results"></div></div>`, "A row of books on Home, under your picks.")}
         ${card("fa-eye-slash", "Hidden titles (moderation)", `<div class="ad-chips">${hidden.map((h, i) => chip(h.title || h.ref, `data-rm="content.hidden" data-i="${i}"`)).join("") || '<span class="muted">None</span>'}</div>
           <div class="ad-search" data-search="hide"><input class="input" placeholder="Find a title to hide…" /><div class="ad-results"></div></div>`, "Hidden from Discover, Home and search rows for everyone (people's own libraries keep it).")}
         ${card("fa-compass", "Explore pages", `${num("discover.phoneFirst", "Titles at first, phones", draft.discover.phoneFirst, 10, 40)}${num("discover.desktopFirst", "Titles at first, computers", draft.discover.desktopFirst, 20, 60)}`, "Movies and TV Shows → Explore, before “Load more”. Posters load as they come near the screen.")}
@@ -330,7 +330,6 @@
             `<div class="ad-api-head"><span class="ad-health ${s.health}"><i></i>${{ ok: "Working", down: "Not answering", off: "Switched off", unknown: "Not asked yet" }[s.health] || ""}</span><small>${esc(what)}</small></div>
             ${sw(`apis.${k}.on`, "On", "Off: the site doesn't ask it at all and shows what it can without it", a.on !== false)}
             ${num(`apis.${k}.${unit}`, `Keep answers for (${unit})`, a[unit], 1, max)}
-            ${k === "googlebooks" ? text("apis.googlebooks.key", "API key (needed)", a.key, 'placeholder="AIza…" autocomplete="off"') + '<p class="sv-note">Without a key Google shares one small daily allowance with every site, always used up, so the book sections stay hidden. Free in Google Cloud: enable the Books API, create a key, restrict it to this site\'s address (HTTP referrers) and to the Books API. Visible to visitors like any key on a website.</p>' : ""}
             <div class="ad-api-stats"><span><b>${s.ok || 0}</b> answered</span><span><b>${s.cached || 0}</b> from memory</span><span><b>${s.fail || 0}</b> failed</span><span>Last good: ${ago(s.lastOk)}</span></div>
             ${s.lastError ? `<p class="sv-note ad-err"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(s.lastError)} (${ago(s.lastFail)})</p>` : ""}
             <div class="sv-buttons"><button class="btn" type="button" data-api-test="${k}"><i class="fa-solid fa-stethoscope"></i> Test</button><button class="btn" type="button" data-api-clear="${k}"><i class="fa-solid fa-broom"></i> Clear its memory</button></div>`
@@ -466,12 +465,11 @@
       }
     };
     const okJson = (r) => (r.ok ? true : Promise.reject(new Error(`answered ${r.status}`)));
-    const gb = (Site.api("googlebooks").key || (window.MN_CONFIG || {}).GOOGLE_BOOKS_KEY || "").trim();
     const jobs = [
       ["TMDB", () => TMDB.test()],
       ["TVmaze", () => fetch("https://api.tvmaze.com/shows/1").then(okJson)],
       ["AniList", () => fetch("https://graphql.anilist.co", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: "query { Media(id: 1) { id } }" }) }).then(okJson)],
-      ["Google Books", () => (gb ? fetch(`https://www.googleapis.com/books/v1/volumes?q=dune&maxResults=1&key=${encodeURIComponent(gb)}`).then(okJson) : Promise.reject(new Error("no key")))],
+      ["Open Library", () => fetch("https://openlibrary.org/search.json?q=dune&limit=1&fields=key").then(okJson)],
       ["Apple Music", () => fetch("https://itunes.apple.com/search?term=inception&media=music&entity=album&limit=1").then(okJson)],
     ];
     box.innerHTML = jobs.map(([l]) => `<div class="ad-check wait"><i></i><span>${l}</span><b>…</b></div>`).join("");
@@ -1247,10 +1245,8 @@
       if (k === "tvmaze") await Api.get("tvmaze", "https://api.tvmaze.com/shows/1", { fresh: true });
       else if (k === "anilist")
         await Api.get("anilist", "https://graphql.anilist.co", { fresh: true, key: "test", init: { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: "{ Media(id: 1) { id } }" }) } });
-      else if (k === "googlebooks") {
-        const key = (draft.apis.googlebooks || {}).key;
-        await Api.get("googlebooks", `https://www.googleapis.com/books/v1/volumes?q=dune&maxResults=1${key ? `&key=${encodeURIComponent(key)}` : ""}`, { fresh: true, key: "test" });
-      } else if (k === "news") await Api.get("news", `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(News.FEEDS[0].url)}`, { fresh: true });
+      else if (k === "openlibrary") await Api.get("openlibrary", "https://openlibrary.org/search.json?q=dune&limit=1&fields=key", { fresh: true, key: "test" });
+      else if (k === "news") await Api.get("news", `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(News.FEEDS[0].url)}`, { fresh: true });
       toast(`${API_NAMES[k][0]} answered in ${Math.round(performance.now() - t0)} ms`);
     } catch (e) {
       toast(`${API_NAMES[k][0]}: ${e.message}`);

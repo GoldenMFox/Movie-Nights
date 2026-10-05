@@ -1045,7 +1045,7 @@
   }
 
 
-  /* ---------------- Books (js/services/books.js, Google Books): the book it's based on ----------------
+  /* ---------------- Books (js/services/books.js, Open Library): the book it's based on ----------------
      Only for a title adapted from a book (TMDB says so); looked for as soon as the page opens. Not
      found: no section. */
   let booksData = null; // { based } once looked for
@@ -1062,21 +1062,22 @@
     const kind = String(based.kind || "novel").toLowerCase();
     return `<section class="t-section t-books">${head}
         <div class="bk-main">
-          <a class="bk-main-cover" href="${esc(bookUrl(b.url) || "#")}" target="_blank" rel="noopener">${bookUrl(b.coverBig) ? `<img src="${esc(b.coverBig)}"${bookUrl(b.cover) ? ` data-small="${esc(b.cover)}"` : ""} alt="${esc(b.title)} cover" loading="lazy" />` : '<i class="fa-solid fa-book"></i>'}</a>
+          <a class="bk-main-cover" href="${esc(bookUrl(b.url) || "#")}" target="_blank" rel="noopener">${bookUrl(b.coverBig) ? `<img src="${esc(b.coverBig)}" alt="${esc(b.title)} cover" loading="lazy" />` : '<i class="fa-solid fa-book"></i>'}</a>
           <div class="bk-main-text">
             <span class="xr-label"><i class="fa-solid fa-book"></i> ${esc(kind === "characters" ? "Based on characters from" : `Based on the ${kind}`)}</span>
             <h3>${esc(b.title)}</h3>
-            <p class="bk-by">by <b>${esc(b.authors.join(", ") || based.author)}</b>${b.year ? ` · this edition ${b.year}` : ""}</p>
+            <p class="bk-by">by <b>${esc(b.authors.join(", ") || based.author)}</b>${b.year ? ` · first published ${b.year}` : ""}</p>
             <div class="bk-facts">${[
               b.rating ? `<span><i class="fa-solid fa-star"></i> ${b.rating.toFixed(1)} <small>(${b.ratings.toLocaleString()} ratings)</small></span>` : "",
               b.pages ? `<span><i class="fa-solid fa-file-lines"></i> ${b.pages} pages</span>` : "",
+              b.editions > 1 ? `<span><i class="fa-solid fa-layer-group"></i> ${b.editions} editions</span>` : "",
               b.isbn ? `<span><i class="fa-solid fa-barcode"></i> ISBN ${esc(b.isbn)}</span>` : "",
             ].join("")}</div>
             ${b.description ? `<p class="bk-desc clamp">${esc(b.description)}</p>${b.description.length > 260 ? '<button class="t-link bk-more" type="button">Read more</button>' : ""}` : ""}
-            ${bookUrl(b.url) ? `<a class="btn bk-ol" href="${esc(b.url)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> On Google Books</a>` : ""}
+            ${bookUrl(b.url) ? `<a class="btn bk-ol" href="${esc(b.url)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> On Open Library</a>` : ""}
           </div>
         </div>
-        <p class="ep-credit">Books from <a href="https://books.google.com" target="_blank" rel="noopener">Google Books</a></p>
+        <p class="ep-credit">Books from <a href="https://openlibrary.org" target="_blank" rel="noopener">Open Library</a></p>
       </section>`;
   }
   function watchBooks(d, done) {

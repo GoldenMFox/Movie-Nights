@@ -9,7 +9,7 @@
  *  - Anything not set falls back to DEFAULTS, so the site works the same with no settings at all.
  *
  * What's in it: branding, maintenance mode and a notice across the top, which pages show in the
- * navigation, features on / off, the outside services (TVmaze, AniList, Google Books, news) on / off with
+ * navigation, features on / off, the outside services (TVmaze, AniList, Open Library, news) on / off with
  * their keys and how long their answers are kept, featured titles / books / news, themes and
  * notifications.
  */
@@ -50,7 +50,7 @@
     apis: {
       tvmaze: { on: true, hours: 12 },
       anilist: { on: true, hours: 24 },
-      googlebooks: { on: true, days: 30, key: "" },
+      openlibrary: { on: true, days: 30 },
       news: { on: true, minutes: 30 },
       itunes: { on: true, days: 30 },
     },

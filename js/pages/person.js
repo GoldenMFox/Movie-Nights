@@ -407,7 +407,7 @@
     mountBooks();
   }
 
-  /* ---------------- books by them, and about them (js/services/books.js, Google Books) ----------------
+  /* ---------------- books by them, and about them (js/services/books.js, Open Library) ----------------
      Under the filmography, looked for once when it comes near the screen; nothing found: no section */
   function mountBooks() {
     if (!window.Books || !window.Site || !Site.feature("books") || !Books.ready() || !p) return;
@@ -425,7 +425,7 @@
       box.innerHTML = `<h2 class="t-section-title"><i class="fa-solid fa-book-open"></i> Books</h2>
         ${r.by.length ? `<h3 class="xr-sub">By ${esc(p.name)}</h3><div class="movie-row bk-row">${r.by.map(card).join("")}</div>` : ""}
         ${r.about.length ? `<h3 class="xr-sub">About ${esc(p.name)}</h3><div class="movie-row bk-row">${r.about.map(card).join("")}</div>` : ""}
-        <p class="ep-credit">Books from <a href="https://books.google.com" target="_blank" rel="noopener">Google Books</a></p>`;
+        <p class="ep-credit">Books from <a href="https://openlibrary.org" target="_blank" rel="noopener">Open Library</a></p>`;
       box.hidden = false;
     };
     if (!("IntersectionObserver" in window)) return start();
