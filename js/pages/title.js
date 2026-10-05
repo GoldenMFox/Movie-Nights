@@ -1057,7 +1057,8 @@
     const n = tm.next && tm.next.s && tm.next.e ? tm.next : null;
     const last = tm.previous && tm.previous.s ? tm.previous : null;
     const ep = n || last;
-    if (!ep && !days.length) return "";
+    // (an ended show: "The run" already says so, with its last episode)
+    if (ended || (!ep && !days.length)) return "";
     const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     const today = DAYS[(new Date().getDay() + 6) % 7];
     const zone = tm.network && tm.network.zone ? tm.network.zone.split("/").pop().replace(/_/g, " ") : "";

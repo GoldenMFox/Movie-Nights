@@ -28210,3 +28210,90 @@ button.xr-show:hover {
     display: none;
   }
 }
+
+/* (calmer: smaller numbers, fainter pictures, a quieter pill, a shorter podium) */
+.xr-show {
+  gap: 10px;
+  min-height: 0;
+  padding: 18px 20px;
+  border-color: var(--glass-border);
+  background: radial-gradient(110% 110% at 0% 0%, rgba(185, 34, 34, 0.12), transparent 55%), var(--glass-bg);
+}
+
+.xr-show-bg {
+  opacity: 0.12;
+  -webkit-mask-image: linear-gradient(to left, rgba(0, 0, 0, 0.9), transparent 75%);
+  mask-image: linear-gradient(to left, rgba(0, 0, 0, 0.9), transparent 75%);
+}
+
+.xr-show:hover .xr-show-bg {
+  opacity: 0.2;
+}
+
+.xr-show-pill {
+  padding: 4px 10px;
+  background: rgba(185, 34, 34, 0.75);
+  box-shadow: none;
+  font-size: 10.5px;
+}
+
+.xr-show-big b {
+  font-size: clamp(30px, 2.8vw, 38px);
+  letter-spacing: -0.03em;
+}
+
+.xr-show-big > span {
+  padding-bottom: 2px;
+  font-size: 15px;
+}
+
+.xr-show-big small {
+  font-size: 12px;
+}
+
+.xr-show-sub {
+  margin: 0;
+  font-size: 13px;
+}
+
+.xr-pods {
+  gap: 6px;
+  height: 64px;
+}
+
+.xr-pod {
+  max-width: 34px;
+}
+
+.xr-pod-bar {
+  padding-top: 4px;
+  border-radius: 7px 7px 3px 3px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03));
+  font-size: 11px;
+}
+
+.xr-pod.now .xr-pod-bar {
+  background: linear-gradient(180deg, rgba(245, 197, 24, 0.4), rgba(245, 197, 24, 0.05));
+  box-shadow: none;
+}
+
+.xr-pod small {
+  font-size: 10px;
+}
+
+.xr-show-chip {
+  padding: 5px 11px;
+  font-size: 12.5px;
+}
+
+.xr-weekbars {
+  height: 46px;
+}
+
+.xr-weekbars span.on i {
+  box-shadow: none;
+}
+
+.xr-air2.live .xr-show-pill {
+  animation: none;
+}
