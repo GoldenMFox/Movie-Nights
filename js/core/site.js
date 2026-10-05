@@ -21,7 +21,9 @@
   const DEFAULTS = {
     branding: { name: "Movie Nights", tagline: "Your own private diary of movies, TV shows and anime.", accent: "" },
     maintenance: { on: false, message: "We're making a few changes. Back in a moment!" },
-    notice: { on: false, text: "", link: "", tone: "info" },
+    notice: { on: false, text: "", link: "", tone: "info", from: "", until: "" }, // (from / until: days, optional)
+    // a message to every member's bell (Admin → Notifications): { id, title, text, link, at } or null
+    announce: null,
     // pages left out of the navbar, the tab bar and the profile menu (by their id in layout.js)
     nav: { hidden: [] },
     features: {
@@ -53,7 +55,7 @@
       itunes: { on: true, days: 30 },
     },
     themes: { siteDefault: "dark", listThemes: true, animations: true, available: ["halloween", "christmas", "winter", "spring", "summer", "noir", "space"] },
-    notifications: { on: true, release: true, season: true, episode: true, recommendation: true },
+    notifications: { on: true, release: true, season: true, episode: true, recommendation: true, announcement: true },
   };
 
   // DEFAULTS with the saved settings on top, one level at a time (a setting added to the site
@@ -183,7 +185,10 @@
     const n = config.notice;
     const sig = `${n.text}|${n.link}`;
     const closed = Store.read("mn:noticeClosed", "") === sig;
-    if (!n.on || !n.text || closed) return el && el.remove();
+    // (only between its days, when it has them)
+    const day = Store.today();
+    const outside = (n.from && day < n.from) || (n.until && day > n.until);
+    if (!n.on || !n.text || closed || outside) return el && el.remove();
     if (!el) {
       el = document.createElement("div");
       el.className = "site-notice";

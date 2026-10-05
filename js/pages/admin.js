@@ -8,7 +8,12 @@
  * copy is kept on this device and used here until the rules are published.
  *
  * Sections: Overview · Website · Pages & features · Content · News · API integrations · Themes ·
- * Notifications · Users · Backup
+ * Notifications · Users · Tools (service checks, this device's storage, change history) · Backup
+ *
+ * The look: a sidebar of the sections in groups (with badges: services down, maintenance on), a top
+ * bar (where you are, a search through every setting, saved or not) and, on Overview, a dashboard:
+ * a welcome card with the quick switches, stat tiles, and charts drawn here as SVG (what everyone
+ * watched month by month, the services' health, movies / TV / anime, the scores, the members).
  */
 (function () {
   const { esc, toast } = UI;
@@ -24,6 +29,13 @@
     ["notifications", "fa-bell", "Notifications"],
     ["users", "fa-users", "Users"],
     ["backup", "fa-floppy-disk", "Backup"],
+    ["tools", "fa-toolbox", "Tools"],
+  ];
+  const GROUPS = [
+    ["Dashboard", ["overview"]],
+    ["Site", ["website", "pages", "themes", "notifications"]],
+    ["Content", ["content", "news"]],
+    ["System", ["apis", "users", "tools", "backup"]],
   ];
   const PAGE_NAMES = [
     ["home", "Home"], ["movie", "Movies"], ["tv", "TV Shows"], ["anime", "Anime"], ["watchlist", "Watchlist"],
@@ -80,19 +92,34 @@
     keys.slice(0, -1).forEach((k) => (o = o[k] = o[k] && typeof o[k] === "object" ? o[k] : {}));
     o[keys[keys.length - 1]] = value;
     paintBar();
+    if (typeof paintBadges === "function") paintBadges();
   }
 
   let section = (location.hash || "").slice(1);
   if (!SECTIONS.some((s) => s[0] === section)) section = "overview";
 
+  const sec = (k) => SECTIONS.find((s) => s[0] === k);
   root.innerHTML = `
-    <div class="ad-head">
-      <div><h1 class="page-title"><i class="fa-solid fa-sliders"></i> Admin Control Center</h1><p class="page-sub">The whole site's settings. Changes reach everyone when you save.</p></div>
-      <span class="ad-state"></span>
-    </div>
     <div class="ad-layout">
-      <nav class="ad-nav" aria-label="Sections">${SECTIONS.map(([k, icon, l]) => `<a href="#${k}" data-sec="${k}"><i class="fa-solid ${icon}"></i><span>${l}</span></a>`).join("")}</nav>
-      <div class="ad-body"></div>
+      <aside class="ad-side">
+        <div class="ad-brand"><span class="ad-brand-icon"><i class="fa-solid fa-sliders"></i></span><span><strong>Control Center</strong><small>${esc((Site.get().branding && Site.get().branding.name) || "Movie Nights")}</small></span></div>
+        <nav class="ad-nav" aria-label="Sections">${GROUPS.map(
+          ([g, keys]) => `<span class="ad-nav-group">${g}</span>${keys
+            .map((k) => {
+              const [, icon, l] = sec(k);
+              return `<a href="#${k}" data-sec="${k}"><i class="fa-solid ${icon}"></i><span>${l}</span><b class="ad-badge" data-badge="${k}" hidden></b></a>`;
+            })
+            .join("")}`
+        ).join("")}</nav>
+      </aside>
+      <div class="ad-main">
+        <header class="ad-top">
+          <div class="ad-crumbs"><span>Admin</span><i class="fa-solid fa-chevron-right"></i><strong class="ad-crumb"></strong></div>
+          <div class="ad-find"><i class="fa-solid fa-magnifying-glass"></i><input type="search" placeholder="Find a setting…" aria-label="Find a setting" autocomplete="off" /><div class="ad-find-list" hidden></div></div>
+          <span class="ad-state"></span>
+        </header>
+        <div class="ad-body"></div>
+      </div>
     </div>
     <div class="ad-bar" hidden><span><i class="fa-solid fa-pen"></i> Unsaved changes</span><button class="btn ad-discard" type="button">Discard</button><button class="btn btn-primary ad-save" type="button"><i class="fa-solid fa-check"></i> Save changes</button></div>`;
   const body = root.querySelector(".ad-body");
@@ -132,17 +159,84 @@
   const render = {
     overview() {
       const st = Api.status();
-      const health = Object.entries(st)
-        .map(([k, s]) => `<span class="ad-health ${s.health}" title="${esc(s.lastError || "")}"><i></i>${esc(s.label)}</span>`)
-        .join("");
+      const prov = Object.entries(st);
+      const answered = prov.reduce((n, [, x]) => n + x.ok + x.cached, 0);
+      const failed = prov.reduce((n, [, x]) => n + x.fail, 0);
+      const healthPct = answered + failed ? Math.round((answered / (answered + failed)) * 100) : 100;
+      const cachedPct = answered ? Math.round((prov.reduce((n, [, x]) => n + x.cached, 0) / answered) * 100) : 0;
       const items = Store.all();
-      return `<div class="ad-grid">
-        ${card("fa-heart-pulse", "Site status", `<div class="ad-big">${{ live: "Live", default: "Defaults", unpublished: "This device only" }[Site.state()] || "–"}</div>
-          ${sw("maintenance.on", "Maintenance mode", "Visitors see a “back soon” screen; you still see the site", draft.maintenance.on)}
-          ${sw("notice.on", "Notice across the top", draft.notice.text ? esc(draft.notice.text) : "Write it under Website", draft.notice.on)}`)}
-        ${card("fa-plug", "Outside services", `<div class="ad-healths">${health}</div><a class="t-link" href="#apis" data-sec="apis">Details <i class="fa-solid fa-chevron-right"></i></a>`)}
-        ${card("fa-film", "Your library", `<div class="ad-stats"><span><b>${items.length}</b><small>titles</small></span><span><b>${Store.lists().length}</b><small>lists</small></span><span><b>${window.Alerts ? Alerts.unread().length : 0}</b><small>new alerts</small></span></div>`)}
-        ${card("fa-users", "Members", '<div class="ad-members-mini">Loading…</div><a class="t-link" href="#users" data-sec="users">Manage <i class="fa-solid fa-chevron-right"></i></a>')}
+      const featuresOff = FEATURES.filter(([k]) => draft.features[k] === false);
+      const hour = new Date().getHours();
+      const hello = hour < 5 ? "Good night" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+      const name = ((Store.getProfile() || {}).name || "").split(" ")[0];
+      const live = draft.maintenance.on ? ["Maintenance mode is on", "warn", "fa-screwdriver-wrench"] : { live: ["The site is live", "ok", "fa-circle-check"], default: ["Live, on the defaults", "ok", "fa-circle-check"], unpublished: ["Settings on this device only", "warn", "fa-triangle-exclamation"] }[Site.state()] || ["", "", ""];
+      const tile = (icon, tone, value, label, extra, key) =>
+        `<div class="ad-tile ${tone}"${key ? ` data-tile="${key}"` : ""}><span class="ad-tile-icon"><i class="fa-solid ${icon}"></i></span><div><b>${value}</b><small>${label}</small></div>${extra || ""}</div>`;
+      return `<div class="ad-dash">
+        <section class="ad-hero">
+          <div class="ad-hero-text">
+            <span class="ad-hero-state ${live[1]}"><i class="fa-solid ${live[2]}"></i> ${live[0]}</span>
+            <h2>${hello}${name ? `, ${esc(name)}` : ""}</h2>
+            <p>Everything about the site in one place. Changes reach everyone when you save them.</p>
+            <div class="ad-hero-stats" data-hero-stats><span><b>–</b><small>members</small></span><span><b>–</b><small>titles in libraries</small></span><span><b>–</b><small>scores given</small></span></div>
+          </div>
+          <div class="ad-hero-switches">
+            ${sw("maintenance.on", "Maintenance mode", "Visitors see “back soon”", draft.maintenance.on)}
+            ${sw("notice.on", "Notice across the top", draft.notice.text ? esc(draft.notice.text) : "Write it under Website", draft.notice.on)}
+          </div>
+          <i class="fa-solid fa-film ad-hero-art" aria-hidden="true"></i>
+        </section>
+
+        <div class="ad-tiles">
+          ${tile("fa-users", "red", "–", "Members", '<span class="ad-tile-sub" data-tile-sub="members">loading…</span>', "members")}
+          ${tile("fa-clapperboard", "gold", items.length, "In your library", `<span class="ad-tile-sub">${items.filter((i) => typeof i.rating === "number").length} rated · ${Store.lists().length} lists</span>`)}
+          ${tile("fa-plug-circle-check", healthPct >= 95 ? "green" : healthPct >= 80 ? "gold" : "red", `${healthPct}%`, "Requests answered", `<span class="ad-tile-sub">${answered + failed} asked · ${cachedPct}% from memory</span>`)}
+          ${tile("fa-toggle-on", featuresOff.length ? "gold" : "green", `${FEATURES.length - featuresOff.length}/${FEATURES.length}`, "Features on", `<span class="ad-tile-sub">${featuresOff.length ? `Off: ${esc(featuresOff.map((f) => f[1]).slice(0, 2).join(", "))}${featuresOff.length > 2 ? "…" : ""}` : "Everything is on"}</span>`)}
+        </div>
+
+        <section class="ad-panel ad-wide">
+          <div class="ad-panel-head"><div><h3>Watched, month by month</h3><small>Everyone's watch dates, the last 12 months</small></div><span class="ad-panel-big" data-months-total></span></div>
+          <div class="ad-chart" data-chart="months"><div class="ad-chart-wait">Loading…</div></div>
+        </section>
+
+        <section class="ad-panel">
+          <div class="ad-panel-head"><div><h3>Outside services</h3><small>Since the counts were last reset</small></div><a class="t-link" href="#apis" data-sec="apis">Details <i class="fa-solid fa-chevron-right"></i></a></div>
+          <div class="ad-health-wrap">
+            ${gauge(healthPct)}
+            <ul class="ad-svc">${prov
+              .map(
+                ([, x]) => `<li class="${x.health}" title="${esc(x.lastError || "")}"><i></i><span>${esc(x.label.replace(/ \(.*\)$/, ""))}</span><b>${x.ok + x.cached}</b>${x.fail ? `<em>${x.fail} failed</em>` : ""}</li>`
+              )
+              .join("")}</ul>
+          </div>
+        </section>
+
+        <section class="ad-panel">
+          <div class="ad-panel-head"><div><h3>What people watch</h3><small>Every member's library</small></div></div>
+          <div class="ad-chart" data-chart="types"><div class="ad-chart-wait">Loading…</div></div>
+        </section>
+
+        <section class="ad-panel">
+          <div class="ad-panel-head"><div><h3>The scores</h3><small>Every score given, 1 to 10</small></div><span class="ad-panel-big" data-score-avg></span></div>
+          <div class="ad-chart" data-chart="scores"><div class="ad-chart-wait">Loading…</div></div>
+        </section>
+
+        <section class="ad-panel ad-actions">
+          <div class="ad-panel-head"><div><h3>Quick actions</h3><small>The things you do most</small></div></div>
+          <div class="ad-action-grid">
+            <button type="button" data-go="notifications" class="ad-action red"><i class="fa-solid fa-bullhorn"></i><span>Announce</span></button>
+            <button type="button" data-go="content" class="ad-action gold"><i class="fa-solid fa-star"></i><span>Home picks</span></button>
+            <button type="button" data-go="tools" data-then="checks" class="ad-action green"><i class="fa-solid fa-stethoscope"></i><span>Check services</span></button>
+            <a href="index.html" target="_blank" rel="noopener" class="ad-action blue"><i class="fa-solid fa-arrow-up-right-from-square"></i><span>Open the site</span></a>
+            <button type="button" class="ad-action ad-export"><i class="fa-solid fa-file-export"></i><span>Back up settings</span></button>
+            <button type="button" data-go="tools" class="ad-action"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></button>
+          </div>
+        </section>
+
+        <section class="ad-panel">
+          <div class="ad-panel-head"><div><h3>Members</h3><small>Most titles first</small></div><a class="t-link" href="#users" data-sec="users">Manage <i class="fa-solid fa-chevron-right"></i></a></div>
+          <div class="ad-chart" data-chart="members"><div class="ad-chart-wait">Loading…</div></div>
+        </section>
       </div>`;
     },
     website() {
@@ -155,7 +249,8 @@
         ${card("fa-bullhorn", "Notice across the top", `${sw("notice.on", "Show it", "On every page, until a visitor closes it", draft.notice.on)}
           ${text("notice.text", "Text", draft.notice.text, 'maxlength="160" placeholder="New: Movie News!"')}
           ${text("notice.link", "Link (optional)", draft.notice.link, 'placeholder="news.html or https://…"')}
-          ${select("notice.tone", "Look", draft.notice.tone, [["info", "News (red bullhorn)"], ["warn", "Warning (amber)"]])}`)}
+          ${select("notice.tone", "Look", draft.notice.tone, [["info", "News (red bullhorn)"], ["warn", "Warning (amber)"]])}
+          <div class="ad-two">${text("notice.from", "From (optional)", draft.notice.from, 'type="date"')}${text("notice.until", "Until (optional)", draft.notice.until, 'type="date"')}</div>`, "With days set, it shows only between them: switch it on now, it appears and goes by itself.")}
         ${card("fa-circle-half-stroke", "Appearance", `${select("themes.siteDefault", "Theme for new visitors", draft.themes.siteDefault, [["dark", "Dark"], ["light", "Light"]])}`, "People who pick a theme themselves keep theirs.")}
       </div>`;
     },
@@ -255,8 +350,25 @@
           ${sw("notifications.release", "Movie releases", "", draft.notifications.release !== false)}
           ${sw("notifications.season", "New seasons", "", draft.notifications.season !== false)}
           ${sw("notifications.episode", "New episodes", "", draft.notifications.episode !== false)}
-          ${sw("notifications.recommendation", "Weekly recommendation", "A well-known title like one they loved", draft.notifications.recommendation !== false)}`,
+          ${sw("notifications.recommendation", "Weekly recommendation", "A well-known title like one they loved", draft.notifications.recommendation !== false)}
+          ${sw("notifications.announcement", "Announcements", "Your messages to everyone (below)", draft.notifications.announcement !== false)}`,
           "Each person turns notifications on for their own devices in Settings → Notifications, and picks the kinds they want.")}
+        ${card(
+          "fa-bullhorn",
+          "Announcement to everyone",
+          `${
+            draft.announce && draft.announce.title
+              ? `<div class="ad-announce-now"><span class="ad-announce-icon"><i class="fa-solid fa-bullhorn"></i></span><span><strong>${esc(draft.announce.title)}</strong><small>${esc(draft.announce.text || "")}</small><em>Sent ${ago(draft.announce.at)}</em></span><button class="btn ad-unannounce" type="button">Withdraw</button></div>`
+              : '<p class="sv-note sv-lead">Nothing sent yet.</p>'
+          }
+          <div class="ad-pin ad-announce">
+            <input class="input" name="title" placeholder="Title (e.g. New: Movie News!)" maxlength="120" />
+            <textarea class="input" name="text" rows="2" maxlength="400" placeholder="A line or two (optional)"></textarea>
+            <input class="input" name="link" placeholder="Link (news.html or https://…, optional)" />
+            <button class="btn btn-primary ad-announce-send" type="button"><i class="fa-solid fa-paper-plane"></i> Send to everyone</button>
+          </div>`,
+          "It lands in every member's bell (and as a notification for those who turned them on) the next time they open the site. Sending another replaces it."
+        )}
         ${card("fa-mobile-screen", "How they arrive", `<ul class="ad-list">
           <li><b>Android, installed app:</b> the phone checks in the background now and then (Periodic Background Sync), so they can come while the app is closed.</li>
           <li><b>Computers and Android in the browser:</b> when the site is open.</li>
@@ -286,6 +398,25 @@
           <pre class="ad-pre">${esc(rules)}</pre><button class="btn ad-copy-rules" type="button"><i class="fa-regular fa-copy"></i> Copy</button>`)}
       </div>`;
     },
+    tools() {
+      const hist = changeLog();
+      return `<div class="ad-grid">
+        ${card("fa-stethoscope", "Service checks", '<p class="sv-note sv-lead">Asks each outside service one small question, now, and times the answer.</p><div class="ad-checks"></div><button class="btn btn-primary ad-run-checks" type="button"><i class="fa-solid fa-play"></i> Run the checks</button>')}
+        ${card("fa-hard-drive", "This device", '<div class="ad-storage">Measuring…</div><div class="sv-buttons"><button class="btn ad-clear-api" type="button"><i class="fa-solid fa-broom"></i> Forget saved answers</button><button class="btn ad-clear-tmdb" type="button"><i class="fa-solid fa-film"></i> Forget TMDB details</button><button class="btn ad-reset-counts" type="button"><i class="fa-solid fa-rotate-left"></i> Reset service counts</button></div>', "Only this browser: answers are asked for again as pages need them.")}
+        ${card(
+          "fa-clock-rotate-left",
+          "Change history",
+          hist.length
+            ? `<ul class="ad-history">${hist
+                .map(
+                  (h, i) => `<li><span class="ad-history-dot"></span><span class="ad-history-text"><strong>${esc(h.what)}</strong><small>${new Date(h.at).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · ${ago(h.at)}</small></span><button class="btn ad-restore" type="button" data-restore="${i}" title="The settings as they were before this save">Restore before</button></li>`
+                )
+                .join("")}</ul>`
+            : '<p class="sv-note sv-lead">Nothing saved from this browser yet.</p>',
+          "Every save from this browser, newest first (the last 15). Restore puts the settings back as they were before that save: check them, then Save changes."
+        )}
+      </div>`;
+    },
     backup() {
       return `<div class="ad-grid">${card(
         "fa-floppy-disk",
@@ -298,6 +429,238 @@
     },
   };
 
+  /* ---------------- change history (this browser) ---------------- */
+
+  const HISTORY = "mn:adminHistory";
+  const changeLog = () => Store.read(HISTORY, []) || [];
+  // what changed between two versions, in words ("Maintenance, Notice, Features")
+  const LABELS = { branding: "Branding", maintenance: "Maintenance", notice: "Notice", nav: "Navigation", features: "Features", discover: "Explore pages", home: "Home picks", anime: "Featured anime", content: "Hidden titles", news: "News", apis: "API integrations", themes: "Themes", notifications: "Notifications", announce: "Announcement" };
+  function changes(before, after, blockedBefore, blockedAfter) {
+    const keys = [...new Set(Object.keys(before || {}).concat(Object.keys(after || {})))].filter((k) => JSON.stringify((before || {})[k]) !== JSON.stringify((after || {})[k]));
+    const out = keys.map((k) => LABELS[k] || k);
+    if (JSON.stringify(blockedBefore) !== JSON.stringify(blockedAfter)) out.push("Turned-away people");
+    return out.join(", ") || "No changes";
+  }
+  function remember(before, blockedBefore) {
+    const list = changeLog();
+    list.unshift({ at: Date.now(), what: changes(before, draft, blockedBefore, blocked), before, blocked: blockedBefore });
+    Store.write(HISTORY, list.slice(0, 15));
+  }
+
+  /* ---------------- Tools: the checks, this device ---------------- */
+
+  async function runChecks(box) {
+    const tm = async (label, job) => {
+      const t0 = performance.now();
+      try {
+        const ok = await job();
+        return [label, ok !== false, Math.round(performance.now() - t0)];
+      } catch (e) {
+        return [label, false, Math.round(performance.now() - t0), e.message];
+      }
+    };
+    const okJson = (r) => (r.ok ? true : Promise.reject(new Error(`answered ${r.status}`)));
+    const gb = (Site.api("googlebooks").key || (window.MN_CONFIG || {}).GOOGLE_BOOKS_KEY || "").trim();
+    const jobs = [
+      ["TMDB", () => TMDB.test()],
+      ["TVmaze", () => fetch("https://api.tvmaze.com/shows/1").then(okJson)],
+      ["AniList", () => fetch("https://graphql.anilist.co", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: "query { Media(id: 1) { id } }" }) }).then(okJson)],
+      ["Google Books", () => (gb ? fetch(`https://www.googleapis.com/books/v1/volumes?q=dune&maxResults=1&key=${encodeURIComponent(gb)}`).then(okJson) : Promise.reject(new Error("no key")))],
+      ["Apple Music", () => fetch("https://itunes.apple.com/search?term=inception&media=music&entity=album&limit=1").then(okJson)],
+    ];
+    box.innerHTML = jobs.map(([l]) => `<div class="ad-check wait"><i></i><span>${l}</span><b>…</b></div>`).join("");
+    const results = await Promise.all(jobs.map(([l, f]) => tm(l, f)));
+    box.innerHTML = results
+      .map(([l, ok, ms, err]) => `<div class="ad-check ${ok ? (ms > 1500 ? "slow" : "ok") : "down"}" title="${esc(err || "")}"><i></i><span>${esc(l)}</span><b>${ok ? `${ms} ms` : esc(err || "no answer")}</b></div>`)
+      .join("");
+  }
+  async function storage(box) {
+    if (!box) return;
+    let local = 0;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        local += (k.length + (localStorage.getItem(k) || "").length) * 2;
+      }
+    } catch (e) {}
+    let est = null;
+    try {
+      est = navigator.storage && navigator.storage.estimate ? await navigator.storage.estimate() : null;
+    } catch (e) {}
+    const mb = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.round(n / 1024)} KB`);
+    const used = est ? est.usage || 0 : 0;
+    const quota = est ? est.quota || 0 : 0;
+    const pct = quota ? Math.round((used / quota) * 1000) / 10 : 0;
+    box.innerHTML = `<div class="ad-store-row"><span>Everything this site keeps here</span><b>${est ? mb(used) : "–"}</b></div>
+      ${quota ? `<div class="sv-meter-bar"><i style="width:${Math.max(1, Math.min(100, pct))}%"></i></div><small class="muted">${pct < 1 ? "Under 1%" : `${pct}%`} of the ${mb(quota)} this browser allows</small>` : ""}
+      <div class="ad-store-row"><span>Settings, library copy, small things</span><b>${mb(local)}</b></div>`;
+  }
+
+  /* ---------------- the dashboard's charts (SVG, drawn here) ---------------- */
+
+  // a half-round gauge: how many requests got an answer
+  function gauge(pct) {
+    const r = 70;
+    const len = Math.PI * r;
+    const on = (len * Math.max(0, Math.min(100, pct))) / 100;
+    const tone = pct >= 95 ? "green" : pct >= 80 ? "gold" : "red";
+    return `<div class="ad-gauge ${tone}"><svg viewBox="0 0 180 104" aria-hidden="true">
+        <path d="M20 94 A70 70 0 0 1 160 94" class="ad-gauge-bg" pathLength="${len}" />
+        <path d="M20 94 A70 70 0 0 1 160 94" class="ad-gauge-on" stroke-dasharray="${on} ${len}" pathLength="${len}" />
+      </svg><span><b>${pct}%</b><small>answered</small></span></div>`;
+  }
+  // bars with their labels under them; the highest one lit
+  function bars(values, labels, opts = {}) {
+    const max = Math.max(1, ...values);
+    const top = values.indexOf(Math.max(...values));
+    return `<div class="ad-bars${opts.small ? " small" : ""}">${values
+      .map(
+        (v, i) => `<div class="ad-bar-col${i === top && v ? " top" : ""}" title="${esc(labels[i])}: ${v}"><span class="ad-bar-v">${v || ""}</span><i style="height:${Math.max(3, Math.round((v / max) * 100))}%"></i><small>${esc(labels[i])}</small></div>`
+      )
+      .join("")}</div>`;
+  }
+  // a ring split in parts: [[label, value, tone]]
+  function donut(parts) {
+    const total = parts.reduce((n, p) => n + p[1], 0) || 1;
+    const r = 52;
+    const c = 2 * Math.PI * r;
+    let at = 0;
+    const arcs = parts
+      .map(([, v, tone]) => {
+        const len = (v / total) * c;
+        const out = `<circle r="${r}" cx="70" cy="70" class="ad-donut-part ${tone}" stroke-dasharray="${Math.max(0, len - 2)} ${c}" stroke-dashoffset="${-at}" />`;
+        at += len;
+        return out;
+      })
+      .join("");
+    return `<div class="ad-donut-wrap"><div class="ad-donut"><svg viewBox="0 0 140 140" aria-hidden="true"><circle r="${r}" cx="70" cy="70" class="ad-donut-bg" />${arcs}</svg>
+        <span><b>${total === 1 && !parts.some((p) => p[1]) ? 0 : parts.reduce((n, p) => n + p[1], 0)}</b><small>titles</small></span></div>
+      <ul class="ad-legend">${parts.map(([l, v, tone]) => `<li class="${tone}"><i></i><span>${esc(l)}</span><b>${v}</b><small>${Math.round((v / total) * 100)}%</small></li>`).join("")}</ul></div>`;
+  }
+
+  // the parts that need everyone's libraries (Cloud.members)
+  async function dashboard() {
+    const box = (k) => root.querySelector(`[data-chart="${k}"]`);
+    let list = [];
+    try {
+      list = await Cloud.members();
+    } catch (e) {
+      ["months", "types", "scores", "members"].forEach((k) => box(k) && (box(k).innerHTML = `<p class="sv-note">Couldn't load the members: ${esc(e.message)}</p>`));
+      return;
+    }
+    if (section !== "overview" || !box("months")) return;
+    const sum = (f) => list.reduce((n, m) => n + f(m), 0);
+    const titles = sum((m) => m.titles);
+    const scores = list.flatMap((m) => m.scores || []);
+    const week = list.filter((m) => Date.now() - m.updatedAt < 7 * 86400000).length;
+    const hero = root.querySelector("[data-hero-stats]");
+    if (hero) hero.innerHTML = `<span><b>${list.length}</b><small>members</small></span><span><b>${titles}</b><small>titles in libraries</small></span><span><b>${scores.length}</b><small>scores given</small></span>`;
+    const mt = root.querySelector('[data-tile="members"] b');
+    if (mt) mt.textContent = list.length;
+    const ms = root.querySelector('[data-tile-sub="members"]');
+    if (ms) ms.textContent = `${week} active this week`;
+
+    // the last 12 months
+    const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const now = new Date();
+    const keys = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      keys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    const perMonth = keys.map((k) => sum((m) => (m.months && m.months[k]) || 0));
+    box("months").innerHTML = bars(perMonth, keys.map((k) => MONTHS[Number(k.slice(5)) - 1]));
+    const thisM = perMonth[11];
+    const lastM = perMonth[10];
+    const change = lastM ? Math.round(((thisM - lastM) / lastM) * 100) : null;
+    root.querySelector("[data-months-total]").innerHTML = `<b>${thisM}</b> this month${change != null ? ` <em class="${change >= 0 ? "up" : "down"}">${change >= 0 ? "▲" : "▼"} ${Math.abs(change)}%</em>` : ""}`;
+
+    // movies / TV / anime
+    const types = { movie: 0, tv: 0, anime: 0 };
+    list.forEach((m) => Object.entries(m.types || {}).forEach(([t, n]) => (types[t] = (types[t] || 0) + n)));
+    box("types").innerHTML = donut([["Movies", types.movie || 0, "red"], ["TV shows", types.tv || 0, "gold"], ["Anime", types.anime || 0, "blue"]]);
+
+    // scores 1-10
+    const hist = Array.from({ length: 10 }, (_, i) => scores.filter((s) => Math.round(s) === i + 1).length);
+    box("scores").innerHTML = bars(hist, hist.map((_, i) => String(i + 1)), { small: true });
+    const avg = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : "–";
+    root.querySelector("[data-score-avg]").innerHTML = `<b>${avg}</b> average`;
+
+    // the members, most titles first
+    const most = Math.max(1, ...list.map((m) => m.titles));
+    box("members").innerHTML = `<ul class="ad-people">${list
+      .slice()
+      .sort((a, b) => b.titles - a.titles)
+      .slice(0, 6)
+      .map(
+        (m) => `<li><img src="${esc(/^https:\/\//.test(m.photo || "") ? m.photo : "images/placeholders/user.svg")}" alt="" referrerpolicy="no-referrer" />
+          <span class="ad-people-name"><strong>${esc(m.name)}${m.me ? " (you)" : ""}</strong><small>${m.rated} rated · synced ${ago(m.updatedAt)}</small></span>
+          <span class="ad-people-bar"><i style="width:${Math.round((m.titles / most) * 100)}%"></i></span><b>${m.titles}</b></li>`
+      )
+      .join("") || '<li class="muted">Nobody yet.</li>'}</ul>`;
+  }
+
+  // the sidebar's badges: services down, maintenance on, features off
+  function paintBadges() {
+    const set = (k, text, tone) => {
+      const b = root.querySelector(`[data-badge="${k}"]`);
+      if (!b) return;
+      b.hidden = !text;
+      b.textContent = text || "";
+      b.className = `ad-badge ${tone || ""}`;
+    };
+    const down = Object.values(Api.status()).filter((x) => x.health === "down").length;
+    set("apis", down ? String(down) : "", "red");
+    set("website", draft.maintenance.on ? "On" : "", "gold");
+    const off = FEATURES.filter(([k]) => draft.features[k] === false).length;
+    set("pages", off ? `${off} off` : "", "");
+  }
+
+  /* ---------------- find a setting ---------------- */
+
+  let findIndex = null;
+  function buildIndex() {
+    const out = [];
+    const tmp = document.createElement("div");
+    SECTIONS.forEach(([k, icon, label]) => {
+      if (k === "overview") return;
+      try {
+        tmp.innerHTML = render[k]();
+      } catch (e) {
+        return;
+      }
+      tmp.querySelectorAll(".sv-name strong, .ad-field > span:first-child, .xr-label").forEach((el) => {
+        const t = el.textContent.replace(/\s+/g, " ").trim();
+        if (t && !out.some((o) => o.t === t && o.k === k)) out.push({ t, k, icon, label });
+      });
+    });
+    return out;
+  }
+  function find(q) {
+    const list = root.querySelector(".ad-find-list");
+    q = q.trim().toLowerCase();
+    if (!q) return (list.hidden = true);
+    findIndex = findIndex || buildIndex();
+    const hits = findIndex.filter((o) => o.t.toLowerCase().includes(q) || o.label.toLowerCase().includes(q)).slice(0, 8);
+    list.hidden = false;
+    list.innerHTML = hits.length
+      ? hits.map((o, i) => `<button type="button" data-find="${i}"><i class="fa-solid ${o.icon}"></i><span><strong>${esc(o.t)}</strong><small>${esc(o.label)}</small></span></button>`).join("")
+      : '<p class="muted">Nothing called that.</p>';
+    list._hits = hits;
+  }
+  function goTo(hit) {
+    history.replaceState(null, "", `#${hit.k}`);
+    show(hit.k);
+    const el = [...body.querySelectorAll(".sv-name strong, .ad-field > span:first-child, .xr-label")].find((x) => x.textContent.replace(/\s+/g, " ").trim() === hit.t);
+    const target = el && (el.closest(".sv-row, .ad-field, .ad-card") || el);
+    if (target) {
+      target.scrollIntoView({ block: "center", behavior: "smooth" });
+      target.classList.remove("ad-flash");
+      void target.offsetWidth;
+      target.classList.add("ad-flash");
+    }
+  }
+
   function show(k) {
     section = k;
     root.querySelectorAll("[data-sec]").forEach((a) => a.classList.toggle("on", a.dataset.sec === k));
@@ -307,7 +670,10 @@
     body.classList.add("ad-in");
     if (k === "users") members(root.querySelector(".ad-members"), true);
     if (k === "apis") omdbMeter();
-    if (k === "overview") members(root.querySelector(".ad-members-mini"), false);
+    if (k === "overview") dashboard();
+    if (k === "tools") storage(root.querySelector(".ad-storage"));
+    root.querySelector(".ad-crumb").textContent = sec(k)[2];
+    paintBadges();
     paintState();
     paintBar();
   }
@@ -456,7 +822,78 @@
     }, 350);
   });
 
+  const findInput = root.querySelector(".ad-find input");
+  findInput.addEventListener("input", () => find(findInput.value));
+  findInput.addEventListener("focus", () => find(findInput.value));
+  findInput.addEventListener("keydown", (e) => {
+    const hits = root.querySelector(".ad-find-list")._hits || [];
+    if (e.key === "Enter" && hits.length) {
+      goTo(hits[0]);
+      findInput.value = "";
+      find("");
+    }
+    if (e.key === "Escape") {
+      findInput.value = "";
+      find("");
+    }
+  });
+  document.addEventListener("click", (e) => !e.target.closest(".ad-find") && find(""));
+
   root.addEventListener("click", (e) => {
+    const go = e.target.closest("[data-go]");
+    if (go) {
+      history.replaceState(null, "", `#${go.dataset.go}`);
+      show(go.dataset.go);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (go.dataset.then === "checks") runChecks(root.querySelector(".ad-checks"));
+      return;
+    }
+    if (e.target.closest(".ad-run-checks")) return runChecks(root.querySelector(".ad-checks"));
+    if (e.target.closest(".ad-clear-api")) return Api.clear().then(() => (toast("Saved answers forgotten on this device"), storage(root.querySelector(".ad-storage"))));
+    if (e.target.closest(".ad-clear-tmdb")) {
+      TMDB.clearCache();
+      toast("TMDB details forgotten on this device");
+      return storage(root.querySelector(".ad-storage"));
+    }
+    if (e.target.closest(".ad-reset-counts")) {
+      Api.resetStats();
+      toast("Service counts reset");
+      return paintBadges();
+    }
+    const rs = e.target.closest("[data-restore]");
+    if (rs) {
+      const h = changeLog()[Number(rs.dataset.restore)];
+      if (!h) return;
+      draft = Site.merge(clone(Site.DEFAULTS), clone(h.before || {}));
+      if (Array.isArray(h.blocked)) blocked = h.blocked.slice();
+      show(section);
+      return toast("Put back as it was before that save: check, then Save changes");
+    }
+    if (e.target.closest(".ad-announce-send")) {
+      const f = root.querySelector(".ad-announce");
+      const v = (n) => f.querySelector(`[name="${n}"]`).value.trim();
+      if (!v("title")) return toast("Give it a title first");
+      const link = v("link");
+      if (link && !/^(https:\/\/|[\w-]+\.html)/.test(link)) return toast("The link should start with https:// or be a page like news.html");
+      UI.confirm({ icon: "fa-paper-plane", title: "Send it to everyone?", text: "It goes into every member's bell the next time they open the site.", ok: "Send" }).then((ok) => {
+        if (!ok) return;
+        setPath("announce", { id: Date.now().toString(36), title: v("title").slice(0, 120), text: v("text").slice(0, 400), link, at: Date.now() });
+        save(root.querySelector(".ad-save"));
+      });
+      return;
+    }
+    if (e.target.closest(".ad-unannounce")) {
+      setPath("announce", null);
+      save(root.querySelector(".ad-save"));
+      return;
+    }
+    const hit = e.target.closest("[data-find]");
+    if (hit) {
+      goTo(root.querySelector(".ad-find-list")._hits[Number(hit.dataset.find)]);
+      findInput.value = "";
+      find("");
+      return;
+    }
     const nav = e.target.closest("[data-sec]");
     if (nav) {
       e.preventDefault();
@@ -561,9 +998,12 @@
 
   async function save(btn) {
     btn.disabled = true;
+    const [before, blockedBefore] = JSON.parse(saved);
     try {
       const where = await Site.save(draft, blocked);
+      remember(before, blockedBefore);
       saved = JSON.stringify([draft, blocked]);
+      if (section === "notifications" || section === "tools") show(section);
       paintBar();
       paintState();
       toast(where === "live" ? "Saved: everyone gets the new settings" : "Saved on this device only: publish the rules (Users) to reach everyone");

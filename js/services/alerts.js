@@ -8,6 +8,7 @@
  *   season          a show you follow starts a new season (its episode 1)
  *   episode         a new episode of a show you follow
  *   recommendation  once a week: a well-known title like one you loved ("Because you loved Dune")
+ *   announcement    the site owner's message to everyone (Admin → Notifications)
  * The first three come from what js/services/watch.js already looks up once a day.
  *
  * Each is kept with your profile (so it follows you to your other devices), as
@@ -59,6 +60,13 @@
       label: "Recommendations",
       words: (a) => ({ title: `You might like ${a.title}`, body: a.extra && a.extra.because ? `Because you loved ${a.extra.because}.` : "Picked for you." }),
       href: (a) => `title.html?tmdb=${encodeURIComponent(a.ref)}`,
+    },
+    // from the site's owner (Admin → Notifications → Announcement)
+    announcement: {
+      icon: "fa-bullhorn",
+      label: "Announcements",
+      words: (a) => ({ title: a.title, body: (a.extra && a.extra.text) || "" }),
+      href: (a) => (a.extra && /^(https:\/\/|[\w-]+\.html)/.test(a.extra.link || "") ? a.extra.link : "#"),
     },
   };
   const typeOf = (a) => TYPES[a.kind] || { icon: "fa-bell", words: (x) => ({ title: x.title, body: "" }), href: () => "#" };
@@ -128,6 +136,17 @@
     return add(found).length;
   }
 
+  /* ---------------- the owner's announcement ---------------- */
+
+  // the site's current announcement into the bell, once (a month at most)
+  function announced() {
+    const a = window.Site && Site.get().announce;
+    if (!a || !a.id || !a.title || Date.now() - (a.at || 0) > 30 * DAY) return;
+    const d = new Date(a.at || Date.now());
+    const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; // (the day it was sent: the bell's order)
+    add([{ key: `announce|${a.id}`, kind: "announcement", title: String(a.title).slice(0, 120), date, extra: { text: String(a.text || "").slice(0, 400), link: a.link || "" }, at: a.at }]);
+  }
+
   /* ---------------- a recommendation, once a week ---------------- */
 
   // one of your best (8+ or a favorite), and a well-known title TMDB recommends for it that you
@@ -158,7 +177,7 @@
   /* ---------------- notifications on this device ---------------- */
 
   const supported = () => "Notification" in window && "serviceWorker" in navigator;
-  const prefs = () => Object.assign({ on: false, release: true, season: true, episode: true, recommendation: true }, Store.read(PREFS, {}));
+  const prefs = () => Object.assign({ on: false, release: true, season: true, episode: true, recommendation: true, announcement: true }, Store.read(PREFS, {}));
   function setPrefs(p) {
     Store.write(PREFS, Object.assign(prefs(), p));
     snapshot();
@@ -342,7 +361,10 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     paint();
-    if (Store.guest || !window.Watch) return;
+    if (Store.guest) return;
+    announced();
+    if (window.Site) Site.onChange(announced);
+    if (!window.Watch) return;
     pickUpShown().then(scan);
     Watch.onChange(() => scan() || paint());
     Store.onChange(() => paint());

@@ -470,6 +470,10 @@
         rated: items.filter((it) => typeof it.rating === "number").length,
         watchlist: items.filter((it) => it.watchlist).length,
         me: d.id === account.uid,
+        // (for the Admin Control Center's charts: what kinds, the scores, when they watched)
+        types: items.reduce((t, it) => ((t[it.type] = (t[it.type] || 0) + 1), t), {}),
+        scores: items.filter((it) => typeof it.rating === "number").map((it) => it.rating),
+        months: items.reduce((m, it) => (it.watchedAt && (m[String(it.watchedAt).slice(0, 7)] = (m[String(it.watchedAt).slice(0, 7)] || 0) + 1), m), {}),
       };
     });
   }
