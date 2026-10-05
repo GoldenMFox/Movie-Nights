@@ -203,6 +203,12 @@ label.field {
   z-index: 100;
 }
 
+/* the page waits for its navbar (js/core/layout.js adds it a moment after the page is drawn),
+   so it doesn't show at the top and then drop down when the navbar arrives */
+body[data-page]:not(:has(> .site-nav)) > main {
+  visibility: hidden;
+}
+
 .nav-bar {
   position: relative;
   max-width: 1550px; /* same width as the page content, so the navbar lines up with it */

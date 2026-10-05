@@ -957,6 +957,7 @@
   // pill's last place, so it still glides from there.
   const PILL_SWITCHES = ".top10-switch, .pk-seg, .wl-switch";
   const pillAt = new WeakMap(); // switch -> the pill's last { left, top, width, height }
+  const pillOn = new WeakMap(); // switch -> the button it was last behind
   const px = (b) => ({ left: `${b.left}px`, top: `${b.top}px`, width: `${b.width}px`, height: `${b.height}px` });
 
   function placePill(sw) {
@@ -979,8 +980,18 @@
     if (!on || !on.offsetWidth) return (pill.style.opacity = "0");
     const box = { left: on.offsetLeft, top: on.offsetTop, width: on.offsetWidth, height: on.offsetHeight };
     pill.style.opacity = "1";
+    // the same pick, only its size changed (the icons' font arriving, the window resized): the
+    // pill snaps to it; it only glides to a new pick
+    const snap = pillOn.get(sw) === on && pill.style.transition !== "none";
+    if (snap) pill.style.transition = "none";
     Object.assign(pill.style, px(box));
+    if (snap) {
+      void pill.offsetWidth;
+      pill.style.transition = "";
+    }
     pillAt.set(sw, box);
+    pillOn.set(sw, on);
+    if (!sw._pillSize && window.ResizeObserver) (sw._pillSize = new ResizeObserver(() => queuePill(sw))).observe(sw);
   }
 
   const pending = new Set();
