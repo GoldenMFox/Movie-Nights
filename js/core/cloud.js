@@ -474,6 +474,40 @@
     });
   }
 
+  /* ---------------- the site's settings (Admin Control Center: js/pages/admin.js) ----------------
+     One document, site/config: { data: the settings as JSON text, blocked: [emails], updatedAt }.
+     Anyone may read it (it's how every visitor gets the owner's settings); only the owner may
+     save it (docs/firestore.rules). "blocked" is a list of its own so the rules can turn those
+     people away themselves. */
+  async function siteLoad() {
+    if (!enabled) return null;
+    const d = await api("site/config");
+    if (!d) return { data: null, updatedAt: 0 };
+    const f = d.fields || {};
+    let data = null;
+    try {
+      data = JSON.parse((f.data && f.data.stringValue) || "null");
+    } catch (e) {}
+    const blocked = ((f.blocked && f.blocked.arrayValue && f.blocked.arrayValue.values) || []).map((v) => v.stringValue).filter(Boolean);
+    return { data, blocked, updatedAt: f.updatedAt ? Number(f.updatedAt.integerValue) : 0 };
+  }
+  async function siteSave(data, blocked) {
+    if (!enabled || !account) throw new Error("Sign in first");
+    const at = Date.now();
+    await api("site/config", {
+      method: "PATCH",
+      tok: await token(account),
+      body: {
+        fields: {
+          data: { stringValue: JSON.stringify(data) },
+          blocked: { arrayValue: { values: (blocked || []).map((e) => ({ stringValue: String(e).toLowerCase().trim() })) } },
+          updatedAt: { integerValue: String(at) },
+        },
+      },
+    });
+    return at;
+  }
+
   /* ---------------- sign in / switch / sign out ---------------- */
 
   function remember(acct) {
@@ -764,6 +798,8 @@
     isOwner,
     onOwner: (fn) => ownerListeners.push(fn),
     members,
+    siteLoad,
+    siteSave,
     // for tools/tests.html only
     _test: { mergeData, statusOf, catchUp, keepBackup, dropOldBackup, K },
   };

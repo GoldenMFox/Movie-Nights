@@ -493,6 +493,22 @@
     );
   }
 
+  // the day a movie is out to stream / rent / buy (TMDB's "digital" release, type 4): in your
+  // country, else in the US, else anywhere ("" when nobody has one)
+  function digitalDate(list) {
+    const of = (entry) =>
+      entry
+        ? entry.release_dates
+            .filter((x) => x.type === 4 && x.release_date)
+            .map((x) => x.release_date.slice(0, 10))
+            .sort()[0] || ""
+        : "";
+    list = list || [];
+    return of(list.find((r) => r.iso_3166_1 === country())) || of(list.find((r) => r.iso_3166_1 === "US")) || list.map(of).filter(Boolean).sort()[0] || "";
+  }
+  // TMDB's last / next episode, small: { date, s, e, name, runtime }
+  const episodeOf = (x) => (x && x.air_date ? { date: x.air_date, s: x.season_number, e: x.episode_number, name: x.name || "", runtime: x.runtime || 0 } : null);
+
   // a movie's release date in your country ("" if it has none there): remembered, and
   // checked again after a few days while it isn't out yet
   async function localDate(id) {
@@ -630,7 +646,7 @@
   }
 
   // a title's details depend on your country (streaming services, age rating)
-  const detailsKey = (media, id) => `d2:${country()}:${media}-${id}`; // d2: newest reviews first
+  const detailsKey = (media, id) => `d3:${country()}:${media}-${id}`; // d3: release dates, episodes and keywords too
 
   function certificationOf(d, media, country) {
     if (media === "movie") {
@@ -670,7 +686,7 @@
 
     const where = country();
     const d = await request(`/${media}/${id}`, {
-      append_to_response: `videos,credits,recommendations,external_ids,images,reviews,watch/providers,${media === "movie" ? "release_dates" : "content_ratings"}`,
+      append_to_response: `videos,credits,recommendations,external_ids,images,reviews,watch/providers,keywords,${media === "movie" ? "release_dates" : "content_ratings"}`,
       include_image_language: "en,null",
     });
     // Many TV shows keep their trailers on the seasons, not the show (Breaking Bad has
@@ -737,6 +753,15 @@
         url: r.url || "",
       })),
       tmdbUrl: `https://www.themoviedb.org/${media}/${id}`,
+      // who wrote what it's based on (crew "Novel", "Book", "Comic Book"…): Books' "Based on"
+      sourceAuthors: crew
+        .filter((c) => /^(Novel|Book|Author|Short Story|Original Story|Comic Book|Graphic Novel|Characters|Story|Play|Memoir|Article)$/i.test(c.job))
+        .map((c) => ({ name: c.name, job: c.job }))
+        .filter((c, i, list) => list.findIndex((x) => x.name === c.name) === i)
+        .slice(0, 4),
+      // what it's about, in TMDB's words ("based on novel or book", "space"…): Books
+      keywords: (((d.keywords && (d.keywords.keywords || d.keywords.results)) || []).map((k) => ({ id: k.id, name: k.name }))).slice(0, 40),
+      originalTitle: d.original_title || d.original_name || "",
       // the franchise it belongs to (e.g. "Harry Potter Collection"): the Collection section
       collection: d.belongs_to_collection ? { id: d.belongs_to_collection.id, name: d.belongs_to_collection.name } : null,
       // X-Ray: behind-the-scenes facts
@@ -748,6 +773,16 @@
         released: d.release_date || d.first_air_date || "",
         lastAir: d.last_air_date || "",
         episodes: d.number_of_episodes || 0,
+        // release dates (title page: Released / Coming soon / Not announced yet)
+        //  movies: the cinema date in your country, and when it's out to stream / buy
+        local: media === "movie" ? countryDate(d.release_dates && d.release_dates.results) : "",
+        digital: media === "movie" ? digitalDate(d.release_dates && d.release_dates.results) : "",
+        //  shows: seasons, the episode that aired last and the next one (TVmaze may know newer)
+        seasons: d.number_of_seasons || 0,
+        inProduction: !!d.in_production,
+        type: d.type || "",
+        lastEp: episodeOf(d.last_episode_to_air),
+        nextEp: episodeOf(d.next_episode_to_air),
         language: d.original_language || "",
         languages: (d.spoken_languages || []).map((l) => l.english_name || l.name).filter(Boolean).slice(0, 4),
         // with their codes (for flags) and logos
@@ -942,9 +977,12 @@
     }
     const d = await request(`/tv/${id}`);
     const n = d.next_episode_to_air;
-    if (n && n.air_date) return { date: n.air_date, kind: "episode", season: n.season_number, episode: n.episode_number };
+    // (the episode that aired last too: an alert for it isn't missed on a day the site wasn't open)
+    const l = d.last_episode_to_air;
+    const last = l && l.air_date ? { date: l.air_date, season: l.season_number, episode: l.episode_number } : null;
+    if (n && n.air_date) return { date: n.air_date, kind: "episode", season: n.season_number, episode: n.episode_number, last };
     if (d.first_air_date && d.first_air_date > new Date().toISOString().slice(0, 10)) return { date: d.first_air_date, kind: "release" };
-    return null;
+    return last ? { date: "", kind: "episode", last } : null;
   }
 
   // a franchise: every film in it, in release order (kept a week)

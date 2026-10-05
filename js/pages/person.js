@@ -327,13 +327,8 @@
 
   document.addEventListener("click", async (e) => {
     if (e.target.closest('[data-p="share"]')) {
-      try {
-        if (navigator.share) await navigator.share({ title: document.title, url: location.href });
-        else {
-          await navigator.clipboard.writeText(location.href);
-          toast("Link copied");
-        }
-      } catch (err) {} // share sheet closed
+      // (the share sheet, else copied, else a box with the link: js/core/layout.js)
+      UI.shareLink({ title: document.title, text: p ? `🎬 ${p.name} on Movie Nights` : document.title, url: location.href });
       return;
     }
     if (e.target.closest(".p-bio-more")) {
@@ -409,6 +404,39 @@
       return message("fa-solid fa-triangle-exclamation", esc(err.message));
     }
     render();
+    mountBooks();
+  }
+
+  /* ---------------- books by them, and about them (js/services/books.js, Open Library) ----------------
+     Under the filmography, looked for once when it comes near the screen; nothing found: no section */
+  function mountBooks() {
+    if (!window.Books || !window.Site || !Site.feature("books") || !Api.enabled("openlibrary") || !p) return;
+    const box = document.createElement("section");
+    box.className = "container t-section p-books";
+    box.hidden = true;
+    mainEl.after(box);
+    const safe = (u) => (/^https:\/\//.test(u || "") ? u : "");
+    const card = (b) => `<a class="bk-card" href="${esc(safe(b.url) || "#")}" target="_blank" rel="noopener" title="${esc(b.title)}">
+        <span class="bk-cover">${safe(b.cover) ? `<img src="${esc(b.cover)}" alt="" loading="lazy" />` : '<i class="fa-solid fa-book"></i>'}</span>
+        <strong>${esc(b.title)}</strong><small>${esc([b.authors[0], b.year].filter(Boolean).join(" · "))}</small></a>`;
+    const start = async () => {
+      const r = await Books.forPerson(p.name).catch(() => null);
+      if (!r || (!r.by.length && !r.about.length)) return;
+      box.innerHTML = `<h2 class="t-section-title"><i class="fa-solid fa-book-open"></i> Books</h2>
+        ${r.by.length ? `<h3 class="xr-sub">By ${esc(p.name)}</h3><div class="movie-row bk-row">${r.by.map(card).join("")}</div>` : ""}
+        ${r.about.length ? `<h3 class="xr-sub">About ${esc(p.name)}</h3><div class="movie-row bk-row">${r.about.map(card).join("")}</div>` : ""}
+        <p class="ep-credit">Books from <a href="https://openlibrary.org" target="_blank" rel="noopener">Open Library</a></p>`;
+      box.hidden = false;
+    };
+    if (!("IntersectionObserver" in window)) return start();
+    // (watch the filmography's end: the books come after it)
+    const io = new IntersectionObserver((en) => {
+      if (en.some((x) => x.isIntersecting)) {
+        io.disconnect();
+        start();
+      }
+    }, { rootMargin: "600px" });
+    io.observe(mainEl);
   }
 
   init();

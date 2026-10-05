@@ -28,6 +28,11 @@
     if (note) keep.set("note", note);
     return { from, score, note, query: `&${keep}` };
   })();
+  // a shared episode (?ep=2-5): its season opens first, and the page goes to it
+  let epTarget = (() => {
+    const m = /^(\d+)-(\d+)$/.exec(params.get("ep") || "");
+    return m ? { s: Number(m[1]), e: Number(m[2]) } : null;
+  })();
   let extra = null; // details fetched from TMDB
   let tmdbDetails = null; // a title.html?tmdb= page: its TMDB details (for Share)
 
@@ -165,7 +170,7 @@
     return `<div class="t-topbar">
       <button class="t-round" data-t="back" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button>
       <span class="t-spacer"></span>
-      <button class="t-round" data-t="share" aria-label="Share"><i class="fa-solid fa-arrow-up-from-bracket"></i></button>
+      <button class="t-round" data-t="share" data-feature="share" aria-label="Share"><i class="fa-solid fa-arrow-up-from-bracket"></i></button>
       <button class="t-round t-lists${inLists ? " on" : ""}" data-action="${listAction}" aria-label="Add to a list" title="Add to a list"><i class="fa-solid fa-list-ul"></i>${
         inLists ? `<b class="t-lists-n">${inLists}</b>` : ""
       }</button>
@@ -193,7 +198,7 @@
     return `<div class="t-more">
       <button class="t-more-btn" type="button" aria-label="More" title="More" aria-haspopup="menu" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical"></i></button>
       <div class="t-more-menu" role="menu">
-        <button type="button" role="menuitem" data-t="share"><i class="fa-solid fa-arrow-up-from-bracket"></i><span>Share</span></button>
+        <button type="button" role="menuitem" data-t="share" data-feature="share"><i class="fa-solid fa-arrow-up-from-bracket"></i><span>Share</span></button>
         <button type="button" role="menuitem" data-action="${listAction}"><i class="fa-solid fa-list-ul"></i><span>Add to a list</span>${
           inLists ? `<b>${inLists}</b>` : ""
         }</button>
@@ -234,6 +239,7 @@
           ${Lang.altTitle(t) ? `<div class="t-alt-title">${esc(Lang.altTitle(t))}</div>` : ""}
           <div class="t-meta">${metaHtml(t, d, e)}</div>
           <div class="t-genres">${genresHtml(t, d)}</div>
+          ${releaseHtml(d)}
           ${providersHtml(d.providers, t)}
           <div class="t-cta">${buttons}</div>
           ${aboutHtml(d)}
@@ -244,7 +250,7 @@
   // the sections are redrawn when something changes: keep each sideways row where you
   // scrolled it. rowScrolls() reads them, rowScrolls(saved) puts them back
   function rowScrolls(saved) {
-    const rows = [...mainEl.querySelectorAll(".movie-row, .t-cast, .t-media-row, .md-list")];
+    const rows = [...mainEl.querySelectorAll(".movie-row, .t-cast, .t-media-row, .md-list, .ep-seasons")];
     if (!saved) return rows.map((r) => [r.scrollLeft, r.scrollTop]);
     rows.forEach((r, n) => {
       if (!saved[n]) return;
@@ -340,8 +346,196 @@
     const x = new Date(`${s}T00:00:00`);
     return isNaN(x) ? s : `${x.getDate()} ${MONTHS[x.getMonth()]} ${x.getFullYear()}`;
   };
+  const daysTo = (s) => Math.round((new Date(`${s}T00:00:00`) - new Date(`${Store.today()}T00:00:00`)) / 86400000);
+  // "in 25 days", "tomorrow", "today"
+  const countdown = (s) => {
+    const n = daysTo(s);
+    return n <= 0 ? "today" : n === 1 ? "tomorrow" : `in ${n} days`;
+  };
+  const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const epDay = (s) => {
+    const x = new Date(`${s}T00:00:00`);
+    return isNaN(x) ? s : `${WEEKDAYS[x.getDay()]} ${x.getDate()} ${MONTHS[x.getMonth()]}${x.getFullYear() !== new Date().getFullYear() ? ` ${x.getFullYear()}` : ""}`;
+  };
+  const NOT_YET = /^(Rumored|Planned|In Production|Post Production|Pilot)$/;
+
+  // Where a title stands, in one place (the line under the genres and X-Ray's date card):
+  //  movies: "released" | "soon" (a date ahead) | "unknown" (no date announced yet)
+  //  shows: "soon" (premieres ahead) | "airing" (a next episode / returning) | "ended" | "released"
+  // The cinema date in your country counts for movies (as on Discover's labels), the worldwide
+  // date when your country has none. A show's next episode: TVmaze's when it's loaded (it's
+  // updated more often), else TMDB's.
+  function releaseOf(d) {
+    const x = d.xray || {};
+    const today = Store.today();
+    if (d.media !== "tv") {
+      const date = x.local || x.released || d.released || "";
+      if (!date) return { state: "unknown", status: x.status || "" };
+      const out = { date, world: x.released && x.local && x.released !== x.local ? x.released : "", digital: x.digital || "" };
+      return Object.assign(out, { state: date > today ? "soon" : "released" });
+    }
+    const tm = d.tvmaze || null;
+    const premiere = x.released || d.released || (tm && tm.premiered) || "";
+    const status = (tm && tm.status) || x.status || "";
+    const next = (tm && tm.next) || (x.nextEp && x.nextEp.date >= today ? x.nextEp : null);
+    const last = (tm && tm.previous) || x.lastEp || null;
+    const base = { premiere, next, last, seasons: x.seasons || 0, status, ended: (tm && tm.ended) || x.lastAir || "" };
+    if (!premiere) return Object.assign(base, { state: "unknown" });
+    if (premiere > today) return Object.assign(base, { state: "soon", date: premiere });
+    if (/^(Ended|Canceled)$/i.test(status)) return Object.assign(base, { state: "ended" });
+    return Object.assign(base, { state: next ? "airing" : "returning" });
+  }
+
+  // the line under the genres: a small pill that says where it stands
+  function releaseHtml(d) {
+    if (!d || (!d.xray && !d.released)) return "";
+    const r = releaseOf(d);
+    const pill = (cls, icon, html, title) => `<div class="t-release ${cls}"${title ? ` title="${esc(title)}"` : ""}><i class="fa-solid ${icon}" aria-hidden="true"></i><span>${html}</span></div>`;
+    if (d.media !== "tv") {
+      if (r.state === "unknown") return pill("unknown", "fa-circle-question", `Release date not announced${r.status && NOT_YET.test(r.status) ? ` · <b>${esc(r.status)}</b>` : ""}`);
+      if (r.state === "soon")
+        return pill("soon", "fa-hourglass-half", `Coming <b>${niceDay(r.date)}</b> · ${countdown(r.date)}`, r.world ? `Worldwide: ${niceDay(r.world)}` : "");
+      const stream = r.digital && r.digital > Store.today() ? ` · streaming / digital <b>${countdown(r.digital)}</b>` : "";
+      return pill("out", "fa-circle-check", `Released <b>${niceDay(r.date)}</b>${stream}`);
+    }
+    if (r.state === "unknown") return pill("unknown", "fa-circle-question", "Premiere date not announced");
+    if (r.state === "soon") return pill("soon", "fa-hourglass-half", `Premieres <b>${niceDay(r.date)}</b> · ${countdown(r.date)}`);
+    const years = `${r.premiere.slice(0, 4)}${r.ended ? `–${r.ended.slice(0, 4)}` : ""}`;
+    if (r.state === "ended") return pill("ended", "fa-flag-checkered", `Ended · ${years}${r.seasons ? ` · ${r.seasons} season${r.seasons === 1 ? "" : "s"}` : ""}`);
+    if (r.state === "airing") {
+      const n = r.next;
+      const what = n.e === 1 ? `Season ${n.s} premiere` : `S${n.s} E${n.e}`;
+      return pill("soon airing", "fa-tower-broadcast", `<b>${what}</b> ${epDay(n.date)} · ${countdown(n.date)}`, n.name || "");
+    }
+    return pill("out", "fa-rotate", `Returning series · next episode not announced${r.last ? ` · last aired ${epDay(r.last.date)}` : ""}`);
+  }
+
+  /* Studio / network logos (TMDB: mostly transparent PNGs, some with a white box of their own).
+     Each logo is looked at once, small, and what it is remembered in this browser (mn:logoTone):
+       "mono-dark"  a dark one-colour logo (black text): drawn white on the dark card
+       "mono-light" a light one-colour logo: as it is (dark ink in the light theme)
+       "color"      colourful: as it is, in its own colours
+       "solid"      not transparent (its own background): kept on a light rounded card
+     Until it's known (or when the picture can't be read): the light card, as before. */
+  //   A logo on a plain white box: the white is taken out here (a copy without it, kept in the
+  //   browser's database as "logo:<path>"), and then it's one of the above.
+  const LOGO_KEY = "mn:logoTone2";
+  const logoTones = Store.read(LOGO_KEY, {}); // { path: "color" | "mono-dark" | … , "path!": 1 = knocked out }
+  const logoClass = (path) => (logoTones[path] ? `tone-${logoTones[path]}` : "tone-pending");
+  const logoBusy = new Set();
+  const logoCut = new Map(); // path -> the copy without its white box (a data: address)
+  // what a logo's pixels say: { tone, clear (share of see-through pixels) }
+  //   "mixed"      colour and dark ink together (Marvel Studios: a red box, black "STUDIOS"):
+  //                no single treatment reads well on dark, so the light card
+  function readTone(px) {
+    let clear = 0, ink = 0, dark = 0, light = 0, color = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      if (px[i + 3] < 24) {
+        clear++;
+        continue;
+      }
+      const r = px[i] / 255, g = px[i + 1] / 255, b = px[i + 2] / 255;
+      const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      const sat = Math.max(r, g, b) - Math.min(r, g, b);
+      ink++;
+      if (sat > 0.3) color++;
+      else if (lum < 0.35) dark++;
+      else if (lum > 0.65) light++;
+    }
+    const total = px.length / 4;
+    if (!ink || clear / total < 0.08) return { tone: "solid", clear: clear / total };
+    const share = (n) => n / ink;
+    let tone;
+    if (share(color) > 0.12) tone = share(dark) > 0.1 ? "mixed" : "color";
+    else if (share(dark) >= share(light)) tone = share(light) > 0.15 ? "mixed" : "mono-dark";
+    else tone = "mono-light";
+    return { tone, clear: clear / total };
+  }
+  // the four corners all (nearly) white and opaque: a logo on a white box
+  function onWhiteBox(px, w, h) {
+    const at = (x, y) => {
+      const i = (y * w + x) * 4;
+      return px[i + 3] > 230 && px[i] > 235 && px[i + 1] > 235 && px[i + 2] > 235;
+    };
+    return at(0, 0) && at(w - 1, 0) && at(0, h - 1) && at(w - 1, h - 1);
+  }
+  function paintLogo(path) {
+    const tone = logoTones[path];
+    document.querySelectorAll(`.xr-logo[data-logo="${CSS.escape(path)}"]`).forEach((el) => {
+      el.className = `xr-logo tone-${tone}`;
+      const img = el.querySelector("img");
+      if (logoCut.has(path) && img.src !== logoCut.get(path)) img.src = logoCut.get(path);
+    });
+  }
+  function logoTone(path) {
+    // knocked out before: its copy from the database
+    if (logoTones[`${path}!`] && !logoCut.has(path) && !logoBusy.has(path) && TMDB.store) {
+      logoBusy.add(path);
+      TMDB.store.get(`logo:${path}`).then((url) => {
+        logoBusy.delete(path);
+        if (url) {
+          logoCut.set(path, url);
+          paintLogo(path);
+        } else {
+          delete logoTones[path];
+          delete logoTones[`${path}!`];
+          logoTone(path);
+        }
+      });
+      return;
+    }
+    if (logoTones[path] || logoBusy.has(path)) return;
+    logoBusy.add(path);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      let tone = "";
+      try {
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        const g = c.getContext("2d", { willReadFrequently: true });
+        g.drawImage(img, 0, 0);
+        const data = g.getImageData(0, 0, w, h);
+        const px = data.data;
+        tone = readTone(px).tone;
+        if (tone === "solid" && onWhiteBox(px, w, h)) {
+          // white → see-through, softly (anti-aliased edges keep their shape)
+          for (let i = 0; i < px.length; i += 4) {
+            const white = Math.min(px[i], px[i + 1], px[i + 2]);
+            if (white > 200) px[i + 3] = Math.round(px[i + 3] * Math.max(0, (255 - white) / 55));
+          }
+          const cut = readTone(px);
+          if (cut.tone !== "solid") {
+            g.putImageData(data, 0, 0);
+            const url = c.toDataURL("image/png");
+            logoCut.set(path, url);
+            if (TMDB.store) TMDB.store.set(`logo:${path}`, url);
+            logoTones[`${path}!`] = 1;
+            tone = cut.tone;
+          }
+        }
+      } catch (e) {
+        tone = ""; // couldn't read it: stays on the light card
+      }
+      logoBusy.delete(path);
+      if (!tone) return;
+      logoTones[path] = tone;
+      const keys = Object.keys(logoTones);
+      if (keys.length > 600) keys.slice(0, keys.length - 600).forEach((k) => delete logoTones[k]);
+      Store.write(LOGO_KEY, logoTones);
+      paintLogo(path);
+    };
+    img.onerror = () => logoBusy.delete(path);
+    // (an address of its own: the card's copy of the picture was loaded without permission to
+    // read its pixels, and the browser would hand that one back)
+    img.src = `https://image.tmdb.org/t/p/w185${path}?px=1`;
+  }
 
   function xrayPanel(d) {
+    if (d.xray) [...(d.xray.networks || []).slice(0, 1), ...(d.xray.companies || []).slice(0, 1)].forEach((c) => c.logo && setTimeout(() => logoTone(c.logo), 0));
     const x = d.xray;
     const e = window.Ratings ? Ratings.entry(tmdbRef || Ratings.refOf(Store.get(id) || {})) || {} : {};
     const tv = d.media === "tv";
@@ -369,8 +563,29 @@
         </div>`);
     }
 
-    // when: the date large, and how long ago / how soon
-    if (x.released) {
+    // when: the date large, and how long ago / how soon. Not out yet: not "Released" but a
+    // countdown card of its own ("Coming soon": the days left, the exact date)
+    const rel = releaseOf(d);
+    if (rel.state === "soon") {
+      const n = daysTo(rel.date);
+      cards.push(`<div class="xr-card xr-date xr-soon">
+          ${label("fa-hourglass-half", tv ? "Premieres in" : "Coming soon")}
+          <div class="xr-body">
+            <div class="xr-count"><b>${n <= 0 ? "Today" : n}</b>${n > 0 ? `<span>day${n === 1 ? "" : "s"} to go</span>` : ""}</div>
+            <div class="xr-soon-date"><i class="fa-regular fa-calendar"></i> ${tv ? "First episode" : x.local ? `In cinemas in ${esc(TMDB.countryName())}` : "Release"}: <b>${niceDay(rel.date)}</b></div>
+            ${rel.world ? `<small>Worldwide ${niceDay(rel.world)}</small>` : ""}
+            ${x.status && !/^Released$/.test(x.status) ? `<small>${esc(x.status)}</small>` : ""}
+          </div>
+        </div>`);
+    } else if (rel.state === "unknown" && !tv) {
+      cards.push(`<div class="xr-card xr-date xr-soon xr-tba">
+          ${label("fa-circle-question", "Release")}
+          <div class="xr-body">
+            <div class="xr-big">Not announced yet</div>
+            ${x.status ? `<small>${esc(x.status)}</small>` : ""}
+          </div>
+        </div>`);
+    } else if (x.released) {
       const status = x.status && !/^(Released|Ended|Returning Series)$/.test(x.status) ? ` · ${esc(x.status)}` : "";
       cards.push(`<div class="xr-card xr-date">
           ${label("fa-calendar-day", tv ? "First aired" : "Released")}
@@ -379,11 +594,22 @@
             <small>${fromNow(x.released)}${status}</small>
             ${
               tv && (x.episodes || x.lastAir)
-                ? `<div class="xr-mini">${x.episodes ? `<span><b>${x.episodes}</b> episodes</span>` : ""}${x.lastAir ? `<span>Last aired <b>${niceDay(x.lastAir)}</b></span>` : ""}</div>`
+                ? `<div class="xr-mini">${x.episodes ? `<span><b>${x.episodes}</b> episodes</span>` : ""}${x.lastAir ? `<span>Last aired <b>${niceDay(x.lastAir)}</b></span>` : ""}${
+                    rel.next ? `<span>Next <b>S${rel.next.s} E${rel.next.e}</b> ${epDay(rel.next.date)}</span>` : ""
+                  }</div>`
                 : ""
             }
           </div>
         </div>`);
+    }
+
+    // anime: MyAnimeList's score, and the way to the full anime page
+    if (d.anime) cards.push(animeCard(d.anime, label));
+
+    // shows: when and where it airs (TVmaze)
+    if (tv && d.tvmaze) {
+      const air = airingCard(d.tvmaze, label);
+      if (air) cards.push(air);
     }
 
     if (e.awards) {
@@ -411,12 +637,13 @@
         </div>`);
     }
 
-    // studios / networks: their logos (white), or the name when TMDB has no logo
+    // studios / networks: their logos straight on the card (see logoTone), or the name when
+    // TMDB has no logo
     const brands = (list) =>
       list
         .map((c) =>
           c.logo
-            ? `<span class="xr-logo" title="${esc(c.name)}"><img src="https://image.tmdb.org/t/p/w185${c.logo}" alt="${esc(c.name)}" loading="lazy" /></span>`
+            ? `<span class="xr-logo ${logoClass(c.logo)}" data-logo="${esc(c.logo)}" title="${esc(c.name)}"><img src="${logoCut.get(c.logo) || `https://image.tmdb.org/t/p/w185${c.logo}`}" alt="${esc(c.name)}" loading="lazy" /></span>`
             : `<span class="xr-chip">${esc(c.name)}</span>`
         )
         .join("");
@@ -520,14 +747,372 @@
     const seasons = d.seasons || [];
     if (colData) html += block(esc(colData.name), colData.parts.length, collectionPanel(colData), "t-collection");
     if (d.media === "tv" && d.tmdbId && seasons.length > 1) html += block("Seasons", seasons.length, seasonsPanel(d, seasons));
-    if (cast.length) html += block("Cast &amp; Crew", 0, castPanel(cast));
+    if (d.media === "tv" && d.tvmaze) {
+      const eps = episodesPanel(d);
+      if (eps) html += block("Episodes", 0, eps, "t-episodes");
+    }
+    if (cast.length || (d.tvmaze && Object.keys(d.tvmaze.crew || {}).length))
+      html += block("Cast &amp; Crew", 0, (cast.length ? castPanel(cast) : "") + (d.tvmaze ? crewHtml(d.tvmaze) : ""));
     if (loading) return html + '<p class="muted t-empty">Loading more details…</p>';
     if (d.xray) html += block('<i class="fa-solid fa-bolt"></i> X-Ray', 0, xrayPanel(d), "t-xray");
     if (videos.length || images.length) html += block("Media", 0, mediaPanel(videos, images));
     if (window.Soundtrack) html += Soundtrack.html(d); // (js/components/soundtrack.js: filled in when it's near)
+    html += booksHtml(d);
     if (reviews.length) html += block("Reviews", reviews.length, reviewsPanel(reviews, d.tmdbUrl));
     return html;
   }
+  /* ---------------- Episodes (shows, from TVmaze: js/services/tvmaze.js) ----------------
+     The next and the latest episode as two cards, then the episode guide: a season switch and
+     a card per episode (still, number, title, when it aired / airs, runtime, rating, the story
+     on a tap). The season you're at (Your progress), else the one airing, opens first; episodes
+     you've seen get a tick. Each season is asked for when it's opened, and kept. */
+  const EP_SHOWN = 6;
+  const safeUrl = (u) => (/^https?:\/\//i.test(String(u || "")) ? String(u) : "");
+  let epSeason = null; // TVmaze season id on screen
+  let epAll = false; // "Show all N episodes"
+  const epData = new Map(); // season id -> [episodes] | "loading" | "error"
+  let tvmazeFor = null; // the TMDB show TVmaze was asked about (once per page)
+
+  // ask TVmaze about a show (once), then draw again with what it knows
+  function loadTvmaze(d, done) {
+    if (!d || d.media !== "tv" || !window.TVmaze || !window.Site || !Site.feature("tvmaze") || !Api.enabled("tvmaze")) return;
+    const key = d.tmdbId || d.title;
+    if (tvmazeFor === key) return;
+    tvmazeFor = key;
+    TVmaze.forShow(d)
+      .then((tm) => {
+        if (!tm) return;
+        d.tvmaze = tm;
+        done();
+      })
+      .catch(() => {});
+  }
+
+  const seenEp = (ep) => {
+    const item = id && Store.get(id);
+    const p = item && item.progress;
+    if (!p || !ep.e || !ep.s) return false;
+    return p.done || ep.s < p.s || (ep.s === p.s && ep.e <= p.e);
+  };
+  const epCode = (ep) => (ep.e ? `S${ep.s} E${ep.e}` : `S${ep.s} Special`);
+  const airWhen = (ep) => {
+    if (!ep.date) return "Date not announced";
+    const n = daysTo(ep.date);
+    return n > 0 ? `${epDay(ep.date)} · ${countdown(ep.date)}` : n === 0 ? "Today" : epDay(ep.date);
+  };
+  // the time it airs where you are (TVmaze gives the exact moment: "2026-10-12T01:00:00+00:00")
+  const localTime = (stamp) => {
+    if (!stamp) return "";
+    const t = new Date(stamp);
+    return isNaN(t) ? "" : t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  function epCard(ep, big) {
+    const future = ep.date && ep.date > Store.today();
+    const seen = seenEp(ep);
+    return `<article class="ep-card${future ? " future" : ""}${seen ? " seen" : ""}${big ? " big" : ""}" data-ep="${ep.id}" data-se="${ep.s}-${ep.e || ""}">
+        <div class="ep-still">${
+          safeUrl(ep.image) ? `<img src="${esc(safeUrl(ep.image))}" alt="" loading="lazy" />` : '<span class="ep-noimg"><i class="fa-solid fa-film"></i></span>'
+        }<span class="ep-code">${epCode(ep)}</span>${seen ? '<span class="ep-seen" title="You\'ve seen it"><i class="fa-solid fa-check"></i></span>' : ""}</div>
+        <div class="ep-text">
+          <strong>${esc(ep.name || epCode(ep))}</strong>
+          <div class="ep-meta">
+            <span class="${future ? "ep-soon" : ""}"><i class="fa-regular fa-calendar"></i> ${airWhen(ep)}${future && ep.stamp && localTime(ep.stamp) ? ` · ${localTime(ep.stamp)}` : ""}</span>
+            ${ep.runtime ? `<span><i class="fa-regular fa-clock"></i> ${ep.runtime} min</span>` : ""}
+            ${ep.rating ? `<span><i class="fa-solid fa-star"></i> ${ep.rating.toFixed(1)}</span>` : ""}
+          </div>
+          ${ep.summary ? `<p class="ep-sum clamp">${esc(ep.summary)}</p>` : ""}
+          <div class="ep-foot">${safeUrl(ep.url) ? `<a class="ep-link" href="${esc(safeUrl(ep.url))}" target="_blank" rel="noopener">TVmaze <i class="fa-solid fa-arrow-up-right-from-square"></i></a>` : ""}${
+            ep.e ? `<button class="ep-share" type="button" data-feature="share" data-ep-share="${ep.s}-${ep.e}" aria-label="Share this episode" title="Share this episode"><i class="fa-solid fa-arrow-up-from-bracket"></i></button>` : ""
+          }</div>
+        </div>
+      </article>`;
+  }
+
+  function episodesPanel(d) {
+    const tm = d.tvmaze;
+    const seasons = (tm.seasons || []).filter((s) => s.episodes || s.start);
+    if (!seasons.length) return "";
+    // which season opens first: where you are, else the one with the next episode, else the latest
+    if (!epSeason || !seasons.some((s) => s.id === epSeason)) {
+      const item = id && Store.get(id);
+      const at = item && item.progress && !item.progress.done ? item.progress.s : null;
+      const want = (epTarget && epTarget.s) || at || (tm.next && tm.next.s) || (tm.previous && tm.previous.s);
+      epSeason = (seasons.find((s) => s.n === want) || seasons[seasons.length - 1]).id;
+    }
+    const list = epData.get(epSeason);
+    if (list === undefined) setTimeout(() => openSeason(epSeason), 0);
+    const top = [tm.next && ["Next episode", "fa-forward", tm.next], tm.previous && ["Latest episode", "fa-clock-rotate-left", tm.previous]].filter(Boolean);
+    const total = seasons.reduce((a, s) => a + (s.episodes || 0), 0);
+    let body;
+    if (list === undefined || list === "loading") body = '<p class="muted ep-wait"><i class="fa-solid fa-spinner fa-spin"></i> Loading the episodes…</p>';
+    else if (list === "error") body = '<p class="muted">Couldn\'t load this season\'s episodes. <button class="t-link ep-retry" type="button">Try again</button></p>';
+    else if (!list.length) body = '<p class="muted">No episodes listed for this season yet.</p>';
+    else
+      body = `<div class="ep-list">${list
+        .slice(0, epAll ? list.length : EP_SHOWN)
+        .map((ep) => epCard(ep))
+        .join("")}</div>${list.length > EP_SHOWN ? `<button class="btn ep-more" type="button">${epAll ? "Show fewer" : `Show all ${list.length} episodes`}</button>` : ""}`;
+    return `${top.length ? `<div class="ep-top">${top.map(([t, icon, ep]) => `<div class="ep-top-card"><span class="xr-label"><i class="fa-solid ${icon}"></i> ${t}</span>${epCard(ep, true)}</div>`).join("")}</div>` : ""}
+      <div class="ep-head"><div class="top10-switch ep-seasons" role="tablist" aria-label="Season">${seasons
+        .map((s) => `<button class="top10-tab${s.id === epSeason ? " active" : ""}" type="button" role="tab" aria-selected="${s.id === epSeason}" data-ep-season="${s.id}">${s.n ? `Season ${s.n}` : esc(s.name || "Specials")}</button>`)
+        .join("")}</div></div>
+      ${(() => {
+        const s = seasons.find((x) => x.id === epSeason);
+        return s ? `<p class="ep-season-info">${[s.start ? `${niceDay(s.start)}${s.end && s.end !== s.start ? ` – ${niceDay(s.end)}` : ""}` : "", s.episodes ? `${s.episodes} episodes` : "", s.network].filter(Boolean).map(esc).join(" · ")}</p>` : "";
+      })()}
+      ${body}
+      <p class="ep-credit">Episode guide by <a href="${esc(safeUrl(tm.url) || "https://www.tvmaze.com")}" target="_blank" rel="noopener">TVmaze</a>${total ? ` · ${total} episodes` : ""}</p>`;
+  }
+
+  function openSeason(seasonId) {
+    if (epData.get(seasonId) === "loading" || Array.isArray(epData.get(seasonId))) return;
+    epData.set(seasonId, "loading");
+    TVmaze.season(seasonId)
+      .then((list) => {
+        epData.set(seasonId, list);
+        // the shared episode: shown (even past the first few) and brought into view, once
+        if (epTarget) {
+          const at = list.findIndex((x) => x.s === epTarget.s && x.e === epTarget.e);
+          if (at >= EP_SHOWN) epAll = true;
+        }
+      })
+      .catch(() => epData.set(seasonId, "error"))
+      .then(() => {
+        redrawEpisodes();
+        if (!epTarget) return;
+        const card = mainEl.querySelector(`.ep-list .ep-card[data-se="${epTarget.s}-${epTarget.e}"]`);
+        epTarget = null;
+        if (!card) return;
+        card.classList.add("target");
+        const p = card.querySelector(".ep-sum");
+        if (p) p.classList.remove("clamp");
+        setTimeout(() => card.scrollIntoView({ block: "center", behavior: "smooth" }), 200);
+      });
+  }
+  // only the Episodes section is drawn again (not the whole page)
+  function redrawEpisodes() {
+    const box = mainEl.querySelector(".t-episodes");
+    const d = currentDetails();
+    if (!box || !d || !d.tvmaze) return;
+    const row = box.querySelector(".ep-seasons");
+    const x = row ? row.scrollLeft : 0;
+    box.innerHTML = `<h2 class="t-section-title">Episodes</h2>${episodesPanel(d)}`;
+    const nrow = box.querySelector(".ep-seasons");
+    if (nrow) nrow.scrollLeft = x;
+  }
+  // the details the page is showing (a library title: TMDB's merged with yours)
+  const currentDetails = () => (tmdbDetails ? tmdbDetails : extra);
+
+  document.addEventListener("click", (e) => {
+    const s = e.target.closest("[data-ep-season]");
+    if (s) {
+      epSeason = Number(s.dataset.epSeason);
+      epAll = false;
+      if (epData.get(epSeason) === "error") epData.delete(epSeason);
+      redrawEpisodes();
+      const b = mainEl.querySelector(`[data-ep-season="${epSeason}"]`);
+      if (b) b.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+      return;
+    }
+    const shareEp = e.target.closest("[data-ep-share]");
+    if (shareEp) {
+      const d = currentDetails();
+      const [sn, en] = shareEp.dataset.epShare.split("-").map(Number);
+      const card = shareEp.closest(".ep-card");
+      const name = card ? (card.querySelector("strong") || {}).textContent || "" : "";
+      const show = d ? Lang.title(d) : document.title.split(" · ")[0];
+      if (d && d.tmdbId)
+        UI.shareLink({ title: `${show}: S${sn} E${en}`, text: `📺 ${show} · S${sn} E${en}${name ? ` “${name}”` : ""}`, url: `title.html?tmdb=tv-${d.tmdbId}&ep=${sn}-${en}` });
+      return;
+    }
+    if (e.target.closest(".ep-retry")) {
+      epData.delete(epSeason);
+      return redrawEpisodes();
+    }
+    if (e.target.closest(".ep-more")) {
+      epAll = !epAll;
+      redrawEpisodes();
+      if (!epAll) mainEl.querySelector(".t-episodes").scrollIntoView({ block: "start", behavior: "smooth" });
+      return;
+    }
+    // tap an episode: its whole story
+    const card = e.target.closest(".ep-card");
+    if (card && !e.target.closest("a")) {
+      const p = card.querySelector(".ep-sum");
+      if (p) p.classList.toggle("clamp");
+    }
+  });
+
+  /* ---------------- anime: its MyAnimeList card (js/services/anime.js) ---------------- */
+  // Japanese animation on TMDB: found on MyAnimeList (or AniList) by name and year, once
+  let animeFor = null;
+  const isAnimeTitle = (d) => !!d && (d.genres || []).includes("Animation") && d.xray && d.xray.language === "ja";
+  function loadAnime(d, done) {
+    if (!isAnimeTitle(d) || !window.Anime || !window.Site || !Site.feature("animeDetails")) return;
+    const key = d.tmdbId || d.title;
+    if (animeFor === key) return;
+    animeFor = key;
+    Anime.findFor(d)
+      .then((a) => {
+        if (!a) return;
+        d.anime = a;
+        done();
+      })
+      .catch(() => {});
+  }
+  function animeCard(a, label) {
+    const stat = (big, small) => `<span><b>${big}</b><small>${small}</small></span>`;
+    return `<div class="xr-card xr-anime">
+        <div class="xr-head">${label("fa-dragon", "Anime")}${a.score ? `<span class="xr-verdict gold"><i class="fa-solid fa-star"></i> ${a.score.toFixed(1)}</span>` : ""}</div>
+        <div class="xr-anime-stats">${[a.type && stat(esc(a.type), "Type"), a.episodes && stat(a.episodes, "Episodes"), a.season && a.year && stat(`${a.season.charAt(0).toUpperCase()}${a.season.slice(1)} ${a.year}`, "Season")].filter(Boolean).join("")}</div>
+        <a class="btn xr-anime-link" href="anime-explore.html?id=${encodeURIComponent(a.key)}"><i class="fa-solid fa-dragon"></i> Characters, voices, studio &amp; more <i class="fa-solid fa-chevron-right"></i></a>
+      </div>`;
+  }
+
+  // X-Ray's "On air" card: when it airs (in your time), where, what kind of show
+  function airingCard(tm, label) {
+    const days = tm.schedule.days || [];
+    const short = days.length === 7 ? "Every day" : days.length === 5 && !days.includes("Saturday") && !days.includes("Sunday") ? "Weekdays" : days.map((x) => `${x}s`).join(", ");
+    const where = tm.network ? `${tm.network.name}${tm.network.country ? ` (${tm.network.country})` : ""}` : tm.web ? `${tm.web.name} (streaming)` : "";
+    const yourTime = tm.next && tm.next.stamp ? localTime(tm.next.stamp) : "";
+    const live = !/^(Ended)$/i.test(tm.status);
+    const rows = [
+      live && (short || tm.schedule.time) ? ["fa-calendar-week", "Airs", `${esc(short || "")}${tm.schedule.time ? ` at ${esc(tm.schedule.time)}${tm.network && tm.network.zone ? ` <small>(${esc(tm.network.zone.split("/").pop().replace(/_/g, " "))})</small>` : ""}` : ""}`] : null,
+      live && yourTime ? ["fa-clock", "Your time", `${esc(yourTime)}`] : null,
+      where ? ["fa-tower-broadcast", tm.network ? "Network" : "Streaming", esc(where)] : null,
+      tm.type ? ["fa-masks-theater", "Type", esc(tm.type)] : null,
+      tm.averageRuntime || tm.runtime ? ["fa-hourglass-half", "Runtime", `${tm.averageRuntime || tm.runtime} min${tm.averageRuntime && tm.runtime && tm.runtime !== tm.averageRuntime ? " on average" : ""}`] : null,
+      tm.rating ? ["fa-star", "TVmaze rating", `${tm.rating.toFixed(1)} / 10`] : null,
+    ].filter(Boolean);
+    if (!rows.length) return "";
+    const status = tm.status === "Running" ? ["On air", "green"] : tm.status === "Ended" ? ["Ended", "grey"] : tm.status === "To Be Determined" ? ["Waiting for news", "gold"] : tm.status === "In Development" ? ["In development", "gold"] : [tm.status, "grey"];
+    return `<div class="xr-card xr-air">
+        <div class="xr-head">${label("fa-satellite-dish", "When it airs")}${status[0] ? `<span class="xr-verdict ${status[1]}">${esc(status[0])}</span>` : ""}</div>
+        <dl class="xr-air-rows">${rows.map(([icon, k, v]) => `<div><dt><i class="fa-solid ${icon}"></i> ${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
+        <div class="xr-air-links">${safeUrl(tm.officialSite) ? `<a href="${esc(safeUrl(tm.officialSite))}" target="_blank" rel="noopener"><i class="fa-solid fa-globe"></i> Official site</a>` : ""}${
+          safeUrl(tm.url) ? `<a href="${esc(safeUrl(tm.url))}" target="_blank" rel="noopener"><i class="fa-solid fa-tv"></i> TVmaze</a>` : ""
+        }</div>
+      </div>`;
+  }
+
+  // the people behind the show (TVmaze): creators first, then producers
+  function crewHtml(tm) {
+    const order = ["Creator", "Developer", "Executive Producer", "Co-Executive Producer", "Producer", "Showrunner", "Music"];
+    const groups = Object.entries(tm.crew || {}).sort((a, b) => (order.indexOf(a[0]) + 1 || 99) - (order.indexOf(b[0]) + 1 || 99));
+    if (!groups.length) return "";
+    return `<div class="t-crew"><h3 class="xr-sub"><i class="fa-solid fa-clapperboard"></i> Behind the show</h3><div class="t-crew-groups">${groups
+      .slice(0, 4)
+      .map(
+        ([role, people]) => `<div class="t-crew-group"><span>${esc(role)}${people.length > 1 && !/s$/.test(role) ? "s" : ""}</span><div>${people
+          .slice(0, 6)
+          .map((p) => `<a class="t-crew-chip" href="person.html?name=${encodeURIComponent(p.name)}">${safeUrl(p.image) ? `<img src="${esc(safeUrl(p.image))}" alt="" loading="lazy" />` : '<i class="fa-solid fa-user"></i>'}${esc(p.name)}</a>`)
+          .join("")}</div></div>`
+      )
+      .join("")}</div></div>`;
+  }
+
+  /* ---------------- Books (js/services/books.js): Based on, Related novels, Further reading ----------------
+     Looked for once, when the section comes near the screen; a title with no books has no section. */
+  let booksData = null; // { based, related, reference } once looked for
+  let booksBusy = false;
+  let booksTab = null;
+  const booksOn = (d) => !!(window.Books && window.Site && Site.feature("books") && Api.enabled("openlibrary") && d && d.tmdbId && d.xray);
+  const bookUrl = (u) => (/^https:\/\//.test(u || "") ? u : "");
+  function bookCard(b) {
+    return `<a class="bk-card" href="${esc(bookUrl(b.url) || "#")}" target="_blank" rel="noopener" title="${esc(b.title)}">
+        <span class="bk-cover">${bookUrl(b.cover) ? `<img src="${esc(b.cover)}" alt="" loading="lazy" />` : '<i class="fa-solid fa-book"></i>'}</span>
+        <strong>${esc(b.title)}</strong>
+        <small>${esc([b.authors[0], b.year].filter(Boolean).join(" · "))}</small>
+        ${b.rating ? `<small class="bk-rate"><i class="fa-solid fa-star"></i> ${b.rating.toFixed(1)}</small>` : ""}
+      </a>`;
+  }
+  function booksHtml(d) {
+    if (!booksOn(d)) return "";
+    const head = '<h2 class="t-section-title"><i class="fa-solid fa-book-open"></i> Books</h2>';
+    if (!booksData) return `<section class="t-section t-books">${head}<p class="muted"><i class="fa-solid fa-spinner fa-spin"></i> Looking for books…</p></section>`;
+    const { based, related, reference } = booksData;
+    const tabs = [based && ["based", "fa-book", "Based on"], related && ["related", "fa-book-bookmark", "Related novels"], reference && ["reference", "fa-flask", "Further reading"]].filter(Boolean);
+    if (!tabs.length) return "";
+    if (!booksTab || !tabs.some((t) => t[0] === booksTab)) booksTab = tabs[0][0];
+    let body = "";
+    if (booksTab === "based") {
+      const b = based.book;
+      const kind = String(based.kind || "novel").toLowerCase();
+      body = b
+        ? `<div class="bk-main">
+            <a class="bk-main-cover" href="${esc(bookUrl(b.url) || "#")}" target="_blank" rel="noopener">${bookUrl(b.coverBig) ? `<img src="${esc(b.coverBig)}" alt="${esc(b.title)} cover" loading="lazy" />` : '<i class="fa-solid fa-book"></i>'}</a>
+            <div class="bk-main-text">
+              <span class="xr-label"><i class="fa-solid fa-book"></i> ${esc(kind === "characters" ? "Based on characters from" : `Based on the ${kind}`)}</span>
+              <h3>${esc(b.title)}</h3>
+              <p class="bk-by">by <b>${esc(b.authors.join(", ") || based.author)}</b>${b.year ? ` · first published ${b.year}` : ""}</p>
+              <div class="bk-facts">${[
+                b.rating ? `<span><i class="fa-solid fa-star"></i> ${b.rating.toFixed(1)} <small>(${b.ratings.toLocaleString()} ratings)</small></span>` : "",
+                b.pages ? `<span><i class="fa-solid fa-file-lines"></i> ${b.pages} pages</span>` : "",
+                b.editions ? `<span><i class="fa-solid fa-layer-group"></i> ${b.editions} editions</span>` : "",
+                b.isbn ? `<span><i class="fa-solid fa-barcode"></i> ISBN ${esc(b.isbn)}</span>` : "",
+              ].join("")}</div>
+              ${b.description ? `<p class="bk-desc clamp">${esc(b.description)}</p>${b.description.length > 260 ? '<button class="t-link bk-more" type="button">Read more</button>' : ""}` : ""}
+              ${bookUrl(b.url) ? `<a class="btn bk-ol" href="${esc(b.url)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Editions on Open Library</a>` : ""}
+            </div>
+          </div>`
+        : `<p class="muted">Based on the work of <b>${esc(based.author)}</b>. Their best-known books:</p><div class="movie-row bk-row">${(based.others || []).map(bookCard).join("")}</div>`;
+    } else if (booksTab === "related") {
+      body = `<p class="muted bk-why">Novels on the same themes: ${esc(related.subject)}</p><div class="movie-row bk-row">${related.books.map(bookCard).join("")}</div>`;
+    } else {
+      body = `<p class="muted bk-why"><i class="fa-solid fa-circle-info"></i> Reading around the subject, for the curious: not a check of how accurate the film is.</p>${reference.topics
+        .map((t) => `<h3 class="xr-sub">${esc(t.label)}</h3><div class="movie-row bk-row">${t.books.map(bookCard).join("")}</div>`)
+        .join("")}`;
+    }
+    return `<section class="t-section t-books">${head}
+        ${tabs.length > 1 ? `<div class="top10-switch bk-tabs" role="tablist" aria-label="Books">${tabs.map(([k, icon, l]) => `<button class="top10-tab${k === booksTab ? " active" : ""}" type="button" role="tab" aria-selected="${k === booksTab}" data-books="${k}"><i class="fa-solid ${icon}"></i> ${l}</button>`).join("")}</div>` : ""}
+        <div class="bk-body">${body}</div>
+        <p class="ep-credit">Books from <a href="https://openlibrary.org" target="_blank" rel="noopener">Open Library</a></p>
+      </section>`;
+  }
+  function watchBooks(d, done) {
+    const box = mainEl.querySelector(".t-books");
+    if (!box || booksData || booksBusy) return;
+    const start = async () => {
+      if (booksBusy || booksData) return;
+      booksBusy = true;
+      const based = await Books.basedOn(d).catch(() => null);
+      const related = await Books.related(d, based && based.book ? [based.book.key] : []).catch(() => null);
+      const reference = await Books.reference(d).catch(() => null);
+      booksData = { based, related, reference };
+      booksBusy = false;
+      done();
+    };
+    if (!("IntersectionObserver" in window)) return start();
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((en) => en.isIntersecting)) {
+        io.disconnect();
+        start();
+      }
+    }, { rootMargin: "500px" });
+    io.observe(box);
+  }
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-books]");
+    if (t) {
+      booksTab = t.dataset.books;
+      const box = mainEl.querySelector(".t-books");
+      const d = currentDetails();
+      if (box && d) {
+        const tmp = document.createElement("div");
+        tmp.innerHTML = booksHtml(d);
+        if (tmp.firstElementChild) box.replaceWith(tmp.firstElementChild);
+      }
+      return;
+    }
+    const more = e.target.closest(".bk-more");
+    if (more) {
+      const p = more.previousElementSibling;
+      p.classList.toggle("clamp");
+      more.textContent = p.classList.contains("clamp") ? "Read more" : "Show less";
+    }
+  });
+
   // TV shows: one card per season; tap it for that season's trailer. Each season's videos
   // are checked in the background: the card then says what plays ("Trailer", "Teaser",
   // "Bloopers"…), or "No trailer yet" (dimmed) when TMDB has nothing for that season.
@@ -956,12 +1541,12 @@
           // in your library = watched: no Watchlist button. Still on the Watchlist (not seen
           // yet): take it off, or mark it Watched
           item.watchlist
-            ? `<button class="btn is-on" data-action="watch" aria-pressed="true"><i class="fa-solid fa-bookmark"></i> On Watchlist</button>
-               <button class="btn" data-action="watched"><i class="fa-regular fa-circle-check"></i> Watched</button>`
+            ? `<button class="btn is-on" data-action="watch" aria-pressed="true" aria-label="On your Watchlist (tap to take it off)"><i class="fa-solid fa-bookmark"></i> <span class="t-btn-l"><span class="t-on-word">On </span>Watchlist</span></button>
+               <button class="btn" data-action="watched"><i class="fa-regular fa-circle-check"></i> <span class="t-btn-l">Watched</span></button>`
             : ""
         }
         <button class="btn${item.favorite ? " is-on" : ""}" data-action="fav" aria-pressed="${!!item.favorite}">
-          <i class="fa-${item.favorite ? "solid" : "regular"} fa-heart"></i> Favorite</button>
+          <i class="fa-${item.favorite ? "solid" : "regular"} fa-heart"></i> <span class="t-btn-l">Favorite</span></button>
         <button class="btn${item.rating != null ? " is-rated" : ""}" data-action="rate">
           ${item.rating != null ? `<i class="fa-solid fa-star"></i> ${Cards.formatRating(item.rating)}` : '<i class="fa-regular fa-thumbs-up"></i> Rate'}</button>
       </div>
@@ -1002,6 +1587,7 @@
       <p><button class="btn btn-danger remove-title" type="button"><i class="fa-solid fa-trash"></i> Remove from library</button></p>`;
     rowScrolls(keep);
     if (window.Soundtrack) Soundtrack.mount(mainEl, d);
+    if (booksOn(d)) watchBooks(d, renderLibrary);
     const n = mainEl.querySelector(".tn-text");
     if (typing) {
       n.value = typing.v;
@@ -1277,6 +1863,31 @@
   }
 
   function initLibrary() {
+    // "On Watchlist" tapped on a title you haven't watched (no score, no watch date): it leaves
+    // your library altogether, with Undo, and the page becomes the title's "add it" page again,
+    // with its Watchlist button. (Left in the library it would count as watched, and the page
+    // would have no Watchlist button to put it back.)
+    heroEl.addEventListener(
+      "click",
+      (e) => {
+        const b = e.target.closest('[data-action="watch"]');
+        const item = Store.get(id);
+        // (only titles added on the site, isNew: the owner's original library stays as it was)
+        if (!b || !item || !item.isNew || !item.watchlist || item.rating != null || item.watchedAt || Store.guest) return;
+        const ref = window.Watch ? Watch.knownRef(item) : null;
+        if (!ref) return; // (not on TMDB: the usual toggle)
+        e.preventDefault();
+        e.stopPropagation();
+        // the title as it was, for the Undo on the next page (its lists keep its id)
+        try {
+          sessionStorage.setItem("mn:undoRemove", JSON.stringify({ ref, item: JSON.parse(JSON.stringify(item)) }));
+        } catch (err) {}
+        Store.remove(id);
+        location.replace(`title.html?tmdb=${encodeURIComponent(ref)}`);
+      },
+      true
+    );
+
     // "Watched on …": the site's date picker opens from the Change button
     document.addEventListener("click", async (e) => {
       const btn = e.target.closest(".twd-edit");
@@ -1312,6 +1923,8 @@
         .then((details) => {
           extra = details || {};
           loadCollection(extra, renderLibrary); // its franchise, if it's part of one
+          loadTvmaze(extra, renderLibrary); // a show: episodes, when it airs (TVmaze)
+          loadAnime(extra, renderLibrary); // anime: its MyAnimeList card
           if (details && details.titleRu && !Store.get(id).titleRu) Store.update(id, { titleRu: details.titleRu });
           Ratings.request(Store.get(id)); // now that the IMDb id is known
           // remember the trailer so it also works on cards and in the exported library
@@ -1344,11 +1957,29 @@
 
     const goToLibrary = () => {
       const lib = Cards.inLibrary(d);
-      if (lib) location.replace(`title.html?id=${encodeURIComponent(lib.id)}${shared ? shared.query : ""}`);
+      if (lib) location.replace(`title.html?id=${encodeURIComponent(lib.id)}${shared ? shared.query : ""}${params.get("ep") ? `&ep=${encodeURIComponent(params.get("ep"))}` : ""}`);
       return !!lib;
     };
     if (goToLibrary()) return;
     tmdbDetails = d;
+    // just taken off your Watchlist (and so out of your library) on its library page: Undo
+    try {
+      const undo = JSON.parse(sessionStorage.getItem("mn:undoRemove") || "null");
+      if (undo && undo.ref === tmdbRef && undo.item) {
+        sessionStorage.removeItem("mn:undoRemove");
+        setTimeout(
+          () =>
+            toast(`${Lang.title(undo.item)} is off your Watchlist`, {
+              label: "Undo",
+              run: () => {
+                if (!Store.get(undo.item.id)) Store.add(undo.item);
+                location.replace(`title.html?id=${encodeURIComponent(undo.item.id)}`);
+              },
+            }),
+          300
+        );
+      }
+    } catch (err) {}
 
     Cards.tmdbCard(d); // registers it so the buttons below work
     document.title = `${Lang.title(d)}${d.year ? ` (${d.year})` : ""} · Movie Nights`;
@@ -1378,9 +2009,15 @@
       rowScrolls(keep);
       if (window.Soundtrack) Soundtrack.mount(mainEl, d);
       watchXray(d, renderMain);
+      if (booksOn(d)) watchBooks(d, renderMain);
     };
     renderMain();
     loadCollection(d, renderMain);
+    loadTvmaze(d, () => {
+      renderExternal(d);
+      renderMain();
+    });
+    loadAnime(d, renderMain);
     // the franchise counter follows what you add / rate (not this title: it goes to its library page)
     Store.onChange(() => colData && !Cards.inLibrary(d) && renderMain());
 

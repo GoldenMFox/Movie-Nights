@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Box Office &middot; Movie Nights</title>
-    <meta name="description" content="The highest-grossing films worldwide: all time, by year and by genre, with their budgets." />
+    <title>Anime &middot; Movie Nights</title>
+    <meta name="description" content="Explore anime: trending, this season, top rated, characters and studios." />
     <link rel="icon" href="images/brand/favicon.png" type="image/png" />
     <link rel="manifest" href="manifest.webmanifest" />
     <meta name="theme-color" content="#17181c" />
@@ -31,12 +31,8 @@
       } catch (e) {}
     </script>
   </head>
-  <body data-page="boxoffice">
-    <main class="container bo-page">
-      <h1 class="page-title">Box Office</h1>
-      <p class="bo-lead">The highest-grossing films in the world, with what they cost to make.</p>
-      <div id="bo-app"></div>
-    </main>
+    <body data-page="anime">
+    <main class="container" id="ax"></main>
     <script src="data/library.js"></script>
     <script src="js/config.js"></script>
     <script src="js/core/store.js"></script>
@@ -55,6 +51,7 @@
     <script src="js/services/alerts.js"></script>
     <script src="js/services/taste.js"></script>
     <script src="js/components/picker.js"></script>
-    <script src="js/pages/box-office.js"></script>
+    <script src="js/services/anime.js"></script>
+    <script src="js/pages/anime-explore.js"></script>
   </body>
 </html>

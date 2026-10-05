@@ -15,6 +15,7 @@
     { id: "watchlist", href: "watchlist.html", label: "Watchlist", icon: "fa-solid fa-bookmark" },
     { id: "tiers", href: "tier-list.html", label: "Tier List", icon: "fa-solid fa-ranking-star" },
     { id: "boxoffice", href: "box-office.html", label: "Box Office", icon: "fa-solid fa-sack-dollar" },
+    { id: "news", href: "news.html", label: "News", icon: "fa-solid fa-newspaper" },
   ];
 
   const current = document.body.dataset.page;
@@ -76,7 +77,7 @@
           <li class="nav-indicator" aria-hidden="true"></li>
           ${PAGES.map(
             (p) =>
-              `<li><a href="${p.href}" class="${p.id === current ? "active" : ""}"${p.id === current ? ' aria-current="page"' : ""}><i class="${p.icon}"></i>${p.label}</a></li>`
+              `<li><a href="${p.href}" data-nav="${p.id}" class="${p.id === current ? "active" : ""}"${p.id === current ? ' aria-current="page"' : ""}><i class="${p.icon}"></i>${p.label}</a></li>`
           ).join("")}
         </ul>
         ${langToggle("in-menu")}
@@ -108,7 +109,9 @@
             </div>
             <div class="menu-group">
               <a href="tier-list.html" class="tablet-link"><i class="fa-solid fa-ranking-star"></i><span>Tier List</span><i class="fa-solid fa-chevron-right"></i></a>
-              <a href="box-office.html" class="bo-menu-link"><i class="fa-solid fa-sack-dollar"></i><span>Box Office</span><i class="fa-solid fa-chevron-right"></i></a>
+              <a href="box-office.html" class="bo-menu-link" data-nav="boxoffice"><i class="fa-solid fa-sack-dollar"></i><span>Box Office</span><i class="fa-solid fa-chevron-right"></i></a>
+              <a href="news.html" class="news-menu-link" data-nav="news"><i class="fa-solid fa-newspaper"></i><span>Movie News</span><i class="fa-solid fa-chevron-right"></i></a>
+              <a href="admin.html" class="owner-only"><i class="fa-solid fa-sliders"></i><span>Admin Control Center</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="profile.html"><i class="fa-solid fa-user"></i><span>Profile &amp; stats</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="search.html"><i class="fa-solid fa-sliders"></i><span>Advanced search</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="#" data-action="add-title" class="owner-only"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
@@ -421,13 +424,19 @@
   const footer = document.createElement("footer");
   footer.className = "site-footer";
   const year = new Date().getFullYear();
-  const footLink = (p) => `<li><a href="${p.href}"><i class="${p.icon}"></i><span>${p.label}</span></a></li>`;
+  const footLink = (p) => `<li><a href="${p.href}"${p.id ? ` data-nav="${p.id}"` : ""}><i class="${p.icon}"></i><span>${p.label}</span></a></li>`;
+  const page = (id) => PAGES.find((p) => p.id === id);
+  // (the owner's own words from the Admin Control Center, when they wrote some)
+  const tagline =
+    window.Site && Site.get().branding.tagline && Site.get().branding.tagline !== Site.DEFAULTS.branding.tagline
+      ? esc(Site.get().branding.tagline)
+      : `Your own private diary of movies, TV shows and anime: rate and rank what you've
+          watched, and keep track of everything still waiting on your watchlist.`;
   footer.innerHTML = `
     <div class="footer-card">
       <div class="footer-brand">
         <a class="footer-logo" href="index.html"><img src="images/brand/logo.png" alt="Movie Nights" /></a>
-        <p>Your own private diary of movies, TV shows and anime: rate and rank what you've
-          watched, and keep track of everything still waiting on your watchlist.</p>
+        <p>${tagline}</p>
         <div class="footer-cta">
           <a class="footer-btn primary" href="discover.html"><i class="fa-solid fa-compass"></i> Discover something new</a>
           <a class="footer-btn" href="watchlist.html"><i class="fa-solid fa-bookmark"></i> My watchlist</a>
@@ -435,11 +444,11 @@
       </div>
       <nav class="footer-col" aria-label="Browse">
         <h3>Browse</h3>
-        <ul>${PAGES.slice(0, 5).map(footLink).join("")}</ul>
+        <ul>${PAGES.slice(0, 5).map(footLink).join("")}${footLink({ id: "animeExplore", href: "anime-explore.html", label: "Explore anime", icon: "fa-solid fa-dragon" })}${footLink(page("news"))}</ul>
       </nav>
       <nav class="footer-col" aria-label="My lists">
         <h3>My lists</h3>
-        <ul>${PAGES.slice(5, 6).map(footLink).join("")}${footLink({ href: "watchlist.html?list=fav", label: "Favorites", icon: "fa-solid fa-heart" })}${PAGES.slice(6).map(footLink).join("")}${footLink({ href: "profile.html", label: "Profile &amp; stats", icon: "fa-solid fa-user" })}${footLink({ href: "settings.html", label: "Settings", icon: "fa-solid fa-gear" })}</ul>
+        <ul>${PAGES.slice(5, 6).map(footLink).join("")}${footLink({ href: "watchlist.html?list=fav", label: "Favorites", icon: "fa-solid fa-heart" })}${[page("tiers"), page("boxoffice")].map(footLink).join("")}${footLink({ href: "profile.html", label: "Profile &amp; stats", icon: "fa-solid fa-user" })}${footLink({ href: "settings.html", label: "Settings", icon: "fa-solid fa-gear" })}</ul>
       </nav>
     </div>
     <div class="footer-bottom">
@@ -465,7 +474,10 @@
       return false;
     }
   })();
-  const standalone = previewApp || window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  // (the installed app runs full screen where the phone allows it, Android: the manifest's
+  // display_override; elsewhere standalone. Either counts as the app)
+  const standalone =
+    previewApp || window.matchMedia("(display-mode: standalone), (display-mode: fullscreen)").matches || navigator.standalone === true;
   if (standalone) document.documentElement.classList.add("standalone");
   // Tablets (iPad…) get their own layout: the pill navbar on top, a full-width slideshow and
   // poster-only cards (css: html.tablet). Decided by touch + a screen whose short side is at
@@ -818,13 +830,15 @@
       { href: "anime.html", label: "Anime", icon: "fa-clapperboard", n: count((i) => i.type === "anime") },
       { href: "watchlist.html?list=fav", label: "Favorites", icon: "fa-heart", n: count((i) => i.favorite) },
       { href: "tier-list.html", label: "Tier List", icon: "fa-ranking-star", n: null },
-      { href: "box-office.html", label: "Box Office", icon: "fa-sack-dollar", n: null },
+      { href: "box-office.html", label: "Box Office", icon: "fa-sack-dollar", n: null, nav: "boxoffice" },
+      { href: "anime-explore.html", label: "Explore anime", icon: "fa-dragon", n: null, nav: "animeExplore" },
+      { href: "news.html", label: "Movie News", icon: "fa-newspaper", n: null, nav: "news" },
     ];
     makeSheet(
       "library",
       "Library",
       `<div class="sheet-links">${LINKS.map(
-        (l) => `<a href="${l.href}"${PAGES.find((p) => p.href === l.href && p.id === current) ? ' class="on"' : ""}>
+        (l) => `<a href="${l.href}"${l.nav ? ` data-nav="${l.nav}"` : ""}${PAGES.find((p) => p.href === l.href && p.id === current) ? ' class="on"' : ""}>
           <i class="fa-solid ${l.icon}"></i><span>${l.label}</span>${l.n != null ? `<small>${l.n}</small>` : ""}</a>`
       ).join("")}</div>`
     );
@@ -977,31 +991,7 @@
   window.addEventListener("resize", () => document.querySelectorAll(PILL_SWITCHES).forEach(queuePill));
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => document.querySelectorAll(PILL_SWITCHES).forEach(queuePill));
 
-  /* ---------------- "out today" badge on Watchlist ---------------- */
-
-  // how many titles in Coming up come out (or get a new episode) today: a red number on the
-  // Watchlist link and tab. Release dates are kept fresh on any page (a day old at most).
-  document.addEventListener("DOMContentLoaded", () => {
-    if (Store.guest || !window.Watch) return;
-    const paint = () => {
-      const n = Watch.outToday(Store.all()).length;
-      document.querySelectorAll('.nav-links a[href="watchlist.html"], .tab-bar a[href="watchlist.html"]').forEach((a) => {
-        let b = a.querySelector(".nav-badge");
-        if (!n) return b && b.remove();
-        if (!b) {
-          b = document.createElement("span");
-          b.className = "nav-badge";
-          a.append(b);
-        }
-        b.textContent = n;
-        b.title = `${n} out today`;
-        a.setAttribute("aria-label", `Watchlist, ${n} out today`);
-      });
-    };
-    paint();
-    Watch.onChange(paint);
-    if (window.TMDB && TMDB.enabled()) setTimeout(() => Watch.loadNext(Watch.candidates(Store.all())), 4000);
-  });
+  /* ---------------- the red number on Watchlist: js/services/alerts.js ---------------- */
 
   /* ---------------- shared helpers ---------------- */
 
@@ -1016,8 +1006,14 @@
       el.setAttribute("role", "status");
       document.body.append(el);
     }
-    el.textContent = message;
+    el.textContent = "";
     el.classList.toggle("has-action", !!action);
+    // (the words in a box of their own: with a button beside them they may take two lines,
+    // and the button always keeps its size inside the pill)
+    const text = document.createElement("span");
+    text.className = "toast-text";
+    text.textContent = message;
+    el.append(text);
     if (action) {
       const btn = document.createElement("button");
       btn.type = "button";
@@ -1032,6 +1028,49 @@
     el.classList.add("show");
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => el.classList.remove("show"), action ? 6000 : 2200);
+  }
+
+  // copy text: the clipboard where the browser allows it, else the old way (a hidden box);
+  // true when it worked
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {}
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;pointer-events:none";
+      document.body.append(ta);
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // share a link: the phone's share sheet where there is one, else copied (with a message), and
+  // when even that isn't possible, a box with the link to copy by hand
+  async function shareLink({ title, text, url }) {
+    const full = new URL(url, location.href).href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url: full });
+        return "shared";
+      } catch (e) {
+        if (e && e.name === "AbortError") return "cancelled";
+      }
+    }
+    if (await copyText(full)) {
+      toast("Link copied: paste it anywhere");
+      return "copied";
+    }
+    await dialog({ icon: "fa-link", title: "Copy this link", text: title || "", value: full, ok: "Done" }, true);
+    return "shown";
   }
 
   function download(filename, text, type) {
@@ -1617,5 +1656,5 @@
   window.addEventListener("resize", menuPlace);
   window.addEventListener("scroll", (e) => menuSelect && !menuEl.contains(e.target) && !menuEl.classList.contains("sheet") && closeMenu(), true);
 
-  window.UI = { esc, toast, download, PAGES, foldTools, signInPrompt, needSignIn, welcome, confirm: confirmBox, ask, paintMyPic, frameMyPic, pickDate, chipIntoView };
+  window.UI = { esc, toast, download, copyText, shareLink, PAGES, foldTools, signInPrompt, needSignIn, welcome, confirm: confirmBox, ask, paintMyPic, frameMyPic, pickDate, chipIntoView };
 })();

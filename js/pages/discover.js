@@ -221,10 +221,17 @@
     for (let k = 0; k < 4; k++) next();
   }
 
-  // the page shows 5 rows of posters; each "Load more" adds 5 more
-  const ROWS = 5;
+  // how many posters show at first, and with each "Load more": about 24 on phones and 40 on
+  // computers (the Admin Control Center can change both), in whole rows. TMDB answers 20 at a
+  // time; posters load only as they come near the screen, and the ones waiting for "Load more"
+  // aren't shown (nor their pictures loaded)
   const columns = () => Math.max(1, getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length);
-  const fiveRows = () => columns() * ROWS;
+  const fiveRows = () => {
+    const c = columns();
+    const d = window.Site ? Site.get().discover : {};
+    const want = c <= 3 ? d.phoneFirst || 24 : d.desktopFirst || 40;
+    return Math.max(c, Math.round(want / c) * c);
+  };
 
   async function load(reset) {
     if (state.loading && !reset) return;

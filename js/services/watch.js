@@ -226,6 +226,9 @@
     onMine,
     loadNext,
     upcoming,
+    // what's next for a title as it was looked up ({ date, kind, season, episode, last }), or undefined
+    nextOf: (item) => saved(NEXT, item),
+    knownRef,
     candidates,
     reminders,
     isReminded,

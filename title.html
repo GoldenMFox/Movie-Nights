@@ -32,7 +32,7 @@
     <link rel="stylesheet" href="css/style.css" />
     <script>
       try {
-        if (localStorage.getItem("mn:theme") === "light") document.documentElement.dataset.theme = "light";
+        if ((localStorage.getItem("mn:theme") || JSON.parse(localStorage.getItem("mn:siteTheme") || "null")) === "light") document.documentElement.dataset.theme = "light";
       } catch (e) {}
     </script>
   </head>
@@ -43,8 +43,10 @@
     <script src="js/config.js"></script>
     <script src="js/core/store.js"></script>
     <script src="js/core/cloud.js"></script>
+    <script src="js/core/site.js"></script>
     <script src="js/core/lang.js"></script>
     <script src="js/core/layout.js"></script>
+    <script src="js/services/api.js"></script>
     <script src="js/services/tmdb.js"></script>
     <script src="js/services/ratings.js"></script>
     <script src="js/components/cards.js"></script>
@@ -52,8 +54,12 @@
     <script src="js/components/preview.js"></script>
     <script src="js/components/scrollbars.js"></script>
     <script src="js/services/watch.js"></script>
+    <script src="js/services/alerts.js"></script>
     <script src="js/services/taste.js"></script>
     <script src="js/services/facts.js"></script>
+    <script src="js/services/tvmaze.js"></script>
+    <script src="js/services/anime.js"></script>
+    <script src="js/services/books.js"></script>
     <script src="js/components/picker.js"></script>
     <script src="js/components/trivia.js"></script>
     <script src="js/components/soundtrack.js"></script>

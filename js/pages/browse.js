@@ -201,6 +201,11 @@
   // Watchlist page: a row per list, then the full list (opened by "See all")
   root.innerHTML = isLists
     ? `<div class="wl-welcome"></div>
+      <section class="wl-alerts" hidden aria-live="polite">
+        <div class="row-head"><h2><i class="fa-solid fa-bell"></i> New for you</h2>
+          <span class="wl-alerts-tools"><button type="button" class="t-link wl-alerts-clear"><i class="fa-solid fa-broom"></i> Clear all</button></span></div>
+        <div class="wl-alerts-list"></div>
+      </section>
       <section class="wl-coming" hidden>
         <div class="row-head"><h2><i class="fa-regular fa-calendar"></i> Coming up</h2><div class="top10-switch wl-type" role="group" aria-label="Show" data-type-row="coming"></div></div>
         <div class="wl-coming-list"></div>
@@ -222,6 +227,7 @@
         </div>
         <div class="wl-list-tools" hidden>
           <button type="button" class="btn btn-primary wl-add-panel"><i class="fa-solid fa-plus"></i> Add titles</button>
+          <button type="button" class="btn wl-theme" data-feature="listThemes"><i class="fa-solid fa-wand-magic-sparkles"></i> Theme</button>
           <button type="button" class="btn wl-rename"><i class="fa-solid fa-pen"></i> Rename</button>
           <button type="button" class="btn wl-delete"><i class="fa-solid fa-trash-can"></i> Delete list</button>
         </div>
@@ -425,6 +431,7 @@
     PAGE = LISTS[state.list] || LISTS.watch;
     const all = Store.all();
     root.querySelector(".wl-welcome").innerHTML = all.length ? "" : UI.welcome();
+    renderAlerts();
     renderComing(all);
 
     // one section per list: add the new ones, drop deleted ones, keep the rest (and their scroll)
@@ -456,7 +463,11 @@
       if (box.children[n] !== sec) box.insertBefore(sec, box.children[n] || null);
       sec.querySelector(".wl-name").textContent = LISTS[k].label;
       sec.querySelector(".wl-row-empty span").textContent = LISTS[k].empty;
+      // your own list's theme: its tint, emblem and atmosphere (js/components/list-themes.js)
+      if (window.ListThemes) ListThemes.apply(sec, LISTS[k].custom ? Store.lists().find((l) => l.id === LISTS[k].custom) : null);
     });
+    // the full list takes the theme of the list it shows
+    if (window.ListThemes) ListThemes.apply(panel, PAGE.custom ? Store.lists().find((l) => l.id === PAGE.custom) : null);
     root.querySelector(".wl-switch").innerHTML = keys
       .map((k) => `<button type="button" data-list-switch="${esc(k)}"><i class="fa-solid ${LISTS[k].icon}"></i> ${esc(LISTS[k].label)}<span class="count"></span></button>`)
       .join("");
@@ -492,6 +503,56 @@
       b.classList.toggle("active", LISTS[k] === PAGE);
       b.setAttribute("aria-pressed", LISTS[k] === PAGE);
       b.querySelector(".count").textContent = all.filter(LISTS[k].base).length;
+    });
+  }
+
+  // "New for you" (js/services/alerts.js): what came out lately (a movie, a new season or episode).
+  // Seeing them here marks them read (the red number on Watchlist goes away); each has its own ✕,
+  // and "Clear all" empties the list. Unread ones have a red dot until then.
+  let readTimer;
+  function renderAlerts() {
+    const box = root.querySelector(".wl-alerts");
+    if (!box || !window.Alerts) return;
+    const list = Alerts.all().sort((a, b) => (a.read === b.read ? b.date.localeCompare(a.date) : a.read ? 1 : -1));
+    box.hidden = !list.length;
+    if (!list.length) return;
+    const ago = (date) => {
+      const n = Math.round((new Date(`${Store.today()}T00:00:00`) - new Date(`${date}T00:00:00`)) / 86400000);
+      return n <= 0 ? "Today" : n === 1 ? "Yesterday" : `${n} days ago`;
+    };
+    box.querySelector(".wl-alerts-list").innerHTML = list
+      .slice(0, 12)
+      .map((a) => {
+        const w = Alerts.words(a);
+        return `<div class="wl-alert${a.read ? "" : " unread"}">
+          <a class="wl-alert-main" href="${Alerts.href(a)}" data-alert="${esc(a.key)}">
+            <img src="${Store.poster(a.poster, "w154")}" alt="" loading="lazy" />
+            <span><strong>${esc(w.title)}</strong><small>${esc(w.body)} · ${ago(a.date)}</small></span>
+          </a>
+          <button type="button" class="wl-alert-x" data-alert-x="${esc(a.key)}" aria-label="Dismiss"><i class="fa-solid fa-xmark"></i></button>
+        </div>`;
+      })
+      .join("");
+    // seen: read after a moment on screen (the dots fade; the red number goes)
+    clearTimeout(readTimer);
+    if (list.some((a) => !a.read) && document.visibilityState === "visible") readTimer = setTimeout(() => Alerts.markRead(), 2500);
+  }
+  if (isLists && window.Alerts) {
+    Alerts.onChange(renderAlerts);
+    root.addEventListener("click", (e) => {
+      const x = e.target.closest("[data-alert-x]");
+      if (x) {
+        e.preventDefault();
+        Alerts.dismiss(x.dataset.alertX);
+        return;
+      }
+      if (e.target.closest(".wl-alerts-clear")) {
+        Alerts.clear();
+        UI.toast("Cleared");
+        return;
+      }
+      const a = e.target.closest("[data-alert]");
+      if (a) Alerts.markRead([a.dataset.alert]);
     });
   }
 
@@ -652,6 +713,7 @@
     const add = e.target.closest("[data-add-to]");
     if (add) Cards.openListAdder(add.dataset.addTo);
     if (e.target.closest(".wl-add-panel") && PAGE.custom) Cards.openListAdder(PAGE.custom);
+    if (e.target.closest(".wl-theme") && PAGE.custom && window.ListThemes) ListThemes.picker(PAGE.custom);
     if (e.target.closest(".wl-rename") && PAGE.custom) {
       const listId = PAGE.custom;
       UI.ask({ icon: "fa-pen", title: "Rename this list", value: PAGE.label, placeholder: "List name", ok: "Rename" }).then((name) => {
@@ -679,8 +741,10 @@
       e.preventDefault();
       const input = e.target.elements.name;
       if (!input.value.trim()) return input.focus();
-      const id = Store.createList(input.value);
-      UI.toast(`List "${input.value.trim()}" made`);
+      // (a name that says it, "Halloween marathon", starts with that theme)
+      const theme = window.ListThemes ? ListThemes.suggest(input.value) : null;
+      const id = Store.createList(input.value, theme);
+      UI.toast(`List "${input.value.trim()}" made${theme ? ` · ${ListThemes.THEMES.find((t) => t.id === theme).label} theme on (change it with Theme)` : ""}`);
       input.value = "";
       e.target.hidden = true;
       root.querySelector(".wl-new-btn").hidden = false;

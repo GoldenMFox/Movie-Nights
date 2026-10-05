@@ -250,6 +250,31 @@
     </section>`;
   }
 
+  /* ---------------- the owner's picks (Admin Control Center → Content) ---------------- */
+
+  // "Our picks" (titles) and "Books behind the films", right after Top 10, for everyone
+  function featuredRows() {
+    if (!window.Site) return "";
+    const h = Site.get().home;
+    const safe = (u) => (/^https:\/\//.test(u || "") ? u : "");
+    const titles = (h.featured || []).filter((x) => x && x.tmdbId && x.mediaType);
+    const books = (h.featuredBooks || []).filter((b) => b && b.title);
+    let html = "";
+    if (titles.length)
+      html += `<section class="row-section" data-row="featured"><div class="row-head"><h2><i class="fa-solid fa-star"></i> ${esc(h.featuredTitle || "Our picks")}</h2></div>
+        <div class="movie-row">${titles.map(Cards.tmdbCard).join("")}</div></section>`;
+    if (books.length && Site.feature("books"))
+      html += `<section class="row-section" data-row="featured-books"><div class="row-head"><h2><i class="fa-solid fa-book-open"></i> ${esc(h.featuredBooksTitle || "Books behind the films")}</h2></div>
+        <div class="movie-row bk-row">${books
+          .map(
+            (b) => `<a class="bk-card" href="${esc(safe(b.url) || "#")}" target="_blank" rel="noopener" title="${esc(b.title)}">
+              <span class="bk-cover">${safe(b.cover) ? `<img src="${esc(b.cover)}" alt="" loading="lazy" />` : '<i class="fa-solid fa-book"></i>'}</span>
+              <strong>${esc(b.title)}</strong><small>${esc([(b.authors || [])[0], b.year].filter(Boolean).join(" · "))}</small></a>`
+          )
+          .join("")}</div></section>`;
+    return html;
+  }
+
   /* ---------------- "Because you liked …" (like Netflix): from your best-rated titles ---------------- */
 
   // some of your favorites / 8+ titles, different ones each visit: movies and shows for the
@@ -308,6 +333,7 @@
     // movies / shows: right before the anime rows; anime: under them (the last ones)
     rowsEl.innerHTML =
       top10Shell() +
+      featuredRows() +
       LIVE_ROWS.map((r) => (r.cat === "anime" ? movieRows.map(because).join("") : "") + rowShell(r.cat, r.title, `discover.html?cat=${r.cat}`)).join("") +
       (animeSeeds.length ? because({ row: "because-anime", s: animeSeeds[0] }) : "");
     fillTop10(top10Media);

@@ -53,6 +53,9 @@ It updates by itself whenever the site is published.
 | `tier-list.html` | Rank what you've watched from S to D: drag posters from the **unranked tray** at the bottom of the screen (phones: tap a poster, then a tier), **Quick rank** (one poster at a time with your own rating on it and the tier that score points to lit up; an All / Movies / TV / Anime switch to rank one kind at a time; keys S A B C D, Skip, Undo) and **Fill from my ratings** (10 → S, 9 → A, 8 → B, 7 → C, below → D, with Undo). **Franchises**: two or more watched films of one series (TMDB collection, e.g. The Lord of the Rings) in the same place show as one stacked poster with a count, and move, drag and quick-rank as one (Quick rank shows every film with your score and your average; "Rank them one by one" splits it there). Tap a franchise for **Split** (rank its films one by one from now on) or **Group** again; the Franchises switch in the tray turns it all off. Each film is still stored on its own. Only watched titles: not the ones only on your Watchlist. **Your tier lists**: Save keeps the board as a named tier list (as many as you like: all-time, this year, horror only…), shown as cards with a tiny version of their tiers; the one on the board has a red edge, and the next Save updates it (Save as new makes a copy, New tier list starts a clean board; leaving unsaved changes asks first). Tap a card to look at it (every tier, tap a poster to open it), then Open to edit, Rename or Delete (with Undo). Saved with your profile, so they follow you to every device |
 | `box-office.html` | **Box Office** (in the navbar after Tier List; on phones and on tablets under 1100px in the profile menu; and the Budget & box office card on a movie page): the highest-grossing films worldwide (TMDB's revenue and budget, US dollars, not adjusted for inflation): All time / this year / last year or any year, any genre (in the address: `?year=2025&genre=Horror`). A podium of the top 3 (the backdrop turns between them; point at or tap one), four numbers that count up (the top 20 together, typical return, best return, most expensive), **What they cost vs what they made**: a poster skyline of the top 20 by gross (a column's height is what the film made, the striped band at its foot what it cost, its multiple on top; the columns rise as they come into view), with a readout of the film you point at or tap (cost → made, profit, the multiple in the verdict's colour). **Compare**: This chart / Franchises (19 big ones + search, in release order) / Directors (14 + search, their directing credits in release order, no concert films or documentaries) / Studios (17, their biggest) / Year by year (each of the last 20 years' #1) / Your films (the 20 biggest you've watched), then the chart: sort by gross, budget, return or profit (the rows glide to their places); **List** (a bar per film in its verdict's colour with the budget striped inside it, cost and profit under it, the backdrop sliding in behind the row you point at, gold / silver / bronze edges for the top 3; tap a row for profit, what every $1 made and the trailer) or **Posters** (a wall with rank medals, gross and multiple); quick buttons on each (Trailer, Watchlist, Watched); All / Watched / Not seen yet (signed in); "Watched ★ 8" on yours, 20 at a time. The view is remembered (`mn:boView`). **Your box office**: what the films you've watched made together, the biggest one, the biggest flop, your 8+ money maker and hidden gem, the best return and the most expensive. Tap a card for your **top 10** in it (a pop-up: rank, poster, the amount, a bar against #1, the card's own film marked; each row opens its film); tap its poster to open that film. **Adjusted for inflation** (a switch at the top, beside the years; `?real=1`): the whole page (chart, podium, cards, the skyline's comparisons, Your box office) with every amount in this year's dollars (US CPI-U yearly averages in the page, the current year estimated until published; a film at its release year's prices); for all time the classics are fetched too (the biggest from before 1990 and 1990-2004), all ranked in today's money (Gone with the Wind first); the details show "At the time". Budgets / grosses cached in one record (`bo:films`) |
 | `profile.html` | Your name, **your picture** (tap it: a character. Tabs: Movie & TV cast (TMDB photos, famous titles or any title's cast), Superheroes (the Marvel and DC movie wikis), Harry Potter, Star Wars, Game of Thrones, Disney (the best-known characters of each, from free fan-made character databases); saved with your profile), stats, **Challenges & achievements** (17 challenges, each with bronze / silver / gold: 10 → 25 → 50 classics, titles from 10 → 25 → 40 countries, 5 → 8 → 12 films by one director, 5 → 10 → 20 horror titles in one October, movies from every decade 1930s–2020s, 5 → 10 → 20 titles with one actor, a franchise, not in English, over 2h30, a marathon day, genres, anime, series, titles, ratings, perfect 10s, trivia; medals whose ring fills to the next level, "Next up" = the closest three, tap one for its levels with the day you reached each and the titles that count; a level you just reached gets a "New" ribbon and a toast; `js/components/achievements.js`), **Watch diary** (watched this year / month, a chart of the last 12 months, "a year ago you watched…", **Wrapped**) and charts |
+| `anime-explore.html` | **Anime explorer** (Anime → Explore; phones: Library → Explore anime): trending, airing this season, coming next season, top rated, most popular, just finished, most-loved characters; browse by genre, studio or season; search. Each anime has its own page (`?id=mal-5114`): scores, rank, popularity, members, story, aired / broadcast / source, studios and producers, genres and themes, characters with their Japanese / English voices, staff, related anime (sequels, prequels, side stories…), "fans also like", and **Add to my library** (its Movie Nights title page). Data from MyAnimeList via **Jikan**; when Jikan can't be reached, **AniList** answers instead (same page, a note says which). Rows load as they come near the screen; adult / fan-service titles are left out of the rows |
+| `news.html` | **Movie News**: headlines from Variety, The Hollywood Reporter, /Film, Collider and Screen Rant (their public RSS feeds, via rss2json.com, kept 30 minutes): the top story big, then cards (source, time, headline, a short excerpt), chips for Movies / TV / Trailers / Box Office / Casting / Awards / Streaming / Upcoming / Production (empty ones hide), search, Share, and **Read more** on the source's own site. Stories the owner pins come first |
+| `admin.html` | **Admin Control Center** (owner only; profile menu or Settings): Website (name, tagline, accent colour, maintenance mode, a notice across the top, default theme), Pages & features (each page in the navigation, each feature on / off), Content (featured titles and books on Home, featured anime, hidden titles, how many posters Discover shows first), News (sources, pinned stories), API integrations (each service on / off, how long answers are kept, a Google Books key, live status with Test and Clear), Themes, Notifications, Users (members, turning someone away, the rules to publish), Backup. Saved in `site/config` for everyone (`js/core/site.js`); until the rules below are published it's kept on the owner's device |
 | `settings.html` | Theme, **your country** and **your streaming services**, **Import** from IMDb / Letterboxd, backup. The owner also sees **Members** and the TMDB / OMDb settings (marked Admin only) |
 
 The navbar search (or `/` on any page) searches your library and all of TMDB.
@@ -374,3 +377,63 @@ a second). Only for the page and only for a mouse wheel: a touchpad (smooth alre
 (zoom), Shift + wheel (sideways), an open pop-up and anything that scrolls on its own are left to
 the browser. Off with "reduce motion", or with the switch in Settings → Appearance
 (`mn:smoothScroll`). Phones keep their own scrolling, which is already as smooth as it gets.
+
+
+## Added in October 2026
+
+**Release dates** (title pages): a pill under the genres says where a title stands: *Released 23 Sep
+1994*, *Coming 16 Dec 2026 · in 72 days* (the cinema date in your country, the worldwide one on hover),
+*Release date not announced · In Production*, *Streaming / digital in 12 days*; shows: *Premieres …*,
+*Season 6 premiere Wed 7 Oct · in 2 days*, *S3 E5 …*, *Returning series*, *Ended · 2016–2025 · 5 seasons*.
+X-Ray's date card turns into a **Coming soon** countdown (days to go, the exact date) for a title not out yet.
+
+**TV shows + TVmaze** (`js/services/tvmaze.js`): **Episodes** on a show's page: the next and the latest
+episode as cards, a season switch, a card per episode (still, title, when it aired / airs in your time,
+runtime, rating, the story on a tap, a tick for the ones you've seen), Share an episode
+(`title.html?tmdb=tv-125935&ep=5-3` opens the show at that episode). X-Ray's **When it airs** card
+(days, time and time zone, your time, network or streaming channel, type, runtime, TVmaze rating,
+official site) and **Behind the show** (creators, producers) under the cast. Who's in charge of what:
+TMDB for titles, pictures, cast, ratings and streaming; TVmaze for the schedule, episodes and the
+next / last episode. TVmaze has no "related shows": those stay TMDB's recommendations.
+
+**Books** (`js/services/books.js`, Open Library; Google Books only for descriptions, with the owner's key):
+on title pages **Based on** (the book: cover, writer, first published, rating, pages, editions, ISBN,
+description; found from TMDB's "Novel: …" credit or "based on novel" keyword), **Related novels** (same
+themes) and **Further reading** (non-fiction on what it's about: space → astronomy, a war → its history;
+reading around the subject, not a verdict on accuracy). Person pages: books **by** and **about** them.
+
+**List themes** (`js/components/list-themes.js`): Watchlist page → open one of your lists → **Theme**:
+Halloween, Christmas, Winter, Spring, Summer, Film noir, Space. A tint, an emblem and a quiet atmosphere
+(embers and fog, snow, petals, sunlight, grain, stars), CSS only, playing only while the list is on screen
+(two at most), never with reduce motion, off per list or for everyone (Admin → Themes). A list named
+"Halloween marathon" or "Xmas movies" starts with its theme. New themes: add one to `THEMES` and a CSS block.
+
+**New for you + notifications** (`js/services/alerts.js`): when a movie on your Watchlist comes out, a show
+starts a season or a new episode airs, it's listed under **New for you** on the Watchlist page and counted
+in the red number on Watchlist (and on the installed app's icon). Seeing them there marks them read;
+✕ dismisses one, **Clear all** empties the list; read / unread follows your account. **Settings →
+Notifications** turns on notifications for this device (the browser asks first) and picks the kinds. On
+Android's installed app the phone also checks in the background now and then (`sw.js`, Periodic Background
+Sync), so they can arrive while the app is closed; elsewhere they come when the site is opened (instant push
+with everything closed would need a paid server). iPhone: add the site to the Home Screen first.
+
+**Outside services** (`js/services/api.js`): every new service goes through one place: answers kept in the
+browser's database for as long as Admin says, the same question asked once, each service's rate limit kept
+(TVmaze 20 / 10 s, Jikan 3 / s), waiting and trying again on "too many", 12 s at most, the last good answer
+used when a service is down, nothing asked of a service switched off, and each one's health for Admin.
+
+**Fixes**: Advanced search on phones scrolls from anywhere (the folded filters were a scroll box of their
+own that kept the swipe); the "Play trivia" message's button stays inside its pill; studio / network logos
+sit straight on the card (dark ones drawn white, white boxes taken out; mixed ones keep a light card); a
+rounded box's scrollbar no longer sticks out past its corners; "On Watchlist" fits on phones, and taking a
+title you haven't watched off the Watchlist takes it out of your library (with Undo) so it can go back on;
+"What should I watch?" starts fresh each time, drops a shortlist that arrives after you went back, and
+never suggests something not out yet; Discover shows 24 posters at first on phones (40 on computers, both
+set in Admin); pop-ups and sheets keep their scrolling to themselves and the page behind stays put on touch
+screens; Share works without a share sheet or clipboard (a box with the link), and anime, news stories and
+episodes can be shared; the installed Android app opens full screen (`display_override`; iPhone keeps
+its status bar, which Apple doesn't allow apps on the Home Screen to hide).
+
+**Rules to publish** (Firebase console → Firestore → Rules): the `site/config` block and `notBlocked()`
+from [`docs/firestore.rules`](docs/firestore.rules). Until then the Admin Control Center's settings stay
+on the owner's device.

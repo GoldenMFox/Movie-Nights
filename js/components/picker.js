@@ -52,6 +52,8 @@
   let current = 0;
   let spinning = null;
   let seen = new Set(); // Discover: titles already shown this time, so "New shortlist" brings others
+  // (emptied whenever a choice changes and when the picker opens: a new start every time)
+  let run = 0; // each shortlist being made; going back to the choices (or closing) drops a late one
 
   const discoverOn = () => !!(window.TMDB && TMDB.enabled());
   const myServices = () => (window.Watch ? Watch.mine() : []);
@@ -144,7 +146,18 @@
     return { s, why };
   }
 
-  const libraryPool = () => Store.all().filter((i) => (choice.from === "fav" ? i.favorite : i.watchlist));
+  // something to watch tonight: not a title that isn't out yet (a movie on your Watchlist still
+  // waiting for its release, a show that hasn't started). Known from its exact release date, what
+  // js/services/watch.js looked up, or a year still ahead.
+  function outAlready(i) {
+    const today = Store.today();
+    const exact = Store.releaseOf(i);
+    if (exact) return exact <= today;
+    const next = window.Watch && Watch.nextOf ? Watch.nextOf(i) : null;
+    if (next && next.kind === "release" && next.date) return next.date <= today;
+    return !(Number(i.year) > Number(today.slice(0, 4)));
+  }
+  const libraryPool = () => Store.all().filter((i) => (choice.from === "fav" ? i.favorite : i.watchlist) && outAlready(i));
 
   // the titles that pass the quick checks (the button's "12 fit"; runtimes and streaming come later)
   const quickFit = () => libraryPool().filter((i) => TYPES[choice.what](i) && fitsAge(i) && fitsCompany(i) && fitsTime(i));
@@ -255,7 +268,6 @@
         // (mood and company: tap the picked one again to leave it open)
         choice[name] = box.classList.contains("open") && choice[name] === b.dataset.v ? "" : b.dataset.v;
         box.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x.dataset.v === choice[name]));
-        if (name === "from") seen = new Set();
         changed();
       }
       if (e.target.closest(".pk-go")) make();
@@ -273,6 +285,7 @@
       changed();
     });
     overlay.onclose = () => {
+      run++; // a shortlist still on its way isn't wanted any more
       stopSpin();
       clearInterval(stageTimer);
     };
@@ -379,6 +392,10 @@
 
   // a choice changed: remember it, count what fits, redraw the stage
   function changed(fresh) {
+    // other choices, other titles: what was shown before may come again, and the last
+    // shortlist is gone (it was for the old choices)
+    seen = new Set();
+    shortlist = [];
     Store.write(SAVED, choice);
     if (choice.from === "discover") tally(null);
     else {
@@ -391,6 +408,7 @@
   }
 
   function ask() {
+    run++; // (a shortlist still being made for the old choices won't pop up over them)
     stopSpin();
     overlay.querySelector(".pk-short").hidden = true;
     overlay.querySelector(".pk-ask").hidden = false;
@@ -399,6 +417,7 @@
   }
 
   async function make(again) {
+    const my = ++run;
     const go = overlay.querySelector(again ? ".pk-again" : ".pk-go");
     const label = go.innerHTML;
     go.disabled = true;
@@ -415,6 +434,8 @@
       go.disabled = false;
       go.innerHTML = label;
     }
+    // back on the choices meanwhile (or closed, or asked again): this one isn't wanted
+    if (my !== run || !overlay.classList.contains("active")) return;
     // "New shortlist": others first, when there are enough
     const last = new Set(shortlist.map((x) => x.item.id || `${x.item.mediaType}-${x.item.tmdbId}`));
     const others = again ? rated.filter((x) => !last.has(x.item.id || `${x.item.mediaType}-${x.item.tmdbId}`)) : rated;

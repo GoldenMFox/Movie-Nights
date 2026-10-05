@@ -371,16 +371,30 @@
 
   /* ---------- your own lists ("Halloween marathon", "Date night"…), saved with your profile ---------- */
 
-  // [{ id, name, items: [library ids] }]
+  // [{ id, name, items: [library ids], theme?: "halloween" | …, fx?: false (no animation) }]
   const lists = () => (getProfile().lists || []).filter((l) => l && l.id);
   function saveLists(l) {
     setProfile({ lists: l });
     changed(null);
   }
-  function createList(name) {
+  function createList(name, theme) {
     const id = `l${Date.now().toString(36)}`;
-    saveLists(lists().concat({ id, name: String(name).trim().slice(0, 40) || "My list", items: [] }));
+    const list = { id, name: String(name).trim().slice(0, 40) || "My list", items: [] };
+    if (theme) list.theme = theme;
+    saveLists(lists().concat(list));
     return id;
+  }
+  // a list's look (js/components/list-themes.js): theme "" = none; fx false = no animation
+  function setListTheme(listId, theme, fx) {
+    saveLists(
+      lists().map((l) => {
+        if (l.id !== listId) return l;
+        const out = Object.assign({}, l, { theme: theme || undefined, fx: fx === false ? false : undefined });
+        if (!out.theme) delete out.theme;
+        if (out.fx === undefined) delete out.fx;
+        return out;
+      })
+    );
   }
   function renameList(listId, name) {
     saveLists(lists().map((l) => (l.id === listId ? Object.assign({}, l, { name: String(name).trim().slice(0, 40) || l.name }) : l)));
@@ -519,6 +533,7 @@
     createList,
     renameList,
     deleteList,
+    setListTheme,
     toggleInList,
     guest,
     exportBackup,

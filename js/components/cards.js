@@ -107,7 +107,10 @@
     );
   }
 
+  // titles the owner hid (Admin Control Center → Content): not shown in Discover / Home / search rows
+  const hiddenRefs = () => new Set(((window.Site && Site.get().content && Site.get().content.hidden) || []).map((h) => h.ref));
   function tmdbCard(hit) {
+    if (hit && hit.tmdbId && hiddenRefs().has(`${hit.mediaType}-${hit.tmdbId}`)) return "";
     const lib = inLibrary(hit);
     if (lib) {
       // already yours: show your card, and remember which TMDB entry it is

@@ -81,6 +81,39 @@
           )}
 
           ${card(
+            "notifications",
+            "fa-bell",
+            "Notifications",
+            `${row(
+              "fa-bell",
+              "On this device",
+              '<span class="nt-state"></span>',
+              `<label class="sv-switch" title="Notifications on this device">
+                <input type="checkbox" class="nt-switch" aria-label="Notifications on this device" />
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+              </label>`
+            )}
+            <div class="nt-kinds">
+              ${[
+                ["release", "fa-film", "Movie releases", "A movie on your Watchlist (or one you asked to be reminded of) comes out"],
+                ["season", "fa-layer-group", "New seasons", "A show you follow starts a new season"],
+                ["episode", "fa-tv", "New episodes", "A new episode of a show on your Watchlist or Favorites"],
+              ]
+                .map(([k, icon, name, sub]) =>
+                  row(
+                    icon,
+                    name,
+                    sub,
+                    `<label class="sv-switch"><input type="checkbox" class="nt-kind" data-kind="${k}" aria-label="${name}" /><span class="switch-track"><span class="switch-thumb"></span></span></label>`
+                  )
+                )
+                .join("")}
+            </div>
+            <p class="sv-note nt-note"></p>`,
+            guest ? " hidden" : ""
+          )}
+
+          ${card(
             "keys",
             "fa-key",
             "TMDB & IMDb",
@@ -99,6 +132,15 @@
         </div>
 
         <div class="sv-col">
+          ${card(
+            "admin-link",
+            "fa-sliders",
+            "Admin Control Center",
+            `<p class="sv-note sv-lead">The whole site's settings in one place: branding, maintenance mode, pages and features, featured titles, news, outside services, themes, notifications and members.</p>
+            <a class="btn btn-primary" href="admin.html"><i class="fa-solid fa-sliders"></i> Open the Admin Control Center</a>`,
+            " data-owner"
+          )}
+
           ${card(
             "members",
             "fa-users",
@@ -158,6 +200,67 @@
     toast(smooth.checked ? "Smooth scrolling on: the page glides with the mouse wheel" : "Smooth scrolling off");
     setTimeout(() => location.reload(), 900); // (it's set up when a page opens)
   });
+
+  /* ---------------- notifications (js/services/alerts.js) ---------------- */
+
+  function paintNotify() {
+    const sw = $(".nt-switch");
+    if (!sw || !window.Alerts) return;
+    const p = Alerts.prefs();
+    const perm = Alerts.permission();
+    const offSite = window.Site && (!Site.feature("notifications") || Site.get().notifications.on === false);
+    sw.checked = p.on && perm === "granted" && !offSite;
+    sw.disabled = perm === "unsupported" || offSite;
+    root.querySelectorAll(".nt-kind").forEach((b) => {
+      b.checked = p[b.dataset.kind] !== false;
+      b.disabled = !sw.checked;
+      const siteOff = window.Site && Site.get().notifications[b.dataset.kind] === false;
+      b.closest(".sv-row").hidden = !!siteOff;
+    });
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const state = $(".nt-state");
+    const note = $(".nt-note");
+    if (offSite) {
+      state.textContent = "Switched off for the site";
+      note.textContent = "New releases still show under New for you on the Watchlist page.";
+    } else if (perm === "unsupported") {
+      state.textContent = "Not available in this browser";
+      note.innerHTML = ios
+        ? '<i class="fa-solid fa-circle-info"></i> On iPhone and iPad: add Movie Nights to your Home Screen first (Share → Add to Home Screen), then turn this on in the app. Until then, new releases show under <b>New for you</b> on the Watchlist page and as a red number.'
+        : '<i class="fa-solid fa-circle-info"></i> This browser can\'t show notifications. New releases still show under <b>New for you</b> on the Watchlist page and as a red number.';
+    } else if (perm === "denied") {
+      state.textContent = "Blocked in this browser";
+      note.innerHTML = '<i class="fa-solid fa-circle-info"></i> Notifications are blocked for this site. Allow them in the browser\'s site settings (the icon left of the address), then come back.';
+    } else {
+      state.textContent = sw.checked ? "On" : "Off";
+      note.innerHTML = `<i class="fa-solid fa-circle-info"></i> One notification per release, never twice (also across your devices). ${
+        "periodicSync" in ServiceWorkerRegistration.prototype
+          ? "In the installed app the phone also checks in the background now and then, so they can arrive while the app is closed."
+          : "They arrive when you open the site; in the installed app on Android the phone can also check in the background."
+      }`;
+    }
+  }
+  if (!guest && window.Alerts) {
+    paintNotify();
+    $(".nt-switch").addEventListener("change", async (e) => {
+      if (e.target.checked) {
+        const r = Alerts.permission() === "granted" ? "granted" : await Alerts.ask();
+        if (r === "granted") {
+          Alerts.setPrefs({ on: true });
+          Alerts.backgroundCheck();
+          toast("Notifications on: you'll hear when something comes out");
+        } else if (r === "denied") toast("Notifications are blocked: allow them in the browser's site settings");
+      } else {
+        Alerts.setPrefs({ on: false });
+        toast("Notifications off on this device");
+      }
+      paintNotify();
+    });
+    root.addEventListener("change", (e) => {
+      if (!e.target.classList.contains("nt-kind")) return;
+      Alerts.setPrefs({ [e.target.dataset.kind]: e.target.checked });
+    });
+  }
 
   /* ---------------- problems on this device (js/core/store.js keeps them) ---------------- */
 

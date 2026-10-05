@@ -347,9 +347,17 @@
       .replace(/^-|-$/g, "") || "movie"}-movie-nights.jpg`;
 
   async function copy() {
+    if (await UI.copyText(cur.url)) return toast("Link copied: anyone can open it");
+    // (no clipboard here: the link, selected, to copy by hand)
+    const el = overlay.querySelector(".sh-url");
     try {
-      await navigator.clipboard.writeText(cur.url);
-      toast("Link copied: anyone can open it");
+      el.textContent = cur.url;
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      toast("The link is selected: copy it");
     } catch (e) {
       toast("Couldn't copy the link");
     }
