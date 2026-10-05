@@ -1041,7 +1041,7 @@
       const kind = String(based.kind || "novel").toLowerCase();
       body = b
         ? `<div class="bk-main">
-            <a class="bk-main-cover" href="${esc(bookUrl(b.url) || "#")}" target="_blank" rel="noopener">${bookUrl(b.coverBig) ? `<img src="${esc(b.coverBig)}" alt="${esc(b.title)} cover" loading="lazy" />` : '<i class="fa-solid fa-book"></i>'}</a>
+            <a class="bk-main-cover" href="${esc(bookUrl(b.url) || "#")}" target="_blank" rel="noopener">${bookUrl(b.coverBig) ? `<img src="${esc(b.coverBig)}"${bookUrl(b.cover) ? ` data-small="${esc(b.cover)}"` : ""} alt="${esc(b.title)} cover" loading="lazy" />` : '<i class="fa-solid fa-book"></i>'}</a>
             <div class="bk-main-text">
               <span class="xr-label"><i class="fa-solid fa-book"></i> ${esc(kind === "characters" ? "Based on characters from" : `Based on the ${kind}`)}</span>
               <h3>${esc(b.title)}</h3>

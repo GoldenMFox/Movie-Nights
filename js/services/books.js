@@ -189,5 +189,15 @@
     return { by: mine.slice(0, 10), about: aboutThem.filter((b) => !mine.some((m) => m.key === b.key)).slice(0, 10) };
   }
 
+  // Google sends an "image not available" picture (300 x 391) when it has no large cover of an
+  // edition, though the small one is real: then the small one is shown instead
+  document.addEventListener("load", (e) => {
+    const img = e.target;
+    if (img.tagName === "IMG" && img.dataset.small && img.naturalWidth === 300 && img.naturalHeight === 391) {
+      img.src = img.dataset.small;
+      delete img.dataset.small;
+    }
+  }, true);
+
   window.Books = { ready, search, basedOn, related, reference, forPerson };
 })();
