@@ -1613,9 +1613,16 @@
   }
   const isShow = (item, d) => (d && d.media ? d.media === "tv" : window.Watch && Watch.isSeries(item));
 
+  // (folded like Your notes, on every show at first: the header shows where you are, tap to open)
+  let progressFolded = true;
+  const progressHead = (sum, pct) => `<button type="button" class="xr-head tp-toggle" aria-expanded="${!progressFolded}">
+      <span class="xr-label"><i class="fa-solid fa-tv"></i> Your progress</span>
+      <span class="tp-sum">${sum}</span>
+      ${pct != null ? `<span class="tp-pct">${pct}%</span>` : ""}
+      <i class="fa-solid fa-chevron-down tn-chev" aria-hidden="true"></i>
+    </button>`;
   function progressHtml(item, d) {
     if (!window.Watch || !isShow(item, d)) return "";
-    const label = (icon, text) => `<span class="xr-label"><i class="fa-solid ${icon}"></i> ${text}</span>`;
     const fresh = episodesOf(d);
     let p = item.progress;
     // TMDB knows more episodes now (a new season): count them, and a finished show can go on
@@ -1627,10 +1634,12 @@
     }
     if (!p) {
       if (!fresh) return "";
-      return `<div class="xr-card tp-card tp-off">
-          ${label("fa-tv", "Your progress")}
-          <p class="tp-lead">Keep track of the episodes you've seen: the show sits in <b>Continue watching</b> on Home, and one tap moves you on to the next episode.</p>
-          <button class="btn btn-primary tp-start" type="button"><i class="fa-solid fa-play"></i> I'm watching it</button>
+      return `<div class="xr-card tp-card tp-off${progressFolded ? " folded" : ""}">
+          ${progressHead("Not tracking yet", null)}
+          <div class="tn-body"><div>
+            <p class="tp-lead">Keep track of the episodes you've seen: the show sits in <b>Continue watching</b> on Home, and one tap moves you on to the next episode.</p>
+            <button class="btn btn-primary tp-start" type="button"><i class="fa-solid fa-play"></i> I'm watching it</button>
+          </div></div>
         </div>`;
     }
     const eps = p.eps || [];
@@ -1638,8 +1647,10 @@
     const n = p.done ? null : Watch.nextEpisode(p);
     const seasonOpts = eps.map((c, i) => (c ? `<option value="${i + 1}"${i + 1 === p.s ? " selected" : ""}>Season ${i + 1}</option>` : "")).join("");
     const epOpts = Array.from({ length: (eps[p.s - 1] || 0) + 1 }, (_, e) => `<option value="${e}"${e === p.e ? " selected" : ""}>${e ? `Episode ${e}` : "Not started"}</option>`).join("");
-    return `<div class="xr-card tp-card${p.done ? " done" : ""}">
-        <div class="xr-head">${label("fa-tv", "Your progress")}<span class="tp-pct">${pct}%</span></div>
+    const sum = p.done ? '<i class="fa-solid fa-trophy"></i> Finished' : `S${p.s} E${p.e}${n ? ` · next <b>S${n.s} E${n.e}</b>` : ""}`;
+    return `<div class="xr-card tp-card${p.done ? " done" : ""}${progressFolded ? " folded" : ""}">
+        ${progressHead(sum, pct)}
+        <div class="tn-body"><div>
         <div class="tp-now">
           <b>${p.done ? '<i class="fa-solid fa-trophy"></i> Finished' : `Season ${p.s} · Episode ${p.e}`}</b>
           <small>${seen} of ${total} episodes watched</small>
@@ -1651,6 +1662,7 @@
           <span class="glass-select small"><select class="tp-episode" aria-label="The last episode you watched">${epOpts}</select></span>
           <button class="btn tp-stop" type="button">${p.done ? "Watch it again" : "Stop tracking"}</button>
         </div>
+        </div></div>
       </div>`;
   }
 
@@ -1832,6 +1844,15 @@
         e.preventDefault();
         e.target.blur();
       }
+    });
+    // Your progress: fold / unfold from its header
+    document.addEventListener("click", (e) => {
+      const t = e.target.closest(".tp-toggle");
+      if (!t) return;
+      const card = t.closest(".tp-card");
+      progressFolded = !card.classList.contains("folded");
+      card.classList.toggle("folded", progressFolded);
+      t.setAttribute("aria-expanded", !progressFolded);
     });
     // fold / unfold (opening it puts you in the box)
     document.addEventListener("click", (e) => {

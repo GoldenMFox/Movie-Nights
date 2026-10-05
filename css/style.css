@@ -28019,3 +28019,71 @@ button.xr-sq:hover {
 :root[data-theme="light"] .xr-sq-date span {
   color: var(--text);
 }
+
+/* title page: Your progress folds like Your notes (closed at first: the header says where you are) */
+.tp-toggle {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tp-toggle .xr-label {
+  flex-shrink: 0;
+}
+
+.tp-sum {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.tp-sum b {
+  color: var(--text);
+}
+
+.tp-sum .fa-trophy {
+  color: var(--gold);
+}
+
+.tp-card.folded .tp-sum {
+  opacity: 1;
+}
+
+.tp-toggle .tp-pct {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.tp-toggle:hover .tn-chev {
+  background: var(--glass-bg-hover);
+  color: var(--text);
+}
+
+.tp-card.folded .tn-chev {
+  transform: rotate(-90deg);
+}
+
+.tp-card.folded .tn-body {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+.tp-card.folded {
+  align-self: start;
+}
+
+.tp-card .tn-body > div {
+  display: grid;
+  gap: 12px;
+}
