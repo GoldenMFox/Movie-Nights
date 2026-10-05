@@ -42,7 +42,8 @@
   function card(c) {
     const href = `anime-explore.html?id=${encodeURIComponent(c.key)}`;
     const meta = [c.season && c.year ? `${SEASON_LABEL[c.season] || ""} ${c.year}` : c.year, c.episodes ? `${c.episodes} ep` : ""].filter(Boolean).join(" · ");
-    return `<article class="movie-item ax-card" data-anime="${esc(c.key)}">
+    // (the names and year: to find its TMDB poster, see tmdbPosters below)
+    return `<article class="movie-item ax-card" data-anime="${esc(c.key)}" data-en="${esc(c.titleEn || "")}" data-ro="${esc(c.titleRomaji || c.title || "")}" data-year="${esc(c.year || "")}" data-type="${esc(c.type || "")}">
         <a class="poster-link" href="${href}" tabindex="-1" aria-hidden="true">
           <img class="movie-poster" src="${esc(safe(c.image) || "images/placeholders/poster-placeholder.svg")}" alt="" loading="lazy" decoding="async" />
           <span class="badges"><span class="type-badge">${esc(c.type || "Anime")}</span></span>
@@ -54,6 +55,30 @@
         </div>
       </article>`;
   }
+  // TMDB's posters (with the name on them, like the library's) in place of AniList's covers,
+  // looked up as cards come near the screen; the new poster shows once it has loaded
+  const posterIo =
+    window.IntersectionObserver && window.TMDB && TMDB.animePoster
+      ? new IntersectionObserver(
+          (entries) =>
+            entries.forEach((e) => {
+              if (!e.isIntersecting) return;
+              posterIo.unobserve(e.target);
+              const el = e.target;
+              const img = el.querySelector(".movie-poster");
+              TMDB.animePoster({ key: el.dataset.anime, titleEn: el.dataset.en, titleRomaji: el.dataset.ro, year: Number(el.dataset.year) || null, type: el.dataset.type }).then((url) => {
+                if (!url || !img) return;
+                const pre = new Image();
+                pre.onload = () => (img.src = url);
+                pre.src = url;
+              });
+            }),
+          { rootMargin: "300px" }
+        )
+      : null;
+  if (posterIo)
+    new MutationObserver(() => root.querySelectorAll(".ax-card:not([data-tp])").forEach((el) => (el.setAttribute("data-tp", ""), posterIo.observe(el)))).observe(root, { childList: true, subtree: true });
+
   const skeleton = (n) => Array.from({ length: n }, () => '<div class="ax-skel"></div>').join("");
   const credit = () => '<p class="tmdb-note ax-credit">Anime data from <a href="https://anilist.co" target="_blank" rel="noopener">AniList</a>.</p>';
   const failed = (e, retry) =>

@@ -454,5 +454,5 @@ above). The tab bar's Discover is now **Explore**.
 **Settings vs Admin**: Settings only has what's yours; the TMDB key, the OMDb meter, Members and "Add a
 title by hand" are in the Admin Control Center, and the owner's links aren't even in other people's pages.
 
-**Anime: AniList only** (Jikan removed). Older `?id=mal-…` links still open. **Books: Google Books only**
+**Anime: AniList only** (Jikan removed). The explorer's posters are TMDB's (with the name on them, like the library's), looked up by name and year as cards come on screen and kept a month (`TMDB.animePoster`); AniList's cover when TMDB has no match. Older `?id=mal-…` links still open. **Books: Google Books only**
 (Open Library removed); it needs a key (see Books above).

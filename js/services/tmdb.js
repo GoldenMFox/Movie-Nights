@@ -1361,7 +1361,101 @@
     return list;
   }
 
+  /* ---------------- an AniList anime's TMDB poster (the anime explorer) ----------------
+   * AniList's covers are mostly art without the name; TMDB's posters carry it, like the ones in
+   * your library. Found by name (English, then romaji) and year, among Japanese animation; a
+   * later season ("… Season 3", "Part 2") gets the show's poster. Kept a month in this browser,
+   * "" when there's no good match (the AniList cover stays). */
+  const AP_KEY = "mn:animePosters";
+  const AP_DAYS = 30;
+  let apMap = null;
+  const apLoad = () => {
+    if (apMap) return apMap;
+    try {
+      apMap = JSON.parse(localStorage.getItem(AP_KEY) || "{}") || {};
+    } catch (e) {
+      apMap = {};
+    }
+    return apMap;
+  };
+  let apSaveT = 0;
+  const apSave = () => {
+    clearTimeout(apSaveT);
+    apSaveT = setTimeout(() => {
+      const all = Object.entries(apLoad()).sort((a, b) => b[1].at - a[1].at).slice(0, 1500);
+      apMap = Object.fromEntries(all);
+      try {
+        localStorage.setItem(AP_KEY, JSON.stringify(apMap));
+      } catch (e) {}
+    }, 400);
+  };
+  const apPending = new Map();
+  const apQueue = [];
+  let apBusy = 0;
+  const apRun = () => {
+    while (apBusy < 4 && apQueue.length) {
+      const job = apQueue.shift();
+      apBusy++;
+      job().finally(() => {
+        apBusy--;
+        apRun();
+      });
+    }
+  };
+  const stripSeason = (t) =>
+    String(t || "")
+      .replace(/[:\-–]?\s*(season|part|cour)\s*\d+.*$/i, "")
+      .replace(/[:\-–]?\s*(the\s+)?final\s+season.*$/i, "")
+      .replace(/\s+(\d+(st|nd|rd|th)\s+season|2nd|3rd|ii|iii|iv)\b.*$/i, "")
+      .replace(/\s*\(\d{4}\)\s*$/, "")
+      .trim();
+
+  async function findAnimePoster(a) {
+    const media = a.type === "Movie" ? "movie" : "tv";
+    // (last: the name before a colon, "BLEACH: Thousand-Year Blood War - …" is TMDB's "Bleach")
+    const head = (t) => (/^(.{4,}?)\s*[:：]\s/.exec(String(t || "")) || [])[1] || "";
+    const names = [...new Set([a.titleEn, a.titleRomaji, stripSeason(a.titleEn), stripSeason(a.titleRomaji), head(a.titleEn), head(a.titleRomaji)].filter(Boolean))];
+    const close = (r) => Math.max(...names.map((n) => (window.Lang ? Lang.similarity(r.title || r.name || "", n) : 0)), ...names.map((n) => (window.Lang && r.original_name ? Lang.similarity(r.original_name, n) : 0)));
+    const ok = (r) => r.poster_path && (r.genre_ids || []).includes(ANIMATION);
+    for (const [n, withYear] of names.flatMap((n) => [[n, true], [n, false]])) {
+      if (withYear && !a.year) continue;
+      const year = withYear ? (media === "movie" ? { primary_release_year: a.year } : { first_air_date_year: a.year }) : {};
+      const data = await request(`/search/${media}`, Object.assign({ query: n }, year)).catch(() => null);
+      const list = ((data && data.results) || []).filter(ok);
+      const best = list.map((r) => [r, close(r)]).sort((x, y) => y[1] - x[1] || (y[0].popularity || 0) - (x[0].popularity || 0))[0];
+      if (best && best[1] >= 0.8) return best[0].poster_path;
+      // a Japanese name only (TMDB knows it in English): the one or two anime that year
+      if (withYear && n === a.titleRomaji && !a.titleEn && list.length && list.length <= 2) return list[0].poster_path;
+    }
+    return "";
+  }
+
+  // the poster's address (w342), "" if there's none; null without a TMDB key
+  function animePoster(a) {
+    if (!key() || !a || !a.key) return Promise.resolve(null);
+    const map = apLoad();
+    const hit = map[a.key];
+    if (hit && Date.now() - hit.at < AP_DAYS * 864e5) return Promise.resolve(hit.p ? `https://image.tmdb.org/t/p/w342${hit.p}` : "");
+    if (apPending.has(a.key)) return apPending.get(a.key);
+    const p = new Promise((resolve) => {
+      apQueue.push(() =>
+        findAnimePoster(a)
+          .then((path) => {
+            map[a.key] = { p: path, at: Date.now() };
+            apSave();
+            resolve(path ? `https://image.tmdb.org/t/p/w342${path}` : "");
+          })
+          .catch(() => resolve(""))
+          .finally(() => apPending.delete(a.key))
+      );
+      apRun();
+    });
+    apPending.set(a.key, p);
+    return p;
+  }
+
   window.TMDB = {
+    animePoster,
     genreId: (name, media) => (GENRES.find((g) => g[0] === name) || [])[media === "movie" ? 1 : 2] || null,
     discover, searchPeople, keywordId, cardsFor, store: { get: (k) => cacheGet(k), set: (k, v) => cacheSet(k, v) },
     facts, credits, tagline, moodPicks, boxOffice, boxOfficeOf, franchiseBoxOffice, searchCollections, yearTop, directorBoxOffice, searchDirectors,
