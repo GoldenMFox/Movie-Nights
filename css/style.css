@@ -44,6 +44,8 @@
 
 html {
   scrollbar-color: #7777 transparent;
+  /* room for the scrollbar from the start: pages don't nudge sideways when theirs appears */
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -25647,19 +25649,25 @@ html.feat-off-share [data-feature="share"] {
   }
 }
 
-/* Explore pages: Movies · TV Shows · Anime, under the My / Explore switch */
-.ex-kinds {
+/* My … | Explore pages: the title has room for its search / filter buttons from the start, so
+   nothing moves down when they're added (js/core/layout.js: foldTools) */
+.ax-top .page-title {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: -4px 0 18px;
+  align-items: center;
+  min-height: 44px;
 }
 
-.ex-kinds .chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  text-decoration: none;
+.ax-top .page-head {
+  margin: 0;
+}
+
+/* narrower screens: the switch has its own row from the start (the title and its buttons don't
+   leave room for it, and it would drop a row once they're added) */
+@media (max-width: 760px) {
+  .ax-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 /* ============================== Notifications: the bell (js/services/alerts.js) ============================== */

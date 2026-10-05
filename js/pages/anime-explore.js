@@ -36,8 +36,7 @@
       <nav class="top10-switch ax-switch" aria-label="Anime">
         <a class="top10-tab" href="anime.html"><i class="fa-solid fa-list"></i> My anime</a>
         <a class="top10-tab active" href="anime-explore.html" aria-current="page"><i class="fa-solid fa-compass"></i> Explore</a>
-      </nav></div>
-    <nav class="ex-kinds" aria-label="Explore"><a class="chip" href="movies-explore.html"><i class="fa-solid fa-film"></i> Movies</a><a class="chip" href="tv-explore.html"><i class="fa-solid fa-tv"></i> TV Shows</a><a class="chip active" href="anime-explore.html" aria-current="page"><i class="fa-solid fa-dragon"></i> Anime</a></nav>`;
+      </nav></div>`;
 
   // a poster card (the site's own: poster, type, score; title under it on computers)
   function card(c) {
