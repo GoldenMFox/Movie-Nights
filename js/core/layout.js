@@ -348,7 +348,7 @@
       try {
         const data = await TMDB.searchSmart(q, "all", 1);
         if (token !== navRun) return;
-        const hits = data.results.filter((h) => !(window.Cards && Cards.inLibrary(h))).slice(0, 10);
+        const hits = byMatch(data.results.filter((h) => !(window.Cards && Cards.inLibrary(h))), q).slice(0, 10);
         tmdbPart = hits.length ? head("More from TMDB") + hits.map(tmdbHit).join("") : hasMine ? "" : `<li class="search-empty">Nothing found for "${esc(q)}"</li>`;
       } catch (err) {
         if (token !== navRun) return;
@@ -361,6 +361,32 @@
 
   // library search results (navbar search, and the app's Library panel)
   // (type: "movie" / "tv" / "anime" to search only those; anything else = everything)
+  // how well a name fits what was typed (lower: better), "The" / "A" / "An" at the start not
+  // counting: 0 the name itself ("mist" -> The Mist), 1 it starts so, 2 a word starts so ("In the
+  // Electric Mist"), 3 somewhere inside a word ("Fullmetal Alchemist"), -1 not at all
+  const bare = (s) => String(s || "").toLowerCase().replace(/^(the|a|an)\s+/, "").trim();
+  const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  function matchRank(names, q) {
+    const qb = bare(q);
+    let best = -1;
+    names.filter(Boolean).forEach((name) => {
+      const n = String(name).toLowerCase();
+      const nb = bare(n);
+      const r = n === q || nb === qb ? 0 : n.startsWith(q) || nb.startsWith(qb) ? 1 : new RegExp(`(^|[^a-z0-9])${escRe(q)}`).test(n) ? 2 : n.includes(q) ? 3 : -1;
+      if (r >= 0 && (best < 0 || r < best)) best = r;
+    });
+    return best;
+  }
+
+  // TMDB's results: the best fitting names first, TMDB's own order (popularity) within each
+  const byMatch = (list, q) => {
+    const lq = String(q || "").trim().toLowerCase();
+    return list
+      .map((h, i) => ({ h, i, r: matchRank([h.title, h.titleRu, h.originalTitle], lq) }))
+      .sort((a, b) => (a.r < 0 ? 9 : a.r) - (b.r < 0 ? 9 : b.r) || a.i - b.i)
+      .map((x) => x.h);
+  };
+
   function resultsHtml(raw, type) {
     const q = String(raw || "").trim().toLowerCase();
     if (!q) return "";
@@ -370,17 +396,19 @@
         // match the English and the Russian name
         const raw = [item.title, item.titleRu].filter(Boolean);
         const names = raw.map((n) => n.toLowerCase());
-        let score = names.includes(q) ? 0 : names.some((n) => n.startsWith(q)) ? 1 : names.some((n) => n.includes(q)) ? 2 : String(item.year) === q ? 3 : -1;
+        let score = matchRank(names, q);
+        if (score < 0 && String(item.year) === q) score = 4;
         // allow small typos ("the notebok" finds The Notebook); closest names first
         let close = 0;
         if (score < 0 && raw.some((n) => Lang.fuzzyName(n, q))) {
-          score = 4;
+          score = 5;
           close = Math.max(...raw.map((n) => Lang.similarity(n, q)));
         }
-        return { item, score, close };
+        // (in the same group: the shorter name, the nearer to what was typed)
+        return { item, score, close, len: Math.min(...names.map((n) => bare(n).length)) };
       })
       .filter((h) => h.score >= 0)
-      .sort((a, b) => a.score - b.score || b.close - a.close || Lang.title(a.item).localeCompare(Lang.title(b.item)))
+      .sort((a, b) => a.score - b.score || b.close - a.close || a.len - b.len || Lang.title(a.item).localeCompare(Lang.title(b.item)))
       .slice(0, 8);
 
     return hits.length
@@ -801,7 +829,7 @@
       try {
         const data = await TMDB.searchSmart(q, type, 1);
         if (token !== run) return;
-        const hits = data.results.filter((h) => !(window.Cards && Cards.inLibrary(h))).slice(0, 15);
+        const hits = byMatch(data.results.filter((h) => !(window.Cards && Cards.inLibrary(h))), q).slice(0, 15);
         tmdbBox.innerHTML = hits.length
           ? `<h3 class="sheet-group">More from TMDB</h3><ul class="search-results sheet-results">${hits.map(tmdbRow).join("")}</ul>`
           : searchResults.innerHTML
