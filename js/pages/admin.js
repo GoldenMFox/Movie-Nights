@@ -691,6 +691,21 @@
     else delete all[k];
     Store.setProfile({ adminLayout: all });
   }
+  // masonry: each box sits right under the one above it in its column (no gap under a short box
+  // beside a tall one). The grid's rows are 1px; each box spans its own height (+ the gap), and
+  // is measured again whenever its size changes (a textarea grows, members load…)
+  const GAP = 16;
+  const oneColumn = () => window.matchMedia("(max-width: 900px)").matches;
+  function pack(grid) {
+    if (!grid || !grid.classList.contains("ad-grid")) return;
+    const on = !oneColumn();
+    grid.classList.toggle("ad-packed", on);
+    const gap = grid.classList.contains("ad-editing") ? GAP + 18 : GAP;
+    boxesOf(grid).forEach((b) => (b.style.gridRowEnd = on ? `span ${Math.max(1, Math.ceil(b.offsetHeight + gap))}` : ""));
+  }
+  const packWatch = window.ResizeObserver ? new ResizeObserver((entries) => new Set(entries.map((e) => e.target.parentElement)).forEach(pack)) : null;
+  window.addEventListener("resize", () => pack(gridOf()));
+
   // the saved layout onto the drawn section
   function applyLayout(k) {
     const grid = gridOf();
@@ -708,8 +723,10 @@
     boxes.forEach((b) => {
       b.dataset.size = l.size[b.dataset.box] || WIDE[b.dataset.box] || 1;
       b.classList.toggle("ad-box-hidden", l.hidden.includes(b.dataset.box));
+      if (packWatch) packWatch.observe(b);
     });
     if (editing) dress(grid);
+    pack(grid);
   }
   // the layout as it is on the page now
   function readLayout(grid) {
@@ -754,7 +771,7 @@
     btn.setAttribute("aria-pressed", on);
     if (on) {
       const grid = gridOf();
-      if (grid) dress(grid);
+      if (grid) dress(grid), pack(grid);
     } else show(section);
   }
 
@@ -833,7 +850,7 @@
     const before = full ? e.clientY < r.top + r.height / 2 : (e.clientX - r.left) / r.width + (e.clientY - r.top) / r.height < 1;
     const next = before ? over : over.nextElementSibling;
     if (next === drag.box || (before && over.previousElementSibling === drag.box) || (!before && over.nextElementSibling === drag.box)) return;
-    flip(drag.grid, () => drag.grid.insertBefore(drag.box, before ? over : over.nextElementSibling));
+    flip(drag.grid, () => (drag.grid.insertBefore(drag.box, before ? over : over.nextElementSibling), pack(drag.grid)));
   });
   const endDrag = (e) => {
     if (!drag || e.pointerId !== drag.id) return;
@@ -1035,7 +1052,7 @@
     const sz = e.target.closest("[data-size-to]");
     if (sz) {
       const box = sz.closest("[data-box]");
-      flip(box.parentElement, () => (box.dataset.size = sz.dataset.sizeTo));
+      flip(box.parentElement, () => ((box.dataset.size = sz.dataset.sizeTo), pack(box.parentElement)));
       saveLayout(section, readLayout(box.parentElement));
       return paintVeils(box.parentElement);
     }
@@ -1043,6 +1060,7 @@
     if (eye) {
       const box = eye.closest("[data-box]");
       box.classList.toggle("ad-box-hidden");
+      pack(box.parentElement);
       saveLayout(section, readLayout(box.parentElement));
       return paintVeils(box.parentElement);
     }

@@ -25403,7 +25403,7 @@ html.app-ui .site-maint.owner {
 
 .ad-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
   align-items: start;
   gap: 16px;
 }
@@ -27555,4 +27555,41 @@ body[data-page="admin"] main.container {
   .ad-dash > [data-size] {
     grid-column: 1 / -1;
   }
+}
+
+/* Admin: masonry (js/pages/admin.js: pack): 1px rows, each box spans its own height + the gap */
+.ad-grid.ad-packed {
+  grid-auto-rows: 1px;
+  row-gap: 0 !important;
+  align-items: start;
+}
+
+.ad-grid.ad-packed > [data-box] {
+  margin-bottom: 16px;
+}
+
+.ad-grid.ad-packed.ad-editing > [data-box] {
+  margin-bottom: 34px;
+}
+
+/* (narrow columns: fields shrink with their card, the date pickers too) */
+.ad-grid > [data-box],
+.ad-two > *,
+.ad-field {
+  min-width: 0;
+}
+
+.ad-field .input,
+.ad-two .input {
+  width: 100%;
+  min-width: 0;
+}
+
+.ad-card .sv-row,
+.ad-card .sv-name {
+  min-width: 0;
+}
+
+.ad-card .sv-name small {
+  overflow-wrap: anywhere;
 }
