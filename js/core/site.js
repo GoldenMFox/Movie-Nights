@@ -24,6 +24,8 @@
     notice: { on: false, text: "", link: "", tone: "info", from: "", until: "" }, // (from / until: days, optional)
     // a message to every member's bell (Admin → Notifications): { id, title, text, link, at } or null
     announce: null,
+    // the title page's rows, top to bottom, and the ones left out (Admin → Title page)
+    titlePage: { order: [], hidden: [] },
     // pages left out of the navbar, the tab bar and the profile menu (by their id in layout.js)
     nav: { hidden: [] },
     features: {
@@ -276,5 +278,32 @@
     if (window.Cloud && Cloud.onOwner) Cloud.onOwner(() => apply());
   });
 
-  window.Site = { DEFAULTS, get, feature, api, navHidden, state, blocked, refresh, save, onChange: (fn) => listeners.push(fn), merge };
+  // the title page's rows (js/pages/title.js), in the order they come: [id, name, what's in it, icon]
+  const TITLE_ROWS = [
+    ["yours", "Your progress, notes & trivia", "Episodes you're at, your note, the trivia game", "fa-user-pen"],
+    ["collection", "Collection", "The other films of its franchise", "fa-layer-group"],
+    ["seasons", "Seasons", "A card per season, with its trailer", "fa-tv"],
+    ["episodes", "Episodes", "The episode guide (shows)", "fa-list-ol"],
+    ["cast", "Cast & Crew", "The actors and the people behind it", "fa-users"],
+    ["xray", "X-Ray", "Release, money, awards, studios, where you've seen the cast", "fa-bolt"],
+    ["media", "Media", "Videos and images", "fa-photo-film"],
+    ["soundtrack", "Soundtrack", "Its album with 30-second previews", "fa-music"],
+    ["books", "Based on the book", "The book it's adapted from", "fa-book-open"],
+    ["reviews", "Reviews", "What people wrote on TMDB", "fa-comments"],
+    ["more", "More like this", "From your library or TMDB's recommendations", "fa-clapperboard"],
+  ];
+  // the rows in the saved order (rows added to the site later go where they come by default)
+  function titleRows() {
+    const t = (config && config.titlePage) || {};
+    const known = TITLE_ROWS.map((r) => r[0]);
+    const order = (t.order || []).filter((k) => known.includes(k));
+    known.forEach((k, i) => {
+      if (order.includes(k)) return;
+      const after = known.slice(0, i).reverse().find((x) => order.includes(x));
+      order.splice(after ? order.indexOf(after) + 1 : 0, 0, k);
+    });
+    return { order, hidden: (t.hidden || []).filter((k) => known.includes(k)) };
+  }
+
+  window.Site = { TITLE_ROWS, titleRows, DEFAULTS, get, feature, api, navHidden, state, blocked, refresh, save, onChange: (fn) => listeners.push(fn), merge };
 })();

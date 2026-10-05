@@ -27952,3 +27952,261 @@ button.xr-show:hover {
 .xr-pod {
   min-width: 0;
 }
+
+/* title page: every row in .t-sections, in the owner's order (Admin → Title page) */
+#title-main .t-sections > :first-child {
+  margin-top: 0;
+}
+
+.t-sections > .t-yours {
+  margin: 40px 0 0;
+}
+
+.t-sections > .t-yours:first-child {
+  margin-bottom: 4px;
+}
+
+.t-sections > .t-more-like,
+.t-sections > .t-recs {
+  margin-top: 40px;
+}
+
+/* ============================== Admin → Title page: the order of its rows ============================== */
+.ad-grid-one {
+  grid-template-columns: minmax(0, 860px) !important;
+}
+
+.tp-page {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.tp-hero {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, rgba(10, 10, 12, 0.9), rgba(10, 10, 12, 0.4)), radial-gradient(120% 140% at 100% 0%, rgba(185, 34, 34, 0.5), transparent 60%), var(--surface-2);
+}
+
+.tp-poster {
+  flex: none;
+  width: 54px;
+  height: 80px;
+  border-radius: 8px;
+  background: linear-gradient(160deg, #3a3b42, #1d1e22);
+}
+
+.tp-hero-text {
+  display: grid;
+  flex: 1;
+  align-content: center;
+  gap: 7px;
+}
+
+.tp-hero-text b {
+  font-size: 17px;
+}
+
+.tp-hero-text > i {
+  display: block;
+  width: 60%;
+  height: 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.tp-hero-text > i + i {
+  width: 40%;
+}
+
+.tp-hero-text > span {
+  display: flex;
+  gap: 6px;
+}
+
+.tp-hero-text em {
+  width: 54px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.tp-hero-text em:first-child {
+  background: var(--accent);
+}
+
+.tp-rows {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: tp;
+}
+
+.tp-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  background: var(--glass-bg);
+  transition: opacity 0.2s, border-color 0.2s, box-shadow 0.2s;
+  counter-increment: tp;
+}
+
+.tp-row:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.tp-row.dragging {
+  z-index: 3;
+  border-color: var(--accent-hover);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  transform: scale(1.01);
+}
+
+.tp-row.off {
+  opacity: 0.45;
+}
+
+.tp-row.off .tp-text strong {
+  text-decoration: line-through;
+}
+
+.tp-grip {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 38px;
+  border-radius: 9px;
+  color: var(--text-muted);
+  cursor: grab;
+  touch-action: none;
+}
+
+.tp-grip:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+}
+
+.tp-row.dragging .tp-grip {
+  cursor: grabbing;
+}
+
+.tp-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: rgba(185, 34, 34, 0.16);
+  color: #ff6b63;
+}
+
+.tp-text {
+  display: grid;
+  min-width: 0;
+}
+
+.tp-text strong {
+  font-size: 14.5px;
+}
+
+.tp-text strong::before {
+  content: counter(tp) ". ";
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.tp-text small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* a hint of what the row looks like */
+.tp-look {
+  display: flex;
+  gap: 4px;
+}
+
+.tp-look i {
+  width: 16px;
+  height: 22px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tp-look-cast i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.tp-look-xray i,
+.tp-look-yours i {
+  width: 24px;
+  height: 18px;
+  border-radius: 5px;
+}
+
+.tp-look-books i,
+.tp-look-soundtrack i {
+  width: 60px;
+  height: 22px;
+  border-radius: 6px;
+}
+
+.tp-look-reviews i,
+.tp-look-episodes i {
+  width: 22px;
+  height: 12px;
+}
+
+.tp-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.tp-btns button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--glass-border);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.tp-btns button:hover {
+  border-color: rgba(229, 9, 20, 0.5);
+  color: var(--text);
+}
+
+@media (max-width: 640px) {
+  .tp-look {
+    display: none;
+  }
+
+  .tp-row {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .tp-btns .tp-move {
+    display: none;
+  }
+}

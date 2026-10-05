@@ -705,31 +705,38 @@
 
   /* ---------------- sections: Cast & Crew, Media, Reviews (one under the other) ---------------- */
 
-  function sectionsHtml(d, loading) {
+  // every row of the page by its name (Site.TITLE_ROWS); empty ones are left out
+  function sectionParts(d, loading) {
     const cast = d.cast || [];
     const videos = d.videos || [];
     const images = d.images || [];
     const reviews = d.reviews || [];
     const block = (title, count, body, cls) =>
       `<section class="t-section${cls ? ` ${cls}` : ""}"><h2 class="t-section-title">${title}${count ? ` <small>${count}</small>` : ""}</h2>${body}</section>`;
-
-    let html = "";
     const seasons = d.seasons || [];
-    if (colData) html += block(esc(colData.name), colData.parts.length, collectionPanel(colData), "t-collection");
-    if (d.media === "tv" && d.tmdbId && seasons.length > 1) html += block("Seasons", seasons.length, seasonsPanel(d, seasons));
+    const parts = {};
+    if (colData) parts.collection = block(esc(colData.name), colData.parts.length, collectionPanel(colData), "t-collection");
+    if (d.media === "tv" && d.tmdbId && seasons.length > 1) parts.seasons = block("Seasons", seasons.length, seasonsPanel(d, seasons));
     if (d.media === "tv" && d.tvmaze) {
       const eps = episodesPanel(d);
-      if (eps) html += block("Episodes", 0, eps, "t-episodes");
+      if (eps) parts.episodes = block("Episodes", 0, eps, "t-episodes");
     }
-    if (cast.length)
-      html += block("Cast &amp; Crew", 0, cast.length ? castPanel(cast) : "");
-    if (loading) return html + '<p class="muted t-empty">Loading more details…</p>';
-    if (d.xray) html += block('<i class="fa-solid fa-bolt"></i> X-Ray', 0, xrayPanel(d), "t-xray");
-    if (videos.length || images.length) html += block("Media", 0, mediaPanel(videos, images));
-    if (window.Soundtrack) html += Soundtrack.html(d); // (js/components/soundtrack.js: filled in when it's near)
-    html += booksHtml(d);
-    if (reviews.length) html += block("Reviews", reviews.length, reviewsPanel(reviews, d.tmdbUrl));
-    return html;
+    if (cast.length) parts.cast = block("Cast &amp; Crew", 0, castPanel(cast));
+    if (loading) return parts;
+    if (d.xray) parts.xray = block('<i class="fa-solid fa-bolt"></i> X-Ray', 0, xrayPanel(d), "t-xray");
+    if (videos.length || images.length) parts.media = block("Media", 0, mediaPanel(videos, images));
+    if (window.Soundtrack) parts.soundtrack = Soundtrack.html(d); // (js/components/soundtrack.js: filled in when it's near)
+    parts.books = booksHtml(d);
+    if (reviews.length) parts.reviews = block("Reviews", reviews.length, reviewsPanel(reviews, d.tmdbUrl));
+    return parts;
+  }
+  // the rows in the order the owner set (Admin → Title page), the hidden ones left out
+  function arrange(parts, tail) {
+    const { order, hidden } = window.Site && Site.titleRows ? Site.titleRows() : { order: Object.keys(parts), hidden: [] };
+    return `<div class="t-sections">${order
+      .filter((k) => !hidden.includes(k))
+      .map((k) => parts[k] || "")
+      .join("")}${tail || ""}</div>`;
   }
   /* ---------------- Episodes (shows, from TVmaze: js/services/tvmaze.js) ----------------
      The next and the latest episode as two cards, then the episode guide: a season switch and
@@ -1608,10 +1615,11 @@
     // (typing a note while something redraws the page: the note keeps its text and cursor)
     const noteEl = mainEl.querySelector(".tn-text");
     const typing = noteEl && document.activeElement === noteEl ? { v: noteEl.value, a: noteEl.selectionStart, b: noteEl.selectionEnd } : null;
+    const parts = sectionParts(d, loading);
+    parts.yours = `<div class="t-yours">${progressHtml(item, d)}${notesHtml(item)}${triviaHtml(item)}</div>`;
+    parts.more = `<section class="t-more-like">${moreLikeHtml(similar, extra)}</section>`;
     mainEl.innerHTML = `
-      <div class="t-yours">${progressHtml(item, d)}${notesHtml(item)}${triviaHtml(item)}</div>
-      <div class="t-sections">${sectionsHtml(d, loading)}</div>
-      <section class="t-more-like">${moreLikeHtml(similar, extra)}</section>
+      ${arrange(parts, loading ? '<p class="muted t-empty">Loading more details…</p>' : "")}
       <p class="tmdb-note">${
         TMDB.enabled() ? TMDB_NOTE : 'Tip: with a TMDB key (the owner adds it in the Admin Control Center) you would see the overview, cast, trailer and recommendations for every title.'
       }</p>
@@ -2036,7 +2044,11 @@
       });
     const renderMain = () => {
       const keep = rowScrolls();
-      mainEl.innerHTML = `${track}<div class="t-sections">${sectionsHtml(d, false)}</div>${recommendationsHtml(d)}<p class="tmdb-note">${TMDB_NOTE}</p>`;
+      const parts = sectionParts(d, false);
+      parts.yours = track;
+      const recs = recommendationsHtml(d);
+      if (recs) parts.more = `<section class="t-recs">${recs}</section>`;
+      mainEl.innerHTML = `${arrange(parts)}<p class="tmdb-note">${TMDB_NOTE}</p>`;
       rowScrolls(keep);
       if (window.Soundtrack) Soundtrack.mount(mainEl, d);
       watchXray(d, renderMain);

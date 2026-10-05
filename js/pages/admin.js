@@ -7,7 +7,7 @@
  * doesn't take site settings yet (its rules need the site/config part, shown under Users), the
  * copy is kept on this device and used here until the rules are published.
  *
- * Sections: Overview · Website · Pages & features · Content · News · API integrations · Themes ·
+ * Sections: Overview · Website · Pages & features · Title page (the order of its rows) · Content · News · API integrations · Themes ·
  * Notifications · Users · Tools (service checks, this device's storage, change history) · Backup
  *
  * The look: a sidebar of the sections in groups (with badges: services down, maintenance on), a top
@@ -26,6 +26,7 @@
     ["overview", "fa-gauge", "Overview"],
     ["website", "fa-globe", "Website"],
     ["pages", "fa-toggle-on", "Pages & features"],
+    ["titlepage", "fa-table-list", "Title page"],
     ["content", "fa-star", "Content"],
     ["news", "fa-newspaper", "News"],
     ["apis", "fa-plug", "API integrations"],
@@ -37,7 +38,7 @@
   ];
   const GROUPS = [
     ["Dashboard", ["overview"]],
-    ["Site", ["website", "pages", "themes", "notifications"]],
+    ["Site", ["website", "pages", "titlepage", "themes", "notifications"]],
     ["Content", ["content", "news"]],
     ["System", ["apis", "users", "tools", "backup"]],
   ];
@@ -403,6 +404,43 @@
           <pre class="ad-pre">${esc(rules)}</pre><button class="btn ad-copy-rules" type="button"><i class="fa-regular fa-copy"></i> Copy</button>`)}
       </div>`;
     },
+    // a title page, drawn small: its top part, then every row; drag them (or the arrows) to put
+    // them in another order, the eye hides one. Saved for everyone with Save changes
+    titlepage() {
+      const saved = draft.titlePage || {};
+      const known = Site.TITLE_ROWS.map((r) => r[0]);
+      const order = (saved.order || []).filter((k) => known.includes(k));
+      known.forEach((k, i) => {
+        if (order.includes(k)) return;
+        const after = known.slice(0, i).reverse().find((x) => order.includes(x));
+        order.splice(after ? order.indexOf(after) + 1 : 0, 0, k);
+      });
+      const hidden = saved.hidden || [];
+      const row = (k) => {
+        const [, name, what, icon] = Site.TITLE_ROWS.find((r) => r[0] === k);
+        return `<li class="tp-row${hidden.includes(k) ? " off" : ""}" data-row="${k}">
+            <span class="tp-grip" title="Drag to move"><i class="fa-solid fa-grip-vertical"></i></span>
+            <span class="tp-icon"><i class="fa-solid ${icon}"></i></span>
+            <span class="tp-text"><strong>${esc(name)}</strong><small>${esc(what)}</small></span>
+            <span class="tp-look tp-look-${k}" aria-hidden="true">${"<i></i>".repeat(k === "cast" ? 6 : k === "xray" || k === "yours" ? 3 : k === "books" || k === "soundtrack" ? 1 : 5)}</span>
+            <span class="tp-btns">
+              <button type="button" class="tp-move" data-move="-1" title="Up" aria-label="Move up"><i class="fa-solid fa-chevron-up"></i></button>
+              <button type="button" class="tp-move" data-move="1" title="Down" aria-label="Move down"><i class="fa-solid fa-chevron-down"></i></button>
+              <button type="button" class="tp-eye" title="${hidden.includes(k) ? "Show it" : "Hide it"}" aria-label="Hide or show"><i class="fa-solid ${hidden.includes(k) ? "fa-eye-slash" : "fa-eye"}"></i></button>
+            </span>
+          </li>`;
+      };
+      return `<div class="ad-grid ad-grid-one">${card(
+        "fa-table-list",
+        "Title page: the order of its rows",
+        `<div class="tp-page">
+          <div class="tp-hero" aria-hidden="true"><span class="tp-poster"></span><span class="tp-hero-text"><b>A movie or a show</b><i></i><i></i><span><em></em><em></em><em></em></span></span></div>
+          <ol class="tp-rows">${order.map(row).join("")}</ol>
+        </div>
+        <div class="sv-buttons"><button type="button" class="btn tp-reset"><i class="fa-solid fa-rotate-left"></i> The site's own order</button></div>`,
+        "Drag a row by its handle (or use the arrows) to move it; the eye leaves it out of every title page. A row shows only when the title has something for it (Episodes: shows, Collection: films of a franchise…). Save changes to send it to everyone."
+      )}</div>`;
+    },
     tools() {
       const hist = changeLog();
       return `<div class="ad-grid">
@@ -439,7 +477,7 @@
   const HISTORY = "mn:adminHistory";
   const changeLog = () => Store.read(HISTORY, []) || [];
   // what changed between two versions, in words ("Maintenance, Notice, Features")
-  const LABELS = { branding: "Branding", maintenance: "Maintenance", notice: "Notice", nav: "Navigation", features: "Features", discover: "Explore pages", home: "Home picks", anime: "Featured anime", content: "Hidden titles", news: "News", apis: "API integrations", themes: "Themes", notifications: "Notifications", announce: "Announcement" };
+  const LABELS = { branding: "Branding", maintenance: "Maintenance", notice: "Notice", nav: "Navigation", features: "Features", discover: "Explore pages", home: "Home picks", anime: "Featured anime", content: "Hidden titles", news: "News", apis: "API integrations", themes: "Themes", notifications: "Notifications", announce: "Announcement", titlePage: "Title page rows" };
   function changes(before, after, blockedBefore, blockedAfter) {
     const keys = [...new Set(Object.keys(before || {}).concat(Object.keys(after || {})))].filter((k) => JSON.stringify((before || {})[k]) !== JSON.stringify((after || {})[k]));
     const out = keys.map((k) => LABELS[k] || k);
@@ -664,6 +702,70 @@
       target.classList.add("ad-flash");
     }
   }
+
+  /* ---------------- Title page: the order of its rows ---------------- */
+
+  const rowsBox = () => body.querySelector(".tp-rows");
+  // the list as it is on the page now -> the draft (Save changes sends it)
+  function rowsToDraft() {
+    const box = rowsBox();
+    if (!box) return;
+    const items = [...box.querySelectorAll(".tp-row")];
+    setPath("titlePage", { order: items.map((r) => r.dataset.row), hidden: items.filter((r) => r.classList.contains("off")).map((r) => r.dataset.row) });
+  }
+  function slide(box, change) {
+    const items = [...box.children];
+    const before = new Map(items.map((r) => [r, r.getBoundingClientRect().top]));
+    change();
+    items.forEach((r) => {
+      if (r.classList.contains("dragging")) return;
+      const dy = before.get(r) - r.getBoundingClientRect().top;
+      if (!dy) return;
+      r.style.transition = "none";
+      r.style.transform = `translateY(${dy}px)`;
+      void r.offsetWidth;
+      r.style.transition = "transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)";
+      r.style.transform = "";
+    });
+  }
+  let rowDrag = null;
+  root.addEventListener("pointerdown", (e) => {
+    const grip = e.target.closest(".tp-grip");
+    if (!grip || e.button > 0) return;
+    e.preventDefault();
+    const row = grip.closest(".tp-row");
+    rowDrag = { row, id: e.pointerId, moved: false };
+    row.classList.add("dragging");
+    try {
+      grip.setPointerCapture(e.pointerId);
+    } catch (err) {}
+  });
+  root.addEventListener("pointermove", (e) => {
+    if (!rowDrag || e.pointerId !== rowDrag.id) return;
+    if (e.clientY < 90) window.scrollBy(0, -12);
+    else if (e.clientY > window.innerHeight - 70) window.scrollBy(0, 12);
+    const box = rowDrag.row.parentElement;
+    const over = [...box.children].find((r) => {
+      if (r === rowDrag.row) return false;
+      const b = r.getBoundingClientRect();
+      return e.clientY >= b.top && e.clientY <= b.bottom;
+    });
+    if (!over) return;
+    const b = over.getBoundingClientRect();
+    const before = e.clientY < b.top + b.height / 2;
+    const target = before ? over : over.nextElementSibling;
+    if (target === rowDrag.row || target === rowDrag.row.nextElementSibling) return;
+    rowDrag.moved = true;
+    slide(box, () => box.insertBefore(rowDrag.row, target));
+  });
+  const endRowDrag = (e) => {
+    if (!rowDrag || e.pointerId !== rowDrag.id) return;
+    rowDrag.row.classList.remove("dragging");
+    if (rowDrag.moved) rowsToDraft();
+    rowDrag = null;
+  };
+  root.addEventListener("pointerup", endRowDrag);
+  root.addEventListener("pointercancel", endRowDrag);
 
   /* ---------------- Customize: move, size and hide the boxes of every section ---------------- */
 
@@ -1043,6 +1145,27 @@
   document.addEventListener("click", (e) => !e.target.closest(".ad-find") && find(""));
 
   root.addEventListener("click", (e) => {
+    const mv = e.target.closest(".tp-move");
+    if (mv) {
+      const row = mv.closest(".tp-row");
+      const box = row.parentElement;
+      const to = mv.dataset.move === "-1" ? row.previousElementSibling : row.nextElementSibling && row.nextElementSibling.nextElementSibling;
+      if (mv.dataset.move === "-1" && !to) return;
+      if (mv.dataset.move === "1" && !row.nextElementSibling) return;
+      slide(box, () => box.insertBefore(row, to));
+      return rowsToDraft();
+    }
+    const tpEye = e.target.closest(".tp-eye");
+    if (tpEye) {
+      const row = tpEye.closest(".tp-row");
+      row.classList.toggle("off");
+      tpEye.querySelector("i").className = `fa-solid ${row.classList.contains("off") ? "fa-eye-slash" : "fa-eye"}`;
+      return rowsToDraft();
+    }
+    if (e.target.closest(".tp-reset")) {
+      setPath("titlePage", { order: [], hidden: [] });
+      return show(section);
+    }
     if (e.target.closest(".ad-customize")) return setEditing(!editing);
     if (e.target.closest(".ad-customize-done")) return setEditing(false);
     if (e.target.closest(".ad-layout-reset")) {
