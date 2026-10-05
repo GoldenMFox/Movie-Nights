@@ -8,7 +8,6 @@
 
   const PAGES = [
     { id: "home", href: "index.html", label: "Home", icon: "fa-solid fa-house" },
-    { id: "discover", href: "discover.html", label: "Discover", icon: "fa-solid fa-compass" },
     { id: "movie", href: "movies.html", label: "Movies", icon: "fa-solid fa-film" },
     { id: "tv", href: "tv-shows.html", label: "TV Shows", icon: "fa-solid fa-tv" },
     { id: "anime", href: "anime.html", label: "Anime", icon: "fa-solid fa-clapperboard" },
@@ -84,9 +83,12 @@
       </div>
       <div class="nav-tools">
         <button class="icon-btn random-pick nav-pick" type="button" aria-label="What should I watch?" title="What should I watch?"><i class="fa-solid fa-shuffle"></i></button>
-        <button class="icon-btn theme-toggle" aria-label="Toggle dark mode">
-          <i class="fa-solid fa-moon"></i><i class="fa-solid fa-sun"></i>
-        </button>
+        <div class="notif">
+          <button class="icon-btn notif-btn" type="button" aria-label="Notifications" aria-haspopup="dialog" aria-expanded="false" title="Notifications">
+            <i class="fa-solid fa-bell"></i><span class="notif-badge" hidden></span>
+          </button>
+          <div class="notif-panel" role="dialog" aria-label="Notifications"></div>
+        </div>
         <div class="search">
           <button class="icon-btn search-toggle" aria-label="Search (press /)"><i class="fa-solid fa-magnifying-glass"></i></button>
           <div class="search-panel">
@@ -111,10 +113,9 @@
               <a href="tier-list.html" class="tablet-link"><i class="fa-solid fa-ranking-star"></i><span>Tier List</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="box-office.html" class="bo-menu-link" data-nav="boxoffice"><i class="fa-solid fa-sack-dollar"></i><span>Box Office</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="news.html" class="news-menu-link" data-nav="news"><i class="fa-solid fa-newspaper"></i><span>Movie News</span><i class="fa-solid fa-chevron-right"></i></a>
-              <a href="admin.html" class="owner-only"><i class="fa-solid fa-sliders"></i><span>Admin Control Center</span><i class="fa-solid fa-chevron-right"></i></a>
+              ${window.Cloud && Cloud.isOwner() ? '<a href="admin.html"><i class="fa-solid fa-sliders"></i><span>Admin Control Center</span><i class="fa-solid fa-chevron-right"></i></a>' : ""}
               <a href="profile.html"><i class="fa-solid fa-user"></i><span>Profile &amp; stats</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="search.html"><i class="fa-solid fa-sliders"></i><span>Advanced search</span><i class="fa-solid fa-chevron-right"></i></a>
-              <a href="#" data-action="add-title" class="owner-only"><i class="fa-solid fa-plus"></i><span>Add a title</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="settings.html"><i class="fa-solid fa-gear"></i><span>Settings</span><i class="fa-solid fa-chevron-right"></i></a>
               <a href="#" class="install-app" hidden><i class="fa-solid fa-mobile-screen"></i><span>Install the app</span><i class="fa-solid fa-chevron-right"></i></a>
             </div>
@@ -233,22 +234,34 @@
     setTimeout(() => location.reload(), 250); // (lets the switch finish sliding)
   });
 
-  /* ---------------- theme ---------------- */
+  /* ---------------- notifications (the bell; what's in it: js/services/alerts.js) ---------------- */
+  // (dark / light is in Settings → Appearance)
 
-  nav.querySelector(".theme-toggle").addEventListener("click", () => {
-    const light = document.documentElement.dataset.theme !== "light";
-    if (light) document.documentElement.dataset.theme = "light";
-    else delete document.documentElement.dataset.theme;
-    try {
-      localStorage.setItem("mn:theme", light ? "light" : "dark");
-    } catch (e) {}
+  const notifBox = nav.querySelector(".notif");
+  const notifBtn = notifBox.querySelector(".notif-btn");
+  function notifOpen(open) {
+    notifBox.classList.toggle("open", open);
+    notifBtn.setAttribute("aria-expanded", open);
+    if (open) {
+      profileBox.classList.remove("open");
+      searchBox.classList.remove("open");
+      if (window.Alerts) Alerts.openPanel(notifBox.querySelector(".notif-panel"));
+      else notifBox.querySelector(".notif-panel").innerHTML = '<p class="notif-empty">Sign in to hear when the titles you\'re waiting for come out.</p>';
+    } else if (window.Alerts && Alerts.closePanel) Alerts.closePanel();
+  }
+  notifBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    notifOpen(!notifBox.classList.contains("open"));
   });
+  document.addEventListener("click", (e) => notifBox.classList.contains("open") && !notifBox.contains(e.target) && notifOpen(false));
+  document.addEventListener("keydown", (e) => e.key === "Escape" && notifBox.classList.contains("open") && (notifOpen(false), notifBtn.focus()));
 
   /* ---------------- profile menu ---------------- */
 
   profileBox.querySelector(".user-pic-btn").addEventListener("click", (e) => {
     e.stopPropagation();
     searchBox.classList.remove("open");
+    nav.querySelector(".notif").classList.remove("open");
     profileBox.classList.toggle("open");
     // get Google sign-in ready now, so tapping "Sign in" can open its window instantly (Safari needs that)
     if (profileBox.classList.contains("open") && window.Cloud && Cloud.enabled) Cloud.prepare();
@@ -327,7 +340,7 @@
     const token = ++navRun;
     if (!q) return (resultsList.innerHTML = "");
     if (!tmdbOn) return (resultsList.innerHTML = mine);
-    const allLink = `<li class="search-all"><a href="discover.html?q=${encodeURIComponent(q)}"><i class="fa-solid fa-compass"></i><span>All results for "${esc(q)}"</span></a></li>`;
+    const allLink = `<li class="search-all"><a href="movies-explore.html?q=${encodeURIComponent(q)}&in=all"><i class="fa-solid fa-compass"></i><span>All results for "${esc(q)}"</span></a></li>`;
     const head = (label) => `<li class="search-group">${label}</li>`;
     const libPart = hasMine ? head("In your library") + mine : "";
     resultsList.innerHTML = `${libPart}${head("More from TMDB")}<li class="search-empty"><i class="fa-solid fa-spinner fa-spin"></i> Searching…</li>`;
@@ -438,7 +451,7 @@
         <a class="footer-logo" href="index.html"><img src="images/brand/logo.png" alt="Movie Nights" /></a>
         <p>${tagline}</p>
         <div class="footer-cta">
-          <a class="footer-btn primary" href="discover.html"><i class="fa-solid fa-compass"></i> Discover something new</a>
+          <a class="footer-btn primary" href="movies-explore.html"><i class="fa-solid fa-compass"></i> Explore something new</a>
           <a class="footer-btn" href="watchlist.html"><i class="fa-solid fa-bookmark"></i> My watchlist</a>
         </div>
       </div>
@@ -633,7 +646,7 @@
     const LIBRARY_PAGES = ["movie", "tv", "anime", "tiers", "boxoffice"];
     const TABS = [
       { id: "home", href: "index.html", label: "Home", icon: "fa-house", on: ["home"] },
-      { id: "discover", href: "discover.html", label: "Discover", icon: "fa-compass", on: ["discover"] },
+      { id: "explore", href: "movies-explore.html", label: "Explore", icon: "fa-compass", on: [] },
       { id: "search", label: "Search", icon: "fa-magnifying-glass", on: [] },
       { id: "library", label: "Library", icon: "fa-clapperboard", on: LIBRARY_PAGES },
       { id: "list", href: "watchlist.html", label: "Watchlist", icon: "fa-bookmark", on: ["watchlist"] },
@@ -643,7 +656,9 @@
     bar.className = "tab-bar";
     bar.setAttribute("aria-label", "Main");
     bar.innerHTML = TABS.map((t) => {
-      const on = t.on.includes(current);
+      // (Explore: on any of the explore pages; Library: on your own lists, not their Explore)
+      const exploring = !!document.body.dataset.explore || current === "anime-explore";
+      const on = t.id === "explore" ? exploring : t.on.includes(current) && !(t.id === "library" && exploring);
       const attrs = `class="tab${on ? " on" : ""}"${on ? ' aria-current="page"' : ""}`;
       const inner = `<i class="fa-solid ${t.icon}"></i><span>${t.label}</span>`;
       return t.href ? `<a href="${t.href}" ${attrs}>${inner}</a>` : `<button type="button" data-tab="${t.id}" ${attrs}>${inner}</button>`;
@@ -750,7 +765,7 @@
          <i class="fa-solid fa-chevron-down sheet-type-arrow" aria-hidden="true"></i>
        </label>
        <a class="sheet-adv" href="search.html"><i class="fa-solid fa-sliders"></i><span>Advanced search</span><small>genre, year, director, streaming…</small><i class="fa-solid fa-chevron-right"></i></a>
-       <a class="sheet-more" href="discover.html" hidden></a>
+       <a class="sheet-more" href="movies-explore.html" hidden></a>
        <h3 class="sheet-group" hidden>In your library</h3>
        <ul class="search-results sheet-results"></ul>`
     );
@@ -761,7 +776,13 @@
     const typeSel = search.el.querySelector('.sheet-type select');
     const TYPE_WORDS = { all: "everything", movie: "movies", tv: "TV shows", anime: "anime" };
     // Discover link for the current search and type
-    const discoverUrl = (q) => `discover.html?q=${encodeURIComponent(q)}${typeSel.value !== "all" ? `&in=${typeSel.value}` : ""}`;
+    // "search everything": the Explore page of that kind (all kinds: Movies' Explore, searching everything)
+    const discoverUrl = (q) =>
+      typeSel.value === "anime"
+        ? `anime-explore.html?q=${encodeURIComponent(q)}`
+        : typeSel.value === "tv"
+          ? `tv-explore.html?q=${encodeURIComponent(q)}`
+          : `movies-explore.html?q=${encodeURIComponent(q)}${typeSel.value === "all" ? "&in=all" : ""}`;
     // results: your library straight away, then everything else on TMDB (the same search
     // as the Discover page), in the chosen type
     const tmdbBox = document.createElement("div");
@@ -1170,7 +1191,7 @@
       </div>
       <div class="welcome-steps">
         ${step(1, "fa-compass", "Find something", "Browse what's trending, in cinemas or coming soon, or search any title.",
-          '<a class="btn btn-primary" href="discover.html"><i class="fa-solid fa-compass"></i> Discover</a>')}
+          '<a class="btn btn-primary" href="movies-explore.html"><i class="fa-solid fa-compass"></i> Explore</a>')}
         ${step(2, "fa-bookmark", "Save or rate it", "<b>Watchlist</b> to see it later, <b>Watched</b> or <b>Rate</b> if you've seen it, the heart for favorites.",
           '<button class="btn" type="button" data-open-search><i class="fa-solid fa-magnifying-glass"></i> Search a title</button>')}
         ${step(3, "fa-file-import", "Bring your history", "Rated films on IMDb or Letterboxd? Import them all at once.",

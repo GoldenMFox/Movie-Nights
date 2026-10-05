@@ -26,7 +26,7 @@
       (function () {
         var bits = location.search.slice(1).split(".");
         var id = /^([mt])(\d+)$/.exec(bits[0] || "");
-        if (!id) return location.replace("../discover.html");
+        if (!id) return location.replace("../movies-explore.html");
         var dec = function (s) {
           try {
             return decodeURIComponent((s || "").replace(/_/g, " ")).trim();

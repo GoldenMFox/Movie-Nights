@@ -201,11 +201,6 @@
   // Watchlist page: a row per list, then the full list (opened by "See all")
   root.innerHTML = isLists
     ? `<div class="wl-welcome"></div>
-      <section class="wl-alerts" hidden aria-live="polite">
-        <div class="row-head"><h2><i class="fa-solid fa-bell"></i> New for you</h2>
-          <span class="wl-alerts-tools"><button type="button" class="t-link wl-alerts-clear"><i class="fa-solid fa-broom"></i> Clear all</button></span></div>
-        <div class="wl-alerts-list"></div>
-      </section>
       <section class="wl-coming" hidden>
         <div class="row-head"><h2><i class="fa-regular fa-calendar"></i> Coming up</h2><div class="top10-switch wl-type" role="group" aria-label="Show" data-type-row="coming"></div></div>
         <div class="wl-coming-list"></div>
@@ -431,7 +426,6 @@
     PAGE = LISTS[state.list] || LISTS.watch;
     const all = Store.all();
     root.querySelector(".wl-welcome").innerHTML = all.length ? "" : UI.welcome();
-    renderAlerts();
     renderComing(all);
 
     // one section per list: add the new ones, drop deleted ones, keep the rest (and their scroll)
@@ -503,56 +497,6 @@
       b.classList.toggle("active", LISTS[k] === PAGE);
       b.setAttribute("aria-pressed", LISTS[k] === PAGE);
       b.querySelector(".count").textContent = all.filter(LISTS[k].base).length;
-    });
-  }
-
-  // "New for you" (js/services/alerts.js): what came out lately (a movie, a new season or episode).
-  // Seeing them here marks them read (the red number on Watchlist goes away); each has its own ✕,
-  // and "Clear all" empties the list. Unread ones have a red dot until then.
-  let readTimer;
-  function renderAlerts() {
-    const box = root.querySelector(".wl-alerts");
-    if (!box || !window.Alerts) return;
-    const list = Alerts.all().sort((a, b) => (a.read === b.read ? b.date.localeCompare(a.date) : a.read ? 1 : -1));
-    box.hidden = !list.length;
-    if (!list.length) return;
-    const ago = (date) => {
-      const n = Math.round((new Date(`${Store.today()}T00:00:00`) - new Date(`${date}T00:00:00`)) / 86400000);
-      return n <= 0 ? "Today" : n === 1 ? "Yesterday" : `${n} days ago`;
-    };
-    box.querySelector(".wl-alerts-list").innerHTML = list
-      .slice(0, 12)
-      .map((a) => {
-        const w = Alerts.words(a);
-        return `<div class="wl-alert${a.read ? "" : " unread"}">
-          <a class="wl-alert-main" href="${Alerts.href(a)}" data-alert="${esc(a.key)}">
-            <img src="${Store.poster(a.poster, "w154")}" alt="" loading="lazy" />
-            <span><strong>${esc(w.title)}</strong><small>${esc(w.body)} · ${ago(a.date)}</small></span>
-          </a>
-          <button type="button" class="wl-alert-x" data-alert-x="${esc(a.key)}" aria-label="Dismiss"><i class="fa-solid fa-xmark"></i></button>
-        </div>`;
-      })
-      .join("");
-    // seen: read after a moment on screen (the dots fade; the red number goes)
-    clearTimeout(readTimer);
-    if (list.some((a) => !a.read) && document.visibilityState === "visible") readTimer = setTimeout(() => Alerts.markRead(), 2500);
-  }
-  if (isLists && window.Alerts) {
-    Alerts.onChange(renderAlerts);
-    root.addEventListener("click", (e) => {
-      const x = e.target.closest("[data-alert-x]");
-      if (x) {
-        e.preventDefault();
-        Alerts.dismiss(x.dataset.alertX);
-        return;
-      }
-      if (e.target.closest(".wl-alerts-clear")) {
-        Alerts.clear();
-        UI.toast("Cleared");
-        return;
-      }
-      const a = e.target.closest("[data-alert]");
-      if (a) Alerts.markRead([a.dataset.alert]);
     });
   }
 

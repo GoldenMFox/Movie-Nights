@@ -9,7 +9,7 @@
  *  - Anything not set falls back to DEFAULTS, so the site works the same with no settings at all.
  *
  * What's in it: branding, maintenance mode and a notice across the top, which pages show in the
- * navigation, features on / off, the outside services (TVmaze, Jikan, books, news) on / off with
+ * navigation, features on / off, the outside services (TVmaze, AniList, Google Books, news) on / off with
  * their keys and how long their answers are kept, featured titles / books / news, themes and
  * notifications.
  */
@@ -31,7 +31,7 @@
       xray: true,
       books: true, // Books on title pages
       tvmaze: true, // Episodes & more from TVmaze on show pages
-      animeDetails: true, // MyAnimeList details on anime title pages
+      animeDetails: true, // the AniList card on anime title pages
       news: true,
       animeExplore: true,
       listThemes: true,
@@ -47,14 +47,12 @@
     news: { featured: [], feeds: null, hiddenSources: [] },
     apis: {
       tvmaze: { on: true, hours: 12 },
-      jikan: { on: true, hours: 24 },
-      anilist: { on: true, hours: 24 }, // stands in when Jikan can't be reached
-      openlibrary: { on: true, days: 30 },
+      anilist: { on: true, hours: 24 },
       googlebooks: { on: true, days: 30, key: "" },
       news: { on: true, minutes: 30 },
     },
     themes: { siteDefault: "dark", listThemes: true, animations: true, available: ["halloween", "christmas", "winter", "spring", "summer", "noir", "space"] },
-    notifications: { on: true, release: true, episode: true, season: true, reminder: true },
+    notifications: { on: true, release: true, season: true, episode: true, recommendation: true },
   };
 
   // DEFAULTS with the saved settings on top, one level at a time (a setting added to the site
@@ -208,7 +206,7 @@
     }
     if (isOwner()) {
       el.className = "site-maint owner";
-      el.innerHTML = `<i class="fa-solid fa-screwdriver-wrench"></i> Maintenance mode is on: visitors see the "back soon" screen. <a href="admin.html#website">Turn it off</a>`;
+      el.innerHTML = `<i class="fa-solid fa-screwdriver-wrench"></i> Maintenance mode is on<span class="maint-long">: visitors see the "back soon" screen</span>. <a href="admin.html#website">Turn it off</a>`;
       return;
     }
     el.className = "site-maint";

@@ -29,7 +29,7 @@
   const posterOf = (f, size) => Store.poster(f.posterRu && Lang.isRu() ? f.posterRu : f.poster, size);
 
   if (!TMDB.enabled()) {
-    app.innerHTML = `<div class="bo-empty"><i class="fa-solid fa-key"></i><p>The box office charts need a TMDB API key. Add one in <a href="settings.html#keys">Settings</a>.</p></div>`;
+    app.innerHTML = `<div class="bo-empty"><i class="fa-solid fa-key"></i><p>The box office charts need a TMDB API key. The owner of the site adds one in the Admin Control Center.</p></div>`;
     return;
   }
 

@@ -17,11 +17,14 @@
  *
  * Note: anything in this file is visible to people who visit the site. These
  * keys can only read public movie data, so that's low risk. To keep the TMDB
- * key private instead, leave it empty and paste it in Settings
- * (stored only in your own browser).
+ * key private instead, leave it empty and paste it in the Admin Control Center
+ * (API integrations: stored only in that browser).
  */
 window.MN_CONFIG = {
   TMDB_KEY: "55967e6ca51817fb5b8ef691f00fb5ab",
+  // Google Books (books on title / person pages): a key restricted to this site's address. It can
+  // also be pasted in the Admin Control Center (API integrations), which wins over this one.
+  GOOGLE_BOOKS_KEY: "",
   OMDB_KEY: "f643335e",
   FIREBASE: {
     apiKey: "AIzaSyDRPO10EK-mDP1Epbv9WAvZhcamUBdvFbk",

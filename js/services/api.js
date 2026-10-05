@@ -7,8 +7,8 @@
  *  - answers kept in the browser's database (IndexedDB "mn-api"), for as long as the service's
  *    setting says (Admin → API integrations), so the same thing is never asked for twice;
  *  - the same question asked twice at once goes out once;
- *  - a queue per service that keeps to its limits (TVmaze: 20 per 10 s, Jikan: 3 a second and
- *    60 a minute…), and waits and tries again when told "too many" (429);
+ *  - a queue per service that keeps to its limits (TVmaze: 20 per 10 s, AniList: 90 a minute…),
+ *    and waits and tries again when told "too many" (429);
  *  - no endless waiting: after 12 s it gives up with a clear message;
  *  - when a service is down, the last answer it gave (even an old one) is used instead;
  *  - a service switched off in the Admin Control Center isn't asked at all;
@@ -20,9 +20,7 @@
   // gap: the least time between two requests (ms); burst: requests let out at once
   const PROVIDERS = {
     tvmaze: { label: "TVmaze", gap: 520, burst: 2, site: "https://www.tvmaze.com/api" },
-    jikan: { label: "Jikan (MyAnimeList)", gap: 1100, burst: 1, timeout: 8000, site: "https://jikan.moe" },
     anilist: { label: "AniList", gap: 750, burst: 1, site: "https://anilist.co" },
-    openlibrary: { label: "Open Library", gap: 350, burst: 2, site: "https://openlibrary.org/developers/api" },
     googlebooks: { label: "Google Books", gap: 300, burst: 2, site: "https://developers.google.com/books" },
     news: { label: "News feeds (rss2json)", gap: 600, burst: 2, site: "https://rss2json.com" },
   };
@@ -260,12 +258,5 @@
     return job;
   }
 
-  // a service that keeps failing (unreachable from here): skip it for a few minutes and use
-  // the stand-in straight away (anime: AniList for Jikan)
-  function failingNow(provider) {
-    const s = stats[provider];
-    return !!(s && s.lastFail && (!s.lastOk || s.lastFail > s.lastOk) && Date.now() - s.lastFail < 5 * 60 * 1000);
-  }
-
-  window.Api = { PROVIDERS, get, clear, status, resetStats, enabled, failingNow, onStatus: (fn) => statListeners.push(fn), cacheGet, cacheSet };
+  window.Api = { PROVIDERS, get, clear, status, resetStats, enabled, onStatus: (fn) => statListeners.push(fn), cacheGet, cacheSet };
 })();

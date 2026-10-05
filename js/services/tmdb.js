@@ -54,6 +54,25 @@
 
   const CATEGORIES = {
     trending: { label: "Trending this week", path: "/trending/all/week" },
+    // Explore (movies-explore.html, tv-explore.html): one kind each
+    "trending-movies": { label: "Trending this week", path: "/trending/movie/week", media: "movie" },
+    "trending-tv": { label: "Trending this week", path: "/trending/tv/week", media: "tv" },
+    // shows with an episode this week or next (soaps, talk shows, news and reality left out)
+    "airing-tv": {
+      label: "On the air",
+      path: "/discover/tv",
+      media: "tv",
+      params: { sort_by: "popularity.desc", without_genres: NOT_SHOWS, "vote_count.gte": 30 },
+      airing: true,
+    },
+    // shows that haven't started yet, most anticipated first
+    "upcoming-tv": {
+      label: "Premiering soon",
+      path: "/discover/tv",
+      media: "tv",
+      params: { sort_by: "popularity.desc", without_genres: NOT_SHOWS },
+      futureTv: true,
+    },
     "popular-movies": { label: "Popular movies", path: "/movie/popular", media: "movie" },
     // worldwide lists (only the release dates on the labels are Romania's)
     "now-playing": { label: "In cinemas", path: "/movie/now_playing", media: "movie" },
@@ -360,7 +379,14 @@
     const c = CATEGORIES[category];
     const today = new Date().toISOString().slice(0, 10);
     const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-    const params = Object.assign({ page: page || 1 }, c.params || {}, c.future ? { "primary_release_date.gte": tomorrow } : {});
+    const day = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+    const params = Object.assign(
+      { page: page || 1 },
+      c.params || {},
+      c.future ? { "primary_release_date.gte": tomorrow } : {},
+      c.futureTv ? { "first_air_date.gte": tomorrow } : {},
+      c.airing ? { "air_date.gte": day(-6), "air_date.lte": day(7) } : {}
+    );
     const [data, ru] = await requestWithRu(c.path, params);
     // "now playing" is a date window that reaches a little into the future, and a film can
     // be out in one country and not another: coming soon = not out yet, in cinemas = out

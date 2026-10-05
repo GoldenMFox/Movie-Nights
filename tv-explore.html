@@ -3,10 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <!-- private (your own library, or a page that only forwards): kept out of search engines -->
-    <meta name="robots" content="noindex" />
-    <title>Movies &middot; Movie Nights</title>
-    <meta name="description" content="Every movie in your library." />
+    <title>TV Shows &middot; Movie Nights</title>
+    <meta name="description" content="Explore TV shows: trending, popular, on the air, premiering soon, top rated, by genre." />
     <link rel="icon" href="images/brand/favicon.png" type="image/png" />
     <link rel="manifest" href="manifest.webmanifest" />
     <meta name="theme-color" content="#17181c" />
@@ -33,16 +31,17 @@
       } catch (e) {}
     </script>
   </head>
-  <body data-page="movie">
+  <body data-page="tv" data-explore="tv">
     <main class="container">
       <div class="ax-top">
-        <h1 class="page-title">Movies</h1>
-        <nav class="top10-switch ax-switch" aria-label="Movies">
-          <a class="top10-tab active" href="movies.html" aria-current="page"><i class="fa-solid fa-list"></i> My movies</a>
-          <a class="top10-tab" href="movies-explore.html"><i class="fa-solid fa-compass"></i> Explore</a>
+        <h1 class="page-title">TV Shows</h1>
+        <nav class="top10-switch ax-switch" aria-label="TV Shows">
+          <a class="top10-tab" href="tv-shows.html"><i class="fa-solid fa-list"></i> My TV shows</a>
+          <a class="top10-tab active" href="tv-explore.html" aria-current="page"><i class="fa-solid fa-compass"></i> Explore</a>
         </nav>
       </div>
-      <div id="browse"></div>
+      <nav class="ex-kinds" aria-label="Explore"><a class="chip" href="movies-explore.html"><i class="fa-solid fa-film"></i> Movies</a><a class="chip active" href="tv-explore.html" aria-current="page"><i class="fa-solid fa-tv"></i> TV Shows</a><a class="chip" href="anime-explore.html"><i class="fa-solid fa-dragon"></i> Anime</a></nav>
+      <div id="discover"></div>
     </main>
     <script src="data/library.js"></script>
     <script src="js/config.js"></script>
@@ -62,6 +61,6 @@
     <script src="js/services/alerts.js"></script>
     <script src="js/services/taste.js"></script>
     <script src="js/components/picker.js"></script>
-    <script src="js/pages/browse.js"></script>
+    <script src="js/pages/discover.js"></script>
   </body>
 </html>

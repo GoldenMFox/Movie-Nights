@@ -15,13 +15,15 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v180";
+const VERSION = "v181";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [
   "./",
   "index.html",
   "discover.html",
+  "movies-explore.html",
+  "tv-explore.html",
   "search.html",
   "movies.html",
   "tv-shows.html",

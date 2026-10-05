@@ -1,7 +1,8 @@
 /*
  * Settings page, in the site's own style (glass cards with small red labels, like X-Ray;
  * red icon circles; pill buttons; the red pill switch): theme, your streaming services,
- * import from IMDb / Letterboxd, backup. The owner also gets Members and TMDB / OMDb.
+ * import from IMDb / Letterboxd, backup, notifications, problems on this device. Only what's yours:
+ * everything about running the site (TMDB / OMDb keys, members…) is in the Admin Control Center.
  * (Your name, stats and watch diary are on the Profile page: js/pages/profile.js)
  */
 (function () {
@@ -12,12 +13,7 @@
   const profile = Store.getProfile();
 
   const label = (icon, text) => `<span class="xr-label"><i class="fa-solid ${icon}"></i> ${text}</span>`;
-  const card = (id, icon, title, body, extra = "") =>
-    `<section class="xr-card sv-card" id="${id}"${extra}>${
-      extra.includes("data-owner")
-        ? `<div class="sv-head">${label(icon, title)}<span class="sv-admin" title="Only you see this, as the owner"><i class="fa-solid fa-shield-halved"></i> Admin only</span></div>`
-        : label(icon, title)
-    }${body}</section>`;
+  const card = (id, icon, title, body, extra = "") => `<section class="xr-card sv-card" id="${id}"${extra}>${label(icon, title)}${body}</section>`;
   // a row: red icon circle, name (+ a line under it), what you can do on the right
   const row = (icon, name, sub, right = "") => `<div class="sv-row">
       <span class="sv-ic"><i class="fa-solid ${icon}"></i></span>
@@ -59,7 +55,7 @@
                 <span class="switch-track"><span class="switch-thumb"></span></span>
               </label>`
             )}</div>
-            <p class="sv-note"><i class="fa-solid fa-circle-info"></i> Russian titles, Poster details and Match % are switches in the profile menu (your picture, top right).</p>`
+            <p class="sv-note"><i class="fa-solid fa-circle-info"></i> Russian titles, Poster details and Match % are switches in the profile menu (your picture, top right). Your notifications are in the bell beside it.</p>`
           )}
 
           ${card(
@@ -98,6 +94,7 @@
                 ["release", "fa-film", "Movie releases", "A movie on your Watchlist (or one you asked to be reminded of) comes out"],
                 ["season", "fa-layer-group", "New seasons", "A show you follow starts a new season"],
                 ["episode", "fa-tv", "New episodes", "A new episode of a show on your Watchlist or Favorites"],
+                ["recommendation", "fa-wand-magic-sparkles", "Recommendations", "Once a week, a well-known title like one you loved"],
               ]
                 .map(([k, icon, name, sub]) =>
                   row(
@@ -113,43 +110,9 @@
             guest ? " hidden" : ""
           )}
 
-          ${card(
-            "keys",
-            "fa-key",
-            "TMDB & IMDb",
-            `${row("fa-film", "TMDB API key", '<span class="tmdb-status"></span>')}
-            <input class="input" name="tmdb" type="password" autocomplete="off" placeholder="Paste your key or read access token (optional)" />
-            <div class="sv-buttons">
-              <button class="btn btn-primary save-key" type="button">Save key</button>
-              <button class="btn test-key" type="button">Test</button>
-              <button class="btn clear-key" type="button">Remove</button>
-            </div>
-            <p class="sv-note">Free at themoviedb.org → Settings → API. A key typed here is stored only in this browser and overrides the one in <code>js/config.js</code>.</p>
-            ${row("fa-star", "IMDb ratings (OMDb)", '<span class="omdb-state"></span>')}
-            <div class="omdb-status sv-meter"></div>`,
-            " data-owner"
-          )}
         </div>
 
         <div class="sv-col">
-          ${card(
-            "admin-link",
-            "fa-sliders",
-            "Admin Control Center",
-            `<p class="sv-note sv-lead">The whole site's settings in one place: branding, maintenance mode, pages and features, featured titles, news, outside services, themes, notifications and members.</p>
-            <a class="btn btn-primary" href="admin.html"><i class="fa-solid fa-sliders"></i> Open the Admin Control Center</a>`,
-            " data-owner"
-          )}
-
-          ${card(
-            "members",
-            "fa-users",
-            "Members",
-            `<div class="member-list"><p class="sv-note">Loading…</p></div>
-            <p class="sv-note">Everyone who has signed in: you see how big their library is, never their ratings. To let someone in, add their Google email to the rules in the Firebase console (Firestore → Rules).</p>`,
-            ` data-owner${guest ? " hidden" : ""}`
-          )}
-
           ${card("import", "fa-file-import", "Import", '<div class="import-panel"></div>', guest ? " hidden" : "")}
 
           ${card(
@@ -184,8 +147,6 @@
       </div>
     </div>`;
 
-  // owner-only cards
-  root.querySelectorAll("[data-owner]").forEach((el) => el.classList.add("owner-only"));
 
   const $ = (s) => root.querySelector(s);
 
@@ -222,12 +183,12 @@
     const note = $(".nt-note");
     if (offSite) {
       state.textContent = "Switched off for the site";
-      note.textContent = "New releases still show under New for you on the Watchlist page.";
+      note.textContent = "New releases still show in the bell at the top of the page.";
     } else if (perm === "unsupported") {
       state.textContent = "Not available in this browser";
       note.innerHTML = ios
-        ? '<i class="fa-solid fa-circle-info"></i> On iPhone and iPad: add Movie Nights to your Home Screen first (Share → Add to Home Screen), then turn this on in the app. Until then, new releases show under <b>New for you</b> on the Watchlist page and as a red number.'
-        : '<i class="fa-solid fa-circle-info"></i> This browser can\'t show notifications. New releases still show under <b>New for you</b> on the Watchlist page and as a red number.';
+        ? '<i class="fa-solid fa-circle-info"></i> On iPhone and iPad: add Movie Nights to your Home Screen first (Share → Add to Home Screen), then turn this on in the app. Until then, new releases show in the <b>bell</b> at the top of the page.'
+        : '<i class="fa-solid fa-circle-info"></i> This browser can\'t show notifications. New releases still show in the <b>bell</b> at the top of the page.';
     } else if (perm === "denied") {
       state.textContent = "Blocked in this browser";
       note.innerHTML = '<i class="fa-solid fa-circle-info"></i> Notifications are blocked for this site. Allow them in the browser\'s site settings (the icon left of the address), then come back.';
@@ -312,86 +273,6 @@
       localStorage.setItem("mn:theme", b.dataset.themePick);
     } catch (err) {}
     paintTheme();
-  });
-
-  /* ---------------- TMDB / OMDb (owner) ---------------- */
-
-  const keyInput = $('[name="tmdb"]');
-  function showKeyStatus() {
-    const src = TMDB.keySource();
-    // short, on the right of the row (like a value in iOS Settings)
-    $(".tmdb-status").textContent = src === "config" ? "On · js/config.js" : src === "browser" ? "On · this browser" : "Off";
-  }
-  showKeyStatus();
-
-  // today's OMDb lookups as a meter you can read at a glance: 211 / 900, a bar, what's left
-  function showOmdbStatus() {
-    const s = Ratings.status();
-    const box = $(".omdb-status");
-    if (!s.enabled) {
-      $(".omdb-state").textContent = s.keyRejected ? "Off · the key was rejected" : "Off · no key";
-      box.innerHTML = `<p class="sv-note">${s.keyRejected ? "OMDb rejected the key in js/config.js." : "No OMDb key: cards show the TMDB score instead of IMDb."}</p>`;
-      return;
-    }
-    const pct = Math.min(100, Math.round((s.used / s.limit) * 100));
-    const full = s.blocked || s.used >= s.limit;
-    const level = full ? "full" : pct >= 75 ? "high" : "";
-    // OMDb's day ends at midnight UTC: when that is here
-    const now = new Date();
-    const reset = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    $(".omdb-state").textContent = full ? "Daily limit reached" : "On";
-    box.innerHTML = `
-      <div class="sv-meter-top">
-        <span class="sv-meter-num"><b>${s.used}</b> / ${s.limit}</span>
-        <span class="sv-meter-label" title="Counted in this browser. If OMDb's own limit is reached from any device, lookups stop for the day by themselves.">lookups today on this device</span>
-        <span class="sv-meter-pct ${level}">${full ? "Limit reached" : `${pct}%`}</span>
-      </div>
-      <div class="sv-meter-bar ${level}"><i style="width:${pct}%"></i></div>
-      <div class="sv-meter-facts">
-        <span><i class="fa-solid fa-gauge-high"></i> <b>${Math.max(0, s.limit - s.used)}</b> left today</span>
-        <span><i class="fa-solid fa-clock-rotate-left"></i> resets at <b>${reset}</b></span>
-        <span><i class="fa-solid fa-database"></i> <b>${s.cached}</b> ratings saved</span>
-      </div>`;
-  }
-  showOmdbStatus();
-  Ratings.onChange(showOmdbStatus);
-  try {
-    keyInput.value = localStorage.getItem(Store.KEYS.tmdbKey) || "";
-  } catch (e) {}
-
-  function saveKey() {
-    try {
-      localStorage.setItem(Store.KEYS.tmdbKey, keyInput.value.trim());
-      return true;
-    } catch (e) {
-      toast("Could not save the key in this browser");
-      return false;
-    }
-  }
-
-  $(".save-key").addEventListener("click", () => {
-    if (saveKey()) toast(keyInput.value.trim() ? "TMDB key saved" : "TMDB key removed");
-    showKeyStatus();
-  });
-
-  $(".test-key").addEventListener("click", async () => {
-    if (!saveKey()) return;
-    try {
-      await TMDB.test();
-      toast("✔ TMDB key works");
-    } catch (e) {
-      toast(`✖ ${e.message}`);
-    }
-  });
-
-  $(".clear-key").addEventListener("click", () => {
-    keyInput.value = "";
-    try {
-      localStorage.removeItem(Store.KEYS.tmdbKey);
-    } catch (e) {}
-    TMDB.clearCache();
-    toast("Browser key removed");
-    showKeyStatus();
   });
 
   /* ---------------- backup ---------------- */
@@ -527,53 +408,6 @@
   /* ---------------- import (js/components/import.js) ---------------- */
 
   if (!guest && window.Importer) Importer.mount($("#import .import-panel"));
-
-  /* ---------------- members (owner only) ---------------- */
-
-  function ago(ms) {
-    if (!ms) return "never";
-    const min = Math.round((Date.now() - ms) / 60000);
-    if (min < 2) return "just now";
-    if (min < 60) return `${min} min ago`;
-    const h = Math.round(min / 60);
-    if (h < 24) return `${h} h ago`;
-    const d = Math.round(h / 24);
-    return d < 30 ? `${d} days ago` : new Date(ms).toLocaleDateString();
-  }
-
-  // names, photos and counts only: nobody's ratings, not even for the owner
-  let membersLoaded = false;
-  async function renderMembers() {
-    if (membersLoaded || !(window.Cloud && Cloud.isOwner())) return;
-    membersLoaded = true;
-    const box = $(".member-list");
-    try {
-      const list = (await Cloud.members()).sort((a, b) => b.me - a.me || (Number(b.updatedAt) || 0) - (Number(a.updatedAt) || 0));
-      box.innerHTML = list.length
-        ? list
-            .map(
-              (m) => `<div class="member">
-                <img src="${esc(m.photo || "images/placeholders/user.svg")}" alt="" referrerpolicy="no-referrer" />
-                <div class="member-info">
-                  <strong>${esc(m.name || "Someone")}${m.me ? ' <span class="member-you">you</span>' : ""}</strong>
-                  <small>Last sync: ${ago(Number(m.updatedAt))}</small>
-                </div>
-                <div class="member-counts">
-                  <span title="Titles"><i class="fa-solid fa-film"></i> ${m.titles}</span>
-                  <span title="Rated"><i class="fa-solid fa-star"></i> ${m.rated}</span>
-                  <span title="On the watchlist"><i class="fa-solid fa-bookmark"></i> ${m.watchlist}</span>
-                </div>
-              </div>`
-            )
-            .join("")
-        : '<p class="sv-note">Nobody yet.</p>';
-    } catch (e) {
-      membersLoaded = false;
-      box.innerHTML = `<p class="sv-note">Couldn't load members: ${esc(e.message)}</p>`;
-    }
-  }
-  if (window.Cloud) Cloud.onOwner((on) => on && renderMembers());
-  renderMembers();
 
   // settings.html#import, #services…: straight to that part
   if (location.hash) {

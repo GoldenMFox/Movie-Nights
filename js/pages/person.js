@@ -164,7 +164,7 @@
           ${
             genres.length
               ? `<div class="p-card p-genres"><h3>Top genres</h3><div class="p-chips">${genres
-                  .map((g) => `<a href="discover.html?genre=${encodeURIComponent(g)}&type=movie">${esc(g)}</a>`)
+                  .map((g) => `<a href="movies-explore.html?genre=${encodeURIComponent(g)}">${esc(g)}</a>`)
                   .join("")}</div></div>`
               : ""
           }
@@ -388,7 +388,7 @@
   /* ---------------- start ---------------- */
 
   async function init() {
-    if (!TMDB.enabled()) return message("fa-solid fa-key", 'This page needs a TMDB API key. Add one in <a href="settings.html#keys">Settings</a>.');
+    if (!TMDB.enabled()) return message("fa-solid fa-key", 'This page needs a TMDB API key. The owner of the site adds one in the Admin Control Center.');
     heroEl.hidden = true;
     mainEl.innerHTML = '<p class="result-count">Loading…</p>';
     try {
@@ -407,10 +407,10 @@
     mountBooks();
   }
 
-  /* ---------------- books by them, and about them (js/services/books.js, Open Library) ----------------
+  /* ---------------- books by them, and about them (js/services/books.js, Google Books) ----------------
      Under the filmography, looked for once when it comes near the screen; nothing found: no section */
   function mountBooks() {
-    if (!window.Books || !window.Site || !Site.feature("books") || !Api.enabled("openlibrary") || !p) return;
+    if (!window.Books || !window.Site || !Site.feature("books") || !Books.ready() || !p) return;
     const box = document.createElement("section");
     box.className = "container t-section p-books";
     box.hidden = true;
@@ -425,7 +425,7 @@
       box.innerHTML = `<h2 class="t-section-title"><i class="fa-solid fa-book-open"></i> Books</h2>
         ${r.by.length ? `<h3 class="xr-sub">By ${esc(p.name)}</h3><div class="movie-row bk-row">${r.by.map(card).join("")}</div>` : ""}
         ${r.about.length ? `<h3 class="xr-sub">About ${esc(p.name)}</h3><div class="movie-row bk-row">${r.about.map(card).join("")}</div>` : ""}
-        <p class="ep-credit">Books from <a href="https://openlibrary.org" target="_blank" rel="noopener">Open Library</a></p>`;
+        <p class="ep-credit">Books from <a href="https://books.google.com" target="_blank" rel="noopener">Google Books</a></p>`;
       box.hidden = false;
     };
     if (!("IntersectionObserver" in window)) return start();

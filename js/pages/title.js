@@ -603,7 +603,7 @@
         </div>`);
     }
 
-    // anime: MyAnimeList's score, and the way to the full anime page
+    // anime: AniList's score, and the way to the full anime page
     if (d.anime) cards.push(animeCard(d.anime, label));
 
     // shows: when and where it airs (TVmaze)
@@ -944,8 +944,8 @@
     }
   });
 
-  /* ---------------- anime: its MyAnimeList card (js/services/anime.js) ---------------- */
-  // Japanese animation on TMDB: found on MyAnimeList (or AniList) by name and year, once
+  /* ---------------- anime: its AniList card (js/services/anime.js) ---------------- */
+  // Japanese animation on TMDB: found on AniList by name and year, once
   let animeFor = null;
   const isAnimeTitle = (d) => !!d && (d.genres || []).includes("Animation") && d.xray && d.xray.language === "ja";
   function loadAnime(d, done) {
@@ -1012,12 +1012,12 @@
       .join("")}</div></div>`;
   }
 
-  /* ---------------- Books (js/services/books.js): Based on, Related novels, Further reading ----------------
+  /* ---------------- Books (js/services/books.js, Google Books): Based on, Related novels, Further reading ----------------
      Looked for once, when the section comes near the screen; a title with no books has no section. */
   let booksData = null; // { based, related, reference } once looked for
   let booksBusy = false;
   let booksTab = null;
-  const booksOn = (d) => !!(window.Books && window.Site && Site.feature("books") && Api.enabled("openlibrary") && d && d.tmdbId && d.xray);
+  const booksOn = (d) => !!(window.Books && window.Site && Site.feature("books") && Books.ready() && d && d.tmdbId && d.xray);
   const bookUrl = (u) => (/^https:\/\//.test(u || "") ? u : "");
   function bookCard(b) {
     return `<a class="bk-card" href="${esc(bookUrl(b.url) || "#")}" target="_blank" rel="noopener" title="${esc(b.title)}">
@@ -1053,7 +1053,7 @@
                 b.isbn ? `<span><i class="fa-solid fa-barcode"></i> ISBN ${esc(b.isbn)}</span>` : "",
               ].join("")}</div>
               ${b.description ? `<p class="bk-desc clamp">${esc(b.description)}</p>${b.description.length > 260 ? '<button class="t-link bk-more" type="button">Read more</button>' : ""}` : ""}
-              ${bookUrl(b.url) ? `<a class="btn bk-ol" href="${esc(b.url)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Editions on Open Library</a>` : ""}
+              ${bookUrl(b.url) ? `<a class="btn bk-ol" href="${esc(b.url)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> On Google Books</a>` : ""}
             </div>
           </div>`
         : `<p class="muted">Based on the work of <b>${esc(based.author)}</b>. Their best-known books:</p><div class="movie-row bk-row">${(based.others || []).map(bookCard).join("")}</div>`;
@@ -1067,7 +1067,7 @@
     return `<section class="t-section t-books">${head}
         ${tabs.length > 1 ? `<div class="top10-switch bk-tabs" role="tablist" aria-label="Books">${tabs.map(([k, icon, l]) => `<button class="top10-tab${k === booksTab ? " active" : ""}" type="button" role="tab" aria-selected="${k === booksTab}" data-books="${k}"><i class="fa-solid ${icon}"></i> ${l}</button>`).join("")}</div>` : ""}
         <div class="bk-body">${body}</div>
-        <p class="ep-credit">Books from <a href="https://openlibrary.org" target="_blank" rel="noopener">Open Library</a></p>
+        <p class="ep-credit">Books from <a href="https://books.google.com" target="_blank" rel="noopener">Google Books</a></p>
       </section>`;
   }
   function watchBooks(d, done) {
@@ -1582,7 +1582,7 @@
       <div class="t-sections">${sectionsHtml(d, loading)}</div>
       <section class="t-more-like">${moreLikeHtml(similar, extra)}</section>
       <p class="tmdb-note">${
-        TMDB.enabled() ? TMDB_NOTE : 'Tip: add a free TMDB API key in <a href="settings.html#keys">Settings</a> to see the overview, cast, trailer and recommendations for every title.'
+        TMDB.enabled() ? TMDB_NOTE : 'Tip: with a TMDB key (the owner adds it in the Admin Control Center) you would see the overview, cast, trailer and recommendations for every title.'
       }</p>
       <p><button class="btn btn-danger remove-title" type="button"><i class="fa-solid fa-trash"></i> Remove from library</button></p>`;
     rowScrolls(keep);
@@ -1924,7 +1924,7 @@
           extra = details || {};
           loadCollection(extra, renderLibrary); // its franchise, if it's part of one
           loadTvmaze(extra, renderLibrary); // a show: episodes, when it airs (TVmaze)
-          loadAnime(extra, renderLibrary); // anime: its MyAnimeList card
+          loadAnime(extra, renderLibrary); // anime: its AniList card
           if (details && details.titleRu && !Store.get(id).titleRu) Store.update(id, { titleRu: details.titleRu });
           Ratings.request(Store.get(id)); // now that the IMDb id is known
           // remember the trailer so it also works on cards and in the exported library
@@ -1943,7 +1943,7 @@
 
   async function initTmdb() {
     const [media, tmdbId] = tmdbRef.split("-");
-    if (!TMDB.enabled()) return message("fa-solid fa-key", 'This page needs a TMDB API key. Add one in <a href="settings.html#keys">Settings</a>.');
+    if (!TMDB.enabled()) return message("fa-solid fa-key", 'This page needs a TMDB API key. The owner of the site adds one in the Admin Control Center.');
     if (!/^(movie|tv)$/.test(media) || !/^\d+$/.test(tmdbId)) return message("fa-regular fa-face-frown", "That link doesn't look right.");
 
     heroEl.hidden = true;

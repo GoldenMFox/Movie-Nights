@@ -25,7 +25,7 @@
         var t = p.get("t") || "";
         p.delete("t");
         var rest = p.toString();
-        location.replace(/^(movie|tv)-\d+$/.test(t) ? "title.html?tmdb=" + t + (rest ? "&" + rest : "") : "discover.html");
+        location.replace(/^(movie|tv)-\d+$/.test(t) ? "title.html?tmdb=" + t + (rest ? "&" + rest : "") : "movies-explore.html");
       })();
     </script>
   </head>

@@ -1,7 +1,11 @@
 /*
- * Discover page: browse and search all of TMDB (trending, popular, in cinemas,
- * coming soon, top rated, anime) and add anything to your library or watchlist.
- * Needs a TMDB key (js/config.js or Settings).
+ * Explore: browse and search all of TMDB and add anything to your library or watchlist.
+ *   movies-explore.html  (body data-explore="movie"): trending, popular, in cinemas, coming soon, top rated
+ *   tv-explore.html      (body data-explore="tv"): trending, popular, on the air, premiering soon, top rated
+ * Each one: search (all of TMDB, or one kind), browse by genre (most popular / top rated / newest),
+ * "Coming soon · date" on what isn't out yet, Advanced search for every filter at once.
+ * (It used to be one Discover page for everything; discover.html now forwards here.)
+ * Needs a TMDB key (js/config.js, or the Admin Control Center).
  */
 (function () {
   const { esc } = UI;
@@ -11,32 +15,38 @@
     const step = (n, html) => `<li><span class="dk-num">${n}</span><span>${html}</span></li>`;
     root.innerHTML = `<section class="xr-card dx-nokey">
       <span class="xr-label"><i class="fa-solid fa-key"></i> Connect TMDB</span>
-      <h2>Connect TMDB to discover new titles</h2>
-      <p class="dk-lead">Discover shows what's trending, popular, in cinemas and coming soon, using TMDB's free API.
+      <h2>Connect TMDB to explore new titles</h2>
+      <p class="dk-lead">Explore shows what's trending, popular, in cinemas and coming soon, using TMDB's free API.
          It needs a TMDB API key, which takes about 2 minutes:</p>
       <ol class="dk-steps">
         ${step(1, 'Create a free account at <a href="https://www.themoviedb.org/signup" target="_blank" rel="noopener">themoviedb.org/signup</a> and confirm your email.')}
         ${step(2, 'Go to <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">Settings → API</a> and request a key (choose "Personal / Developer").')}
         ${step(3, "Copy the <strong>API Key</strong> (or the API Read Access Token).")}
-        ${step(4, 'Paste it in <a href="settings.html#keys">Settings</a>, or into <code>js/config.js</code> so it works everywhere.')}
+        ${step(4, "The site's owner pastes it in the Admin Control Center (API integrations), or into <code>js/config.js</code>.")}
       </ol>
-      <a class="btn btn-primary dk-go" href="settings.html#keys"><i class="fa-solid fa-gear"></i> Open Settings</a>
     </section>`;
     return;
   }
 
-  const TYPES = { movie: "Movies", tv: "TV shows", anime: "Anime" };
+  // the kind this page explores ("movie" | "tv"); none: every kind (old Discover links)
+  const KIND = document.body.dataset.explore || "";
+  const KIND_CATS = {
+    movie: ["trending-movies", "popular-movies", "now-playing", "upcoming", "top-movies"],
+    tv: ["trending-tv", "popular-tv", "airing-tv", "upcoming-tv", "top-tv"],
+  };
+  const CATS = KIND_CATS[KIND] || Object.keys(TMDB.CATEGORIES).filter((k) => !/^(trending-|airing-|upcoming-tv)/.test(k));
+  const TYPES = KIND ? { [KIND]: KIND === "movie" ? "Movies" : "TV shows" } : { movie: "Movies", tv: "TV shows", anime: "Anime" };
   const GSORTS = { popular: "Most popular", top: "Top rated", new: "Newest" };
   const SEARCH_IN = { all: "Everything", movie: "Movies", tv: "TV shows", anime: "Anime" };
 
   const params = new URLSearchParams(location.search);
   const state = {
-    cat: TMDB.CATEGORIES[params.get("cat")] ? params.get("cat") : "trending",
+    cat: CATS.includes(params.get("cat")) ? params.get("cat") : CATS[0],
     q: params.get("q") || "",
-    sin: SEARCH_IN[params.get("in")] ? params.get("in") : "all", // search in
+    sin: SEARCH_IN[params.get("in")] ? params.get("in") : KIND || "all", // search in (this page's kind at first)
     // browse by genre
     genre: params.get("genre") || "",
-    gtype: TYPES[params.get("type")] ? params.get("type") : "movie",
+    gtype: KIND || (TYPES[params.get("type")] ? params.get("type") : "movie"),
     gsort: GSORTS[params.get("sort")] ? params.get("sort") : "popular",
     page: 0,
     totalPages: 1,
@@ -49,7 +59,7 @@
   root.innerHTML = `
     <form class="glass-search discover-search" role="search">
       <i class="fa-solid fa-magnifying-glass gs-icon" aria-hidden="true"></i>
-      <input type="search" name="q" placeholder="Search movies, TV shows and anime…" aria-label="Search all movies, TV shows and anime" value="${esc(state.q)}" autocomplete="off" />
+      <input type="search" name="q" placeholder="${KIND === "movie" ? "Search movies…" : KIND === "tv" ? "Search TV shows…" : "Search movies, TV shows and anime…"}" aria-label="Search" value="${esc(state.q)}" autocomplete="off" />
       <span class="glass-select small">
         <select name="sin" aria-label="Search in">
           ${Object.entries(SEARCH_IN).map(([k, l]) => `<option value="${k}"${k === state.sin ? " selected" : ""}>${l}</option>`).join("")}
@@ -59,7 +69,7 @@
     </form>
     <div class="glass-filters genre-bar">
       <span class="gf-label">Browse by genre</span>
-      <div class="segmented" role="group" aria-label="Type">
+      <div class="segmented" role="group" aria-label="Type"${KIND ? " hidden" : ""}>
         <span class="seg-indicator" aria-hidden="true"></span>
         ${Object.entries(TYPES).map(([k, l]) => `<button type="button" data-gtype="${k}">${l}</button>`).join("")}
       </div>
@@ -73,13 +83,11 @@
           ${Object.entries(GSORTS).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}
         </select>
       </span>
-      <a class="btn gf-adv" href="search.html" aria-label="Advanced search"><i class="fa-solid fa-sliders"></i> Advanced<span class="gf-adv-w"> search</span></a>
+      <a class="btn gf-adv" href="search.html${KIND === "tv" ? "?type=tv" : ""}" aria-label="Advanced search"><i class="fa-solid fa-sliders"></i> Advanced<span class="gf-adv-w"> search</span></a>
     </div>
     <div class="chips" role="group" aria-label="Category">
       <span class="chip-indicator intro" aria-hidden="true"></span>
-      ${Object.entries(TMDB.CATEGORIES)
-        .map(([k, c]) => `<button class="chip" type="button" data-cat="${k}">${c.label}</button>`)
-        .join("")}
+      ${CATS.map((k) => `<button class="chip" type="button" data-cat="${k}">${TMDB.CATEGORIES[k].label}</button>`).join("")}
     </div>
     <p class="result-count" aria-live="polite"></p>
     <div class="movie-grid"></div>
@@ -157,9 +165,9 @@
     moveChip();
     tools.mark(state.q, state.genre);
     let p = {};
-    if (state.q) p = state.sin === "all" ? { q: state.q } : { q: state.q, in: state.sin };
-    else if (state.genre) p = { genre: state.genre, type: state.gtype, sort: state.gsort };
-    else if (state.cat !== "trending") p = { cat: state.cat };
+    if (state.q) p = state.sin === (KIND || "all") ? { q: state.q } : { q: state.q, in: state.sin };
+    else if (state.genre) p = KIND ? { genre: state.genre, sort: state.gsort } : { genre: state.genre, type: state.gtype, sort: state.gsort };
+    else if (state.cat !== CATS[0]) p = { cat: state.cat };
     const qs = new URLSearchParams(p).toString();
     history.replaceState(null, "", qs ? `?${qs}` : location.pathname);
   }
@@ -308,7 +316,7 @@
       countEl.textContent = "";
       emptyEl.hidden = false;
       emptyEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>${esc(e.message)}.<br>
-        Check your key in <a href="settings.html#keys">Settings</a> or <code>js/config.js</code>.`;
+        Try again in a moment.`;
     } finally {
       if (run === state.run) {
         state.loading = false;

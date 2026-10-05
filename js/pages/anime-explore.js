@@ -1,11 +1,11 @@
 /*
- * Anime explorer (anime-explore.html): all of anime, from MyAnimeList (Jikan) or AniList
+ * Anime explorer (anime-explore.html): all of anime, from AniList
  * (js/services/anime.js). Next to "My anime" (anime.html, your own list) behind one switch.
  *
  *   anime-explore.html                    rows: trending, this season, upcoming, top rated, most
  *                                         popular, just finished, most-loved characters; browse by
  *                                         genre, studio or season; search
- *   anime-explore.html?genre=1            a grid (also ?studio=569, ?season=2026-fall, ?q=frieren,
+ *   anime-explore.html?genre=Action       a grid (also ?al=569 (a studio), ?season=2026-fall, ?q=frieren,
  *                                         ?list=top …), 24 at a time with Load more
  *   anime-explore.html?id=mal-5114        one anime: scores and ranks, story, facts, characters
  *                                         and their voices, staff, related anime, recommendations
@@ -36,7 +36,8 @@
       <nav class="top10-switch ax-switch" aria-label="Anime">
         <a class="top10-tab" href="anime.html"><i class="fa-solid fa-list"></i> My anime</a>
         <a class="top10-tab active" href="anime-explore.html" aria-current="page"><i class="fa-solid fa-compass"></i> Explore</a>
-      </nav></div>`;
+      </nav></div>
+    <nav class="ex-kinds" aria-label="Explore"><a class="chip" href="movies-explore.html"><i class="fa-solid fa-film"></i> Movies</a><a class="chip" href="tv-explore.html"><i class="fa-solid fa-tv"></i> TV Shows</a><a class="chip active" href="anime-explore.html" aria-current="page"><i class="fa-solid fa-dragon"></i> Anime</a></nav>`;
 
   // a poster card (the site's own: poster, type, score; title under it on computers)
   function card(c) {
@@ -55,12 +56,7 @@
       </article>`;
   }
   const skeleton = (n) => Array.from({ length: n }, () => '<div class="ax-skel"></div>').join("");
-  const credit = (src) =>
-    `<p class="tmdb-note ax-credit">${
-      src === "anilist"
-        ? 'Anime data from <a href="https://anilist.co" target="_blank" rel="noopener">AniList</a> (MyAnimeList via Jikan couldn\'t be reached).'
-        : 'Anime data from <a href="https://myanimelist.net" target="_blank" rel="noopener">MyAnimeList</a> via <a href="https://jikan.moe" target="_blank" rel="noopener">Jikan</a>.'
-    }</p>`;
+  const credit = () => '<p class="tmdb-note ax-credit">Anime data from <a href="https://anilist.co" target="_blank" rel="noopener">AniList</a>.</p>';
   const failed = (e, retry) =>
     `<div class="ax-error"><i class="fa-solid fa-plug-circle-xmark"></i><span>${esc((e && e.message) || "Couldn't load this")}.</span>${retry ? `<button class="btn ax-retry" type="button" data-retry="${esc(retry)}">Try again</button>` : ""}</div>`;
 
@@ -79,7 +75,7 @@
     ["popular", "fa-users", "Most popular"],
     ["completed", "fa-flag-checkered", "Just finished"],
   ];
-  const grid = params.get("genre") || params.get("studio") || params.get("season") || params.get("q") || params.get("list");
+  const grid = params.get("genre") || params.get("al") || params.get("season") || params.get("q") || params.get("list");
   if (grid) return gridPage();
 
   const featured = (window.Site && Site.get().anime.featured) || [];
@@ -95,9 +91,9 @@
     ).join("")}
     <section class="ax-browse">
       <div class="row-head"><h2><i class="fa-solid fa-masks-theater"></i> Browse by genre</h2></div>
-      <div class="ax-chips">${Anime.GENRES.map((g) => `<a class="as-chip" href="anime-explore.html?genre=${g.id}&name=${encodeURIComponent(g.name)}">${esc(g.name)}</a>`).join("")}</div>
+      <div class="ax-chips">${Anime.GENRES.map((g) => `<a class="as-chip" href="anime-explore.html?genre=${encodeURIComponent(g.name)}">${esc(g.name)}</a>`).join("")}</div>
       <div class="row-head"><h2><i class="fa-solid fa-building"></i> Browse by studio</h2></div>
-      <div class="ax-chips">${Anime.STUDIOS.map((s) => `<a class="as-chip" href="anime-explore.html?studio=${s.mal}&al=${s.al}&name=${encodeURIComponent(s.name)}">${esc(s.name)}</a>`).join("")}</div>
+      <div class="ax-chips">${Anime.STUDIOS.map((s) => `<a class="as-chip" href="anime-explore.html?al=${s.al}&name=${encodeURIComponent(s.name)}">${esc(s.name)}</a>`).join("")}</div>
       <div class="row-head"><h2><i class="fa-solid fa-calendar-days"></i> Browse by season</h2></div>
       <div class="ax-chips">${seasonLinks()}</div>
     </section>
@@ -128,7 +124,6 @@
     return out.join("");
   }
 
-  let lastSrc = null;
   function loadRow(sec) {
     const k = sec.dataset.row;
     const row = sec.querySelector(".movie-row");
@@ -137,7 +132,6 @@
     const job = k === "characters" ? Anime.topCharacters().then((list) => ({ list, chars: true })) : Anime.list(k);
     job
       .then((r) => {
-        if (r.src) lastSrc = r.src;
         if (!r.list.length) {
           sec.hidden = true;
           return;
@@ -152,7 +146,7 @@
               )
               .join("")
           : r.list.slice(0, 20).map(card).join("");
-        root.querySelector(".ax-foot").innerHTML = credit(lastSrc);
+        root.querySelector(".ax-foot").innerHTML = credit();
       })
       .catch((e) => {
         delete sec.dataset.loaded;
@@ -183,11 +177,11 @@
     let kind, opts, title;
     if (params.get("genre")) {
       kind = "genre";
-      opts = { genre: Number(params.get("genre")), genreName: name || (Anime.GENRES.find((g) => g.id === Number(params.get("genre"))) || {}).name };
+      opts = { genreName: params.get("genre") };
       title = `${opts.genreName || "Genre"} anime`;
-    } else if (params.get("studio") || params.get("al")) {
+    } else if (params.get("al")) {
       kind = "studio";
-      opts = { studio: Number(params.get("studio")) || null, studioAl: Number(params.get("al")) || null };
+      opts = { studioAl: Number(params.get("al")) || null };
       title = name || "Studio";
     } else if (params.get("season")) {
       const [y, s] = params.get("season").split("-");
@@ -228,7 +222,7 @@
           if (page === 1 && !fresh.length) gridEl.innerHTML = '<div class="empty-state"><i class="fa-regular fa-face-meh"></i><p>Nothing found.</p></div>';
           more.hidden = !r.more;
           more.disabled = false;
-          root.querySelector(".ax-foot").innerHTML = credit(r.src);
+          root.querySelector(".ax-foot").innerHTML = credit();
         })
         .catch((e) => {
           page--;
@@ -265,7 +259,6 @@
       a.episodes ? `${a.episodes} episode${a.episodes === 1 ? "" : "s"}` : a.airing ? "Ongoing" : "",
       a.duration,
       a.season && a.year ? `${SEASON_LABEL[a.season]} ${a.year}` : a.year,
-      a.rating,
     ].filter(Boolean);
     const stat = (icon, big, label, cls) => `<div class="ax-stat ${cls || ""}"><i class="fa-solid ${icon}"></i><b>${big}</b><small>${label}</small></div>`;
     const nextEp = a.next && a.next.at > Date.now() ? a.next : null;
@@ -283,17 +276,17 @@
             ${[a.titleRomaji !== a.title ? a.titleRomaji : "", a.titleJp].filter(Boolean).length ? `<p class="ax-alt">${[a.titleRomaji !== a.title ? a.titleRomaji : "", a.titleJp].filter(Boolean).map(esc).join(" · ")}</p>` : ""}
             <div class="ax-pills"><span class="ax-status ${statusCls}">${esc(a.status || "")}</span>${pills.map((p) => `<span>${esc(p)}</span>`).join("")}</div>
             <div class="ax-stats">
-              ${a.score ? stat("fa-star", a.score.toFixed(2).replace(/0$/, ""), a.scoredBy ? `${fmt(a.scoredBy)} votes` : "Score", "gold") : ""}
+              ${a.score ? stat("fa-star", a.score.toFixed(2).replace(/0$/, ""), "Score", "gold") : ""}
               ${a.rank ? stat("fa-ranking-star", `#${a.rank}`, "Ranked") : ""}
               ${a.popularity ? stat("fa-fire", `#${a.popularity}`, "Popularity") : ""}
-              ${a.members ? stat("fa-users", fmt(a.members), a.src === "anilist" ? "On lists" : "Members") : ""}
+              ${a.members ? stat("fa-users", fmt(a.members), "On lists") : ""}
               ${a.favorites ? stat("fa-heart", fmt(a.favorites), "Favorites") : ""}
             </div>
             ${nextEp ? `<div class="t-release soon"><i class="fa-solid fa-tower-broadcast"></i><span><b>Episode ${nextEp.episode}</b> ${new Date(nextEp.at).toLocaleString([], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · in ${Math.max(1, Math.round((nextEp.at - Date.now()) / 86400000))} day${Math.round((nextEp.at - Date.now()) / 86400000) === 1 ? "" : "s"}</span></div>` : ""}
             <div class="ax-cta">
               ${a.trailer ? '<button class="btn btn-primary ax-trailer" type="button"><i class="fa-solid fa-play"></i> Trailer</button>' : ""}
               <span class="ax-mn"><button class="btn" type="button" disabled><i class="fa-solid fa-spinner fa-spin"></i> Finding it on Movie Nights…</button></span>
-              ${safe(a.url) ? `<a class="btn" href="${esc(safe(a.url))}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${a.src === "anilist" ? "AniList" : "MyAnimeList"}</a>` : ""}
+              ${safe(a.url) ? `<a class="btn" href="${esc(safe(a.url))}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> AniList</a>` : ""}
               <button class="btn ax-share" type="button" data-feature="share" aria-label="Share"><i class="fa-solid fa-arrow-up-from-bracket"></i><span class="ax-share-l"> Share</span></button>
             </div>
           </div>
@@ -303,14 +296,14 @@
       <section class="t-section"><h2 class="t-section-title">Details</h2>
         <div class="xr-grid ax-facts">
           <div class="xr-card"><span class="xr-label"><i class="fa-solid fa-calendar-days"></i> Aired</span><dl class="xr-air-rows">
-            ${dl("From", esc(day(a.from)))}${dl("To", a.to ? esc(day(a.to)) : a.airing ? "Still airing" : "")}${dl("Broadcast", esc(a.broadcast))}${dl("Season", a.season ? `<a href="anime-explore.html?season=${a.year}-${a.season}">${SEASON_LABEL[a.season]} ${a.year}</a>` : "")}${dl("Source", esc(a.source))}
+            ${dl("From", esc(day(a.from)))}${dl("To", a.to ? esc(day(a.to)) : a.airing ? "Still airing" : "")}${dl("Season", a.season ? `<a href="anime-explore.html?season=${a.year}-${a.season}">${SEASON_LABEL[a.season]} ${a.year}</a>` : "")}${dl("Source", esc(a.source))}
           </dl></div>
           <div class="xr-card"><span class="xr-label"><i class="fa-solid fa-building"></i> Made by</span><dl class="xr-air-rows">
-            ${dl(a.studios.length > 1 ? "Studios" : "Studio", a.studios.map((s) => (s.id || s.al ? `<a href="anime-explore.html?${s.id ? `studio=${s.id}` : ""}${s.al ? `&al=${s.al}` : ""}&name=${encodeURIComponent(s.name)}">${esc(s.name)}</a>` : esc(s.name))).join(", "))}
-            ${dl("Producers", esc(a.producers.slice(0, 5).join(", ")))}${dl("Licensors", esc(a.licensors.join(", ")))}
+            ${dl(a.studios.length > 1 ? "Studios" : "Studio", a.studios.map((s) => (s.al ? `<a href="anime-explore.html?al=${s.al}&name=${encodeURIComponent(s.name)}">${esc(s.name)}</a>` : esc(s.name))).join(", "))}
+            ${dl("Producers", esc(a.producers.slice(0, 5).join(", ")))}
           </dl></div>
           <div class="xr-card ax-tags"><span class="xr-label"><i class="fa-solid fa-tags"></i> Genres &amp; themes</span>
-            <div class="ax-chips">${chipLinks(a.genres, (g) => (genreId(g) ? `<a class="as-chip" href="anime-explore.html?genre=${genreId(g)}&name=${encodeURIComponent(g)}">${esc(g)}</a>` : `<span class="as-chip">${esc(g)}</span>`))}${chipLinks(
+            <div class="ax-chips">${chipLinks(a.genres, (g) => (genreId(g) ? `<a class="as-chip" href="anime-explore.html?genre=${encodeURIComponent(g)}">${esc(g)}</a>` : `<span class="as-chip">${esc(g)}</span>`))}${chipLinks(
               a.themes.concat(a.demographics),
               (t) => `<span class="as-chip ax-theme">${esc(t)}</span>`
             )}</div>
@@ -327,8 +320,7 @@
       <section class="t-section ax-lazy" data-part="staff"><h2 class="t-section-title">Staff</h2><div class="ax-part">${skeleton(6)}</div></section>
       ${relationsHtml(a)}
       <section class="t-section ax-lazy" data-part="recommendations"><h2 class="t-section-title">Fans also like</h2><div class="ax-part"><div class="movie-row">${skeleton(8)}</div></div></section>
-      ${a.background ? `<section class="t-section"><h2 class="t-section-title">Background</h2><p class="ax-synopsis">${esc(a.background)}</p></section>` : ""}
-      ${credit(a.src)}`;
+      ${credit()}`;
 
     // the blurred picture behind the header: set through the DOM (the address is someone
     // else's data, so it never goes into the HTML or a style attribute as text)

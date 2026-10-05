@@ -1,40 +1,82 @@
 /*
- * Alerts: "it's out" news about your titles, the red number on Watchlist, and notifications.
+ * Alerts: your notifications. The bell in the navbar lists them (with the number of unread ones),
+ * and they can also show as notifications on your devices.
  *
- * What makes an alert (from what js/services/watch.js already looks up once a day):
- *   release   a movie on your Watchlist (or one you asked to be reminded of) comes out
- *   season    a show you follow starts a new season (its episode 1)
- *   episode   a new episode of a show you follow
- * Each one is kept with your profile (so it follows you to your other devices), as
- *   { key, ref, id, title, poster, kind, season, episode, date, read, notified }
- * and dropped a month later. Key: the title, the kind and the day, so it's never made twice.
+ * Kinds (TYPES below: each says its icon, its words and where it leads). A new kind = one more
+ * entry in TYPES, and something that calls Alerts.add() with it:
+ *   release         a movie on your Watchlist (or one you asked to be reminded of) comes out
+ *   season          a show you follow starts a new season (its episode 1)
+ *   episode         a new episode of a show you follow
+ *   recommendation  once a week: a well-known title like one you loved ("Because you loved Dune")
+ * The first three come from what js/services/watch.js already looks up once a day.
  *
- * Read / unread: the red number counts the unread ones. Opening the Watchlist page (where they're
- * listed under "New for you") marks them read; each has its own ✕, and "Clear all" empties the list.
+ * Each is kept with your profile (so it follows you to your other devices), as
+ *   { key, kind, ref, id, title, poster, date, season, episode, extra, read, notified, at }
+ * and dropped a month later. The key says what it is and when, so it's never made twice.
  *
- * Notifications (Settings → Notifications, after the browser asks you): a new alert also shows as
- * a notification on this device, once (notified), for the kinds you picked. On Android's installed
- * app the browser can also check in the background now and then (Periodic Background Sync, sw.js),
- * so a release can arrive while the app is closed; elsewhere they come when you open the site.
- * The installed app's icon carries the unread count too, where the phone supports it.
+ * Read / unread: opening the bell marks what it shows as read (the number goes away); each one has
+ * its own ✕, and "Clear all" empties the list.
+ *
+ * Notifications (Settings → Notifications, after the browser asks you): a new alert also shows as a
+ * notification on this device, once (notified), for the kinds you picked. On Android's installed app
+ * the phone can also check in the background now and then (Periodic Background Sync, sw.js), so a
+ * release can arrive while the app is closed; elsewhere they come when you open the site. The
+ * installed app's icon carries the unread number too, where the phone supports it.
  */
 (function () {
   const DAY = 86400000;
   const KEEP = 30 * DAY; // an alert is kept a month
   const RECENT = 7; // something out in the last week still makes an alert
-  const PREFS = "mn:notify"; // this device: { on, release, season, episode }
+  const PREFS = "mn:notify"; // this device: { on, release, season, episode, recommendation }
   const listeners = [];
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
+  /* ---------------- the kinds ---------------- */
+
+  const today = () => Store.today();
+  const libOrTmdb = (a) => (a.id && Store.get(a.id) ? `title.html?id=${encodeURIComponent(a.id)}` : `title.html?tmdb=${encodeURIComponent(a.ref)}`);
+  const TYPES = {
+    release: {
+      icon: "fa-film",
+      label: "Movie releases",
+      words: (a) => ({ title: `${a.title} is out`, body: a.date === today() ? "Out today: it's on your Watchlist." : "Now out: it's on your Watchlist." }),
+      href: libOrTmdb,
+    },
+    season: {
+      icon: "fa-layer-group",
+      label: "New seasons",
+      words: (a) => ({ title: `${a.title}: Season ${a.season || 1}`, body: a.date === today() ? "The new season starts today." : "The new season has started." }),
+      href: libOrTmdb,
+    },
+    episode: {
+      icon: "fa-tv",
+      label: "New episodes",
+      words: (a) => ({ title: `${a.title}: S${a.season} E${a.episode}`, body: a.date === today() ? "A new episode is out today." : "A new episode is out." }),
+      href: (a) => `${libOrTmdb(a)}&ep=${a.season}-${a.episode}`,
+    },
+    recommendation: {
+      icon: "fa-wand-magic-sparkles",
+      label: "Recommendations",
+      words: (a) => ({ title: `You might like ${a.title}`, body: a.extra && a.extra.because ? `Because you loved ${a.extra.because}.` : "Picked for you." }),
+      href: (a) => `title.html?tmdb=${encodeURIComponent(a.ref)}`,
+    },
+  };
+  const typeOf = (a) => TYPES[a.kind] || { icon: "fa-bell", words: (x) => ({ title: x.title, body: "" }), href: () => "#" };
+  const words = (a) => typeOf(a).words(a);
+  const href = (a) => typeOf(a).href(a);
+
+  // the owner can turn a kind (or all of them) off for everyone (Admin → Notifications)
   const site = (k) => !window.Site || Site.get().notifications[k] !== false;
   const enabled = () => !Store.guest && (!window.Site || (Site.feature("notifications") && site("on")));
 
   /* ---------------- the list ---------------- */
 
-  const all = () => (Store.getProfile().alerts || []).filter((a) => a && a.key && Date.now() - (a.at || 0) < KEEP);
+  const all = () => (Store.getProfile().alerts || []).filter((a) => a && a.key && Date.now() - (a.at || 0) < KEEP && site(a.kind) !== false);
   function save(list) {
     Store.setProfile({ alerts: list.slice(-40) });
     listeners.forEach((fn) => fn());
     paint();
+    if (panelEl) renderPanel();
   }
   const unread = () => all().filter((a) => !a.read);
 
@@ -49,66 +91,74 @@
     });
     if (changed) save(list);
   }
-  function dismiss(key) {
-    save(all().filter((a) => a.key !== key));
-  }
-  function clear() {
-    save([]);
-  }
+  const dismiss = (key) => save(all().filter((a) => a.key !== key));
+  const clear = () => save([]);
 
-  /* ---------------- finding new ones ---------------- */
-
-  const daysAgo = (date) => Math.round((new Date(`${Store.today()}T00:00:00`) - new Date(`${date}T00:00:00`)) / DAY);
-  const fresh = (date) => !!date && date <= Store.today() && daysAgo(date) <= RECENT;
-
-  // the titles worth an alert, as Watch looked them up -> new alerts added (returns how many)
-  function scan() {
-    if (!enabled() || !window.Watch) return 0;
+  // add new alerts (any kind): the ones not had before; returns the new ones
+  function add(items) {
+    if (!enabled()) return [];
     const list = all();
     const have = new Set(list.map((a) => a.key));
+    const fresh = items.filter((a) => a && a.key && TYPES[a.kind] && !have.has(a.key) && have.add(a.key));
+    if (!fresh.length) return [];
+    fresh.forEach((a) => Object.assign(a, { read: false, notified: false, at: a.at || Date.now() }));
+    save(list.concat(fresh));
+    notify(fresh);
+    return fresh;
+  }
+
+  /* ---------------- finding new ones: releases, seasons, episodes ---------------- */
+
+  const daysAgo = (date) => Math.round((new Date(`${today()}T00:00:00`) - new Date(`${date}T00:00:00`)) / DAY);
+  const fresh = (date) => !!date && date <= today() && daysAgo(date) <= RECENT;
+
+  function scan() {
+    if (!enabled() || !window.Watch) return 0;
     const found = [];
     Watch.candidates(Store.all()).forEach((item) => {
       const v = Watch.nextOf(item);
       const ref = Watch.knownRef(item);
       if (!v || !ref) return;
-      const base = {
-        ref,
-        id: item.id || null,
-        title: Lang.title(item),
-        poster: Cards.posterOf ? Cards.posterOf(item) : item.poster || "",
-      };
-      const add = (kind, date, season, episode) => {
-        const key = `${ref}|${kind}|${date}|${season || ""}-${episode || ""}`;
-        if (have.has(key)) return;
-        have.add(key);
-        found.push(Object.assign({ key, kind, date, season: season || null, episode: episode || null, read: false, notified: false, at: Date.now() }, base));
-      };
-      if (v.kind === "release" && fresh(v.date)) add(ref.startsWith("movie") ? "release" : "season", v.date, 1, 1);
-      if (v.kind === "episode") {
-        [v, v.last].forEach((e) => {
-          if (e && fresh(e.date) && e.season) add(e.episode === 1 ? "season" : "episode", e.date, e.season, e.episode);
-        });
-      }
+      const base = { ref, id: item.id || null, title: Lang.title(item), poster: Cards.posterOf ? Cards.posterOf(item) : item.poster || "" };
+      const make = (kind, date, season, episode) =>
+        found.push(Object.assign({ key: `${ref}|${kind}|${date}|${season || ""}-${episode || ""}`, kind, date, season: season || null, episode: episode || null }, base));
+      if (v.kind === "release" && fresh(v.date)) make(ref.startsWith("movie") ? "release" : "season", v.date, 1, 1);
+      if (v.kind === "episode") [v, v.last].forEach((e) => e && fresh(e.date) && e.season && make(e.episode === 1 ? "season" : "episode", e.date, e.season, e.episode));
     });
-    if (!found.length) return 0;
-    save(list.concat(found));
-    notify(found);
-    return found.length;
+    return add(found).length;
   }
 
-  /* ---------------- words ---------------- */
+  /* ---------------- a recommendation, once a week ---------------- */
 
-  function words(a) {
-    if (a.kind === "release") return { title: `${a.title} is out`, body: a.date === Store.today() ? "Out today: it's on your Watchlist." : "Now out: it's on your Watchlist." };
-    if (a.kind === "season") return { title: `${a.title}: Season ${a.season || 1}`, body: a.date === Store.today() ? "The new season starts today." : "The new season has started." };
-    return { title: `${a.title}: S${a.season} E${a.episode}`, body: a.date === Store.today() ? "A new episode is out today." : "A new episode is out." };
+  // one of your best (8+ or a favorite), and a well-known title TMDB recommends for it that you
+  // don't have yet (js/services/tmdb.js: knownRecommendations, kept a week)
+  async function recommend() {
+    if (!enabled() || !site("recommendation") || !window.TMDB || !TMDB.enabled() || !window.Watch) return;
+    const last = Store.getProfile().alertsRecAt || 0;
+    if (Date.now() - last < 7 * DAY) return;
+    const loved = Store.all().filter((i) => (typeof i.rating === "number" ? i.rating >= 8 : i.favorite));
+    if (!loved.length) return;
+    Store.setProfile({ alertsRecAt: Date.now() }); // (tried this week, found or not)
+    for (let n = 0; n < 4 && loved.length; n++) {
+      const seed = loved.splice(Math.floor(Math.random() * loved.length), 1)[0];
+      try {
+        const ref = await Watch.refOf(seed);
+        if (!ref) continue;
+        const [media, id] = ref.split("-");
+        const recs = (await TMDB.knownRecommendations(media, Number(id))).filter((h) => !Cards.inLibrary(h) && h.poster);
+        const pick = recs[Math.floor(Math.random() * Math.min(5, recs.length))];
+        if (!pick) continue;
+        const r = `${pick.mediaType}-${pick.tmdbId}`;
+        add([{ key: `rec|${r}`, kind: "recommendation", ref: r, id: null, title: pick.title, poster: pick.poster, date: today(), extra: { because: Lang.title(seed) } }]);
+        return;
+      } catch (e) {}
+    }
   }
-  const href = (a) => (a.id ? `title.html?id=${encodeURIComponent(a.id)}` : `title.html?tmdb=${encodeURIComponent(a.ref)}`);
 
   /* ---------------- notifications on this device ---------------- */
 
   const supported = () => "Notification" in window && "serviceWorker" in navigator;
-  const prefs = () => Object.assign({ on: false, release: true, season: true, episode: true }, Store.read(PREFS, {}));
+  const prefs = () => Object.assign({ on: false, release: true, season: true, episode: true, recommendation: true }, Store.read(PREFS, {}));
   function setPrefs(p) {
     Store.write(PREFS, Object.assign(prefs(), p));
     snapshot();
@@ -195,7 +245,7 @@
       await c.put("alerts-snapshot", new Response(body, { headers: { "Content-Type": "application/json" } }));
     } catch (e) {}
   }
-  // what the background check showed while the site was closed: marked as shown here too
+  // what the background check showed while the site was closed: added here too, as shown
   async function pickUpShown() {
     if (!("caches" in window)) return;
     try {
@@ -216,42 +266,118 @@
     } catch (e) {}
   }
 
-  /* ---------------- the red number ---------------- */
+  /* ---------------- the bell ---------------- */
 
   function paint() {
     const n = Store.guest ? 0 : unread().length;
-    document.querySelectorAll('.nav-links a[href="watchlist.html"], .tab-bar a[href="watchlist.html"]').forEach((a) => {
-      let b = a.querySelector(".nav-badge");
-      if (!n) {
-        if (b) b.remove();
-        a.removeAttribute("aria-label");
-        return;
-      }
-      if (!b) {
-        b = document.createElement("span");
-        b.className = "nav-badge";
-        a.append(b);
-      }
+    document.querySelectorAll(".notif-badge").forEach((b) => {
+      b.hidden = !n;
       b.textContent = n > 9 ? "9+" : n;
-      b.title = `${n} new: out now`;
-      a.setAttribute("aria-label", `Watchlist, ${n} new`);
     });
+    document.querySelectorAll(".notif-btn").forEach((b) => b.setAttribute("aria-label", n ? `Notifications, ${n} new` : "Notifications"));
     // the installed app's icon (Android / desktop / iOS 16.4+ when added to the Home Screen)
     try {
       if (navigator.setAppBadge) n ? navigator.setAppBadge(n) : navigator.clearAppBadge();
     } catch (e) {}
   }
 
+  // the panel under the bell: newest first, unread ones with a red dot; opening it marks
+  // what it shows as read (a moment later, so the dots are seen)
+  let panelEl = null;
+  let readTimer;
+  const ago = (a) => {
+    const n = daysAgo(a.date || today());
+    return n <= 0 ? "Today" : n === 1 ? "Yesterday" : `${n} days ago`;
+  };
+  function renderPanel() {
+    if (!panelEl) return;
+    if (Store.guest) {
+      panelEl.innerHTML = `<div class="notif-head"><h2>Notifications</h2></div><p class="notif-empty"><i class="fa-regular fa-bell"></i>Sign in to hear when the titles you're waiting for come out.</p>`;
+      return;
+    }
+    const list = all().sort((a, b) => (a.read === b.read ? String(b.date || "").localeCompare(String(a.date || "")) || (b.at || 0) - (a.at || 0) : a.read ? 1 : -1));
+    panelEl.innerHTML = `<div class="notif-head"><h2>Notifications</h2>${list.length ? '<button type="button" class="t-link notif-clear"><i class="fa-solid fa-broom"></i> Clear all</button>' : ""}</div>
+      ${
+        list.length
+          ? `<ul class="notif-list">${list
+              .map((a) => {
+                const w = words(a);
+                return `<li class="notif-item${a.read ? "" : " unread"}">
+                  <a href="${esc(href(a))}" data-notif="${esc(a.key)}">
+                    <span class="notif-pic">${a.poster ? `<img src="${esc(Store.poster(a.poster, "w92"))}" alt="" loading="lazy" />` : ""}<i class="fa-solid ${typeOf(a).icon}"></i></span>
+                    <span class="notif-text"><strong>${esc(w.title)}</strong><small>${esc(w.body)} · ${ago(a)}</small></span>
+                  </a>
+                  <button type="button" class="notif-x" data-notif-x="${esc(a.key)}" aria-label="Dismiss"><i class="fa-solid fa-xmark"></i></button>
+                </li>`;
+              })
+              .join("")}</ul>`
+          : '<p class="notif-empty"><i class="fa-regular fa-bell"></i>You\'re all caught up. New releases, seasons and episodes of what you follow show up here.</p>'
+      }
+      <a class="notif-foot" href="settings.html#notifications"><i class="fa-solid fa-gear"></i> Notification settings</a>`;
+  }
+  function openPanel(el) {
+    if (panelEl !== el) {
+      panelEl = el;
+      el.addEventListener("click", (e) => {
+        const x = e.target.closest("[data-notif-x]");
+        if (x) {
+          e.preventDefault();
+          e.stopPropagation();
+          return dismiss(x.dataset.notifX);
+        }
+        if (e.target.closest(".notif-clear")) {
+          e.stopPropagation();
+          return clear();
+        }
+        const a = e.target.closest("[data-notif]");
+        if (a) markRead([a.dataset.notif]);
+      });
+    }
+    renderPanel();
+    clearTimeout(readTimer);
+    if (unread().length) readTimer = setTimeout(() => markRead(), 2500);
+  }
+  // closed within a moment of opening: what it showed stays unread
+  const closePanel = () => clearTimeout(readTimer);
+
   document.addEventListener("DOMContentLoaded", () => {
-    if (Store.guest || !window.Watch) return;
     paint();
+    if (Store.guest || !window.Watch) return;
     pickUpShown().then(scan);
     Watch.onChange(() => scan() || paint());
     Store.onChange(() => paint());
-    // release dates are looked up again once a day (on any page), then checked for alerts
-    if (window.TMDB && TMDB.enabled()) setTimeout(() => Watch.loadNext(Watch.candidates(Store.all())).then(() => (scan(), snapshot())), 4000);
+    // release dates are looked up again once a day (on any page), then checked for alerts;
+    // the weekly recommendation a little later
+    if (window.TMDB && TMDB.enabled()) {
+      setTimeout(() => Watch.loadNext(Watch.candidates(Store.all())).then(() => (scan(), snapshot())), 4000);
+      setTimeout(recommend, 9000);
+    }
     if (prefs().on && permission() === "granted") backgroundCheck();
   });
 
-  window.Alerts = { all, unread, markRead, dismiss, clear, scan, words, href, prefs, setPrefs, permission, ask, supported, backgroundCheck, snapshot, paint, onChange: (fn) => listeners.push(fn) };
+  window.Alerts = {
+    TYPES,
+    register: (kind, def) => (TYPES[kind] = def),
+    all,
+    unread,
+    add,
+    markRead,
+    dismiss,
+    clear,
+    scan,
+    recommend,
+    words,
+    href,
+    prefs,
+    setPrefs,
+    permission,
+    ask,
+    supported,
+    backgroundCheck,
+    snapshot,
+    paint,
+    openPanel,
+    closePanel,
+    onChange: (fn) => listeners.push(fn),
+  };
 })();

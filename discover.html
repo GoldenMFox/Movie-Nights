@@ -3,57 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Discover &middot; Movie Nights</title>
-    <meta name="description" content="Find new movies, TV shows and anime to watch." />
+    <meta name="robots" content="noindex" />
+    <title>Explore &middot; Movie Nights</title>
     <link rel="icon" href="images/brand/favicon.png" type="image/png" />
-    <link rel="manifest" href="manifest.webmanifest" />
-    <meta name="theme-color" content="#17181c" />
-    <link rel="apple-touch-icon" href="images/icons/apple-touch-icon.png" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Movie Nights" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    />
-    <!-- the fonts load alongside the page, not after style.css (Inter: one variable file for every weight) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=Poppins:wght@800&display=swap" />
-    <link rel="stylesheet" href="css/style.css" />
+    <!--
+      Discover moved into the Movies and TV Shows pages (Explore). Old links, bookmarks and the
+      installed app's shortcut land here and go on to the right place, with what they asked for:
+        ?q=dune&in=tv           → tv-explore.html?q=dune      (in=all / none: movies-explore.html, searching everything)
+        ?genre=Horror&type=tv   → tv-explore.html?genre=Horror (type=anime: the anime explorer)
+        ?cat=popular-tv         → tv-explore.html?cat=popular-tv (anime / top-anime: the anime explorer)
+    -->
     <script>
-      try {
-        if ((localStorage.getItem("mn:theme") || JSON.parse(localStorage.getItem("mn:siteTheme") || "null")) === "light") document.documentElement.dataset.theme = "light";
-      } catch (e) {}
+      (function () {
+        var p = new URLSearchParams(location.search);
+        var go = "movies-explore.html";
+        var out = new URLSearchParams();
+        var cat = p.get("cat") || "";
+        if (p.get("q")) {
+          var where = p.get("in") || "all";
+          if (where === "anime") go = "anime-explore.html";
+          else if (where === "tv") go = "tv-explore.html";
+          out.set("q", p.get("q"));
+          if (where === "all") out.set("in", "all");
+        } else if (p.get("genre")) {
+          var type = p.get("type") || "movie";
+          if (type === "anime") go = "anime-explore.html";
+          else {
+            go = type === "tv" ? "tv-explore.html" : "movies-explore.html";
+            out.set("genre", p.get("genre"));
+            if (p.get("sort")) out.set("sort", p.get("sort"));
+          }
+        } else if (cat === "anime" || cat === "top-anime") {
+          go = "anime-explore.html";
+          out.set("list", cat === "anime" ? "popular" : "top");
+        } else if (/-tv$/.test(cat)) {
+          go = "tv-explore.html";
+          out.set("cat", cat);
+        } else if (cat && cat !== "trending") out.set("cat", cat);
+        var qs = out.toString();
+        location.replace(go + (qs ? "?" + qs : ""));
+      })();
     </script>
   </head>
-  <body data-page="discover">
-    <main class="container">
-      <h1 class="page-title">Discover</h1>
-      <div id="discover"></div>
-    </main>
-    <script src="data/library.js"></script>
-    <script src="js/config.js"></script>
-    <script src="js/core/store.js"></script>
-    <script src="js/core/cloud.js"></script>
-    <script src="js/core/site.js"></script>
-    <script src="js/core/lang.js"></script>
-    <script src="js/core/layout.js"></script>
-    <script src="js/services/api.js"></script>
-    <script src="js/services/tmdb.js"></script>
-    <script src="js/services/ratings.js"></script>
-    <script src="js/components/cards.js"></script>
-    <script src="js/components/add-title.js"></script>
-    <script src="js/components/preview.js"></script>
-    <script src="js/components/scrollbars.js"></script>
-    <script src="js/services/watch.js"></script>
-    <script src="js/services/alerts.js"></script>
-    <script src="js/services/taste.js"></script>
-    <script src="js/components/picker.js"></script>
-    <script src="js/pages/discover.js"></script>
-  </body>
+  <body></body>
 </html>

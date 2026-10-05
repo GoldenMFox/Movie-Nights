@@ -12,7 +12,7 @@
   const { esc } = UI;
   const root = document.getElementById("adv");
   if (!TMDB.enabled()) {
-    root.innerHTML = `<div class="empty-state"><i class="fa-solid fa-key"></i><p>Advanced search needs TMDB. Add a free key in <a href="settings.html#keys">Settings</a>.</p></div>`;
+    root.innerHTML = `<div class="empty-state"><i class="fa-solid fa-key"></i><p>Advanced search needs TMDB. The owner of the site adds a free key in the Admin Control Center.</p></div>`;
     return;
   }
 

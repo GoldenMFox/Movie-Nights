@@ -18,7 +18,7 @@
     { "src": "images/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Discover", "url": "./discover.html", "icons": [{ "src": "images/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Explore", "url": "./movies-explore.html", "icons": [{ "src": "images/icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Watchlist", "url": "./watchlist.html", "icons": [{ "src": "images/icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Movies", "url": "./movies.html", "icons": [{ "src": "images/icons/icon-192.png", "sizes": "192x192" }] }
   ]

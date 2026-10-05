@@ -243,6 +243,14 @@
     }
   }
 
+  // "See all": the row's own list on the Explore pages
+  function seeAll(cat) {
+    if (cat === "anime") return "anime-explore.html?list=popular";
+    if (cat === "top-anime") return "anime-explore.html?list=top";
+    if (/-tv$/.test(cat)) return `tv-explore.html?cat=${cat}`;
+    return cat === "trending" ? "movies-explore.html" : `movies-explore.html?cat=${cat}`;
+  }
+
   function rowShell(id, title, link) {
     return `<section class="row-section" data-row="${id}">
       <div class="row-head"><h2>${esc(title)}</h2>${link ? `<a href="${link}">See all <i class="fa-solid fa-arrow-right"></i></a>` : ""}</div>
@@ -334,7 +342,7 @@
     rowsEl.innerHTML =
       top10Shell() +
       featuredRows() +
-      LIVE_ROWS.map((r) => (r.cat === "anime" ? movieRows.map(because).join("") : "") + rowShell(r.cat, r.title, `discover.html?cat=${r.cat}`)).join("") +
+      LIVE_ROWS.map((r) => (r.cat === "anime" ? movieRows.map(because).join("") : "") + rowShell(r.cat, r.title, seeAll(r.cat))).join("") +
       (animeSeeds.length ? because({ row: "because-anime", s: animeSeeds[0] }) : "");
     fillTop10(top10Media);
     if (movieRows.length) fillBecause(seeds, movieRows.map((r) => r.row), false);

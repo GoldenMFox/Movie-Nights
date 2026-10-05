@@ -26,7 +26,7 @@
     ["backup", "fa-floppy-disk", "Backup"],
   ];
   const PAGE_NAMES = [
-    ["home", "Home"], ["discover", "Discover"], ["movie", "Movies"], ["tv", "TV Shows"], ["anime", "Anime"], ["watchlist", "Watchlist"],
+    ["home", "Home"], ["movie", "Movies"], ["tv", "TV Shows"], ["anime", "Anime"], ["watchlist", "Watchlist"],
     ["tiers", "Tier List"], ["boxoffice", "Box Office"], ["news", "News"], ["animeExplore", "Explore anime (phones' Library tab, footer)"],
   ];
   const FEATURES = [
@@ -35,7 +35,7 @@
     ["soundtrack", "Soundtracks", "Apple Music previews on title pages"],
     ["xray", "X-Ray", "Behind-the-scenes facts on title pages"],
     ["tvmaze", "Episodes & air times", "TVmaze's episode guide on show pages"],
-    ["animeDetails", "Anime details", "The MyAnimeList card on anime title pages"],
+    ["animeDetails", "Anime details", "The AniList card on anime title pages"],
     ["animeExplore", "Anime explorer", "anime-explore.html"],
     ["books", "Books", "Based on, related novels, further reading"],
     ["news", "Movie News", "news.html"],
@@ -46,10 +46,8 @@
   ];
   const API_NAMES = {
     tvmaze: ["TVmaze", "Show schedules, episodes, networks", "hours"],
-    jikan: ["Jikan (MyAnimeList)", "Anime: first choice", "hours"],
-    anilist: ["AniList", "Anime: stands in when Jikan can't be reached", "hours"],
-    openlibrary: ["Open Library", "Books", "days"],
-    googlebooks: ["Google Books", "Book descriptions (needs a key)", "days"],
+    anilist: ["AniList", "Everything anime: the explorer and the anime card on title pages", "hours"],
+    googlebooks: ["Google Books", "Books on title and person pages, featured books (needs a key)", "days"],
     news: ["News feeds (rss2json)", "Movie News", "minutes"],
   };
 
@@ -182,10 +180,11 @@
           <div class="ad-search" data-search="anime"><input class="input" placeholder="Find an anime to feature…" /><div class="ad-results"></div></div>`, "Shown first on the anime explorer, as “Our picks”.")}
         ${card("fa-book", "Featured books", `${text("home.featuredBooksTitle", "Row title", draft.home.featuredBooksTitle)}
           <div class="ad-chips">${books.map((b, i) => chip(b.title, `data-rm="home.featuredBooks" data-i="${i}"`)).join("") || '<span class="muted">Nothing yet</span>'}</div>
-          <div class="ad-search" data-search="books"><input class="input" placeholder="Find a book on Open Library…" /><div class="ad-results"></div></div>`, "A row of books on Home, under your picks.")}
+          <div class="ad-search" data-search="books"><input class="input" placeholder="Find a book on Google Books…" /><div class="ad-results"></div></div>`, "A row of books on Home, under your picks.")}
         ${card("fa-eye-slash", "Hidden titles (moderation)", `<div class="ad-chips">${hidden.map((h, i) => chip(h.title || h.ref, `data-rm="content.hidden" data-i="${i}"`)).join("") || '<span class="muted">None</span>'}</div>
           <div class="ad-search" data-search="hide"><input class="input" placeholder="Find a title to hide…" /><div class="ad-results"></div></div>`, "Hidden from Discover, Home and search rows for everyone (people's own libraries keep it).")}
-        ${card("fa-compass", "Discover", `${num("discover.phoneFirst", "Titles at first, phones", draft.discover.phoneFirst, 10, 40)}${num("discover.desktopFirst", "Titles at first, computers", draft.discover.desktopFirst, 20, 60)}`, "Before “Load more”. Posters load as they come near the screen.")}
+        ${card("fa-compass", "Explore pages", `${num("discover.phoneFirst", "Titles at first, phones", draft.discover.phoneFirst, 10, 40)}${num("discover.desktopFirst", "Titles at first, computers", draft.discover.desktopFirst, 20, 60)}`, "Movies and TV Shows → Explore, before “Load more”. Posters load as they come near the screen.")}
+        ${card("fa-plus", "Add a title by hand", '<p class="sv-note sv-lead">A title TMDB doesn\'t have, straight into your own library.</p><button class="btn" type="button" data-action="add-title"><i class="fa-solid fa-plus"></i> Add a title</button>')}
       </div>`;
     },
     news() {
@@ -207,7 +206,18 @@
     },
     apis() {
       const st = Api.status();
-      return `<div class="ad-grid">${Object.entries(API_NAMES)
+      const src = TMDB.keySource();
+      let browserKey = "";
+      try {
+        browserKey = localStorage.getItem(Store.KEYS.tmdbKey) || "";
+      } catch (e) {}
+      return `<div class="ad-grid">
+        ${card("fa-film", "TMDB", `<div class="ad-api-head"><span class="ad-health ${src ? "ok" : "down"}"><i></i>${src === "config" ? "On · js/config.js" : src === "browser" ? "On · this browser's key" : "No key"}</span><small>Titles, posters, trailers, cast, Explore</small></div>
+          <label class="ad-field"><span>A key for this browser only (overrides js/config.js)</span><input class="input ad-tmdb-key" type="password" autocomplete="off" placeholder="API key or read access token" value="${esc(browserKey)}" /></label>
+          <div class="sv-buttons"><button class="btn btn-primary ad-key-save" type="button">Save key</button><button class="btn ad-key-test" type="button">Test</button><button class="btn ad-key-clear" type="button">Remove</button></div>`,
+          "Free at themoviedb.org → Settings → API. The key everyone uses is the one in js/config.js.")}
+        ${card("fa-star", "IMDb ratings (OMDb)", '<div class="ad-omdb"></div>', "1,000 free lookups a day: the site uses at most 900, one per title, and keeps every rating about a month.")}
+        ${Object.entries(API_NAMES)
         .map(([k, [label, what, unit]]) => {
           const s = st[k] || {};
           const a = Object.assign({}, Site.DEFAULTS.apis[k] || {}, draft.apis[k] || {});
@@ -218,7 +228,7 @@
             `<div class="ad-api-head"><span class="ad-health ${s.health}"><i></i>${{ ok: "Working", down: "Not answering", off: "Switched off", unknown: "Not asked yet" }[s.health] || ""}</span><small>${esc(what)}</small></div>
             ${sw(`apis.${k}.on`, "On", "Off: the site doesn't ask it at all and shows what it can without it", a.on !== false)}
             ${num(`apis.${k}.${unit}`, `Keep answers for (${unit})`, a[unit], 1, max)}
-            ${k === "googlebooks" ? text("apis.googlebooks.key", "API key (optional)", a.key, 'placeholder="AIza…" autocomplete="off"') + '<p class="sv-note">Visible to visitors like any key on a website: restrict it to this site\'s address in Google Cloud (HTTP referrers) and to the Books API.</p>' : ""}
+            ${k === "googlebooks" ? text("apis.googlebooks.key", "API key (needed)", a.key, 'placeholder="AIza…" autocomplete="off"') + '<p class="sv-note">Without a key Google shares one small daily allowance with every site, always used up, so the book sections stay hidden. Free in Google Cloud: enable the Books API, create a key, restrict it to this site\'s address (HTTP referrers) and to the Books API. Visible to visitors like any key on a website.</p>' : ""}
             <div class="ad-api-stats"><span><b>${s.ok || 0}</b> answered</span><span><b>${s.cached || 0}</b> from memory</span><span><b>${s.fail || 0}</b> failed</span><span>Last good: ${ago(s.lastOk)}</span></div>
             ${s.lastError ? `<p class="sv-note ad-err"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(s.lastError)} (${ago(s.lastFail)})</p>` : ""}
             <div class="sv-buttons"><button class="btn" type="button" data-api-test="${k}"><i class="fa-solid fa-stethoscope"></i> Test</button><button class="btn" type="button" data-api-clear="${k}"><i class="fa-solid fa-broom"></i> Clear its memory</button></div>`
@@ -240,10 +250,11 @@
     },
     notifications() {
       return `<div class="ad-grid">
-        ${card("fa-bell", "Release alerts", `${sw("notifications.on", "Alerts and notifications", "The red number on Watchlist, New for you, and notifications for those who turn them on", draft.notifications.on !== false)}
+        ${card("fa-bell", "Release alerts", `${sw("notifications.on", "Alerts and notifications", "The bell in the navbar with its number, and notifications for those who turn them on", draft.notifications.on !== false)}
           ${sw("notifications.release", "Movie releases", "", draft.notifications.release !== false)}
           ${sw("notifications.season", "New seasons", "", draft.notifications.season !== false)}
-          ${sw("notifications.episode", "New episodes", "", draft.notifications.episode !== false)}`,
+          ${sw("notifications.episode", "New episodes", "", draft.notifications.episode !== false)}
+          ${sw("notifications.recommendation", "Weekly recommendation", "A well-known title like one they loved", draft.notifications.recommendation !== false)}`,
           "Each person turns notifications on for their own devices in Settings → Notifications, and picks the kinds they want.")}
         ${card("fa-mobile-screen", "How they arrive", `<ul class="ad-list">
           <li><b>Android, installed app:</b> the phone checks in the background now and then (Periodic Background Sync), so they can come while the app is closed.</li>
@@ -294,9 +305,50 @@
     void body.offsetWidth;
     body.classList.add("ad-in");
     if (k === "users") members(root.querySelector(".ad-members"), true);
+    if (k === "apis") omdbMeter();
     if (k === "overview") members(root.querySelector(".ad-members-mini"), false);
     paintState();
     paintBar();
+  }
+
+  // today's OMDb lookups: used / the day's budget, what's left, when it starts again
+  function omdbMeter() {
+    const box = root.querySelector(".ad-omdb");
+    if (!box || !window.Ratings) return;
+    const s = Ratings.status();
+    if (!s.enabled) {
+      box.innerHTML = `<p class="sv-note">${s.keyRejected ? "OMDb rejected the key in js/config.js." : "No OMDb key in js/config.js: cards show the TMDB score instead of IMDb."}</p>`;
+      return;
+    }
+    const pct = Math.min(100, Math.round((s.used / s.limit) * 100));
+    const full = s.blocked || s.used >= s.limit;
+    const now = new Date();
+    const reset = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    box.innerHTML = `<div class="sv-meter-top"><span class="sv-meter-num"><b>${s.used}</b> / ${s.limit}</span><span class="sv-meter-label">lookups today on this device</span>
+        <span class="sv-meter-pct ${full ? "full" : pct >= 75 ? "high" : ""}">${full ? "Limit reached" : `${pct}%`}</span></div>
+      <div class="sv-meter-bar ${full ? "full" : pct >= 75 ? "high" : ""}"><i style="width:${pct}%"></i></div>
+      <div class="sv-meter-facts"><span><i class="fa-solid fa-gauge-high"></i> <b>${Math.max(0, s.limit - s.used)}</b> left today</span><span><i class="fa-solid fa-clock-rotate-left"></i> resets at <b>${reset}</b></span><span><i class="fa-solid fa-database"></i> <b>${s.cached}</b> ratings saved</span></div>`;
+  }
+
+  // TMDB: a key for this browser only (the site's own is in js/config.js)
+  function tmdbKey(action) {
+    const input = root.querySelector(".ad-tmdb-key");
+    const value = input ? input.value.trim() : "";
+    try {
+      if (action === "clear") {
+        localStorage.removeItem(Store.KEYS.tmdbKey);
+        TMDB.clearCache();
+      } else localStorage.setItem(Store.KEYS.tmdbKey, value);
+    } catch (e) {
+      return toast("Couldn't save the key in this browser");
+    }
+    if (action === "test")
+      return TMDB.test().then(
+        () => toast("✔ TMDB key works"),
+        (e) => toast(`✖ ${e.message}`)
+      );
+    toast(action === "clear" ? "This browser's key removed" : value ? "TMDB key saved for this browser" : "TMDB key removed");
+    show("apis");
   }
 
   async function members(box, full) {
@@ -389,8 +441,9 @@
           const r = await Anime.list("search", { q });
           rows = r.list.slice(0, 8).map((c) => ({ label: `${c.title}${c.year ? ` (${c.year})` : ""}`, img: c.image, value: c }));
         } else {
-          const r = await Books.search({ q }, 8);
-          rows = r.map((b) => ({ label: `${b.title}${b.authors[0] ? ` · ${b.authors[0]}` : ""}`, img: b.cover, value: b }));
+          const r = await Books.search(q, 8);
+          // (kept small: no description in the site's settings)
+          rows = r.map((b) => ({ label: `${b.title}${b.authors[0] ? ` · ${b.authors[0]}` : ""}`, img: b.cover, value: { key: b.key, title: b.title, authors: b.authors.slice(0, 2), year: b.year, cover: b.cover, url: b.url } }));
         }
         out.innerHTML = rows.length
           ? rows.map((r, i) => `<button type="button" class="ad-result" data-pick="${i}"><img src="${esc(/^https?:/.test(r.img || "") || /^images\//.test(r.img || "") ? r.img : "images/placeholders/poster-placeholder.svg")}" alt="" loading="lazy" /><span>${esc(r.label)}</span><i class="fa-solid fa-plus"></i></button>`).join("")
@@ -446,6 +499,9 @@
       show(section);
       return;
     }
+    if (e.target.closest(".ad-key-save")) return tmdbKey("save");
+    if (e.target.closest(".ad-key-test")) return tmdbKey("test");
+    if (e.target.closest(".ad-key-clear")) return tmdbKey("clear");
     const test = e.target.closest("[data-api-test]");
     if (test) return testApi(test.dataset.apiTest, test);
     const clear = e.target.closest("[data-api-clear]");
@@ -523,10 +579,8 @@
     const t0 = performance.now();
     try {
       if (k === "tvmaze") await Api.get("tvmaze", "https://api.tvmaze.com/shows/1", { fresh: true });
-      else if (k === "jikan") await Api.get("jikan", "https://api.jikan.moe/v4/anime/1", { fresh: true });
       else if (k === "anilist")
         await Api.get("anilist", "https://graphql.anilist.co", { fresh: true, key: "test", init: { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: "{ Media(id: 1) { id } }" }) } });
-      else if (k === "openlibrary") await Api.get("openlibrary", "https://openlibrary.org/search.json?q=dune&limit=1&fields=key", { fresh: true });
       else if (k === "googlebooks") {
         const key = (draft.apis.googlebooks || {}).key;
         await Api.get("googlebooks", `https://www.googleapis.com/books/v1/volumes?q=dune&maxResults=1${key ? `&key=${encodeURIComponent(key)}` : ""}`, { fresh: true, key: "test" });
