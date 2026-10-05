@@ -101,6 +101,14 @@
       .then((doc) => {
         saved = { data: doc ? doc.data : null, blocked: (doc && doc.blocked) || [], updatedAt: doc ? doc.updatedAt : 0, at: Date.now(), state: doc && doc.data ? "live" : "default" };
         Store.write(KEY, saved);
+        // a copy kept on this device while the account couldn't take it: dropped once the
+        // account has a newer one (saved from here or another device after the rules were published)
+        const mine = Store.read(LOCAL, null);
+        if (mine && saved.updatedAt && saved.updatedAt > (mine.at || 0)) {
+          try {
+            localStorage.removeItem(LOCAL);
+          } catch (e) {}
+        }
         if (!local()) set(saved.data);
         checkBlocked();
         return config;

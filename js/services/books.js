@@ -78,18 +78,24 @@
     const authors = (d.sourceAuthors || []).filter((a) => /novel|book|author|short story|comic|graphic|memoir|play|story/i.test(a.job));
     if (!authors.length && !keywords.some((k) => BASED.test(k))) return null;
     const titles = [...new Set([d.title, d.originalTitle].filter(Boolean))].map((t) => t.replace(/\s*\((19|20)\d\d\)\s*$/, ""));
+    // (no quotes: Google Books finds nothing at all for intitle:"…" or inauthor:"…")
+    const tidy = (x) => String(x).replace(/["“”]/g, "").trim();
     for (const t of titles) {
       for (const author of authors.length ? authors.map((a) => a.name) : [""]) {
-        const list = await search(author ? `intitle:"${t}" inauthor:"${author}"` : `intitle:"${t}"`, 8).catch(() => []);
-        const hit =
-          list.find((b) => norm(b.title) === norm(t) && (!author || b.authors.some((a) => norm(a) === norm(author)))) ||
-          (author ? list.find((b) => (norm(b.title).startsWith(norm(t)) || norm(t).startsWith(norm(b.title))) && b.authors.some((a) => norm(a) === norm(author))) : null);
+        const exact = (b) => norm(b.title) === norm(t) && (!author || b.authors.some((a) => norm(a) === norm(author)));
+        const close = (b) => author && (norm(b.title).startsWith(norm(t)) || norm(t).startsWith(norm(b.title))) && b.authors.some((a) => norm(a) === norm(author));
+        let list = await search(author ? `intitle:${tidy(t)} inauthor:${tidy(author)}` : `intitle:${tidy(t)}`, 10).catch(() => []);
+        // nothing that fits: the plain words (title and writer)
+        if (!list.some(exact) && author) list = list.concat(await search(`${tidy(t)} ${tidy(author)}`, 10).catch(() => []));
+        // the best edition of it: one with a description, then one with a rating
+        const fits = list.filter(exact);
+        const hit = fits.find((b) => b.description) || fits[0] || list.find(close);
         if (hit) return { book: hit, author: author || hit.authors[0] || "", kind: (authors[0] && authors[0].job) || "Novel" };
       }
     }
     // the film has another name: the writer's best-known books
     if (authors.length) {
-      const list = (await search(`inauthor:"${authors[0].name}"`, 10).catch(() => [])).filter((b) => b.authors.some((a) => norm(a) === norm(authors[0].name)));
+      const list = (await search(`inauthor:${tidy(authors[0].name)}`, 10).catch(() => [])).filter((b) => b.authors.some((a) => norm(a) === norm(authors[0].name)));
       if (list.length) return { book: null, author: authors[0].name, kind: authors[0].job, others: list.slice(0, 8) };
     }
     return null;
@@ -175,7 +181,7 @@
   // a person's books: written by them, and about them (biographies)
   async function forPerson(name) {
     const [by, about] = await Promise.all([
-      search(`inauthor:"${name}"`, 12).catch(() => []),
+      search(`inauthor:${String(name).replace(/["“”]/g, "")}`, 12).catch(() => []),
       search(`"${name}" subject:"Biography & Autobiography"`, 12).catch(() => []),
     ]);
     const mine = by.filter((b) => b.authors.some((a) => norm(a) === norm(name)));

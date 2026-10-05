@@ -1045,7 +1045,7 @@
             <div class="bk-main-text">
               <span class="xr-label"><i class="fa-solid fa-book"></i> ${esc(kind === "characters" ? "Based on characters from" : `Based on the ${kind}`)}</span>
               <h3>${esc(b.title)}</h3>
-              <p class="bk-by">by <b>${esc(b.authors.join(", ") || based.author)}</b>${b.year ? ` · first published ${b.year}` : ""}</p>
+              <p class="bk-by">by <b>${esc(b.authors.join(", ") || based.author)}</b>${b.year ? ` · this edition ${b.year}` : ""}</p>
               <div class="bk-facts">${[
                 b.rating ? `<span><i class="fa-solid fa-star"></i> ${b.rating.toFixed(1)} <small>(${b.ratings.toLocaleString()} ratings)</small></span>` : "",
                 b.pages ? `<span><i class="fa-solid fa-file-lines"></i> ${b.pages} pages</span>` : "",
