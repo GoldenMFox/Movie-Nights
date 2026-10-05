@@ -22816,3 +22816,37 @@ html.app-ui.tabs-away .t-shared {
 .sv-errors-buttons[hidden] {
   display: none;
 }
+
+/* Settings: a switch at the end of a row (Smooth scrolling), the site's red pill switch */
+.sv-switch {
+  position: relative;
+  flex: none;
+  cursor: pointer;
+}
+
+.sv-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.sv-switch input:checked + .switch-track {
+  background: var(--accent);
+}
+
+.sv-switch input:checked + .switch-track .switch-thumb {
+  transform: translateX(20px);
+}
+
+.sv-switch input:focus-visible + .switch-track {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* (only computers have a mouse wheel) */
+@media (hover: none) {
+  .sv-desktop-only {
+    display: none;
+  }
+}

@@ -367,3 +367,10 @@ Every page loads the scripts in this order: `data/library.js`, `js/config.js`, `
 ---
 
 © 2023 to today, Movie Nights by Mirzac Nicolae
+
+**Smooth scrolling** (computers, `js/components/scrollbars.js`): a mouse wheel moves the page in
+steps; here each click sets where the page is heading and it glides there, easing out (about half
+a second). Only for the page and only for a mouse wheel: a touchpad (smooth already), Ctrl + wheel
+(zoom), Shift + wheel (sideways), an open pop-up and anything that scrolls on its own are left to
+the browser. Off with "reduce motion", or with the switch in Settings → Appearance
+(`mn:smoothScroll`). Phones keep their own scrolling, which is already as smooth as it gets.

@@ -169,3 +169,82 @@
   });
   window.addEventListener("load", queue);
 })();
+
+/*
+ * Smooth scrolling with a mouse wheel (computers only).
+ *
+ * A mouse wheel moves the page in steps (about 100px a click). Here each click sets where the
+ * page is heading, and the page glides there, easing out, a little more with every frame:
+ * the soft, weighty feel of a touchpad. Only for the page itself and only for a mouse wheel:
+ * a touchpad (already smooth), a pop-up, a menu or anything that scrolls on its own is left to
+ * the browser. Off with "reduce motion" on, or the switch in Settings (mn:smoothScroll).
+ */
+(function () {
+  if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (Store.read("mn:smoothScroll", true) === false) return;
+
+  const EASE = 0.14; // how much of the way it goes each frame (higher: snappier)
+  const root = document.scrollingElement || document.documentElement;
+  let target = window.scrollY;
+  let gliding = false;
+
+  const maxY = () => root.scrollHeight - window.innerHeight;
+  // something under the pointer that scrolls up / down by itself (a menu, a pop-up's list…)
+  function scrollsItself(el, dy) {
+    for (; el && el !== document.body && el !== root; el = el.parentElement) {
+      if (el.scrollHeight - el.clientHeight < 2) continue;
+      if (!/(auto|scroll)/.test(getComputedStyle(el).overflowY)) continue;
+      if ((dy > 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 1) || (dy < 0 && el.scrollTop > 0)) return true;
+    }
+    return false;
+  }
+
+  // (each frame moves at least 1px: a smaller step is rounded away by the browser, and the page
+  // would stop a few pixels short with the glide running on; it also ends if the page can't move)
+  function step() {
+    const before = window.scrollY;
+    const diff = target - before;
+    if (Math.abs(diff) <= 1) {
+      window.scrollTo(0, target);
+      gliding = false;
+      return;
+    }
+    window.scrollTo(0, before + Math.sign(diff) * Math.max(1, Math.abs(diff) * EASE));
+    if (window.scrollY === before) {
+      gliding = false;
+      target = before;
+      return;
+    }
+    requestAnimationFrame(step);
+  }
+
+  window.addEventListener(
+    "wheel",
+    (e) => {
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey) return; // (a row took it; ctrl + wheel = zoom)
+      const dy = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY;
+      if (!dy || Math.abs(e.deltaX) > Math.abs(dy) || e.shiftKey) return;
+      // a touchpad sends many small movements and is smooth already; a wheel click is a big step
+      if (e.deltaMode === 0 && Math.abs(dy) < 50) return;
+      if (document.querySelector(".overlay.active, .app-sheet.open") || scrollsItself(e.target, dy)) return;
+      e.preventDefault();
+      if (!gliding) target = window.scrollY;
+      target = Math.max(0, Math.min(maxY(), target + dy));
+      if (!gliding) {
+        gliding = true;
+        requestAnimationFrame(step);
+      }
+    },
+    { passive: false }
+  );
+
+  // the page moved some other way (keys, the scrollbar, a link to a section): follow it
+  const stop = () => {
+    gliding = false;
+    target = window.scrollY;
+  };
+  window.addEventListener("keydown", stop);
+  window.addEventListener("mousedown", stop);
+  window.addEventListener("scroll", () => !gliding && (target = window.scrollY), { passive: true });
+})();

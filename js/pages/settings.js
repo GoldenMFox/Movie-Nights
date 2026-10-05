@@ -50,6 +50,15 @@
                 <button type="button" class="top10-tab" data-theme-pick="light"><i class="fa-solid fa-sun"></i> Light</button>
               </div>`
             )}
+            <div class="sv-desktop-only">${row(
+              "fa-computer-mouse",
+              "Smooth scrolling",
+              "The page glides with a mouse wheel, instead of stepping (computers)",
+              `<label class="sv-switch" title="Smooth scrolling with a mouse wheel">
+                <input type="checkbox" class="smooth-switch" aria-label="Smooth scrolling" />
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+              </label>`
+            )}</div>
             <p class="sv-note"><i class="fa-solid fa-circle-info"></i> Russian titles, Poster details and Match % are switches in the profile menu (your picture, top right).</p>`
           )}
 
@@ -137,6 +146,18 @@
   root.querySelectorAll("[data-owner]").forEach((el) => el.classList.add("owner-only"));
 
   const $ = (s) => root.querySelector(s);
+
+  /* ---------------- smooth scrolling (js/components/scrollbars.js), computers ---------------- */
+
+  const smooth = $(".smooth-switch");
+  smooth.checked = Store.read("mn:smoothScroll", true) !== false;
+  smooth.addEventListener("change", () => {
+    try {
+      localStorage.setItem("mn:smoothScroll", JSON.stringify(smooth.checked));
+    } catch (err) {}
+    toast(smooth.checked ? "Smooth scrolling on: the page glides with the mouse wheel" : "Smooth scrolling off");
+    setTimeout(() => location.reload(), 900); // (it's set up when a page opens)
+  });
 
   /* ---------------- problems on this device (js/core/store.js keeps them) ---------------- */
 
