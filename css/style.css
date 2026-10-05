@@ -28101,3 +28101,159 @@ button.xr-sq:hover {
   border-bottom-color: currentColor;
   color: #fff;
 }
+
+/* ============================== Person page: books on a bookshelf (js/pages/person.js) ==============================
+   Spines out, standing on a wooden plank; a book pointed at rises and turns its cover to you. */
+.bk-shelf {
+  position: relative;
+  margin: 6px 0 22px;
+  padding: 0 14px;
+  border-radius: 16px 16px 6px 6px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.35)), #141416;
+  box-shadow: inset 0 18px 30px rgba(0, 0, 0, 0.55), inset 0 -2px 0 rgba(255, 255, 255, 0.03);
+}
+
+.bk-shelf-books {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  min-height: 300px;
+  padding: 50px 6px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.bk-shelf-books::-webkit-scrollbar {
+  display: none;
+}
+
+/* a book, spine out */
+.bk-book {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: var(--bh, 220px);
+  overflow: hidden;
+  border-radius: 3px 5px 5px 3px;
+  background: #2a2b31;
+  box-shadow: inset -3px 0 6px rgba(0, 0, 0, 0.45), 2px 0 4px rgba(0, 0, 0, 0.35);
+  transform-origin: bottom center;
+  transition: width 0.45s cubic-bezier(0.32, 0.72, 0, 1), transform 0.45s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.45s ease, border-radius 0.3s ease;
+}
+
+.bk-book img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* the spine: the cover's slice, darkened at the edges, the title down it */
+.bk-spine {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.18) 22%, rgba(255, 255, 255, 0.1) 40%, rgba(0, 0, 0, 0.25) 62%, rgba(0, 0, 0, 0.7) 100%),
+    rgba(0, 0, 0, 0.32);
+  transition: opacity 0.3s ease;
+}
+
+.bk-spine span {
+  max-height: calc(100% - 20px);
+  overflow: hidden;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  text-transform: uppercase;
+  white-space: nowrap;
+  writing-mode: vertical-rl;
+}
+
+/* lifted: it rises off the shelf and shows its cover */
+.bk-book.up,
+.bk-book:focus-visible {
+  z-index: 2;
+  width: 160px;
+  border-radius: 4px 8px 8px 4px;
+  box-shadow: 0 22px 34px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transform: translateY(-26px) rotate(-1.5deg);
+  outline: none;
+}
+
+.bk-book.up .bk-spine,
+.bk-book:focus-visible .bk-spine {
+  opacity: 0;
+}
+
+/* the plank */
+.bk-plank {
+  position: relative;
+  height: 16px;
+  margin: 0 -14px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #7a5233 0%, #5d3c23 45%, #3e2715 100%);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.bk-plank::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -8px;
+  left: 0;
+  height: 8px;
+  background: linear-gradient(180deg, #2b1a0d, transparent);
+  opacity: 0.8;
+}
+
+/* the lifted book's name, under the shelf */
+.bk-caption {
+  min-height: 22px;
+  margin: 14px 4px 0;
+  padding-bottom: 12px;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+.bk-caption strong {
+  color: var(--text);
+}
+
+:root[data-theme="light"] .bk-shelf {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.1)), #e9e6e1;
+  box-shadow: inset 0 18px 30px rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-book {
+    transition: none;
+  }
+}
+
+/* a bookend after the last book */
+.bk-end {
+  flex: none;
+  width: 14px;
+  height: 120px;
+  margin-left: 6px;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(90deg, #3a3b40, #26272c);
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.5), inset 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 700px) {
+  .bk-book {
+    width: 44px;
+  }
+
+  .bk-book.up {
+    width: 136px;
+  }
+}

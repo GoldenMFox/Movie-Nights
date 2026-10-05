@@ -416,17 +416,53 @@
     box.hidden = true;
     mainEl.after(box);
     const safe = (u) => (/^https:\/\//.test(u || "") ? u : "");
-    const card = (b) => `<a class="bk-card" href="${esc(safe(b.url) || "#")}" target="_blank" rel="noopener" title="${esc(b.title)}">
-        <span class="bk-cover">${safe(b.cover) ? `<img src="${esc(b.cover)}" alt="" loading="lazy" />` : '<i class="fa-solid fa-book"></i>'}</span>
-        <strong>${esc(b.title)}</strong><small>${esc([b.authors[0], b.year].filter(Boolean).join(" · "))}</small></a>`;
+    // a bookshelf: each book stands with its spine out (a slice of its cover, the title down it);
+    // pointed at (or tapped) it rises off the shelf and turns its cover to you
+    const heightOf = (t) => {
+      let h = 0;
+      for (const c of String(t)) h = (h * 31 + c.charCodeAt(0)) | 0;
+      return 206 + (Math.abs(h) % 6) * 8; // (books aren't all the same height)
+    };
+    const book = (b) => {
+      const meta = [b.authors[0], b.year].filter(Boolean).join(" · ");
+      return `<a class="bk-book" href="${esc(safe(b.url) || "#")}" target="_blank" rel="noopener" style="--bh:${heightOf(b.title)}px" data-title="${esc(b.title)}" data-meta="${esc(meta)}" aria-label="${esc(`${b.title}${meta ? `, ${meta}` : ""}`)}">
+          ${safe(b.cover) ? `<img src="${esc(b.cover)}" alt="" loading="lazy" />` : ""}
+          <span class="bk-spine"><span>${esc(b.title)}</span></span>
+        </a>`;
+    };
+    const shelf = (list) => `<div class="bk-shelf"><div class="bk-shelf-books">${list.map(book).join("")}<span class="bk-end" aria-hidden="true"></span></div><div class="bk-plank"></div><p class="bk-caption" aria-live="polite"></p></div>`;
     const start = async () => {
       const r = await Books.forPerson(p.name).catch(() => null);
       if (!r || (!r.by.length && !r.about.length)) return;
       box.innerHTML = `<h2 class="t-section-title"><i class="fa-solid fa-book-open"></i> Books</h2>
-        ${r.by.length ? `<h3 class="xr-sub">By ${esc(p.name)}</h3><div class="movie-row bk-row">${r.by.map(card).join("")}</div>` : ""}
-        ${r.about.length ? `<h3 class="xr-sub">About ${esc(p.name)}</h3><div class="movie-row bk-row">${r.about.map(card).join("")}</div>` : ""}
+        ${r.by.length ? `<h3 class="xr-sub">By ${esc(p.name)}</h3>${shelf(r.by)}` : ""}
+        ${r.about.length ? `<h3 class="xr-sub">About ${esc(p.name)}</h3>${shelf(r.about)}` : ""}
         <p class="ep-credit">Books from <a href="https://openlibrary.org" target="_blank" rel="noopener">Open Library</a></p>`;
       box.hidden = false;
+      // the lifted book: its name under the shelf; on a touch screen the first tap lifts it, the
+      // second opens it
+      const lift = (bk) => {
+        const sh = bk.closest(".bk-shelf");
+        sh.querySelectorAll(".bk-book.up").forEach((x) => x !== bk && x.classList.remove("up"));
+        bk.classList.add("up");
+        sh.querySelector(".bk-caption").innerHTML = `<strong>${esc(bk.dataset.title)}</strong>${bk.dataset.meta ? ` <span>${esc(bk.dataset.meta)}</span>` : ""}`;
+      };
+      box.querySelectorAll(".bk-book").forEach((bk) => {
+        bk.addEventListener("mouseenter", () => lift(bk));
+        bk.addEventListener("focus", () => lift(bk));
+        bk.addEventListener("click", (e) => {
+          if (!bk.classList.contains("up")) {
+            e.preventDefault();
+            lift(bk);
+          }
+        });
+      });
+      box.querySelectorAll(".bk-shelf").forEach((sh) => {
+        sh.addEventListener("mouseleave", () => {
+          sh.querySelectorAll(".bk-book.up").forEach((x) => x.classList.remove("up"));
+          sh.querySelector(".bk-caption").innerHTML = "";
+        });
+      });
     };
     if (!("IntersectionObserver" in window)) return start();
     // (watch the filmography's end: the books come after it)
