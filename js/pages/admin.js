@@ -27,6 +27,7 @@
     ["website", "fa-globe", "Website"],
     ["pages", "fa-toggle-on", "Pages & features"],
     ["titlepage", "fa-table-list", "Title page"],
+    ["personpage", "fa-id-card", "Person page"],
     ["content", "fa-star", "Content"],
     ["news", "fa-newspaper", "News"],
     ["apis", "fa-plug", "API integrations"],
@@ -38,7 +39,7 @@
   ];
   const GROUPS = [
     ["Dashboard", ["overview"]],
-    ["Site", ["website", "pages", "titlepage", "themes", "notifications"]],
+    ["Site", ["website", "pages", "titlepage", "personpage", "themes", "notifications"]],
     ["Content", ["content", "news"]],
     ["System", ["apis", "users", "tools", "backup"]],
   ];
@@ -160,6 +161,45 @@
     const m = Math.round((Date.now() - t) / 60000);
     return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`;
   };
+
+  /* ---------------- the rows editor (Title page, Person page) ---------------- */
+
+  function rowsEditor(defs, path, title, hero, note) {
+    const known = defs.map((r) => r[0]);
+    const saved = draft[path] || {};
+    const order = (saved.order || []).filter((k) => known.includes(k));
+    known.forEach((k, i) => {
+      if (order.includes(k)) return;
+      const after = known.slice(0, i).reverse().find((x) => order.includes(x));
+      order.splice(after ? order.indexOf(after) + 1 : 0, 0, k);
+    });
+    const hidden = saved.hidden || [];
+    const LOOK = { cast: 6, xray: 3, yours: 3, books: 1, soundtrack: 1, known: 5, filmography: 4 };
+    const row = (k) => {
+      const [, name, what, icon] = defs.find((r) => r[0] === k);
+      return `<li class="tp-row${hidden.includes(k) ? " off" : ""}" data-row="${k}">
+          <span class="tp-grip" title="Drag to move"><i class="fa-solid fa-grip-vertical"></i></span>
+          <span class="tp-icon"><i class="fa-solid ${icon}"></i></span>
+          <span class="tp-text"><strong>${esc(name)}</strong><small>${esc(what)}</small></span>
+          <span class="tp-look tp-look-${k}" aria-hidden="true">${"<i></i>".repeat(LOOK[k] || 5)}</span>
+          <span class="tp-btns">
+            <button type="button" class="tp-move" data-move="-1" title="Up" aria-label="Move up"><i class="fa-solid fa-chevron-up"></i></button>
+            <button type="button" class="tp-move" data-move="1" title="Down" aria-label="Move down"><i class="fa-solid fa-chevron-down"></i></button>
+            <button type="button" class="tp-eye" title="${hidden.includes(k) ? "Show it" : "Hide it"}" aria-label="Hide or show"><i class="fa-solid ${hidden.includes(k) ? "fa-eye-slash" : "fa-eye"}"></i></button>
+          </span>
+        </li>`;
+    };
+    return `<div class="ad-grid ad-grid-one">${card(
+      path === "personPage" ? "fa-id-card" : "fa-table-list",
+      title,
+      `<div class="tp-page">
+        <div class="tp-hero" aria-hidden="true">${hero}</div>
+        <ol class="tp-rows" data-path="${path}">${order.map(row).join("")}</ol>
+      </div>
+      <div class="sv-buttons"><button type="button" class="btn tp-reset" data-path="${path}"><i class="fa-solid fa-rotate-left"></i> The site's own order</button></div>`,
+      `Drag a row by its handle (or use the arrows) to move it; the eye leaves it out. ${note} Save changes to send it to everyone.`
+    )}</div>`;
+  }
 
   /* ---------------- the sections ---------------- */
 
@@ -404,42 +444,25 @@
           <pre class="ad-pre">${esc(rules)}</pre><button class="btn ad-copy-rules" type="button"><i class="fa-regular fa-copy"></i> Copy</button>`)}
       </div>`;
     },
-    // a title page, drawn small: its top part, then every row; drag them (or the arrows) to put
-    // them in another order, the eye hides one. Saved for everyone with Save changes
+    // a title page / a person page, drawn small: its top part, then every row; drag them (or the
+    // arrows) to put them in another order, the eye hides one. Saved for everyone with Save changes
     titlepage() {
-      const saved = draft.titlePage || {};
-      const known = Site.TITLE_ROWS.map((r) => r[0]);
-      const order = (saved.order || []).filter((k) => known.includes(k));
-      known.forEach((k, i) => {
-        if (order.includes(k)) return;
-        const after = known.slice(0, i).reverse().find((x) => order.includes(x));
-        order.splice(after ? order.indexOf(after) + 1 : 0, 0, k);
-      });
-      const hidden = saved.hidden || [];
-      const row = (k) => {
-        const [, name, what, icon] = Site.TITLE_ROWS.find((r) => r[0] === k);
-        return `<li class="tp-row${hidden.includes(k) ? " off" : ""}" data-row="${k}">
-            <span class="tp-grip" title="Drag to move"><i class="fa-solid fa-grip-vertical"></i></span>
-            <span class="tp-icon"><i class="fa-solid ${icon}"></i></span>
-            <span class="tp-text"><strong>${esc(name)}</strong><small>${esc(what)}</small></span>
-            <span class="tp-look tp-look-${k}" aria-hidden="true">${"<i></i>".repeat(k === "cast" ? 6 : k === "xray" || k === "yours" ? 3 : k === "books" || k === "soundtrack" ? 1 : 5)}</span>
-            <span class="tp-btns">
-              <button type="button" class="tp-move" data-move="-1" title="Up" aria-label="Move up"><i class="fa-solid fa-chevron-up"></i></button>
-              <button type="button" class="tp-move" data-move="1" title="Down" aria-label="Move down"><i class="fa-solid fa-chevron-down"></i></button>
-              <button type="button" class="tp-eye" title="${hidden.includes(k) ? "Show it" : "Hide it"}" aria-label="Hide or show"><i class="fa-solid ${hidden.includes(k) ? "fa-eye-slash" : "fa-eye"}"></i></button>
-            </span>
-          </li>`;
-      };
-      return `<div class="ad-grid ad-grid-one">${card(
-        "fa-table-list",
+      return rowsEditor(
+        Site.TITLE_ROWS,
+        "titlePage",
         "Title page: the order of its rows",
-        `<div class="tp-page">
-          <div class="tp-hero" aria-hidden="true"><span class="tp-poster"></span><span class="tp-hero-text"><b>A movie or a show</b><i></i><i></i><span><em></em><em></em><em></em></span></span></div>
-          <ol class="tp-rows">${order.map(row).join("")}</ol>
-        </div>
-        <div class="sv-buttons"><button type="button" class="btn tp-reset"><i class="fa-solid fa-rotate-left"></i> The site's own order</button></div>`,
-        "Drag a row by its handle (or use the arrows) to move it; the eye leaves it out of every title page. A row shows only when the title has something for it (Episodes: shows, Collection: films of a franchise…). Save changes to send it to everyone."
-      )}</div>`;
+        `<span class="tp-poster"></span><span class="tp-hero-text"><b>A movie or a show</b><i></i><i></i><span><em></em><em></em><em></em></span></span>`,
+        "A row shows only when the title has something for it (Episodes: shows, Collection: films of a franchise…)."
+      );
+    },
+    personpage() {
+      return rowsEditor(
+        Site.PERSON_ROWS,
+        "personPage",
+        "Person page: the order of its rows",
+        `<span class="tp-poster tp-face"></span><span class="tp-hero-text"><b>An actor, a director, a writer</b><i></i><i></i><span><em></em><em></em></span></span>`,
+        "Under the top part (their card, the photos, the numbers and the biography). Books show for people with books on Open Library."
+      );
     },
     tools() {
       const hist = changeLog();
@@ -477,7 +500,7 @@
   const HISTORY = "mn:adminHistory";
   const changeLog = () => Store.read(HISTORY, []) || [];
   // what changed between two versions, in words ("Maintenance, Notice, Features")
-  const LABELS = { branding: "Branding", maintenance: "Maintenance", notice: "Notice", nav: "Navigation", features: "Features", discover: "Explore pages", home: "Home picks", anime: "Featured anime", content: "Hidden titles", news: "News", apis: "API integrations", themes: "Themes", notifications: "Notifications", announce: "Announcement", titlePage: "Title page rows" };
+  const LABELS = { branding: "Branding", maintenance: "Maintenance", notice: "Notice", nav: "Navigation", features: "Features", discover: "Explore pages", home: "Home picks", anime: "Featured anime", content: "Hidden titles", news: "News", apis: "API integrations", themes: "Themes", notifications: "Notifications", announce: "Announcement", titlePage: "Title page rows", personPage: "Person page rows" };
   function changes(before, after, blockedBefore, blockedAfter) {
     const keys = [...new Set(Object.keys(before || {}).concat(Object.keys(after || {})))].filter((k) => JSON.stringify((before || {})[k]) !== JSON.stringify((after || {})[k]));
     const out = keys.map((k) => LABELS[k] || k);
@@ -711,7 +734,7 @@
     const box = rowsBox();
     if (!box) return;
     const items = [...box.querySelectorAll(".tp-row")];
-    setPath("titlePage", { order: items.map((r) => r.dataset.row), hidden: items.filter((r) => r.classList.contains("off")).map((r) => r.dataset.row) });
+    setPath(box.dataset.path || "titlePage", { order: items.map((r) => r.dataset.row), hidden: items.filter((r) => r.classList.contains("off")).map((r) => r.dataset.row) });
   }
   function slide(box, change) {
     const items = [...box.children];
@@ -1162,8 +1185,9 @@
       tpEye.querySelector("i").className = `fa-solid ${row.classList.contains("off") ? "fa-eye-slash" : "fa-eye"}`;
       return rowsToDraft();
     }
-    if (e.target.closest(".tp-reset")) {
-      setPath("titlePage", { order: [], hidden: [] });
+    const tpReset = e.target.closest(".tp-reset");
+    if (tpReset) {
+      setPath(tpReset.dataset.path || "titlePage", { order: [], hidden: [] });
       return show(section);
     }
     if (e.target.closest(".ad-customize")) return setEditing(!editing);

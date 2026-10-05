@@ -5,8 +5,9 @@
  *
  * Layout: backdrop from their best-known title; on the left a card with their photo,
  * name, age and how many of their titles are in your library, and their top genres;
- * on the right their best-known title + photos, a few numbers, the biography and facts,
- * then "Best known for". Below: the full filmography, newest first.
+ * on the right their best-known title + photos, a few numbers, the biography and facts.
+ * Below, in the order set in Admin → Person page: "Best known for", the full filmography (newest
+ * first), their books.
  */
 (function () {
   const { esc, toast } = UI;
@@ -190,18 +191,47 @@
             </div>
           </div>
 
-          ${
-            known.length
-              ? `<div class="p-card p-known">
-                  <div class="row-head"><h2>Best known for</h2><a href="#filmography">See all ${work.length} <i class="fa-solid fa-arrow-right"></i></a></div>
-                  <div class="movie-row">${known.map(Cards.tmdbCard).join("")}</div>
-                </div>`
-              : ""
-          }
         </div>
       </div>`;
 
+    // under the top part: Best known for, Filmography, Books, in the order the owner set (Admin →
+    // Person page); each a row of its own
+    if (!knownEl) {
+      knownEl = document.createElement("section");
+      knownEl.className = "container t-section p-known-row";
+      knownEl.dataset.prow = "known";
+    }
+    knownEl.hidden = !known.length;
+    knownEl.innerHTML = known.length
+      ? `<div class="row-head"><h2 class="t-section-title">Best known for</h2><a class="t-link" href="#filmography">See all ${work.length} <i class="fa-solid fa-arrow-right"></i></a></div>
+        <div class="movie-row">${known.map(Cards.tmdbCard).join("")}</div>`
+      : "";
+    rowsEl().append(knownEl);
     renderFilmography();
+    arrangeRows();
+  }
+
+  // the rows' box (once), right under the top part; the filmography (mainEl) goes in it too
+  let rowsBox = null;
+  let knownEl = null;
+  function rowsEl() {
+    if (!rowsBox) {
+      rowsBox = document.createElement("div");
+      rowsBox.className = "p-rows";
+      mainEl.before(rowsBox);
+      mainEl.dataset.prow = "filmography";
+      rowsBox.append(mainEl);
+    }
+    return rowsBox;
+  }
+  function arrangeRows() {
+    if (!rowsBox) return;
+    const { order, hidden } = window.Site && Site.personRows ? Site.personRows() : { order: ["known", "filmography", "books"], hidden: [] };
+    [...rowsBox.children].forEach((el) => {
+      const k = el.dataset.prow;
+      el.style.order = String(Math.max(0, order.indexOf(k)));
+      el.classList.toggle("p-row-off", hidden.includes(k));
+    });
   }
 
   /* ---------------- filmography ---------------- */
@@ -413,8 +443,10 @@
     if (!window.Books || !window.Site || !Site.feature("books") || !Books.ready() || !p) return;
     const box = document.createElement("section");
     box.className = "container t-section p-books";
+    box.dataset.prow = "books";
     box.hidden = true;
-    mainEl.after(box);
+    rowsEl().append(box);
+    arrangeRows();
     const safe = (u) => (/^https:\/\//.test(u || "") ? u : "");
     // a bookshelf: each book stands with its spine out (a slice of its cover, the title down it);
     // pointed at (or tapped) it rises off the shelf and turns its cover to you

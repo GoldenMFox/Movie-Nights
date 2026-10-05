@@ -28257,3 +28257,30 @@ button.xr-sq:hover {
     width: 136px;
   }
 }
+
+/* person page: the rows under the top part, in the owner's order (Admin → Person page) */
+.p-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.p-rows > .p-row-off {
+  display: none !important;
+}
+
+.p-known-row .row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.p-known-row .row-head .t-link {
+  white-space: nowrap;
+}
+
+.tp-poster.tp-face {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+}

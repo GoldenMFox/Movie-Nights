@@ -26,6 +26,8 @@
     announce: null,
     // the title page's rows, top to bottom, and the ones left out (Admin → Title page)
     titlePage: { order: [], hidden: [] },
+    // the person page's rows under its top part (Admin → Person page)
+    personPage: { order: [], hidden: [] },
     // pages left out of the navbar, the tab bar and the profile menu (by their id in layout.js)
     nav: { hidden: [] },
     features: {
@@ -292,10 +294,18 @@
     ["reviews", "Reviews", "What people wrote on TMDB", "fa-comments"],
     ["more", "More like this", "From your library or TMDB's recommendations", "fa-clapperboard"],
   ];
+  // the person page's rows, under its top part (js/pages/person.js)
+  const PERSON_ROWS = [
+    ["known", "Best known for", "Their best-known films and shows", "fa-star"],
+    ["filmography", "Filmography", "Everything they've done, with the filters", "fa-film"],
+    ["books", "Books", "Books by them and about them, on a shelf", "fa-book-open"],
+  ];
   // the rows in the saved order (rows added to the site later go where they come by default)
-  function titleRows() {
-    const t = (config && config.titlePage) || {};
-    const known = TITLE_ROWS.map((r) => r[0]);
+  const titleRows = () => rowsOf(TITLE_ROWS, "titlePage");
+  const personRows = () => rowsOf(PERSON_ROWS, "personPage");
+  function rowsOf(defs, key) {
+    const t = (config && config[key]) || {};
+    const known = defs.map((r) => r[0]);
     const order = (t.order || []).filter((k) => known.includes(k));
     known.forEach((k, i) => {
       if (order.includes(k)) return;
@@ -305,5 +315,5 @@
     return { order, hidden: (t.hidden || []).filter((k) => known.includes(k)) };
   }
 
-  window.Site = { TITLE_ROWS, titleRows, DEFAULTS, get, feature, api, navHidden, state, blocked, refresh, save, onChange: (fn) => listeners.push(fn), merge };
+  window.Site = { TITLE_ROWS, PERSON_ROWS, titleRows, personRows, rowsOf, DEFAULTS, get, feature, api, navHidden, state, blocked, refresh, save, onChange: (fn) => listeners.push(fn), merge };
 })();
