@@ -392,8 +392,9 @@
     // be out in one country and not another: coming soon = not out yet, in cinemas = out
     const byDate = (r) =>
       category === "upcoming" ? !!r.release_date && r.release_date > today : category === "now-playing" ? !r.release_date || r.release_date <= today : true;
+    // (titles without a poster yet are left out, like on Home's Top 10)
     return {
-      results: applyRu(data.results.filter((r) => (c.media || isTitle(r)) && byDate(r)).map((r) => simplify(r, c.media)), ru, c.media),
+      results: applyRu(data.results.filter((r) => r.poster_path && (c.media || isTitle(r)) && byDate(r)).map((r) => simplify(r, c.media)), ru, c.media),
       totalPages: Math.min(data.total_pages || 1, 500),
     };
   }
@@ -430,7 +431,7 @@
       params["vote_count.gte"] = type === "anime" ? 50 : 100;
     }
     const [data, ru] = await requestWithRu(`/discover/${media}`, params);
-    return { results: applyRu(data.results.map((r) => simplify(r, media)), ru, media), totalPages: Math.min(data.total_pages || 1, 500) };
+    return { results: applyRu(data.results.filter((r) => r.poster_path).map((r) => simplify(r, media)), ru, media), totalPages: Math.min(data.total_pages || 1, 500) };
   }
 
   async function findMatch(item) {
