@@ -28087,3 +28087,17 @@ button.xr-sq:hover {
   display: grid;
   gap: 12px;
 }
+
+/* the book's writer: their person page */
+.bk-author {
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.bk-author:hover {
+  border-bottom-color: currentColor;
+  color: #fff;
+}
