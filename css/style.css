@@ -26463,10 +26463,19 @@ body[data-page="admin"] main.container {
   gap: 18px;
 }
 
-.ad-hero,
-.ad-tiles,
-.ad-wide {
+/* the boxes' sizes (Customize): one column, two, the whole row */
+.ad-dash > [data-size="2"],
+.ad-grid > [data-size="2"] {
+  grid-column: span 2;
+}
+
+.ad-dash > [data-size="3"],
+.ad-grid > [data-size="3"] {
   grid-column: 1 / -1;
+}
+
+.ad-box-hidden {
+  display: none !important;
 }
 
 .ad-hero {
@@ -27357,5 +27366,193 @@ body[data-page="admin"] main.container {
 
   .ad-two {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Customize: move, size and hide the boxes ---------- */
+.ad-customize {
+  flex: none;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13.5px;
+}
+
+.ad-customize.on {
+  border-color: var(--accent);
+  background: rgba(185, 34, 34, 0.18);
+}
+
+.ad-edit-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 12px 14px 12px 18px;
+  border: 1px dashed rgba(229, 9, 20, 0.55);
+  border-radius: 18px;
+  background: rgba(185, 34, 34, 0.1);
+  font-size: 14px;
+}
+
+.ad-edit-bar > i {
+  color: #ff6b63;
+}
+
+.ad-edit-bar > span {
+  flex: 1;
+  min-width: 200px;
+  color: var(--text-muted);
+}
+
+.ad-edit-bar .btn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13.5px;
+}
+
+.ad-editing > [data-box] {
+  position: relative;
+  outline: 2px dashed rgba(255, 255, 255, 0.16);
+  outline-offset: 3px;
+  touch-action: pan-y;
+}
+
+.ad-editing > [data-box].ad-box-hidden {
+  display: grid !important;
+  opacity: 0.38;
+}
+
+.ad-editing > [data-box].ad-box-hidden.ad-tiles {
+  display: grid !important;
+}
+
+.ad-veil {
+  position: absolute;
+  z-index: 6;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-radius: inherit;
+  background: rgba(0, 0, 0, 0.12);
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+}
+
+/* (the handle and the buttons sit on the box's top edge, clear of its title) */
+.ad-veil > * {
+  margin-top: -17px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.ad-veil-tools {
+  box-shadow: none !important;
+}
+
+.ad-editing {
+  padding-top: 14px;
+  row-gap: 32px !important;
+}
+
+.ad-veil:hover {
+  background: rgba(185, 34, 34, 0.08);
+}
+
+.ad-grip {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.ad-veil-tools {
+  display: flex;
+  gap: 6px;
+}
+
+.ad-sizes {
+  display: flex;
+  padding: 3px;
+  border-radius: 11px;
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.ad-sizes button,
+.ad-eye {
+  min-width: 30px;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: rgba(255, 255, 255, 0.75);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ad-sizes button.on {
+  background: var(--accent);
+  color: #fff;
+}
+
+.ad-eye {
+  height: 34px;
+  border-radius: 11px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* (the welcome card clips its film-reel picture; in Customize its controls must show) */
+.ad-editing > .ad-hero {
+  overflow: visible;
+}
+
+.ad-editing > .ad-hero .ad-hero-art {
+  display: none;
+}
+
+/* the one being dragged: lifted */
+.ad-editing > .ad-dragging {
+  z-index: 10;
+  outline: 2px solid var(--accent-hover);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  transform: scale(1.015);
+  transition: none !important;
+}
+
+.ad-editing > .ad-dragging .ad-veil {
+  background: rgba(185, 34, 34, 0.14);
+  cursor: grabbing;
+}
+
+/* (one column on narrow screens: every box takes the row) */
+@media (max-width: 900px) {
+  .ad-grid > [data-size] {
+    grid-column: 1 / -1;
+  }
+
+  .ad-customize span {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .ad-dash > [data-size] {
+    grid-column: 1 / -1;
   }
 }

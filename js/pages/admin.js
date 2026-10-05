@@ -14,6 +14,10 @@
  * bar (where you are, a search through every setting, saved or not) and, on Overview, a dashboard:
  * a welcome card with the quick switches, stat tiles, and charts drawn here as SVG (what everyone
  * watched month by month, the services' health, movies / TV / anime, the scores, the members).
+ *
+ * Customize (top bar, every section): drag the boxes where you want them (mouse or finger), give
+ * each one a size (one column, two, the whole row) or hide it; each section keeps its own layout,
+ * saved with your profile (adminLayout), so it follows you to your other devices.
  */
 (function () {
   const { esc, toast } = UI;
@@ -117,7 +121,9 @@
           <div class="ad-crumbs"><span>Admin</span><i class="fa-solid fa-chevron-right"></i><strong class="ad-crumb"></strong></div>
           <div class="ad-find"><i class="fa-solid fa-magnifying-glass"></i><input type="search" placeholder="Find a setting…" aria-label="Find a setting" autocomplete="off" /><div class="ad-find-list" hidden></div></div>
           <span class="ad-state"></span>
+          <button type="button" class="btn ad-customize" aria-pressed="false"><i class="fa-solid fa-table-cells-large"></i><span> Customize</span></button>
         </header>
+        <div class="ad-edit-bar" hidden><i class="fa-solid fa-hand-pointer"></i><span>Drag the boxes to move them (on a phone: hold one, then drag). Each one has its size (one column, two, the whole row) and an eye to hide it.</span><button type="button" class="btn ad-layout-reset"><i class="fa-solid fa-rotate-left"></i> Reset this page</button><button type="button" class="btn btn-primary ad-customize-done"><i class="fa-solid fa-check"></i> Done</button></div>
         <div class="ad-body"></div>
       </div>
     </div>
@@ -173,7 +179,7 @@
       const tile = (icon, tone, value, label, extra, key) =>
         `<div class="ad-tile ${tone}"${key ? ` data-tile="${key}"` : ""}><span class="ad-tile-icon"><i class="fa-solid ${icon}"></i></span><div><b>${value}</b><small>${label}</small></div>${extra || ""}</div>`;
       return `<div class="ad-dash">
-        <section class="ad-hero">
+        <section class="ad-hero" data-box="hero">
           <div class="ad-hero-text">
             <span class="ad-hero-state ${live[1]}"><i class="fa-solid ${live[2]}"></i> ${live[0]}</span>
             <h2>${hello}${name ? `, ${esc(name)}` : ""}</h2>
@@ -187,19 +193,19 @@
           <i class="fa-solid fa-film ad-hero-art" aria-hidden="true"></i>
         </section>
 
-        <div class="ad-tiles">
+        <div class="ad-tiles" data-box="tiles">
           ${tile("fa-users", "red", "–", "Members", '<span class="ad-tile-sub" data-tile-sub="members">loading…</span>', "members")}
           ${tile("fa-clapperboard", "gold", items.length, "In your library", `<span class="ad-tile-sub">${items.filter((i) => typeof i.rating === "number").length} rated · ${Store.lists().length} lists</span>`)}
           ${tile("fa-plug-circle-check", healthPct >= 95 ? "green" : healthPct >= 80 ? "gold" : "red", `${healthPct}%`, "Requests answered", `<span class="ad-tile-sub">${answered + failed} asked · ${cachedPct}% from memory</span>`)}
           ${tile("fa-toggle-on", featuresOff.length ? "gold" : "green", `${FEATURES.length - featuresOff.length}/${FEATURES.length}`, "Features on", `<span class="ad-tile-sub">${featuresOff.length ? `Off: ${esc(featuresOff.map((f) => f[1]).slice(0, 2).join(", "))}${featuresOff.length > 2 ? "…" : ""}` : "Everything is on"}</span>`)}
         </div>
 
-        <section class="ad-panel ad-wide">
+        <section class="ad-panel" data-box="months">
           <div class="ad-panel-head"><div><h3>Watched, month by month</h3><small>Everyone's watch dates, the last 12 months</small></div><span class="ad-panel-big" data-months-total></span></div>
           <div class="ad-chart" data-chart="months"><div class="ad-chart-wait">Loading…</div></div>
         </section>
 
-        <section class="ad-panel">
+        <section class="ad-panel" data-box="services">
           <div class="ad-panel-head"><div><h3>Outside services</h3><small>Since the counts were last reset</small></div><a class="t-link" href="#apis" data-sec="apis">Details <i class="fa-solid fa-chevron-right"></i></a></div>
           <div class="ad-health-wrap">
             ${gauge(healthPct)}
@@ -211,17 +217,17 @@
           </div>
         </section>
 
-        <section class="ad-panel">
+        <section class="ad-panel" data-box="types">
           <div class="ad-panel-head"><div><h3>What people watch</h3><small>Every member's library</small></div></div>
           <div class="ad-chart" data-chart="types"><div class="ad-chart-wait">Loading…</div></div>
         </section>
 
-        <section class="ad-panel">
+        <section class="ad-panel" data-box="scores">
           <div class="ad-panel-head"><div><h3>The scores</h3><small>Every score given, 1 to 10</small></div><span class="ad-panel-big" data-score-avg></span></div>
           <div class="ad-chart" data-chart="scores"><div class="ad-chart-wait">Loading…</div></div>
         </section>
 
-        <section class="ad-panel ad-actions">
+        <section class="ad-panel ad-actions" data-box="actions">
           <div class="ad-panel-head"><div><h3>Quick actions</h3><small>The things you do most</small></div></div>
           <div class="ad-action-grid">
             <button type="button" data-go="notifications" class="ad-action red"><i class="fa-solid fa-bullhorn"></i><span>Announce</span></button>
@@ -233,7 +239,7 @@
           </div>
         </section>
 
-        <section class="ad-panel">
+        <section class="ad-panel" data-box="members">
           <div class="ad-panel-head"><div><h3>Members</h3><small>Most titles first</small></div><a class="t-link" href="#users" data-sec="users">Manage <i class="fa-solid fa-chevron-right"></i></a></div>
           <div class="ad-chart" data-chart="members"><div class="ad-chart-wait">Loading…</div></div>
         </section>
@@ -661,6 +667,184 @@
     }
   }
 
+  /* ---------------- Customize: move, size and hide the boxes of every section ---------------- */
+
+  // the boxes: the dashboard's (data-box) or each section's cards (named after their title)
+  const WIDE = { hero: 3, tiles: 3, months: 3 };
+  const slug = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const gridOf = () => body.querySelector(".ad-dash, .ad-grid");
+  function boxesOf(grid) {
+    return [...(grid ? grid.children : [])].filter((el) => {
+      if (!el.dataset.box) {
+        const label = el.querySelector(":scope > .xr-label");
+        if (!label) return false;
+        el.dataset.box = slug(label.textContent);
+      }
+      return true;
+    });
+  }
+  const layouts = () => Object.assign({}, (Store.getProfile() || {}).adminLayout || {});
+  const layoutOf = (k) => Object.assign({ order: [], size: {}, hidden: [] }, layouts()[k] || {});
+  function saveLayout(k, l) {
+    const all = layouts();
+    if (l) all[k] = l;
+    else delete all[k];
+    Store.setProfile({ adminLayout: all });
+  }
+  // the saved layout onto the drawn section
+  function applyLayout(k) {
+    const grid = gridOf();
+    if (!grid) return;
+    const l = layoutOf(k);
+    const boxes = boxesOf(grid);
+    const at = (id) => {
+      const i = l.order.indexOf(id);
+      return i < 0 ? 1000 + boxes.findIndex((b) => b.dataset.box === id) : i;
+    };
+    boxes
+      .slice()
+      .sort((a, b) => at(a.dataset.box) - at(b.dataset.box))
+      .forEach((b) => grid.append(b));
+    boxes.forEach((b) => {
+      b.dataset.size = l.size[b.dataset.box] || WIDE[b.dataset.box] || 1;
+      b.classList.toggle("ad-box-hidden", l.hidden.includes(b.dataset.box));
+    });
+    if (editing) dress(grid);
+  }
+  // the layout as it is on the page now
+  function readLayout(grid) {
+    const boxes = boxesOf(grid);
+    return {
+      order: boxes.map((b) => b.dataset.box),
+      size: Object.fromEntries(boxes.map((b) => [b.dataset.box, Number(b.dataset.size) || 1])),
+      hidden: boxes.filter((b) => b.classList.contains("ad-box-hidden")).map((b) => b.dataset.box),
+    };
+  }
+
+  let editing = false;
+  // edit mode: a veil over each box (it's what you drag; the box's own buttons and fields rest),
+  // with its size and eye on top
+  function dress(grid) {
+    grid.classList.add("ad-editing");
+    boxesOf(grid).forEach((b) => {
+      if (b.querySelector(":scope > .ad-veil")) return;
+      const veil = document.createElement("div");
+      veil.className = "ad-veil";
+      veil.innerHTML = `<span class="ad-grip"><i class="fa-solid fa-grip-vertical"></i></span>
+        <span class="ad-veil-tools">
+          <span class="ad-sizes" role="group" aria-label="Size">${[1, 2, 3].map((n) => `<button type="button" data-size-to="${n}" title="${["One column", "Two columns", "The whole row"][n - 1]}">${n === 3 ? "Full" : n}</button>`).join("")}</span>
+          <button type="button" class="ad-eye" title="Hide / show"><i class="fa-solid fa-eye"></i></button>
+        </span>`;
+      b.append(veil);
+    });
+    paintVeils(grid);
+  }
+  function paintVeils(grid) {
+    boxesOf(grid).forEach((b) => {
+      b.querySelectorAll("[data-size-to]").forEach((x) => x.classList.toggle("on", x.dataset.sizeTo === String(b.dataset.size)));
+      const eye = b.querySelector(".ad-eye i");
+      if (eye) eye.className = `fa-solid ${b.classList.contains("ad-box-hidden") ? "fa-eye-slash" : "fa-eye"}`;
+    });
+  }
+  function setEditing(on) {
+    editing = on;
+    root.querySelector(".ad-edit-bar").hidden = !on;
+    const btn = root.querySelector(".ad-customize");
+    btn.classList.toggle("on", on);
+    btn.setAttribute("aria-pressed", on);
+    if (on) {
+      const grid = gridOf();
+      if (grid) dress(grid);
+    } else show(section);
+  }
+
+  // the boxes slide to their new places (each one from where it was)
+  function flip(grid, change) {
+    const boxes = boxesOf(grid);
+    const before = new Map(boxes.map((b) => [b, b.getBoundingClientRect()]));
+    change();
+    boxes.forEach((b) => {
+      if (b.classList.contains("ad-dragging")) return;
+      const a = before.get(b);
+      const n = b.getBoundingClientRect();
+      const dx = a.left - n.left;
+      const dy = a.top - n.top;
+      if (!dx && !dy) return;
+      b.style.transition = "none";
+      b.style.transform = `translate(${dx}px, ${dy}px)`;
+      void b.offsetWidth;
+      b.style.transition = "transform 0.28s cubic-bezier(0.32, 0.72, 0, 1)";
+      b.style.transform = "";
+    });
+  }
+
+  // dragging: the box goes where the pointer is (before or after the box under it). A mouse
+  // drags straight away; a finger holds the box a moment first (a swipe still scrolls the page)
+  let drag = null;
+  root.addEventListener("pointerdown", (e) => {
+    const veil = e.target.closest(".ad-veil");
+    if (!veil || e.target.closest("button") || e.button > 0) return;
+    const box = veil.parentElement;
+    const touch = e.pointerType === "touch";
+    if (!touch) e.preventDefault();
+    drag = { box, grid: box.parentElement, id: e.pointerId, x: e.clientX, y: e.clientY, moved: false, armed: !touch };
+    if (touch)
+      drag.timer = setTimeout(() => {
+        if (!drag || drag.box !== box) return;
+        drag.armed = true;
+        drag.moved = true;
+        box.classList.add("ad-dragging");
+        if (navigator.vibrate) navigator.vibrate(12);
+        try {
+          veil.setPointerCapture(e.pointerId);
+        } catch (err) {}
+      }, 300);
+    else veil.setPointerCapture(e.pointerId);
+  });
+  // (while a finger drags a box, the page doesn't scroll under it)
+  document.addEventListener("touchmove", (e) => drag && drag.armed && e.cancelable && e.preventDefault(), { passive: false });
+  root.addEventListener("pointermove", (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.armed) {
+      // a finger that moves before the hold: it's scrolling, not dragging
+      if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 8) {
+        clearTimeout(drag.timer);
+        drag = null;
+      }
+      return;
+    }
+    if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 6) return;
+    if (!drag.moved) {
+      drag.moved = true;
+      drag.box.classList.add("ad-dragging");
+    }
+    // near the top or the bottom of the window: the page scrolls along
+    if (e.clientY < 90) window.scrollBy(0, -14);
+    else if (e.clientY > window.innerHeight - 70) window.scrollBy(0, 14);
+    const over = document
+      .elementsFromPoint(e.clientX, e.clientY)
+      .map((el) => el.closest && el.closest("[data-box]"))
+      .find((b) => b && b !== drag.box && b.parentElement === drag.grid);
+    if (!over) return;
+    const r = over.getBoundingClientRect();
+    // (a box the width of the row: its top half is before it, its bottom half after; a smaller
+    // one: its top-left half before, its bottom-right half after)
+    const full = r.width > drag.grid.getBoundingClientRect().width * 0.7;
+    const before = full ? e.clientY < r.top + r.height / 2 : (e.clientX - r.left) / r.width + (e.clientY - r.top) / r.height < 1;
+    const next = before ? over : over.nextElementSibling;
+    if (next === drag.box || (before && over.previousElementSibling === drag.box) || (!before && over.nextElementSibling === drag.box)) return;
+    flip(drag.grid, () => drag.grid.insertBefore(drag.box, before ? over : over.nextElementSibling));
+  });
+  const endDrag = (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    clearTimeout(drag.timer);
+    drag.box.classList.remove("ad-dragging");
+    if (drag.moved) saveLayout(section, readLayout(drag.grid));
+    drag = null;
+  };
+  root.addEventListener("pointerup", endDrag);
+  root.addEventListener("pointercancel", endDrag);
+
   function show(k) {
     section = k;
     root.querySelectorAll("[data-sec]").forEach((a) => a.classList.toggle("on", a.dataset.sec === k));
@@ -670,6 +854,7 @@
     body.classList.add("ad-in");
     if (k === "users") members(root.querySelector(".ad-members"), true);
     if (k === "apis") omdbMeter();
+    applyLayout(k);
     if (k === "overview") dashboard();
     if (k === "tools") storage(root.querySelector(".ad-storage"));
     root.querySelector(".ad-crumb").textContent = sec(k)[2];
@@ -840,6 +1025,28 @@
   document.addEventListener("click", (e) => !e.target.closest(".ad-find") && find(""));
 
   root.addEventListener("click", (e) => {
+    if (e.target.closest(".ad-customize")) return setEditing(!editing);
+    if (e.target.closest(".ad-customize-done")) return setEditing(false);
+    if (e.target.closest(".ad-layout-reset")) {
+      saveLayout(section, null);
+      show(section);
+      return toast("This page is back to how it comes");
+    }
+    const sz = e.target.closest("[data-size-to]");
+    if (sz) {
+      const box = sz.closest("[data-box]");
+      flip(box.parentElement, () => (box.dataset.size = sz.dataset.sizeTo));
+      saveLayout(section, readLayout(box.parentElement));
+      return paintVeils(box.parentElement);
+    }
+    const eye = e.target.closest(".ad-eye");
+    if (eye) {
+      const box = eye.closest("[data-box]");
+      box.classList.toggle("ad-box-hidden");
+      saveLayout(section, readLayout(box.parentElement));
+      return paintVeils(box.parentElement);
+    }
+    if (editing && e.target.closest(".ad-veil")) return; // (in Customize, a box's own buttons rest)
     const go = e.target.closest("[data-go]");
     if (go) {
       history.replaceState(null, "", `#${go.dataset.go}`);
