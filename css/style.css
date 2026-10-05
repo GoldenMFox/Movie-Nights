@@ -323,15 +323,6 @@ body[data-page]:not(:has(> .site-nav)) > main {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.theme-toggle .fa-sun,
-:root[data-theme="light"] .theme-toggle .fa-moon {
-  display: none;
-}
-
-:root[data-theme="light"] .theme-toggle .fa-sun {
-  display: inline;
-}
-
 /* ---------- search ---------- */
 
 .search {
@@ -1281,16 +1272,6 @@ body[data-page]:not(:has(> .site-nav)) > main {
 }
 
 /* add title */
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.form-grid .full {
-  grid-column: 1 / -1;
-}
 
 .modal .input,
 .modal .select {
@@ -3134,25 +3115,6 @@ html[data-theme="light"] .gs-adv {
 }
 
 /* glass pill button with text (Clear tiers) */
-.glass-pill-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 44px;
-  padding: 0 18px;
-  border: 1px solid var(--glass-border);
-  border-radius: 999px;
-  background: var(--glass-bg);
-  color: var(--glass-text);
-  font-size: 14.5px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.25s;
-}
-
-.glass-pill-btn:hover {
-  background: var(--glass-bg-hover);
-}
 
 /* ---------- folding search / filters (title + two icons) ---------- */
 
@@ -3165,11 +3127,6 @@ html[data-theme="light"] .gs-adv {
 
 .page-head > :first-child {
   margin: 0;
-}
-
-.pool-title {
-  font-size: 20px;
-  font-weight: 600;
 }
 
 .page-tools {
@@ -5370,14 +5327,6 @@ a.t-person {
 }
 
 /* best known for */
-.p-known .row-head h2 {
-  font-size: 22px;
-  font-weight: 800;
-}
-
-.p-known .movie-row {
-  margin-bottom: 0;
-}
 
 /* filmography (normal page colours, follows light / dark) */
 .p-filmography {
@@ -6100,9 +6049,7 @@ html.tablet .lang-toggle.in-profile {
     display: flex;
   }
 
-  html.tablet .theme-toggle {
-    display: none;
-  }
+  
 }
 
 @media (max-width: 900px) {
@@ -7583,9 +7530,6 @@ html.custom-scrollbars .t-seasons.grabbing * {
 /* ============================== Private libraries ============================== */
 
 /* things only the site's owner sees (html.is-owner is set by js/core/cloud.js) */
-html:not(.is-owner) .owner-only {
-  display: none !important;
-}
 
 /* signed out: "Sign in to start your own list" */
 .guest-state {
@@ -7666,55 +7610,12 @@ html:not(.is-owner) .owner-only {
   object-fit: cover;
 }
 
-.member-info {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  flex-direction: column;
-}
-
-.member-info strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.member-info small {
-  color: var(--text-muted);
-}
-
-.member-you {
-  margin-left: 6px;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-  vertical-align: 2px;
-}
-
-.member-counts {
-  display: flex;
-  flex: none;
-  gap: 14px;
-  color: var(--text-muted);
-  font-size: 14px;
-}
-
-.member-counts .fa-star {
-  color: var(--gold);
-}
-
 @media (max-width: 520px) {
   .member {
     flex-wrap: wrap;
   }
 
-  .member-counts {
-    width: 100%;
-    padding-left: 52px;
-  }
+  
 }
 
 /* ============================== Watchlist page: Plan to watch + Favorites ============================== */
@@ -8471,8 +8372,7 @@ html:not(.is-owner) .owner-only {
   gap: 10px;
 }
 
-.pk-enter .pk-row,
-.pk-ask.enter .pk-row {
+.pk-ask.enter .pk-row{
   animation: bo-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   animation-delay: var(--d, 0ms);
 }
@@ -8553,10 +8453,6 @@ html:not(.is-owner) .owner-only {
 .pk-seg button:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.45);
   outline-offset: -2px;
-}
-
-.pk-seg > .sw-pill {
-  border-radius: 999px;
 }
 
 .pk-seg .pk-s {
@@ -10114,18 +10010,6 @@ html.no-match:not(.posters-only) .hover-preview .match + .dot {
   font-size: 14px;
 }
 
-.xr-mini {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  color: var(--text-muted);
-  font-size: 13.5px;
-}
-
-.xr-mini b {
-  color: var(--text);
-}
-
 /* awards: gold */
 .xr-awards {
   border-color: rgba(245, 197, 24, 0.3);
@@ -10277,10 +10161,6 @@ html.no-match:not(.posters-only) .hover-preview .match + .dot {
 
 .xr-date .xr-body small {
   margin-top: 0;
-}
-
-.xr-date .xr-body .xr-mini {
-  justify-content: center;
 }
 
 .xr-body .xr-flags {
@@ -12302,23 +12182,7 @@ html.wr-lock {
   }
 }
 
-
 /* Settings: today's OMDb lookups as a meter */
-.sv-meter {
-  margin: 4px 0 14px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.sv-meter:empty {
-  display: none;
-}
-
-.sv-meter .sv-note {
-  margin: 0;
-}
 
 .sv-meter-top {
   display: flex;
@@ -12403,37 +12267,11 @@ html.wr-lock {
   color: var(--accent-hover);
 }
 
-html[data-theme="light"] .sv-meter {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: rgba(0, 0, 0, 0.08);
-}
-
 html[data-theme="light"] .sv-meter-bar {
   background: rgba(0, 0, 0, 0.08);
 }
 
 /* Settings: "Admin only" badge on the owner's cards */
-.sv-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.sv-admin {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 2px 9px;
-  border-radius: 999px;
-  border: 1px solid rgba(229, 9, 20, 0.45);
-  background: rgba(229, 9, 20, 0.12);
-  color: var(--accent-hover);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
 
 /* Discover: posters waiting for the next "Load more" */
 .movie-grid > .dc-later {
@@ -12930,10 +12768,6 @@ html .modal .menu-switch:not([hidden]) {
   color: #fff;
   font-size: 13px;
   font-weight: 800;
-}
-
-.dk-go {
-  border-radius: 999px;
 }
 
 /* ============================== Tier list (tier-list.html): the site's own style ============================== */
@@ -14169,29 +14003,6 @@ html .modal .menu-switch:not([hidden]) {
 .nav-links a[href="watchlist.html"],
 .tab-bar a[href="watchlist.html"] {
   position: relative;
-}
-
-.nav-badge {
-  display: inline-grid;
-  place-items: center;
-  min-width: 18px;
-  height: 18px;
-  margin-left: 6px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 0 10px rgba(229, 9, 20, 0.6);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.tab-bar .nav-badge {
-  position: absolute;
-  top: 2px;
-  right: 50%;
-  margin: 0 -20px 0 0;
 }
 
 @media (max-width: 520px) {
@@ -18277,12 +18088,7 @@ a.by-card:hover .by-blur {
 }
 
 /* ---------- box office: adjusted for inflation (a switch beside the filter) ---------- */
-.bo-tools-left {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
+
 .bo-real-tag {
   margin-left: 8px;
   padding: 3px 10px;
@@ -18303,13 +18109,6 @@ a.by-card:hover .by-blur {
 .bo-top-then i {
   margin-right: 4px;
   font-size: 11px;
-}
-
-@media (max-width: 700px) {
-  .bo-tools-left {
-    flex-direction: column;
-    align-items: stretch;
-  }
 }
 
 /* (a budget that is a sliver of the gross, e.g. a classic that made 100× its cost, still shows
@@ -21289,11 +21088,6 @@ html.sm-lock {
   color: #fff;
 }
 
-.gf-adv {
-  border-radius: 999px;
-  white-space: nowrap;
-}
-
 /* Advanced search: posters that would start a half row wait for "Load more" */
 .movie-grid .as-held {
   display: none !important;
@@ -22075,17 +21869,9 @@ html.app-ui.typing .tab-bar {
     width: 100%;
   }
 
-  .glass-filters .gf-adv {
-    flex: none;
-    align-self: stretch;
-    display: inline-flex;
-    align-items: center;
-    padding: 0 16px;
-  }
+  
 
-  .gf-adv-w {
-    display: none;
-  }
+  
 
   /* Watchlist on phones: the type switch and the order switch fit side by side under the title */
   .wl-type .top10-tab {
@@ -22948,11 +22734,6 @@ html.app-ui.tabs-away .t-shared {
 }
 
 /* (only computers have a mouse wheel) */
-@media (hover: none) {
-  .sv-desktop-only {
-    display: none;
-  }
-}
 
 /* ============================== Title page: where a title stands ============================== */
 /* the pill under the genres: Released 12 Mar 2024 / Coming 14 Nov 2026 · in 40 days /
@@ -23370,176 +23151,10 @@ html.app-ui.tabs-away .t-shared {
 }
 
 /* the week: the days it airs lit, today ringed */
-.xr-week {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 5px;
-}
-
-.xr-week span {
-  padding: 6px 0;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 700;
-  text-align: center;
-}
-
-.xr-week span.on {
-  background: var(--accent);
-  box-shadow: 0 4px 12px rgba(185, 34, 34, 0.35);
-  color: #fff;
-}
-
-.xr-week span.today {
-  border-color: rgba(255, 255, 255, 0.55);
-}
 
 /* the next episode, counted down: tap it for the episode */
-.xr-next {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  margin-top: 2px;
-  padding: 10px 14px;
-  border: 1px solid rgba(185, 34, 34, 0.35);
-  border-radius: 14px;
-  background: radial-gradient(120% 140% at 0% 0%, rgba(185, 34, 34, 0.22), transparent 70%), rgba(255, 255, 255, 0.03);
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: transform 0.15s, border-color 0.15s;
-}
-
-.xr-next:hover {
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
-
-.xr-next-what {
-  display: grid;
-  min-width: 0;
-}
-
-.xr-next-what small {
-  color: var(--text-muted);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.xr-next-what b {
-  overflow: hidden;
-  font-size: 14.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.xr-next-count {
-  flex: none;
-  color: #ff8a84;
-  font-size: 17px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
 
 /* First aired: the last / next episode, and the seasons, to tap */
-.xr-ep-chips {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.xr-ep-chip {
-  display: grid;
-  gap: 1px;
-  min-width: 0;
-  padding: 8px 14px;
-  border: 1px solid var(--glass-border);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text);
-  font: inherit;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-}
-
-.xr-ep-chip:hover {
-  border-color: var(--accent);
-  background: rgba(185, 34, 34, 0.12);
-}
-
-.xr-ep-chip small {
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.xr-ep-chip b {
-  font-size: 15px;
-}
-
-.xr-ep-chip span {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.xr-season-strip {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 5px;
-  max-height: 64px;
-  margin-top: 4px;
-  overflow-y: auto;
-}
-
-.xr-season-dot {
-  min-width: 34px;
-  padding: 3px 8px;
-  border: 1px solid var(--glass-border);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--text-muted);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
-}
-
-.xr-season-dot:hover {
-  border-color: var(--text-muted);
-  color: var(--text);
-}
-
-.xr-season-dot.now {
-  border-color: var(--accent);
-  background: rgba(185, 34, 34, 0.18);
-  color: var(--text);
-}
-
-html[data-theme="light"] .xr-week span,
-html[data-theme="light"] .xr-ep-chip {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-html[data-theme="light"] .xr-week span.today {
-  border-color: rgba(0, 0, 0, 0.5);
-}
-
-html[data-theme="light"] .xr-next-count {
-  color: var(--accent);
-}
 
 .xr-air-rows dd small {
   color: var(--text-muted);
@@ -24542,15 +24157,6 @@ html[data-theme="light"] .xr-next-count {
   font-size: 0.85em;
 }
 
-.bk-tabs {
-  margin-bottom: 14px;
-}
-
-.bk-why {
-  margin: 0 0 10px;
-  font-size: 13.5px;
-}
-
 .bk-row {
   gap: 14px;
 }
@@ -24603,8 +24209,7 @@ html[data-theme="light"] .xr-next-count {
   font-size: 12px;
 }
 
-.bk-rate i,
-.bk-facts .fa-star {
+.bk-facts .fa-star{
   color: var(--gold);
 }
 
@@ -25316,20 +24921,6 @@ html.app-ui .site-maint.owner {
 }
 
 /* ============================== Admin Control Center (admin.html) ============================== */
-.ad-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px 16px;
-  margin-bottom: 18px;
-}
-
-.ad-head .page-title i {
-  margin-right: 6px;
-  color: var(--accent-hover);
-  font-size: 0.8em;
-}
 
 .ad-state {
   display: inline-flex;
@@ -25459,11 +25050,6 @@ html.app-ui .site-maint.owner {
   cursor: pointer;
 }
 
-.ad-big {
-  font-size: 26px;
-  font-weight: 800;
-}
-
 .ad-stats {
   display: flex;
   flex-wrap: wrap;
@@ -25480,12 +25066,6 @@ html.app-ui .site-maint.owner {
 
 .ad-stats small {
   color: var(--text-muted);
-}
-
-.ad-healths {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 .ad-health {

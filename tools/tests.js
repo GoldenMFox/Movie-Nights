@@ -185,7 +185,7 @@
       tmdb: "movie-14",
       note: "Nu ratați finalul. E genial, 100%! 🌹",
     });
-    check("a broken link goes to Discover", /discover\.html$/.test(await open("?garbage")));
+    check("a broken link goes to Explore", /movies-explore\.html$/.test(await open("?garbage")));
   } catch (err) {
     check(`The tests stopped: ${err.message}`, false, err.stack);
   } finally {
