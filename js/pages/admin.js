@@ -41,6 +41,24 @@
     ["backup", "fa-floppy-disk", "Backup"],
     ["tools", "fa-toolbox", "Tools"],
   ];
+  // the sidebar: each section's colour, and a shorter name where the full one won't fit on a line
+  const SIDE_COLOR = {
+    overview: "#ff6b6f",
+    website: "#7ea4ff",
+    themes: "#c49bff",
+    pages: "#4cd97b",
+    homepage: "#ff9f43",
+    titlepage: "#5ad1d1",
+    personpage: "#f39ad0",
+    content: "#f5c518",
+    news: "#ff6b6f",
+    notifications: "#ff9f43",
+    apis: "#5ad1d1",
+    users: "#7ea4ff",
+    tools: "#9aa4b5",
+    backup: "#4cd97b",
+  };
+  const SIDE_LABEL = { themes: "Atmosphere", pages: "Pages & features", apis: "API integrations" };
   const GROUPS = [
     ["Dashboard", ["overview"]],
     ["Look & feel", ["website", "themes"]],
@@ -143,10 +161,15 @@
           ([g, keys]) => `<span class="ad-nav-group">${g}</span>${keys
             .map((k) => {
               const [, icon, l] = sec(k);
-              return `<a href="#${k}" data-sec="${k}"><i class="fa-solid ${icon}"></i><span>${l}</span><b class="ad-badge" data-badge="${k}" hidden></b></a>`;
+              return `<a href="#${k}" data-sec="${k}" style="--c:${SIDE_COLOR[k] || "#9aa4b5"}" title="${esc(l)}"><span class="ad-nav-ic"><i class="fa-solid ${icon}"></i></span><span class="ad-nav-l">${esc(SIDE_LABEL[k] || l)}</span><b class="ad-badge" data-badge="${k}" hidden></b></a>`;
             })
             .join("")}`
         ).join("")}</nav>
+        <div class="ad-side-foot">
+          <img class="ad-side-me" src="${esc(Store.myPhoto() || "images/placeholders/user.svg")}" alt="" referrerpolicy="no-referrer" />
+          <span><strong>${esc(((Store.getProfile() || {}).name || "You").split(" ")[0])}</strong><small><i class="fa-solid fa-crown"></i> Owner</small></span>
+          <a class="ad-side-site" href="index.html" target="_blank" rel="noopener" title="Open the site"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+        </div>
       </aside>
       <div class="ad-main">
         <header class="ad-top">

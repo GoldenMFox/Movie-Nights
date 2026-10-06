@@ -30417,37 +30417,109 @@ body[data-page="admin"] main.container {
   background: none;
 }
 
+/* the sidebar: groups with a fading line, each section's icon in its own colour, the one you're on
+   lit in its colour with a bar at its edge, badges as small pills; you and the site at the foot */
 .ad-nav-group {
-  margin: 12px 12px 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 10px 4px;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  opacity: 0.75;
+  opacity: 0.8;
+}
+
+.ad-nav-group::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--glass-border), transparent);
 }
 
 .ad-side .ad-nav a {
+  --c: #9aa4b5;
   position: relative;
-  padding: 10px 12px;
-  border-radius: 12px;
-  font-size: 14.5px;
+  gap: 11px;
+  padding: 7px 10px 7px 8px;
+  border-radius: 14px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s;
+}
+
+.ad-nav-ic {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--c) 12%, transparent);
+  color: var(--c);
+  font-size: 13px;
+  transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+}
+
+.ad-side .ad-nav a i {
+  width: auto;
+}
+
+.ad-nav-l {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-side .ad-nav a:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
+.ad-side .ad-nav a:hover .ad-nav-ic {
+  background: color-mix(in srgb, var(--c) 20%, transparent);
 }
 
 .ad-side .ad-nav a.on {
-  background: linear-gradient(135deg, var(--accent-hover), var(--accent));
-  box-shadow: 0 6px 18px rgba(185, 34, 34, 0.38);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 18%, transparent), color-mix(in srgb, var(--c) 4%, transparent));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
   color: #fff;
 }
 
+/* (the bar at its edge) */
+.ad-side .ad-nav a.on::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 10px;
+  bottom: 10px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--c);
+  box-shadow: 0 0 12px var(--c);
+}
+
+.ad-side .ad-nav a.on .ad-nav-ic {
+  background: var(--c);
+  box-shadow: 0 6px 16px -6px var(--c);
+  color: #111;
+}
+
 .ad-badge {
+  flex: none;
   margin-left: auto;
-  padding: 1px 8px;
+  padding: 2px 8px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
   color: var(--text);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .ad-badge.red {
@@ -30456,13 +30528,79 @@ body[data-page="admin"] main.container {
 }
 
 .ad-badge.gold {
-  background: rgba(245, 197, 24, 0.2);
+  background: rgba(245, 197, 24, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(245, 197, 24, 0.35);
   color: var(--gold);
 }
 
 .ad-nav a.on .ad-badge {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
   color: #fff;
+}
+
+/* you and the site, at the foot */
+.ad-side-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px 6px 2px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.ad-side-me {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 2px rgba(245, 197, 24, 0.5);
+}
+
+.ad-side-foot > span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.ad-side-foot strong {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-side-foot small {
+  color: var(--gold);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.ad-side-foot small i {
+  margin-right: 3px;
+  font-size: 10px;
+}
+
+.ad-side-site {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  color: var(--text-muted);
+  transition: color 0.2s, background 0.2s;
+}
+
+.ad-side-site:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+}
+
+:root[data-theme="light"] .ad-side .ad-nav a.on {
+  color: var(--text);
 }
 
 /* the top bar */
@@ -31491,9 +31629,21 @@ body[data-page="admin"] main.container {
 
   .ad-side .ad-nav a {
     flex: none;
-    padding: 8px 14px;
+    padding: 5px 13px 5px 5px;
     border-radius: 999px;
     font-size: 13.5px;
+  }
+
+  .ad-side .ad-nav-ic {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 11px;
+  }
+
+  .ad-side .ad-nav a.on::before,
+  .ad-side-foot {
+    display: none;
   }
 
   .ad-top {
