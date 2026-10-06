@@ -22,11 +22,9 @@
   const { esc, toast } = UI;
   const root = document.getElementById("news");
   const params = new URLSearchParams(location.search);
-  const PAGE = 18;
   const PREFS = "mn:newsPrefs"; // this device: { mode: "recommended" | "all" | "mine", mine: [source keys] }
   let state = { cat: params.get("cat") || "latest", q: params.get("q") || "", sort: params.get("sort") === "new" ? "new" : "top" };
   let all = []; // the stories in hand (grouped, scored)
-  let shown = PAGE;
   let loadedAt = 0;
   const prefs = () => Object.assign({ mode: "recommended", mine: null }, Store.read(PREFS, {}) || {});
   const setPrefs = (p) => Store.write(PREFS, Object.assign(prefs(), p));
@@ -98,14 +96,14 @@
   root.innerHTML = `
     <header class="nw-hero">
       <div class="nw-hero-text">
-        <span class="nw-live"><i></i> Live <span class="nw-updated">· getting the latest…</span></span>
+        <div class="nw-kicker"><span class="nw-live"><i></i> Live</span><span class="nw-date">${esc(new Date().toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" }))}</span><span class="nw-updated">· getting the latest…</span></div>
         <h1 class="page-title">Movie News</h1>
         <p class="page-sub">What matters in film and TV right now, from Hollywood's trade press.</p>
       </div>
       <div class="nw-hero-tools">
         <form class="ax-search nw-search" role="search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
           <input class="input" name="q" type="search" placeholder="Search the news…" aria-label="Search the news" value="${esc(state.q)}" autocomplete="off" /></form>
-        <button class="btn nw-refresh" type="button" title="Check for new stories"><i class="fa-solid fa-rotate"></i><span> Refresh</span></button>
+        <button class="btn nw-refresh" type="button" title="Check for new stories" aria-label="Check for new stories"><i class="fa-solid fa-rotate"></i></button>
       </div>
     </header>
     <div class="nw-ticker" hidden><span class="nw-ticker-label"><i class="fa-solid fa-bolt"></i> Just in</span><div class="nw-ticker-track"><div class="nw-ticker-run"></div></div></div>
@@ -147,9 +145,18 @@
       ? `<details class="nw-also"><summary><span class="nw-also-marks">${[...new Map(s.also.map((a) => [a.sourceKey || a.source, a])).values()].map((a) => mono(a.sourceKey || a.source)).join("")}</span> Also reported by ${s.also.length} more</summary>
           <ul>${s.also.map((a) => `<li><a href="${esc(a.link)}" target="_blank" rel="noopener">${mono(a.sourceKey || a.source)}<span><b>${esc(a.source)}</b> ${esc(a.title)}</span></a></li>`).join("")}</ul></details>`
       : "";
-  // a story about a title in your library: a way to it
-  const mine = (s) =>
-    s.about && s.about.id ? `<a class="nw-about" href="title.html?id=${encodeURIComponent(s.about.id)}"><i class="fa-solid fa-bookmark"></i> In your library: ${esc(s.about.title)}</a>` : "";
+  // a story about a title in your library: a small pill with its poster, a way to it
+  function mine(s) {
+    if (!s.about || !s.about.id) return "";
+    const it = Store.get(s.about.id);
+    const pic = it && window.Cards && Cards.posterOf ? Store.img(Cards.posterOf(it), "w92") : "";
+    return `<a class="nw-about" href="title.html?id=${encodeURIComponent(s.about.id)}" title="In your library: ${esc(s.about.title)}">${pic ? `<img src="${esc(pic)}" alt="" loading="lazy" />` : '<i class="fa-solid fa-bookmark"></i>'}<span><small>In your library</small><b>${esc(s.about.title)}</b></span><i class="fa-solid fa-chevron-right nw-about-go"></i></a>`;
+  }
+  // the other outlets, small: their marks and how many (on the cards)
+  const alsoMarks = (s) =>
+    (s.also || []).length
+      ? `<span class="nw-also-mini" title="Also reported by ${esc([...new Set(s.also.map((a) => a.source))].join(", "))}"><span class="nw-also-marks">${[...new Map(s.also.map((a) => [a.sourceKey || a.source, a])).values()].map((a) => mono(a.sourceKey || a.source)).join("")}</span>+${s.also.length}</span>`
+      : "";
   const badge = (s) =>
     s.promoted
       ? '<span class="nw-badge nw-badge-pick"><i class="fa-solid fa-star"></i> Editor\'s pick</span>'
@@ -159,15 +166,30 @@
           ? '<span class="nw-badge"><i class="fa-solid fa-thumbtack"></i> Pinned</span>'
           : `<span class="nw-badge"><i class="fa-solid ${catIcon(s)}"></i> ${esc(catName(s))}</span>`;
 
-  const card = (s) => `<article class="nw-card${s.breaking ? " is-breaking" : ""}" style="--src:${lookOf(s)[1]}">
-      <a class="nw-img" href="${esc(s.link)}" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">${picture(s)}${badge(s)}</a>
+  // a card: its picture filling it, a shade, its kind and source up top, the headline over the picture,
+  // the excerpt on hover; the whole card opens the story (the buttons on it do their own thing)
+  const card = (s) => `<article class="nw-card${s.breaking ? " is-breaking" : ""}${s.image ? "" : " no-img"}" style="--src:${lookOf(s)[1]}">
+      <a class="nw-card-link" href="${esc(s.link)}" target="_blank" rel="noopener" aria-label="${esc(s.title)} (${esc(s.source)})"></a>
+      <span class="nw-img" aria-hidden="true">${picture(s)}</span>
+      <span class="nw-shade" aria-hidden="true"></span>
+      <div class="nw-card-top">${badge(s)}<span class="nw-when-pill">${esc(ago(s.date))}</span></div>
       <div class="nw-text">
-        <div class="nw-meta"><span class="nw-src">${mono(s)}<b>${esc(s.source)}</b></span><span class="nw-when">${esc(ago(s.date))}</span></div>
-        <h3><a href="${esc(s.link)}" target="_blank" rel="noopener">${esc(s.title)}</a></h3>
+        <div class="nw-meta"><span class="nw-src">${mono(s)}<b>${esc(s.source)}</b></span>${alsoMarks(s)}</div>
+        <h3>${esc(s.title)}</h3>
         ${s.excerpt ? `<p>${esc(s.excerpt)}</p>` : ""}
-        ${mine(s)}${also(s)}
-        <div class="nw-actions"><a class="nw-more" href="${esc(s.link)}" target="_blank" rel="noopener">Read on ${esc(s.source)} <i class="fa-solid fa-arrow-right"></i></a>
-        <button class="nw-share" type="button" data-share="${esc(s.link)}" data-feature="share" aria-label="Share this story" title="Share"><i class="fa-solid fa-arrow-up-from-bracket"></i></button></div>
+        <div class="nw-card-foot">${mine(s)}<button class="nw-share" type="button" data-share="${esc(s.link)}" data-feature="share" aria-label="Share this story" title="Share"><i class="fa-solid fa-arrow-up-from-bracket"></i></button></div>
+      </div>
+    </article>`;
+
+  // Breaking: wide, side by side (one, two or three filling the row)
+  const breakingCard = (s) => `<article class="nw-bcard" style="--src:${lookOf(s)[1]}">
+      <a class="nw-card-link" href="${esc(s.link)}" target="_blank" rel="noopener" aria-label="${esc(s.title)} (${esc(s.source)})"></a>
+      <span class="nw-bcard-img" aria-hidden="true">${picture(s)}</span>
+      <div class="nw-bcard-text">
+        <div class="nw-meta"><span class="nw-badge nw-badge-breaking"><i class="fa-solid fa-bolt"></i> Breaking</span><span class="nw-src">${mono(s)}<b>${esc(s.source)}</b></span><span class="nw-when">${esc(ago(s.date))}</span></div>
+        <h3>${esc(s.title)}</h3>
+        ${s.excerpt ? `<p>${esc(s.excerpt)}</p>` : ""}
+        <div class="nw-card-foot">${mine(s)}${alsoMarks(s)}</div>
       </div>
     </article>`;
 
@@ -217,6 +239,19 @@
 
   /* ---------------- drawing ---------------- */
 
+  // how many cards fit across (as the grid lays them out: 260px at least, 18px apart)
+  const across = () => (window.matchMedia("(max-width: 700px)").matches ? 1 : Math.max(1, Math.floor(((body.clientWidth || root.clientWidth) + 18) / (260 + 18))));
+  // a full row, two when there are enough (phones: three in a column); fewer than a row: none
+  const fill = (n, rows) => {
+    const c = across();
+    if (c === 1) return Math.min(n, 3);
+    if (n >= c * rows) return c * rows;
+    return n >= c ? c : 0;
+  };
+  // a kind's page: whole rows, about 18 stories
+  const pageSize = () => across() * Math.max(1, Math.round(18 / across()));
+  let pages = 1;
+
   function render() {
     const list = visible();
     if (!list.length) {
@@ -240,28 +275,30 @@
       return out;
     };
     const pins = list.filter((s) => s.pinned);
-    const breaking = pick(list.filter((s) => s.breaking), 3);
+    const breaking = pick(list.filter((s) => s.breaking), Math.min(3, across()));
     const top = pick(pins.filter((s) => s.image).concat(list.filter((s) => s.image)), 1)[0] || pick(list, 1)[0];
     const latest = pick(byTime(list), 5);
+    // (Movies and TV: two rows when there are enough; each kind: a row)
     const SECTIONS = [
-      ["movies", "Latest movie news", "fa-film", 6],
-      ["tv", "TV", "fa-tv", 4],
+      ["movies", "Latest movie news", "fa-film", 2],
+      ["tv", "TV", "fa-tv", 2],
     ]
       .filter(([k]) => kindOn(k))
-      .concat(CATS().map(([k, l, i]) => [k, l, i, 4]));
+      .concat(CATS().map(([k, l, i]) => [k, l, i, 1]));
     return `
       ${
         breaking.length
           ? `<section class="nw-breaking"><h3 class="nw-sec-title"><span><i class="fa-solid fa-bolt"></i> Breaking</span><button type="button" class="t-link" data-cat="breaking">See all <i class="fa-solid fa-chevron-right"></i></button></h3>
-        <div class="nw-grid nw-breaking-list">${breaking.map(card).join("")}</div></section>`
+        <div class="nw-breaking-list" style="--n:${breaking.length}">${breaking.map(breakingCard).join("")}</div></section>`
           : ""
       }
       <section class="nw-lead">
         ${top ? feature(top) : ""}
         ${latest.length ? `<aside class="nw-side"><h3><i class="fa-solid fa-clock"></i> Latest</h3>${latest.map(row).join("")}</aside>` : ""}
       </section>
-      ${SECTIONS.map(([k, name, icon, n]) => {
-        const items = pick(ofCat(list, k), n);
+      ${SECTIONS.map(([k, name, icon, rows]) => {
+        const left = ofCat(list, k).filter((s) => !used.has(s.link));
+        const items = pick(left, fill(left.length, rows));
         return items.length
           ? `<section class="nw-section"><h3 class="nw-sec-title"><span><i class="fa-solid ${icon}"></i> ${esc(name)}</span><button type="button" class="t-link" data-cat="${k}">See all <i class="fa-solid fa-chevron-right"></i></button></h3><div class="nw-grid">${items.map(card).join("")}</div></section>`
           : "";
@@ -276,6 +313,7 @@
     const title = state.q ? `“${state.q}”` : state.cat === "breaking" ? "Breaking" : c ? c[1] : News.KIND_LABEL[state.cat] || "Latest";
     const head = `<div class="nw-sec-head"><h2>${esc(title)} <small>${items.length} ${items.length === 1 ? "story" : "stories"}</small></h2>
       <div class="top10-switch nw-sort" role="group" aria-label="Order"><button type="button" class="top10-tab${state.sort === "top" ? " active" : ""}" data-sort="top" aria-pressed="${state.sort === "top"}"><i class="fa-solid fa-fire"></i> Top</button><button type="button" class="top10-tab${state.sort === "new" ? " active" : ""}" data-sort="new" aria-pressed="${state.sort === "new"}"><i class="fa-solid fa-clock"></i> Newest</button></div></div>`;
+    const shown = pageSize() * pages;
     const page = sorted.slice(0, shown);
     const grid =
       state.sort === "new"
@@ -310,7 +348,7 @@
   }
   function set(patch) {
     Object.assign(state, patch);
-    shown = PAGE;
+    pages = 1;
     root.querySelectorAll(".nw-chips [data-cat]").forEach((b) => {
       b.classList.toggle("active", b.dataset.cat === state.cat);
       b.setAttribute("aria-pressed", b.dataset.cat === state.cat);
@@ -447,7 +485,7 @@
       return;
     }
     if (e.target.closest(".nw-load")) {
-      shown += PAGE;
+      pages++;
       render();
       return;
     }
@@ -483,6 +521,19 @@
     ticker();
   });
   document.addEventListener("keydown", (e) => e.key === "Escape" && closePrefs());
+  // (a wider or narrower window: as many across as fit, the rows full again)
+  let lastAcross = 0;
+  let resizing;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizing);
+    resizing = setTimeout(() => {
+      const c = across();
+      if (c !== lastAcross && all.length) {
+        lastAcross = c;
+        render();
+      }
+    }, 150);
+  });
   // a picture that doesn't load: the source's card instead
   root.addEventListener(
     "error",

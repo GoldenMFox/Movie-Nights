@@ -24001,23 +24001,28 @@ html.app-ui.tabs-away .t-shared {
 }
 
 /* ============================== Movie News (news.html) ============================== */
-/* the header: a soft red glow, a "Live" light, the sources as marks; the search and Refresh */
+/* the masthead: Live, today's date and when it was updated over the title, the line under it; the
+   search and Refresh on the right, on the same line as the title */
 .nw-hero {
   position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 20px 28px;
-  overflow: hidden;
-  margin: 26px 0 14px;
-  padding: 28px 30px;
-  border: 1px solid var(--glass-border);
-  border-radius: 26px;
-  background:
-    radial-gradient(70% 140% at 0% 0%, rgba(185, 34, 34, 0.42), transparent 60%),
-    radial-gradient(50% 120% at 100% 100%, rgba(120, 60, 200, 0.16), transparent 60%),
-    var(--surface);
+  gap: 18px 28px;
+  margin: 30px 0 16px;
+  padding: 0 0 20px;
+}
+
+/* (the line under it: the accent fading out) */
+.nw-hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), rgba(229, 9, 20, 0.35) 30%, var(--glass-border) 60%, transparent);
 }
 
 .nw-hero-text,
@@ -24026,33 +24031,50 @@ html.app-ui.tabs-away .t-shared {
   z-index: 1;
 }
 
+.nw-kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.nw-date {
+  color: var(--text);
+  font-weight: 600;
+}
+
 .nw-hero .page-title {
-  margin: 10px 0 4px;
-  font-size: clamp(30px, 4vw, 44px);
-  letter-spacing: -0.02em;
+  margin: 8px 0 4px;
+  font-size: clamp(34px, 4.4vw, 54px);
+  line-height: 1;
+  letter-spacing: -0.03em;
 }
 
 .nw-hero .page-sub {
-  margin: 0;
+  margin: 6px 0 0;
+  color: var(--text-muted);
 }
 
 .nw-live {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 12px;
+  gap: 7px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 59, 48, 0.35);
   border-radius: 999px;
-  background: rgba(229, 9, 20, 0.16);
+  background: rgba(229, 9, 20, 0.12);
   color: #ff6b6f;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .nw-live > i {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #ff3b30;
   box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.6);
@@ -24061,9 +24083,20 @@ html.app-ui.tabs-away .t-shared {
 
 .nw-updated {
   color: var(--text-muted);
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
+}
+
+.nw-hero .nw-search .input {
+  height: 46px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nw-hero .nw-refresh {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border-radius: 50%;
 }
 
 /* a source's mark: its letters on its colour */
@@ -24471,10 +24504,11 @@ html.app-ui.tabs-away .t-shared {
   font-weight: 500;
 }
 
-/* the cards */
+/* the cards: the picture fills the card, a shade from the foot, the kind and the time up top, the
+   source and the headline over the picture; on hover the picture moves in and the excerpt shows */
 .nw-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 18px;
 }
 
@@ -24482,24 +24516,42 @@ html.app-ui.tabs-away .t-shared {
   position: relative;
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
+  min-height: 380px;
   overflow: hidden;
   border: 1px solid var(--glass-border);
-  border-radius: 20px;
-  background: var(--glass-bg);
-  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), border-color 0.25s, box-shadow 0.25s;
+  border-radius: 22px;
+  background: #0d0d0f;
+  color: #fff;
+  isolation: isolate;
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), border-color 0.3s, box-shadow 0.3s;
 }
 
 .nw-card:hover {
-  transform: translateY(-4px);
-  border-color: color-mix(in srgb, var(--src) 45%, transparent);
-  box-shadow: 0 18px 40px -20px color-mix(in srgb, var(--src) 60%, transparent);
+  transform: translateY(-5px);
+  border-color: color-mix(in srgb, var(--src) 55%, transparent);
+  box-shadow: 0 22px 44px -22px color-mix(in srgb, var(--src) 70%, transparent);
+}
+
+/* (the whole card opens the story; what's on it sits above this) */
+.nw-card-link {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+}
+
+.nw-card-link:focus-visible {
+  outline: 2px solid var(--src);
+  outline-offset: -2px;
 }
 
 .nw-img {
-  position: relative;
+  position: absolute;
+  inset: 0;
+  z-index: -2;
   display: block;
   overflow: hidden;
-  aspect-ratio: 16 / 9;
   background: #0d0d0f;
 }
 
@@ -24508,11 +24560,137 @@ html.app-ui.tabs-away .t-shared {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: transform 0.8s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .nw-card:hover .nw-img img {
-  transform: scale(1.06);
+  transform: scale(1.07);
+}
+
+.nw-shade {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(0deg, rgba(8, 8, 10, 0.97) 0%, rgba(8, 8, 10, 0.86) 34%, rgba(8, 8, 10, 0.25) 64%, rgba(8, 8, 10, 0.55) 100%);
+  transition: background 0.3s;
+}
+
+.nw-card.no-img .nw-shade {
+  background: linear-gradient(0deg, rgba(8, 8, 10, 0.95) 0%, rgba(8, 8, 10, 0.6) 45%, transparent 70%);
+}
+
+.nw-card-top {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nw-when-pill {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(10, 10, 12, 0.55);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11.5px;
+  font-weight: 600;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.nw-card .nw-text {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 16px 16px 14px;
+}
+
+.nw-card .nw-meta,
+.nw-card .nw-src b {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.nw-card h3 {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
+}
+
+.nw-card:hover h3 {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+/* (the excerpt: folded away, it opens on hover) */
+.nw-card p {
+  display: -webkit-box;
+  overflow: hidden;
+  max-height: 0;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13.5px;
+  line-height: 1.5;
+  opacity: 0;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  transition: max-height 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s;
+}
+
+.nw-card:hover p,
+.nw-card:focus-within p {
+  max-height: 64px;
+  opacity: 1;
+}
+
+.nw-card-foot {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.nw-card-foot .nw-share {
+  margin-left: auto;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(10, 10, 12, 0.5);
+  color: rgba(255, 255, 255, 0.85);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.nw-card .nw-meta {
+  position: relative;
+  z-index: 3;
+  justify-content: space-between;
+}
+
+/* the other outlets, small */
+.nw-also-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nw-card.is-breaking {
+  border-color: rgba(255, 59, 48, 0.55);
 }
 
 /* a story without a picture: its source's card (the mark big, the kind of story) */
@@ -24535,6 +24713,15 @@ html.app-ui.tabs-away .t-shared {
   text-shadow: 0 6px 30px rgba(0, 0, 0, 0.4);
 }
 
+.nw-card .nw-ph {
+  place-items: start center;
+  padding-top: 64px;
+}
+
+.nw-card .nw-ph b {
+  font-size: 64px;
+}
+
 .nw-ph i {
   position: absolute;
   right: 14px;
@@ -24543,10 +24730,13 @@ html.app-ui.tabs-away .t-shared {
   font-size: 26px;
 }
 
+.nw-card .nw-ph i {
+  top: 60px;
+  right: 18px;
+  bottom: auto;
+}
+
 .nw-badge {
-  position: absolute;
-  top: 10px;
-  left: 10px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -24565,57 +24755,132 @@ html.app-ui.tabs-away .t-shared {
   font-size: 10px;
 }
 
-.nw-text {
+/* Breaking: wide cards side by side, the picture on the left */
+.nw-breaking-list {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 1), minmax(0, 1fr));
+  gap: 14px;
+}
+
+.nw-bcard {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(120px, 38%) minmax(0, 1fr);
+  overflow: hidden;
+  min-height: 180px;
+  border: 1px solid rgba(255, 59, 48, 0.45);
+  border-radius: 20px;
+  background: rgba(10, 10, 12, 0.6);
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+
+.nw-bcard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px -20px rgba(229, 9, 20, 0.8);
+}
+
+.nw-bcard-img {
+  position: relative;
+  overflow: hidden;
+}
+
+.nw-bcard-img img,
+.nw-bcard-img .nw-ph {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nw-bcard-text {
+  position: relative;
+  z-index: 3;
   display: flex;
-  flex: 1;
   flex-direction: column;
-  gap: 9px;
-  padding: 14px 16px 16px;
+  gap: 8px;
+  padding: 14px 16px;
+  pointer-events: none;
 }
 
-.nw-card h3 {
+.nw-bcard-text a,
+.nw-bcard-text button {
+  pointer-events: auto;
+}
+
+.nw-bcard h3 {
+  display: -webkit-box;
+  overflow: hidden;
   margin: 0;
-  font-size: 16.5px;
+  font-size: 17px;
   line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
-.nw-card p {
+.nw-bcard p {
   display: -webkit-box;
   overflow: hidden;
   margin: 0;
   color: var(--text-muted);
-  font-size: 13.5px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
-.nw-card .nw-actions {
-  margin-top: auto;
-  padding-top: 4px;
-}
-
-.nw-more {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--src);
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.nw-more i {
-  font-size: 11px;
-  transition: transform 0.2s;
-}
-
-.nw-more:hover i {
-  transform: translateX(3px);
-}
-
 .nw-failed {
   color: #ff8a84;
+}
+
+@media (max-width: 1000px) {
+  .nw-breaking-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .nw-card {
+    min-height: 300px;
+  }
+
+  /* (no picture: the source's colours only; its mark is beside its name already) */
+  .nw-card .nw-ph {
+    padding-top: 52px;
+  }
+
+  .nw-card .nw-ph b {
+    display: none;
+  }
+
+  .nw-card .nw-ph i {
+    top: 56px;
+  }
+
+  /* (no hover on a phone: the excerpt shows) */
+  .nw-card p {
+    max-height: 64px;
+    opacity: 1;
+    -webkit-line-clamp: 2;
+  }
+
+  .nw-bcard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nw-bcard-img {
+    aspect-ratio: 16 / 9;
+  }
+
+  .nw-kicker .nw-date {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nw-card,
+  .nw-card p,
+  .nw-img img {
+    transition: none;
+  }
 }
 
 /* waiting: the shapes of what's coming */
@@ -24870,24 +25135,75 @@ html.app-ui.tabs-away .t-shared {
   backdrop-filter: blur(10px);
 }
 
-/* a story about a title in your library */
+/* a story about a title in your library: a small pill with its poster, "In your library" over its name */
 .nw-about {
+  position: relative;
+  z-index: 3;
   display: inline-flex;
   align-items: center;
   align-self: flex-start;
-  gap: 7px;
-  padding: 4px 10px;
-  border: 1px solid rgba(245, 197, 24, 0.4);
-  border-radius: 999px;
-  background: rgba(245, 197, 24, 0.1);
-  color: var(--gold);
-  font-size: 12px;
-  font-weight: 700;
+  justify-self: start;
+  gap: 9px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 4px 12px 4px 4px;
+  border: 1px solid rgba(245, 197, 24, 0.35);
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(245, 197, 24, 0.16), rgba(245, 197, 24, 0.05));
+  color: #fff;
   text-decoration: none;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: border-color 0.2s, background 0.2s;
 }
 
 .nw-about:hover {
-  background: rgba(245, 197, 24, 0.18);
+  border-color: rgba(245, 197, 24, 0.7);
+  background: linear-gradient(90deg, rgba(245, 197, 24, 0.26), rgba(245, 197, 24, 0.08));
+}
+
+.nw-about img {
+  flex: none;
+  width: 22px;
+  height: 33px;
+  border-radius: 5px;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.nw-about > i:first-child {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 33px;
+  color: var(--gold);
+}
+
+.nw-about span {
+  display: grid;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.nw-about small {
+  color: var(--gold);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nw-about b {
+  overflow: hidden;
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nw-about-go {
+  flex: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 10px;
 }
 
 /* News preferences: a panel (a sheet on a phone) */
@@ -28614,6 +28930,212 @@ html.no-list-fx .lt .poster-link::after {
 
   .ad-story-btn span {
     display: none;
+  }
+}
+
+/* a section's own tabs (News: Sources, Ranking, Stories, Feeds, Pinned): a segmented bar */
+.ad-subtabs {
+  display: flex;
+  gap: 4px;
+  width: max-content;
+  max-width: 100%;
+  margin-bottom: 16px;
+  padding: 5px;
+  overflow-x: auto;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  scrollbar-width: none;
+}
+
+.ad-subtab {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.ad-subtab:hover {
+  color: var(--text);
+}
+
+.ad-subtab.on {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 6px 18px -8px rgba(229, 9, 20, 0.8);
+}
+
+/* News → Sources: a table, a row a source, a column a kind, its priority last */
+.ad-src-table {
+  display: grid;
+  gap: 4px;
+}
+
+.ad-src-head,
+.ad-src-row {
+  display: grid;
+  grid-template-columns: minmax(200px, 2fr) repeat(3, minmax(90px, 1fr)) 110px;
+  align-items: center;
+  gap: 12px;
+}
+
+.ad-src-head {
+  padding: 4px 14px 10px;
+  border-bottom: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ad-src-head span:not(:first-child) {
+  text-align: center;
+}
+
+.ad-src-head i {
+  margin-right: 4px;
+}
+
+.ad-src-tier {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 2px;
+  padding: 0 14px;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ad-src-tier::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--glass-border), transparent);
+}
+
+.ad-src-row {
+  padding: 10px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.025);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.ad-src-row:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.ad-src-id {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ad-src-id > span {
+  display: grid;
+  min-width: 0;
+}
+
+.ad-src-id strong {
+  overflow: hidden;
+  font-size: 14.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-src-id small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.ad-src-badge {
+  display: grid;
+  place-items: center;
+  flex: none;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 6px;
+  border-radius: 12px;
+  background: var(--c);
+  color: #111;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  box-shadow: inset 0 -10px 20px rgba(0, 0, 0, 0.15), 0 6px 16px -8px var(--c);
+}
+
+.ad-src-id .ad-src-rm {
+  margin: 0 0 0 auto;
+  padding: 6px 9px;
+}
+
+.ad-src-cell {
+  display: flex;
+  justify-content: center;
+}
+
+.ad-src-na {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.ad-num-small {
+  width: 76px;
+  height: 38px;
+  padding: 0 8px;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .ad-src-head {
+    display: none;
+  }
+
+  /* (a phone: a source, then its switches with their names under it) */
+  .ad-src-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px 8px;
+  }
+
+  .ad-src-id {
+    grid-column: 1 / -1;
+  }
+
+  .ad-src-cell {
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .ad-src-cell::before {
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-size: 10.5px;
+    text-align: center;
+  }
+
+  .ad-subtab span {
+    display: none;
+  }
+
+  .ad-subtab.on span {
+    display: inline;
   }
 }
 

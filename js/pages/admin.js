@@ -768,137 +768,158 @@
       const pins = n.featured || [];
       const src = News.sources();
       const feeds = News.allFeeds();
-      const host = (u) => String(u || "").replace(/^https?:\/\//, "").split("/")[0];
+      const host = (u) => String(u || "").replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
       const KIND = { movies: ["Movie news", "fa-film"], tv: ["TV news", "fa-tv"], industry: ["Industry", "fa-building"] };
-      // a feed's tile: its source's mark, its name, what it carries, its site; its switch
-      const feedTile = (f) =>
-        swTile("data-news-src", f.id, !hidden.includes(f.id), `<b class="ad-src-mark">${esc(srcMark(f.source, f.name))}</b>`, `--c:${srcColor(f.source)}`, f.name, `${KIND[f.kind] ? KIND[f.kind][0] : f.kind} · ${host(f.url)}`).replace(
-          "</small>",
-          `</small>${f.custom ? `<button type="button" class="ad-src-rm" data-rm-src="${esc(f.id)}" title="Remove this source"><i class="fa-solid fa-trash-can"></i> Remove</button>` : ""}`
-        );
-      const byKind = (kind) =>
-        [1, 2, 3]
-          .map((tier) => {
-            const list = feeds.filter((f) => f.kind === kind && (src[f.source] || {}).tier === tier);
-            return list.length ? `<h5 class="ad-sub-tier">${esc(News.TIERS[tier])}</h5>${tiles(list.map(feedTile).join(""))}` : "";
-          })
-          .join("");
-      const status = News.status();
-      const w = Object.assign({}, News.WEIGHTS, n.weights || {});
-      const br = Object.assign({}, News.BREAKING, n.breaking || {});
-      const catsOff = n.catsOff || [];
+      const swi = (attr, key, on, label) =>
+        `<label class="sv-switch"><input type="checkbox" ${attr}="${esc(key)}"${on ? " checked" : ""} aria-label="${esc(label)}" /><span class="switch-track"><span class="switch-thumb"></span></span></label>`;
+      const numIn = (path, value, min, max, label) => `<input class="input ad-num-small" type="number" min="${min}" max="${max}" data-k="${path}" data-num value="${esc(value)}" aria-label="${esc(label)}" />`;
       const numTile = (path, icon, color, name, sub, value, min, max, unit) =>
         `<label class="ad-lt-tile ad-num-tile"><span class="ad-lt-swatch ad-tile-icon2" style="--c:${color}" aria-hidden="true"><i class="fa-solid ${icon}"></i></span>
           <span class="ad-lt-text"><strong>${esc(name)}</strong><small>${esc(sub)}</small></span>
-          <span class="ad-num-in"><input class="input" type="number" min="${min}" max="${max}" data-k="${path}" data-num value="${esc(value)}" aria-label="${esc(name)}" />${unit ? `<em>${esc(unit)}</em>` : ""}</span></label>`;
-      return `<div class="ad-grid">
+          <span class="ad-num-in">${numIn(path, value, min, max, name)}${unit ? `<em>${esc(unit)}</em>` : ""}</span></label>`;
+      const TABS = [
+        ["sources", "fa-rss", "Sources"],
+        ["ranking", "fa-ranking-star", "Ranking"],
+        ["stories", "fa-newspaper", "Stories"],
+        ["feeds", "fa-heart-pulse", "Feeds"],
+        ["pinned", "fa-thumbtack", "Pinned"],
+      ];
+      const tab = TABS.some((t) => t[0] === newsTab) ? newsTab : "sources";
+      const tabsHtml = `<nav class="ad-subtabs" role="tablist" aria-label="News">${TABS.map(
+        ([k, icon, label]) => `<button type="button" role="tab" class="ad-subtab${tab === k ? " on" : ""}" aria-selected="${tab === k}" data-news-tab="${k}"><i class="fa-solid ${icon}"></i><span>${label}</span></button>`
+      ).join("")}</nav>`;
+
+      // Sources: one row a source (its mark, name, site), a switch for each kind it carries, its priority
+      const row = (x) => {
+        const cell = (kind) => {
+          const f = feeds.find((ff) => ff.source === x.key && ff.kind === kind);
+          return `<span class="ad-src-cell" data-label="${KIND[kind][0]}">${f ? swi("data-news-src", f.id, !hidden.includes(f.id), `${x.name}: ${KIND[kind][0]}`) : '<span class="ad-src-na" title="No feed of this kind">—</span>'}</span>`;
+        };
+        const site = (feeds.find((f) => f.source === x.key) || {}).url || x.site;
+        return `<div class="ad-src-row">
+            <span class="ad-src-id"><b class="ad-src-badge" style="--c:${srcColor(x.key)}">${esc(srcMark(x.key, x.name))}</b><span><strong>${esc(x.name)}</strong><small>${esc(host(x.site || site))}</small></span>
+              ${x.custom ? `<button type="button" class="ad-src-rm" data-rm-src="${esc(x.key)}" title="Remove this source"><i class="fa-solid fa-trash-can"></i></button>` : ""}</span>
+            ${cell("movies")}${cell("tv")}${cell("industry")}
+            <span class="ad-src-cell" data-label="Priority">${numIn(`news.priority.${x.key}`, (n.priority || {})[x.key] != null ? n.priority[x.key] : x.priority, 0, 100, `${x.name}: priority`)}</span>
+          </div>`;
+      };
+      const sourcesPanel = `
         ${box(
-          "news-sources",
-          "fa-rss",
-          "News sources",
-          `${part('<i class="fa-solid fa-film"></i> Movie news', "", byKind("movies"))}
-          ${part('<i class="fa-solid fa-tv"></i> TV news', "", byKind("tv"))}
-          ${part('<i class="fa-solid fa-building"></i> Industry', "Business and studio news (from the primary sources)", tiles(feeds.filter((f) => f.kind === "industry").map(feedTile).join("")))}
-          ${part(
-            "Add a source",
-            "Any site's RSS feed: its stories join the others (grouped, scored by the priority you give it)",
-            `<div class="ad-add-src">
-              <input class="input" name="name" placeholder="Name (e.g. Deadline)" maxlength="40" />
-              <input class="input" name="url" placeholder="Its feed: https://…/feed/" />
-              <span class="glass-select"><select name="kind" aria-label="What it carries"><option value="movies">Movie news</option><option value="tv">TV news</option><option value="industry">Industry</option></select></span>
-              <input class="input" name="priority" type="number" min="0" max="100" value="70" aria-label="Priority (0-100)" title="Priority (0-100)" />
-              <button type="button" class="btn ad-src-add"><i class="fa-solid fa-plus"></i> Add</button>
-            </div>`
-          )}`,
-          3,
-          "Switched off, a feed isn't asked at all. Readers can still narrow it down to their own sources on Movie News (Preferences)."
-        )}
-        ${box(
-          "news-kinds",
+          "news-on",
           "fa-toggle-on",
-          "Movie & TV news",
+          "What's on Movie News",
           tiles(
             tileK("news.movies", "fa-film", "#ff6b6f", "Movie news", "The movie feeds, the Movies chip and section", n.movies !== false) +
               tileK("news.tv", "fa-tv", "#7ea4ff", "TV news", "The TV feeds, the TV chip and section", n.tv !== false)
           ),
-          1
-        )}
-        ${box(
-          "news-ranking",
-          "fa-ranking-star",
-          "Ranking",
-          `${part(
-            "Source priority",
-            "0-100: how much a source's word counts (Variety and The Hollywood Reporter 100)",
-            tiles(
-              Object.values(src)
-                .map((x) => numTile(`news.priority.${x.key}`, "fa-star", srcColor(x.key), x.name, News.TIERS[x.tier] || "", (n.priority || {})[x.key] != null ? n.priority[x.key] : x.priority, 0, 100, ""))
-                .join("")
-            )
-          )}
-          ${part(
-            "What makes a top story",
-            "How much each counts (they're weighed against each other)",
-            tiles(
-              numTile("news.weights.authority", "fa-landmark", "#f5c518", "Source authority", "Its source's priority", w.authority, 0, 100, "") +
-                numTile("news.weights.recency", "fa-clock", "#5ad1d1", "Recency", "How new it is", w.recency, 0, 100, "") +
-                numTile("news.weights.importance", "fa-bolt", "#ff6b6f", "Importance", "What kind of news, how many outlets have it", w.importance, 0, 100, "") +
-                numTile("news.weights.relevance", "fa-user", "#c49bff", "Relevance", "About a title in the reader's library", w.relevance, 0, 100, "")
-            )
-          )}
-          ${part(
-            "Breaking",
-            "A story counts as breaking when it's this new and at least this important",
-            tiles(
-              numTile("news.breaking.threshold", "fa-bolt", "#ff453a", "Importance at least", "0-100 (a casting announcement scores about 40, more with several outlets)", br.threshold, 0, 100, "") +
-                numTile("news.breaking.hours", "fa-hourglass-half", "#ff9f43", "Within", "How long a story can be breaking", br.hours, 1, 48, "hours")
-            )
-          )}
-          ${part(
-            "The same story from several outlets",
-            "How close two headlines must be to show as one story",
-            `<div class="ad-opts ad-opts-3">${opt("news.dupes", "strict", n.dupes || "balanced", "fa-lock", "Strict", "Only near-identical headlines", "#7ea4ff")}${opt("news.dupes", "balanced", n.dupes || "balanced", "fa-scale-balanced", "Balanced", "The same names, the same event", "#4cd97b")}${opt("news.dupes", "loose", n.dupes || "balanced", "fa-object-group", "Loose", "Groups more, may join related stories", "#ff9f43")}</div>`
-          )}
-          ${part(
-            "Categories",
-            "The chips and sections on Movie News",
-            tiles(
-              News.CATEGORIES.map(([k, l, icon]) => swTile("data-news-cat", k, !catsOff.includes(k), `<i class="fa-solid ${icon}"></i>`, "--c:#ff6b6f", l, "")).join("")
-            )
-          )}
-          ${part(
-            "Refreshing",
-            "",
-            tiles(numTile("apis.news.minutes", "fa-rotate", "#5ad1d1", "Ask the feeds again after", "Each reader's browser keeps the stories this long", Site.api("news").minutes, 5, 720, "min"))
-          )}`,
           3
         )}
         ${box(
-          "news-stories",
-          "fa-newspaper",
-          "Stories",
-          `<div class="ad-stories" data-stories><p class="sv-note">Loading the news…</p></div>`,
+          "news-src-table",
+          "fa-rss",
+          "Sources",
+          `<div class="ad-src-table">
+            <div class="ad-src-head"><span>Source</span><span><i class="fa-solid fa-film"></i> Movie news</span><span><i class="fa-solid fa-tv"></i> TV news</span><span><i class="fa-solid fa-building"></i> Industry</span><span><i class="fa-solid fa-star"></i> Priority</span></div>
+            ${[1, 2, 3]
+              .map((tier) => {
+                const list = Object.values(src).filter((x) => x.tier === tier);
+                return list.length ? `<div class="ad-src-tier"><span>${esc(News.TIERS[tier])}</span></div>${list.map(row).join("")}` : "";
+              })
+              .join("")}
+          </div>`,
           3,
-          "Promote: first on Movie News for two days · Breaking: marked as breaking · Hide: kept off Movie News · Tick two or more, then Merge: shown as one story. Save changes to send it to everyone."
+          "A switch per feed (off: it isn't asked at all). Priority 0-100: how much a source's word counts in the ranking. Readers can still narrow it to their own sources (Preferences on Movie News)."
         )}
         ${box(
-          "news-feeds",
-          "fa-heart-pulse",
-          "Feeds",
-          tiles(
-            feeds
-              .map((f) => {
-                const x = status[f.id];
-                const off = hidden.includes(f.id);
-                return `<div class="ad-lt-tile ad-info-tile ad-feed-tile ${off ? "off" : x ? (x.ok ? "ok" : "down") : ""}"><span class="ad-lt-swatch ad-tile-icon2" style="--c:${srcColor(f.source)}" aria-hidden="true"><b class="ad-src-mark">${esc(srcMark(f.source, f.name))}</b></span>
-                  <span class="ad-lt-text"><strong>${esc(f.name)} · ${esc(KIND[f.kind] ? KIND[f.kind][0] : f.kind)}</strong><small>${off ? "Switched off" : x ? (x.ok ? `${x.n} stories · ${ago(x.at)}` : `Failed ${ago(x.at)}: ${esc(x.error || "")}`) : "Not asked yet on this device"}</small></span><i class="ad-svc-dot" aria-hidden="true"></i></div>`;
-              })
-              .join("")
-          ),
+          "news-src-add",
+          "fa-plus",
+          "Add a source",
+          `<div class="ad-add-src">
+            <input class="input" name="name" placeholder="Name (e.g. Deadline)" maxlength="40" aria-label="Name" />
+            <input class="input" name="url" placeholder="Its RSS feed: https://…/feed/" aria-label="Feed address" />
+            <span class="glass-select"><select name="kind" aria-label="What it carries"><option value="movies">Movie news</option><option value="tv">TV news</option><option value="industry">Industry</option></select></span>
+            <input class="input" name="priority" type="number" min="0" max="100" value="70" aria-label="Priority (0-100)" title="Priority (0-100)" />
+            <button type="button" class="btn btn-primary ad-src-add"><i class="fa-solid fa-plus"></i> Add</button>
+          </div>`,
           3,
-          "As this browser last asked them (open Movie News, or Refresh there, to ask again)."
+          "Its stories join the others: grouped with the same story from other outlets, ranked by the priority you give it."
+        )}`;
+
+      const w = Object.assign({}, News.WEIGHTS, n.weights || {});
+      const br = Object.assign({}, News.BREAKING, n.breaking || {});
+      const catsOff = n.catsOff || [];
+      const rankingPanel = `
+        ${box(
+          "news-weights",
+          "fa-scale-balanced",
+          "What makes a top story",
+          tiles(
+            numTile("news.weights.authority", "fa-landmark", "#f5c518", "Source authority", "Its source's priority", w.authority, 0, 100, "") +
+              numTile("news.weights.recency", "fa-clock", "#5ad1d1", "Recency", "How new it is", w.recency, 0, 100, "") +
+              numTile("news.weights.importance", "fa-bolt", "#ff6b6f", "Importance", "What kind of news, how many outlets", w.importance, 0, 100, "") +
+              numTile("news.weights.relevance", "fa-user", "#c49bff", "Relevance", "About a title in the reader's library", w.relevance, 0, 100, "")
+          ),
+          2,
+          "Weighed against each other: only how they compare matters."
         )}
-        ${card("fa-thumbtack", "Pinned stories", `${pins.map((p, i) => `<span class="ad-chip">${esc(p.title)}<button type="button" data-rm="news.featured" data-i="${i}" aria-label="Remove"><i class="fa-solid fa-xmark"></i></button></span>`).join("") || '<p class="muted">None pinned.</p>'}
+        ${box(
+          "news-breaking",
+          "fa-bolt",
+          "Breaking",
+          tiles(
+            numTile("news.breaking.threshold", "fa-bolt", "#ff453a", "Importance at least", "0-100", br.threshold, 0, 100, "") +
+              numTile("news.breaking.hours", "fa-hourglass-half", "#ff9f43", "Within", "Since it was published", br.hours, 1, 48, "h")
+          ),
+          1,
+          "A casting announcement scores about 40, more when several outlets have it."
+        )}
+        ${box(
+          "news-dupes",
+          "fa-object-group",
+          "The same story from several outlets",
+          `<div class="ad-opts ad-opts-3">${opt("news.dupes", "strict", n.dupes || "balanced", "fa-lock", "Strict", "Only near-identical headlines", "#7ea4ff")}${opt("news.dupes", "balanced", n.dupes || "balanced", "fa-scale-balanced", "Balanced", "The same names, the same event", "#4cd97b")}${opt("news.dupes", "loose", n.dupes || "balanced", "fa-object-group", "Loose", "Groups more, may join related stories", "#ff9f43")}</div>`,
+          2
+        )}
+        ${box("news-refresh", "fa-rotate", "Refreshing", tiles(numTile("apis.news.minutes", "fa-rotate", "#5ad1d1", "Ask the feeds again after", "Each reader's browser keeps the stories this long", Site.api("news").minutes, 5, 720, "min")), 1)}
+        ${box(
+          "news-cats",
+          "fa-tags",
+          "Categories",
+          tiles(News.CATEGORIES.map(([k, l, icon]) => swTile("data-news-cat", k, !catsOff.includes(k), `<i class="fa-solid ${icon}"></i>`, "--c:#ff6b6f", l, "A chip and a section on Movie News")).join("")),
+          3
+        )}`;
+
+      const status = News.status();
+      const feedsPanel = box(
+        "news-feeds",
+        "fa-heart-pulse",
+        "Feeds",
+        tiles(
+          feeds
+            .map((f) => {
+              const x = status[f.id];
+              const off = hidden.includes(f.id);
+              return `<div class="ad-lt-tile ad-info-tile ad-feed-tile ${off ? "off" : x ? (x.ok ? "ok" : "down") : ""}"><span class="ad-lt-swatch ad-tile-icon2" style="--c:${srcColor(f.source)}" aria-hidden="true"><b class="ad-src-mark">${esc(srcMark(f.source, f.name))}</b></span>
+                <span class="ad-lt-text"><strong>${esc(f.name)} · ${esc(KIND[f.kind] ? KIND[f.kind][0] : f.kind)}</strong><small>${off ? "Switched off" : x ? (x.ok ? `${x.n} stories · ${ago(x.at)}` : `Failed ${ago(x.at)}: ${esc(x.error || "")}`) : "Not asked yet on this device"}</small></span><i class="ad-svc-dot" aria-hidden="true"></i></div>`;
+            })
+            .join("")
+        ),
+        3,
+        "As this browser last asked them (open Movie News, or Refresh there, to ask again)."
+      );
+      const storiesPanel = box(
+        "news-stories",
+        "fa-newspaper",
+        "Stories",
+        `<div class="ad-stories" data-stories><p class="sv-note">Loading the news…</p></div>`,
+        3,
+        "Promote: first on Movie News for two days · Breaking: marked as breaking · Hide: kept off Movie News · Tick two or more, then Merge: shown as one story. Save changes to send it to everyone."
+      );
+      const pinnedPanel = box(
+        "news-pinned",
+        "fa-thumbtack",
+        "Pinned stories",
+        `${pins.map((pp, i) => `<span class="ad-chip">${esc(pp.title)}<button type="button" data-rm="news.featured" data-i="${i}" aria-label="Remove"><i class="fa-solid fa-xmark"></i></button></span>`).join("") || '<p class="muted">None pinned.</p>'}
           <div class="ad-pin">
             <input class="input" name="title" placeholder="Headline" maxlength="160" />
             <input class="input" name="link" placeholder="https://… (the story)" />
@@ -906,8 +927,12 @@
             <input class="input" name="image" placeholder="Picture address (https://…, optional)" />
             <textarea class="input" name="excerpt" rows="2" maxlength="300" placeholder="A line or two (optional)"></textarea>
             <button class="btn ad-pin-add" type="button"><i class="fa-solid fa-thumbtack"></i> Pin it</button>
-          </div>`, "Your own story, first on Movie News (the top one as the big story).")}
-      </div>`;
+          </div>`,
+        3,
+        "Your own story, first on Movie News (the top one as the big story)."
+      );
+      const panel = { sources: sourcesPanel, ranking: rankingPanel, stories: storiesPanel, feeds: feedsPanel, pinned: pinnedPanel }[tab];
+      return `${tabsHtml}<div class="ad-grid">${panel}</div>`;
     },
     apis() {
       const st = Api.status();
@@ -1738,6 +1763,14 @@
   // News → Stories: the latest stories (as readers get them, plus the hidden ones), each with Promote,
   // Breaking, Hide, and a tick for Merge
   let newsCache = null;
+  // News: the tab open (Sources, Ranking, Stories, Feeds, Pinned), kept while you're here
+  let newsTab = (() => {
+    try {
+      return sessionStorage.getItem("mn:adNewsTab") || "sources";
+    } catch (e) {
+      return "sources";
+    }
+  })();
   const linkOf = (x) => (x && x.link) || x;
   const inList = (path, link) => (getPath(path) || []).some((x) => linkOf(x) === link);
   async function newsStories() {
@@ -2142,6 +2175,14 @@
     if (e.target.closest(".ad-key-test")) return tmdbKey("test");
     if (e.target.closest(".ad-key-clear")) return tmdbKey("clear");
     if (e.target.closest(".ad-test-all")) return testAll(e.target.closest(".ad-test-all"));
+    const nt = e.target.closest("[data-news-tab]");
+    if (nt) {
+      newsTab = nt.dataset.newsTab;
+      try {
+        sessionStorage.setItem("mn:adNewsTab", newsTab);
+      } catch (err) {}
+      return show(section);
+    }
     const st = e.target.closest("[data-story]");
     if (st) {
       const path = `news.${st.dataset.story}`;

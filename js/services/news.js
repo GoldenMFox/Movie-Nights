@@ -314,7 +314,13 @@
       .filter((x) => !seen.has(x.title.toLowerCase()) && seen.add(x.title.toLowerCase()));
   }
   const reEsc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const mentions = (hay, title) => new RegExp(`(^|[^\\w])${reEsc(title)}([^\\w]|$)`, "i").test(hay);
+  // does a story name this title (or person)? Written as it is, capitals and all ("Groundhog Day",
+  // not "groundhog day"); a one-word title only in quotes ('From', not "from" in a sentence)
+  function mentions(hay, title) {
+    const t = String(title).trim();
+    if (!/\s/.test(t)) return new RegExp(`[‘'"“]${reEsc(t)}[’'"”]`).test(hay);
+    return new RegExp(`(^|[^\\w])${reEsc(t)}([^\\w]|$)`).test(hay);
+  }
 
   // the scores' weights (the owner can change them: Admin → News → Ranking)
   const WEIGHTS = { authority: 35, recency: 30, importance: 30, relevance: 15 };
