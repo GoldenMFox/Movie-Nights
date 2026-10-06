@@ -223,6 +223,7 @@
         </div>
         <div class="wl-list-tools" hidden>
           <button type="button" class="btn btn-primary wl-add-panel"><i class="fa-solid fa-plus"></i> Add titles</button>
+          <button type="button" class="btn wl-marathon"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate marathon</button>
           <button type="button" class="btn wl-theme" data-feature="listThemes"><i class="fa-solid fa-wand-magic-sparkles"></i> Appearance</button>
           <button type="button" class="btn wl-rename"><i class="fa-solid fa-pen"></i> Edit list</button>
           <button type="button" class="btn wl-delete"><i class="fa-solid fa-trash-can"></i> Delete list</button>
@@ -659,6 +660,7 @@
     const add = e.target.closest("[data-add-to]");
     if (add) Cards.openListAdder(add.dataset.addTo);
     if (e.target.closest(".wl-add-panel") && PAGE.custom) Cards.openListAdder(PAGE.custom);
+    if (e.target.closest(".wl-marathon") && PAGE.custom && window.Marathon) Marathon.open(PAGE.custom);
     if (e.target.closest(".wl-theme") && PAGE.custom && window.ListThemes) ListThemes.picker(PAGE.custom);
     if (e.target.closest(".wl-rename") && PAGE.custom) editList(PAGE.custom);
     const edit = e.target.closest("[data-edit-list]");

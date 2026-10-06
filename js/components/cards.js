@@ -458,6 +458,64 @@
   let adderList = null;
   let adderTimer;
   let adderHits = []; // TMDB results shown right now
+  // what your library is narrowed to (kept while the page is open): kind, which of your titles,
+  // genre, order, how many shown, and whether the ones already in the list are left out
+  const adderF = { type: "", show: "", genre: "", sort: "recent", hideIn: false, n: 40 };
+  const ADDER_SHOW = [
+    ["", "All your titles"],
+    ["watched", "Watched"],
+    ["watchlist", "On your Watchlist"],
+    ["fav", "Favorites"],
+    ["rated8", "Rated 8+"],
+  ];
+  const ADDER_SORT = [
+    ["recent", "Recently added"],
+    ["rating", "Your score"],
+    ["new", "Newest first"],
+    ["old", "Oldest first"],
+    ["az", "A–Z"],
+  ];
+  const adderSorts = {
+    recent: (a, b) => b.order - a.order,
+    rating: (a, b) => (b.rating ?? -1) - (a.rating ?? -1) || b.order - a.order,
+    new: (a, b) => (b.year || 0) - (a.year || 0),
+    old: (a, b) => (a.year || 9999) - (b.year || 9999),
+    az: (a, b) => Lang.title(a).localeCompare(Lang.title(b)),
+  };
+  const adderShows = {
+    "": () => true,
+    watched: (i) => Store.isWatched(i),
+    watchlist: (i) => i.watchlist,
+    fav: (i) => i.favorite,
+    rated8: (i) => i.rating != null && i.rating >= 8,
+  };
+  // your library, narrowed by the filters (and what you typed)
+  function adderMine(q, list) {
+    return Store.all()
+      .filter((i) => !q || Lang.matches(i, q.toLowerCase()))
+      .filter((i) => !adderF.type || i.type === adderF.type)
+      .filter(adderShows[adderF.show] || adderShows[""])
+      .filter((i) => !adderF.genre || (i.genres || []).includes(adderF.genre))
+      .filter((i) => !adderF.hideIn || !list.items.includes(i.id))
+      .sort(adderSorts[adderF.sort] || adderSorts.recent);
+  }
+  function adderFilters() {
+    const genres = [...new Set(Store.all().flatMap((i) => i.genres || []))].sort();
+    if (adderF.genre && !genres.includes(adderF.genre)) adderF.genre = "";
+    const sel = (name, label, opts, value) =>
+      `<span class="glass-select small"><select data-adf="${name}" aria-label="${label}">${opts
+        .map(([v, l]) => `<option value="${esc(v)}"${v === value ? " selected" : ""}>${esc(l)}</option>`)
+        .join("")}</select></span>`;
+    return `<div class="top10-switch ad-types" role="group" aria-label="Kind">${[["", "All"], ["movie", "Movies"], ["tv", "TV"], ["anime", "Anime"]]
+      .map(([v, l]) => `<button type="button" class="top10-tab${adderF.type === v ? " active" : ""}" data-adf-type="${v}">${l}</button>`)
+      .join("")}</div>
+      <div class="ad-selects">
+        ${sel("show", "Which titles", ADDER_SHOW, adderF.show)}
+        ${sel("genre", "Genre", [["", "All genres"]].concat(genres.map((g) => [g, g])), adderF.genre)}
+        ${sel("sort", "Order", ADDER_SORT, adderF.sort)}
+        <label class="ad-hide-in"><input type="checkbox" data-adf="hideIn"${adderF.hideIn ? " checked" : ""} /> Hide ones in the list</label>
+      </div>`;
+  }
 
   function openListAdder(listId) {
     const list = Store.lists().find((l) => l.id === listId);
@@ -467,11 +525,13 @@
       adder = makeOverlay(
         "adder-modal",
         `<h3 class="ad-title"></h3>
+         <button type="button" class="ad-marathon" hidden><span><i class="fa-solid fa-wand-magic-sparkles"></i></span><b>Generate a marathon</b><small>The best-loved films for it, picked for you</small><i class="fa-solid fa-chevron-right"></i></button>
          <form class="glass-search ad-search" role="search">
            <i class="fa-solid fa-magnifying-glass gs-icon" aria-hidden="true"></i>
            <input type="search" name="q" placeholder="Search a movie, show or anime…" aria-label="Search" autocomplete="off" />
          </form>
-         <p class="ad-hint"></p>
+         <div class="ad-filters"></div>
+         <div class="ad-hint-row"><p class="ad-hint"></p><button type="button" class="btn ad-all" hidden></button></div>
          <div class="ad-results"></div>`
       );
       const input = adder.querySelector('[name="q"]');
@@ -484,7 +544,38 @@
         clearTimeout(adderTimer);
         adderTimer = setTimeout(() => fillAdder(input.value), 300);
       });
+      // the filters: drawn again with the list
+      adder.addEventListener("change", (e) => {
+        const f = e.target.dataset.adf;
+        if (!f) return;
+        adderF[f] = f === "hideIn" ? e.target.checked : e.target.value;
+        adderF.n = 40;
+        fillAdder(input.value);
+      });
       adder.addEventListener("click", (e) => {
+        const t = e.target.closest("[data-adf-type]");
+        if (t) {
+          adderF.type = t.dataset.adfType;
+          adderF.n = 40;
+          return fillAdder(input.value);
+        }
+        if (e.target.closest(".ad-show-more")) {
+          adderF.n += 40;
+          return fillAdder(input.value);
+        }
+        if (e.target.closest(".ad-marathon")) {
+          close(adder);
+          return window.Marathon && Marathon.open(adderList);
+        }
+        // every title shown (from your library) into the list at once
+        const all = e.target.closest(".ad-all");
+        if (all) {
+          const list = Store.lists().find((l) => l.id === adderList);
+          const ids = adderMine(input.value.trim(), list).slice(0, adderF.n).map((i) => i.id).filter((id) => !list.items.includes(id));
+          ids.slice().reverse().forEach((id) => Store.toggleInList(adderList, id));
+          toast(`${ids.length} title${ids.length === 1 ? "" : "s"} added to “${list.name}”`);
+          return fillAdder(input.value);
+        }
         const b = e.target.closest("[data-ad]");
         if (!b) return;
         let id = b.dataset.ad;
@@ -498,12 +589,20 @@
           b.dataset.ad = id;
           delete b.dataset.hit;
         }
+        adderCount();
       });
     }
     adder.querySelector(".ad-title").textContent = `Add to "${list.name}"`;
+    adder.querySelector(".ad-marathon").hidden = !window.Marathon;
     adder.querySelector('[name="q"]').value = "";
     fillAdder("");
     open(adder);
+  }
+
+  // the title: how many are in the list now
+  function adderCount() {
+    const list = Store.lists().find((l) => l.id === adderList);
+    if (list) adder.querySelector(".ad-title").innerHTML = `Add to "${esc(list.name)}" <small>${list.items.length} in it</small>`;
   }
 
   async function fillAdder(query) {
@@ -511,7 +610,9 @@
     const hint = adder.querySelector(".ad-hint");
     const list = Store.lists().find((l) => l.id === adderList);
     if (!list) return;
+    adderCount();
     const q = query.trim();
+    adder.querySelector(".ad-filters").innerHTML = Store.all().length ? adderFilters() : "";
     const row = (t, attrs, sub) => {
       const on = attrs.id && list.items.includes(attrs.id);
       return `<div class="ad-row">
@@ -521,14 +622,18 @@
             ${on ? '<i class="fa-solid fa-check"></i> Added' : '<i class="fa-solid fa-plus"></i> Add'}</button>
         </div>`;
     };
-    // nothing typed: suggestions from your library (newest first)
-    const mine = Store.all()
-      .filter((i) => !q || Lang.matches(i, q.toLowerCase()))
-      .sort((a, b) => b.order - a.order)
-      .slice(0, q ? 8 : 12);
-    const mineHtml = mine.map((i) => row(i, { id: i.id }, "in your library")).join("");
-    hint.textContent = q ? "" : "Type a name, or pick from your library:";
-    box.innerHTML = mineHtml || (q ? "" : '<p class="ad-empty">Your library is empty: search above.</p>');
+    // your library, narrowed by the filters (typed: the matches first, then TMDB's)
+    const all = adderMine(q, list);
+    const mine = all.slice(0, q ? 8 : adderF.n);
+    const mineHtml =
+      mine.map((i) => row(i, { id: i.id }, "in your library")).join("") +
+      (!q && all.length > mine.length ? `<button type="button" class="btn ad-show-more">Show more <small>${all.length - mine.length} left</small></button>` : "");
+    hint.textContent = q ? "" : all.length ? `${all.length} title${all.length === 1 ? "" : "s"} from your library` : "";
+    const notIn = mine.filter((i) => !list.items.includes(i.id)).length;
+    const addAll = adder.querySelector(".ad-all");
+    addAll.hidden = !!q || notIn < 2;
+    addAll.innerHTML = `<i class="fa-solid fa-plus"></i> Add all ${notIn}`;
+    box.innerHTML = mineHtml || (q ? "" : Store.all().length ? '<p class="ad-empty">Nothing in your library matches these filters.</p>' : '<p class="ad-empty">Your library is empty: search above.</p>');
     if (!q || !window.TMDB || !TMDB.enabled()) return;
 
     box.insertAdjacentHTML("beforeend", '<p class="ad-loading"><i class="fa-solid fa-spinner fa-spin"></i> Searching TMDB…</p>');
@@ -536,7 +641,7 @@
       const { results } = await TMDB.searchSmart(q, "all", 1);
       if (adder.querySelector('[name="q"]').value.trim() !== q) return; // typed something else meanwhile
       const ids = new Set(mine.map((i) => i.id));
-      adderHits = results.filter((h) => h.poster).slice(0, 12);
+      adderHits = results.filter((h) => h.poster && (!adderF.type || h.type === adderF.type)).slice(0, 12);
       const tmdbHtml = adderHits
         .map((h, n) => {
           const lib = inLibrary(h);
