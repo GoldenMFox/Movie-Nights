@@ -23,7 +23,7 @@
     tvmaze: { label: "TVmaze", gap: 520, burst: 2, site: "https://www.tvmaze.com/api" },
     anilist: { label: "AniList", gap: 750, burst: 1, site: "https://anilist.co" },
     openlibrary: { label: "Open Library", gap: 350, burst: 2, timeout: 15000, site: "https://openlibrary.org/developers/api" },
-    news: { label: "News feeds (rss2json)", gap: 600, burst: 2, site: "https://rss2json.com" },
+    news: { label: "News feeds (rss2json)", gap: 120, burst: 6, site: "https://rss2json.com" },
     itunes: { label: "Apple Music (iTunes)", gap: 150, burst: 3, site: "https://performance-partners.apple.com/search-api" },
   };
   const TIMEOUT = 12000;

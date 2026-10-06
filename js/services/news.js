@@ -9,6 +9,8 @@
  *
  * The owner can change the feeds and hide sources (Admin Control Center → News); answers are
  * kept 30 minutes (Admin → API integrations), so the feeds are asked at most twice an hour.
+ * Fast: every feed is asked at once and the page gets each one's stories as it answers; the last
+ * news is kept in this browser (mn:newsSnap) and shown straight away the next time.
  */
 (function () {
   const FEEDS = [
@@ -77,12 +79,10 @@
     });
   }
 
-  // every feed, newest first, the same story once. -> { stories, failed: [names], at }
-  async function latest() {
-    const list = feeds();
-    const results = await Promise.all(list.map((f) => feed(f).then((s) => ({ s })).catch((e) => ({ e, f }))));
+  // stories from several feeds: newest first, the same story once
+  function merge(results) {
     const seen = new Set();
-    const stories = results
+    return results
       .flatMap((r) => r.s || [])
       .filter((s) => s.title && s.link)
       .filter((s) => {
@@ -93,10 +93,44 @@
         return true;
       })
       .sort((a, b) => b.date - a.date);
-    const failed = results.filter((r) => r.e).map((r) => r.f.name);
-    if (!stories.length && failed.length) throw new Error("The news feeds couldn't be reached");
-    return { stories, failed, at: Date.now() };
   }
 
-  window.News = { FEEDS, CATEGORIES, KIND_LABEL, feeds, latest };
+  // every feed at once. -> { stories, failed: [names], at }. onPart (optional) gets the stories so
+  // far each time a feed answers, so the page can show them without waiting for the slowest one
+  async function latest(onPart) {
+    const list = feeds();
+    const results = [];
+    await Promise.all(
+      list.map((f) =>
+        feed(f)
+          .then((s) => results.push({ s }))
+          .catch((e) => results.push({ e, f }))
+          .then(() => onPart && results.some((r) => r.s) && onPart({ stories: merge(results), failed: [], at: Date.now(), partial: true }))
+      )
+    );
+    const stories = merge(results);
+    const failed = results.filter((r) => r.e).map((r) => r.f.name);
+    if (!stories.length && failed.length) throw new Error("The news feeds couldn't be reached");
+    const out = { stories, failed, at: Date.now() };
+    keep(out);
+    return out;
+  }
+
+  // the last news this browser got, shown the moment the page opens (then the fresh news comes in)
+  const SNAP = "mn:newsSnap";
+  function keep(r) {
+    try {
+      localStorage.setItem(SNAP, JSON.stringify({ at: r.at, stories: r.stories.slice(0, 120) }));
+    } catch (e) {}
+  }
+  function saved() {
+    try {
+      const v = JSON.parse(localStorage.getItem(SNAP) || "null");
+      return v && Array.isArray(v.stories) && v.stories.length ? v : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  window.News = { FEEDS, CATEGORIES, KIND_LABEL, feeds, latest, saved };
 })();
