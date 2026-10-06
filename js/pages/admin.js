@@ -417,8 +417,14 @@
       .join("")}</div>`;
   }
 
+  // the notice as everyone will see it (Website)
+  const noticePreview = () =>
+    `<div class="site-notice sn-preview${draft.notice.tone === "warn" ? " warn" : ""}" aria-hidden="true">${Site.noticeInner(Object.assign({}, draft.notice, { text: draft.notice.text || "Write the notice's text below" }))}</div>`;
+
   // the Overview's live parts, drawn again as the settings change (the charts stay)
   function paintOverview() {
+    const pv = root.querySelector("[data-notice-preview]");
+    if (pv) pv.innerHTML = noticePreview();
     if (section !== "overview") return;
     const put = (sel, html) => {
       const el = root.querySelector(sel);
@@ -663,8 +669,10 @@
           "fa-bullhorn",
           "Notice across the top",
           `${tiles(tileK("notice.on", "fa-bullhorn", "#ff6b6f", "Show it", "On every page, until a visitor closes it", draft.notice.on))}
-          ${text("notice.text", "Text", draft.notice.text, 'maxlength="160" placeholder="New: Movie News!"')}
+          ${part("Preview", "", `<div class="ad-notice-preview" data-notice-preview>${noticePreview()}</div>`)}
+          ${text("notice.text", "Text", draft.notice.text, 'maxlength="160" placeholder="Movie News is here: the day\'s stories, in one place"')}
           ${text("notice.link", "Link (optional)", draft.notice.link, 'placeholder="news.html or https://…"')}
+          <div class="ad-two">${text("notice.label", "Its word (optional)", draft.notice.label, 'maxlength="16" placeholder="New / Heads up"')}${text("notice.cta", "Button (optional)", draft.notice.cta, 'maxlength="24" placeholder="Learn more"')}</div>
           ${part("Look", "", `<div class="ad-opts ad-opts-2">${opt("notice.tone", "info", draft.notice.tone || "info", "fa-bullhorn", "News", "Red, a bullhorn", "#ff6b6f")}${opt("notice.tone", "warn", draft.notice.tone || "info", "fa-triangle-exclamation", "Warning", "Amber", "#f5c518")}</div>`)}
           <div class="ad-two">${text("notice.from", "From (optional)", draft.notice.from, 'type="date"')}${text("notice.until", "Until (optional)", draft.notice.until, 'type="date"')}</div>`,
           2,

@@ -27288,47 +27288,240 @@ html.no-list-fx .lt .poster-link::after {
 }
 
 /* ============================== Site-wide: the notice and maintenance (js/core/site.js) ============================== */
+/* the notice across the top: dark glass like the navbar, the tone's glow coming in from the left
+   (red: news, amber: a warning), a film strip's holes along both edges, a light sweeping across now
+   and then; a pill with its word (pulsing softly), the text, a button to the link. Slides in, folds
+   away when closed */
 .site-notice {
+  --sn: 229, 9, 20;
+  --sn-hi: #ff5a52;
   position: relative;
   z-index: 60;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 9px 48px 9px 16px;
-  background: linear-gradient(90deg, rgba(185, 34, 34, 0.95), rgba(144, 13, 9, 0.95));
+  overflow: hidden;
+  padding: 11px 56px 11px 16px;
+  border-bottom: 1px solid rgba(var(--sn), 0.35);
+  background:
+    radial-gradient(55% 220% at 0% 50%, rgba(var(--sn), 0.5), transparent 70%),
+    radial-gradient(35% 200% at 100% 50%, rgba(var(--sn), 0.16), transparent 70%),
+    linear-gradient(180deg, #17171a, #0d0d0f);
+  box-shadow: 0 10px 30px -18px rgba(var(--sn), 0.9);
   color: #fff;
   font-size: 14px;
-  text-align: center;
+  animation: sn-in 0.6s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 .site-notice.warn {
-  background: linear-gradient(90deg, #a86a00, #8a5200);
+  --sn: 245, 166, 35;
+  --sn-hi: #ffc75a;
 }
 
-.site-notice a {
+/* (the film strip's holes, top and bottom) */
+.site-notice::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0 7px, transparent 7px 17px) 0 2px / 100% 3px no-repeat,
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0 7px, transparent 7px 17px) 0 calc(100% - 2px) / 100% 3px no-repeat;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* (the light sweeping across) */
+.site-notice::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.1) 45%, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0.1) 55%, transparent);
+  transform: translateX(-120%) skewX(-12deg);
+  pointer-events: none;
+  animation: sn-sweep 7s ease-in-out 1.2s infinite;
+}
+
+.sn-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  max-width: 1550px;
+  margin: 0 auto;
+}
+
+.sn-badge {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 7px;
+  padding: 5px 11px 5px 9px;
+  border: 1px solid rgba(var(--sn), 0.6);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(var(--sn), 0.55), rgba(var(--sn), 0.2));
   color: #fff;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  animation: sn-pulse 2.6s ease-out infinite;
+}
+
+.sn-badge i {
+  font-size: 12px;
+}
+
+.sn-badge b {
+  font-weight: 800;
+}
+
+.sn-text {
+  min-width: 0;
+  font-weight: 500;
+  line-height: 1.4;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+}
+
+.sn-cta {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 8px;
+  padding: 6px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font-size: 13px;
   font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.sn-cta i {
+  font-size: 11px;
+  transition: transform 0.2s;
+}
+
+.sn-cta:hover {
+  border-color: rgba(var(--sn), 0.8);
+  background: rgba(var(--sn), 0.35);
+}
+
+.sn-cta:hover i {
+  transform: translateX(3px);
 }
 
 .site-notice-x {
   position: absolute;
-  right: 8px;
+  z-index: 1;
+  right: 12px;
   top: 50%;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  border: 0;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
   transform: translateY(-50%);
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.site-notice-x:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  transform: translateY(-50%) rotate(90deg);
 }
 
 html.app-ui .site-notice {
-  padding-top: calc(9px + env(safe-area-inset-top, 0px));
+  padding-top: calc(11px + env(safe-area-inset-top, 0px));
+}
+
+@keyframes sn-in {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes sn-sweep {
+  0% {
+    transform: translateX(-120%) skewX(-12deg);
+  }
+  30%,
+  100% {
+    transform: translateX(320%) skewX(-12deg);
+  }
+}
+
+@keyframes sn-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--sn), 0.55);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 9px rgba(var(--sn), 0);
+  }
+}
+
+@media (max-width: 700px) {
+  .site-notice {
+    padding: 9px 46px 9px 12px;
+    font-size: 13px;
+  }
+
+  .sn-inner {
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  /* (the pill shows its icon only, the button its arrow only) */
+  .sn-badge {
+    padding: 6px;
+  }
+
+  .sn-badge b,
+  .sn-cta span {
+    display: none;
+  }
+
+  .sn-cta {
+    padding: 7px 9px;
+  }
+
+  .sn-text {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .site-notice-x {
+    right: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-notice,
+  .site-notice::after,
+  .sn-badge {
+    animation: none;
+  }
+}
+
+/* the Admin's preview of it (Website → Notice across the top) */
+.ad-notice-preview .site-notice {
+  border: 1px solid rgba(var(--sn), 0.35);
+  border-radius: 14px;
+  animation: none;
+}
+
+.ad-notice-preview .site-notice-x {
+  pointer-events: none;
 }
 
 /* maintenance: everyone but the owner sees only this */

@@ -21,7 +21,8 @@
   const DEFAULTS = {
     branding: { name: "Movie Nights", tagline: "Your own private diary of movies, TV shows and anime.", accent: "" },
     maintenance: { on: false, message: "We're making a few changes. Back in a moment!" },
-    notice: { on: false, text: "", link: "", tone: "info", from: "", until: "" }, // (from / until: days, optional)
+    // (from / until: days, optional · label: the word in its pill, "New" / "Heads up" when empty · cta: its button)
+    notice: { on: false, text: "", link: "", tone: "info", from: "", until: "", label: "", cta: "" },
     // a message to every member's bell (Admin → Notifications): { id, title, text, link, at } or null
     announce: null,
     // the title page's rows, top to bottom, and the ones left out (Admin → Title page)
@@ -207,13 +208,28 @@
       el.addEventListener("click", (e) => {
         if (!e.target.closest(".site-notice-x")) return;
         Store.write("mn:noticeClosed", el.dataset.sig);
-        el.remove();
+        // (folds up, then it's gone)
+        const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches || !el.animate;
+        if (still) return el.remove();
+        el.animate([{ height: `${el.offsetHeight}px`, opacity: 1 }, { height: "0px", opacity: 0, paddingTop: "0px", paddingBottom: "0px" }], { duration: 320, easing: "cubic-bezier(0.32, 0.72, 0, 1)" }).finished.then(() => el.remove());
       });
     }
     el.dataset.sig = sig;
-    el.className = `site-notice ${n.tone === "warn" ? "warn" : ""}`;
-    el.innerHTML = `<i class="fa-solid ${n.tone === "warn" ? "fa-triangle-exclamation" : "fa-bullhorn"}" aria-hidden="true"></i>
-      <span>${esc(n.text)}${/^(https?:\/\/|[\w-]+\.html)/.test(n.link || "") ? ` <a href="${esc(n.link)}">Learn more</a>` : ""}</span>
+    el.className = `site-notice${n.tone === "warn" ? " warn" : ""}`;
+    el.innerHTML = noticeInner(n);
+  }
+  // the banner's inside (also the Admin's preview): a pill with its word, the text, a button to the
+  // link, the close button. The look (css: .site-notice): dark glass with the tone's glow, a film
+  // strip's holes along its edges, a light sweeping across now and then
+  function noticeInner(n) {
+    const warn = n.tone === "warn";
+    const link = /^(https?:\/\/|[\w-]+\.html)/.test(n.link || "") ? n.link : "";
+    const outside = /^https?:/.test(link) && !link.startsWith(location.origin);
+    return `<div class="sn-inner">
+        <span class="sn-badge"><i class="fa-solid ${warn ? "fa-triangle-exclamation" : "fa-bullhorn"}" aria-hidden="true"></i><b>${esc(n.label || (warn ? "Heads up" : "New"))}</b></span>
+        <span class="sn-text">${esc(n.text || "")}</span>
+        ${link ? `<a class="sn-cta" href="${esc(link)}"${outside ? ' target="_blank" rel="noopener"' : ""}><span>${esc(n.cta || "Learn more")}</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>` : ""}
+      </div>
       <button type="button" class="site-notice-x" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>`;
   }
 
@@ -339,5 +355,5 @@
     return { order, hidden: (t.hidden || []).filter((k) => known.includes(k)) };
   }
 
-  window.Site = { TITLE_ROWS, PERSON_ROWS, HOME_ROWS, titleRows, personRows, homeRows, rowsOf, DEFAULTS, get, feature, api, navHidden, state, blocked, refresh, save, onChange: (fn) => listeners.push(fn), merge };
+  window.Site = { noticeInner, TITLE_ROWS, PERSON_ROWS, HOME_ROWS, titleRows, personRows, homeRows, rowsOf, DEFAULTS, get, feature, api, navHidden, state, blocked, refresh, save, onChange: (fn) => listeners.push(fn), merge };
 })();
