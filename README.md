@@ -218,7 +218,7 @@ Trailers play in the best quality available; if YouTube blocks one on other site
 
 ## Phones and tablets
 
-- **Phones** (browser and installed app): a floating tab bar at the bottom (Home · Library · Search · News · Watchlist; Library opens a panel with your lists, Tier List, Box Office and Explore anime; Explore lives inside Movies / TV Shows / Anime; it slides away while you scroll down and comes back when you scroll up, near the top or at the end of a page), and poster-only cards, 2 per row.
+- **Phones** (browser and installed app): a floating tab bar at the bottom (Home · Library · Search · News · Watchlist; Library opens a panel with your lists, Tier List and Box Office; Explore lives inside Movies / TV Shows / Anime; it slides away while you scroll down and comes back when you scroll up, near the top or at the end of a page), and poster-only cards, 2 per row.
 - **Tablets / iPad**: the pill navbar on top, a full-width slideshow and poster-only cards (4 per row
   upright). Add `?tablet=1` to any address to preview it on a computer (`?tablet=0` to stop).
 

@@ -470,11 +470,11 @@
       </div>
       <nav class="footer-col" aria-label="Browse">
         <h3>Browse</h3>
-        <ul>${PAGES.slice(0, 5).map(footLink).join("")}${footLink({ id: "animeExplore", href: "anime-explore.html", label: "Explore anime", icon: "fa-solid fa-dragon" })}${footLink(page("news"))}</ul>
+        <ul>${PAGES.slice(0, 5).map(footLink).join("")}${footLink(page("news"))}</ul>
       </nav>
       <nav class="footer-col" aria-label="My lists">
         <h3>My lists</h3>
-        <ul>${PAGES.slice(5, 6).map(footLink).join("")}${footLink({ href: "watchlist.html?list=fav", label: "Favorites", icon: "fa-solid fa-heart" })}${[page("tiers"), page("boxoffice")].map(footLink).join("")}${footLink({ href: "profile.html", label: "Profile &amp; stats", icon: "fa-solid fa-user" })}${footLink({ href: "settings.html", label: "Settings", icon: "fa-solid fa-gear" })}</ul>
+        <ul>${footLink({ href: "watchlist.html?list=fav", label: "Favorites", icon: "fa-solid fa-heart" })}${[page("tiers"), page("boxoffice")].map(footLink).join("")}${footLink({ href: "profile.html", label: "Profile &amp; stats", icon: "fa-solid fa-user" })}${footLink({ href: "settings.html", label: "Settings", icon: "fa-solid fa-gear" })}</ul>
       </nav>
     </div>
     <div class="footer-bottom">
@@ -830,7 +830,6 @@
       { href: "watchlist.html?list=fav", label: "Favorites", icon: "fa-heart", n: count((i) => i.favorite) },
       { href: "tier-list.html", label: "Tier List", icon: "fa-ranking-star", n: null },
       { href: "box-office.html", label: "Box Office", icon: "fa-sack-dollar", n: null, nav: "boxoffice" },
-      { href: "anime-explore.html", label: "Explore anime", icon: "fa-compass", n: null, nav: "animeExplore" },
     ];
     makeSheet(
       "library",

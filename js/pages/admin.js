@@ -50,7 +50,7 @@
   ];
   const PAGE_NAMES = [
     ["home", "Home"], ["movie", "Movies"], ["tv", "TV Shows"], ["anime", "Anime"], ["watchlist", "Watchlist"],
-    ["tiers", "Tier List"], ["boxoffice", "Box Office"], ["news", "News"], ["animeExplore", "Explore anime (phones' Library tab, footer)"],
+    ["tiers", "Tier List"], ["boxoffice", "Box Office"], ["news", "News"],
   ];
   const FEATURES = [
     ["picker", "What should I watch?", "The shuffle button in the navbar"],
@@ -59,7 +59,7 @@
     ["xray", "X-Ray", "Behind-the-scenes facts on title pages"],
     ["tvmaze", "Episodes & air times", "TVmaze's episode guide on show pages"],
     ["animeDetails", "Anime details", "The AniList card on anime title pages"],
-    ["animeExplore", "Anime explorer", "anime-explore.html"],
+    ["animeExplore", "Anime explorer", "anime-explore.html, the Explore button on Anime"],
     ["books", "Books", "The book a title is based on, a person's books (Open Library)"],
     ["news", "Movie News", "news.html"],
     ["boxOffice", "Box Office", "box-office.html"],
@@ -538,7 +538,6 @@
     tiers: ["fa-ranking-star", "Rank titles in tiers"],
     boxoffice: ["fa-sack-dollar", "This weekend's numbers"],
     news: ["fa-newspaper", "Movie News"],
-    animeExplore: ["fa-compass", "The anime explorer (phones' Library tab, footer)"],
   };
   const FEATURE_LOOK = {
     picker: "fa-shuffle", trivia: "fa-circle-question", soundtrack: "fa-music", xray: "fa-bolt", tvmaze: "fa-calendar-days", animeDetails: "fa-dragon",
