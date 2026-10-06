@@ -26569,20 +26569,180 @@ html.no-list-fx .lt .poster-link::after {
   margin-top: 16px;
 }
 
-/* Admin → Themes: the atmospheres by kind, side by side across the whole row */
-.ad-lt-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 6px 28px;
+/* Admin → Themes: the atmospheres on offer, a tile each (a preview in its colours, its name and what
+   it shows, its switch), by kind, each kind with its count and All on / All off */
+.ad-lt-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--glass-border);
 }
 
-.ad-lt-sub {
-  margin: 16px 0 6px;
+.ad-lt-total {
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+.ad-lt-total b {
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.ad-lt-all {
+  display: flex;
+  gap: 8px;
+}
+
+.ad-lt-all .btn {
+  padding: 7px 13px;
+  font-size: 13px;
+}
+
+.ad-lt-group {
+  display: grid;
+  gap: 12px;
+  padding: 16px 0 4px;
+}
+
+.ad-lt-group + .ad-lt-group {
+  border-top: 1px solid var(--glass-border);
+}
+
+.ad-lt-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ad-lt-head h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ad-lt-count {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-muted);
   font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.ad-lt-gbtns {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.ad-lt-gbtns button {
+  padding: 4px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.ad-lt-gbtns button:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+}
+
+.ad-lt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.ad-lt-tile {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 10px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.025);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, opacity 0.2s;
+}
+
+.ad-lt-tile:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ad-lt-swatch {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid;
+  border-radius: 13px;
+  font-size: 22px;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.35);
+  transition: filter 0.2s;
+}
+
+.ad-lt-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ad-lt-text strong {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-lt-text small {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.ad-lt-tile.off {
+  background: transparent;
+}
+
+.ad-lt-tile.off .ad-lt-swatch {
+  filter: grayscale(1) brightness(0.6);
+}
+
+.ad-lt-tile.off .ad-lt-text {
+  opacity: 0.55;
+}
+
+:root[data-theme="light"] .ad-lt-tile:hover,
+:root[data-theme="light"] .ad-lt-gbtns button:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="light"] .ad-lt-count {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+@media (max-width: 640px) {
+  .ad-lt-head {
+    flex-wrap: wrap;
+  }
 }
 
 /* ============================== Site-wide: the notice and maintenance (js/core/site.js) ============================== */

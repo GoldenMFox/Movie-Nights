@@ -372,6 +372,58 @@
     }
   }
 
+  /* ---------------- Atmosphere & themes: the atmospheres on offer, as tiles ---------------- */
+
+  // a small preview in the atmosphere's own colours
+  const swatch = (c) =>
+    `background:radial-gradient(70% 70% at 25% 25%, ${c.a}, transparent 70%), radial-gradient(70% 70% at 80% 80%, ${c.b}, transparent 70%), radial-gradient(60% 60% at 80% 20%, ${c.c || c.a}, transparent 70%), linear-gradient(${c.base}, ${c.base}), #0e0e10;border-color:${c.edge || "rgba(255,255,255,0.12)"}`;
+  function offerHtml(off) {
+    const all = ListThemes.THEMES;
+    const on = all.filter((t) => !off.includes(t.id)).length;
+    return `<div class="ad-lt-top"><span class="ad-lt-total" data-lt-total><b>${on}</b> of ${all.length} on</span>
+        <span class="ad-lt-all"><button type="button" class="btn" data-lt-all="1"><i class="fa-solid fa-check-double"></i> All on</button><button type="button" class="btn" data-lt-all="0"><i class="fa-solid fa-xmark"></i> All off</button></span></div>
+      ${ListThemes.GROUPS.map(([g, title]) => {
+        const list = all.filter((t) => t.group === g);
+        const n = list.filter((t) => !off.includes(t.id)).length;
+        return `<section class="ad-lt-group" data-lt-group="${g}">
+          <header class="ad-lt-head"><h4>${esc(title)}</h4><span class="ad-lt-count" data-lt-count="${g}">${n} of ${list.length} on</span>
+            <span class="ad-lt-gbtns"><button type="button" data-lt-set="${g}" data-on="1">All on</button><button type="button" data-lt-set="${g}" data-on="0">All off</button></span></header>
+          <div class="ad-lt-grid">${list
+            .map(
+              (t) => `<label class="ad-lt-tile${off.includes(t.id) ? " off" : ""}" data-lt-tile="${t.id}">
+              <span class="ad-lt-swatch" style="${swatch(t.colors || {})}" aria-hidden="true">${t.emoji}</span>
+              <span class="ad-lt-text"><strong>${esc(t.label)}</strong><small>${esc(t.hint)}</small></span>
+              <span class="sv-switch"><input type="checkbox" data-theme-avail="${t.id}"${off.includes(t.id) ? "" : " checked"} aria-label="${esc(t.label)}" /><span class="switch-track"><span class="switch-thumb"></span></span></span>
+            </label>`
+            )
+            .join("")}</div></section>`;
+      }).join("")}`;
+  }
+  // the tiles and counts after a switch (without drawing the section again)
+  function paintOffer() {
+    const off = ListThemes.offOf(draft.themes);
+    const all = ListThemes.THEMES;
+    root.querySelectorAll("[data-lt-tile]").forEach((el) => {
+      const isOff = off.includes(el.dataset.ltTile);
+      el.classList.toggle("off", isOff);
+      el.querySelector("input").checked = !isOff;
+    });
+    ListThemes.GROUPS.forEach(([g]) => {
+      const el = root.querySelector(`[data-lt-count="${g}"]`);
+      const list = all.filter((t) => t.group === g);
+      if (el) el.textContent = `${list.filter((t) => !off.includes(t.id)).length} of ${list.length} on`;
+    });
+    const total = root.querySelector("[data-lt-total]");
+    if (total) total.innerHTML = `<b>${all.filter((t) => !off.includes(t.id)).length}</b> of ${all.length} on`;
+  }
+  // switch a few at once (a group, or all of them)
+  function setOffer(ids, on) {
+    const off = new Set(ListThemes.offOf(draft.themes));
+    ids.forEach((id) => (on ? off.delete(id) : off.add(id)));
+    setPath("themes.off", ListThemes.THEMES.map((t) => t.id).filter((id) => off.has(id)));
+    paintOffer();
+  }
+
   /* ---------------- the sections ---------------- */
 
   const render = {
@@ -613,18 +665,7 @@
           ${sw("themes.animations", "Animated atmosphere", "Snow, rain, embers, fog… on lists and pages. Off: the colours stay, nothing moves", draft.themes.animations !== false)}
           <p class="sv-note"><i class="fa-solid fa-circle-info"></i> A list on Auto gets one when its name or its titles point clearly at it (${Math.round(ListThemes.THRESHOLD * 100)}% sure or more).</p>`)}
         ${card("fa-circle-half-stroke", "Site theme", select("themes.siteDefault", "Theme for new visitors", draft.themes.siteDefault, [["dark", "Dark"], ["light", "Light"]]), "People who pick a theme themselves keep theirs.")}
-        ${card(
-          "fa-swatchbook",
-          "Atmospheres on offer",
-          ListThemes.GROUPS.map(
-            ([g, title]) => `<h4 class="xr-sub ad-lt-sub">${title}</h4><div class="ad-lt-grid">${ListThemes.THEMES.filter((t) => t.group === g)
-              .map(
-                (t) => `<div class="sv-row"><span class="sv-name"><strong>${t.emoji} ${esc(t.label)}</strong><small>${esc(t.hint)}</small></span>
-          <label class="sv-switch"><input type="checkbox" data-theme-avail="${t.id}"${off.includes(t.id) ? "" : " checked"} aria-label="${esc(t.label)}" /><span class="switch-track"><span class="switch-thumb"></span></span></label></div>`
-              )
-              .join("")}</div>`
-          ).join("")
-        ).replace("<section ", '<section data-box="lt-offer" ')}
+        ${card("fa-swatchbook", "Atmospheres on offer", offerHtml(off), "Switched off: people can't pick it for a list, and Auto never gives it.").replace("<section ", '<section data-box="lt-offer" ')}
       </div>`;
     },
     notifications() {
@@ -1348,7 +1389,8 @@
     if (el.dataset.themeAvail) {
       const off = new Set(ListThemes.offOf(draft.themes));
       el.checked ? off.delete(el.dataset.themeAvail) : off.add(el.dataset.themeAvail);
-      return setPath("themes.off", ListThemes.THEMES.map((t) => t.id).filter((id) => off.has(id)));
+      setPath("themes.off", ListThemes.THEMES.map((t) => t.id).filter((id) => off.has(id)));
+      return paintOffer();
     }
     if (el.classList.contains("ad-import")) {
       const f = el.files[0];
@@ -1471,6 +1513,10 @@
       return paintVeils(box.parentElement);
     }
     if (editing && e.target.closest(".ad-veil")) return; // (in Customize, a box's own buttons rest)
+    const lts = e.target.closest("[data-lt-set]");
+    if (lts) return setOffer(ListThemes.THEMES.filter((t) => t.group === lts.dataset.ltSet).map((t) => t.id), lts.dataset.on === "1");
+    const lta = e.target.closest("[data-lt-all]");
+    if (lta) return setOffer(ListThemes.THEMES.map((t) => t.id), lta.dataset.ltAll === "1");
     const ss = e.target.closest("[data-season-set]");
     if (ss) return setPath("themes.season", ss.dataset.seasonSet);
     if (e.target.closest(".ad-save-now")) return save(root.querySelector(".ad-save"));
