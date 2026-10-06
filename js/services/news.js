@@ -29,8 +29,9 @@
 (function () {
   // the sources: name, authority, tier (1 primary, 2 film publications, 3 supplementary), site
   const SOURCES = {
-    variety: { name: "Variety", priority: 100, tier: 1, site: "https://variety.com" },
-    thr: { name: "The Hollywood Reporter", priority: 100, tier: 1, site: "https://www.hollywoodreporter.com" },
+    // (wp: a WordPress site whose feed leaves its pictures out: they're asked from its posts API)
+    variety: { name: "Variety", priority: 100, tier: 1, site: "https://variety.com", wp: "https://variety.com" },
+    thr: { name: "The Hollywood Reporter", priority: 100, tier: 1, site: "https://www.hollywoodreporter.com", wp: "https://www.hollywoodreporter.com" },
     slashfilm: { name: "/Film", priority: 85, tier: 2, site: "https://www.slashfilm.com" },
     collider: { name: "Collider", priority: 75, tier: 2, site: "https://collider.com" },
     screenrant: { name: "Screen Rant", priority: 55, tier: 3, site: "https://screenrant.com" },
@@ -146,7 +147,7 @@
       throw e;
     }
     noteStatus(f.id, { ok: true, n: (r.items || []).length });
-    return (r.items || []).map((it) => {
+    const stories = (r.items || []).map((it) => {
       const title = text(it.title);
       const excerpt = text(it.description || it.content);
       const tags = (it.categories || []).join(" ");
@@ -170,8 +171,52 @@
         kind: kindOf(`${hay} ${excerpt}`, f.kind),
         cats,
         cat: cats[0] || "",
+        // (its number on a WordPress site: "?p=1236723194" or the link's end)
+        post: (String(it.guid || "").match(/[?&]p=(\d+)/) || String(it.link || "").match(/-(\d{6,})\/?$/) || [])[1] || "",
       };
     });
+    return withPictures(f, stories);
+  }
+
+  // a WordPress source's stories without a picture (The Hollywood Reporter's feed has none): their
+  // featured pictures from the site's posts API, all of a feed's in one request. Its own little ask
+  // (4 seconds at most, never holding the news up), and the pictures found are kept (mn:newsPics), so
+  // a story's picture is asked for once; when it can't be had, the story keeps its source's card
+  const PICS = "mn:newsPics";
+  const picsKept = () => {
+    try {
+      return JSON.parse(localStorage.getItem(PICS) || "{}");
+    } catch (e) {
+      return {};
+    }
+  };
+  async function withPictures(f, stories) {
+    const wp = (SOURCES[f.source] || {}).wp;
+    if (!wp) return stories;
+    const kept = picsKept();
+    const sized = (u) => `${u}${u.includes("?") ? "&" : "?"}w=800`;
+    stories.forEach((x) => !x.image && x.post && kept[x.post] && (x.image = sized(kept[x.post])));
+    const need = stories.filter((x) => !x.image && x.post);
+    if (!need.length) return stories;
+    const stop = new AbortController();
+    const timer = setTimeout(() => stop.abort(), 4000);
+    try {
+      const res = await fetch(`${wp}/wp-json/wp/v2/posts?include=${need.map((x) => x.post).join(",")}&per_page=${need.length}&_fields=id,jetpack_featured_media_url`, { signal: stop.signal, credentials: "omit" });
+      const posts = res.ok ? await res.json() : [];
+      (Array.isArray(posts) ? posts : []).forEach((x) => {
+        const u = safe(x.jetpack_featured_media_url);
+        if (u) kept[String(x.id)] = u;
+      });
+      need.forEach((x) => kept[x.post] && (x.image = sized(kept[x.post])));
+      // (the newest 400 kept)
+      const keys = Object.keys(kept);
+      if (keys.length > 400) keys.slice(0, keys.length - 400).forEach((k) => delete kept[k]);
+      localStorage.setItem(PICS, JSON.stringify(kept));
+    } catch (e) {
+    } finally {
+      clearTimeout(timer);
+    }
+    return stories;
   }
 
   /* ---------------- what kind of news it is (importance 0-100) ---------------- */
