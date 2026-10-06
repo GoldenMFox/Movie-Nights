@@ -27758,11 +27758,12 @@ button.xr-sq:hover {
   writing-mode: vertical-rl;
 }
 
-/* lifted: it rises off the shelf and shows its cover */
+/* lifted: it rises off the shelf and shows its cover, as wide as the cover's own shape (--cw, set
+   by js/pages/person.js once it loads), so none of it is cut off */
 .bk-book.up,
 .bk-book:focus-visible {
   z-index: 2;
-  width: 160px;
+  width: var(--cw, 160px);
   border-radius: 4px 8px 8px 4px;
   box-shadow: 0 22px 34px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
   transform: translateY(-26px) rotate(-1.5deg);
@@ -27836,7 +27837,7 @@ button.xr-sq:hover {
   }
 
   .bk-book.up {
-    width: 136px;
+    width: var(--cw, 136px);
   }
 }
 

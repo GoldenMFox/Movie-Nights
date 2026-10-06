@@ -458,16 +458,16 @@
     const book = (b) => {
       const meta = [b.authors[0], b.year].filter(Boolean).join(" · ");
       return `<a class="bk-book" href="${esc(safe(b.url) || "#")}" target="_blank" rel="noopener" style="--bh:${heightOf(b.title)}px" data-title="${esc(b.title)}" data-meta="${esc(meta)}" aria-label="${esc(`${b.title}${meta ? `, ${meta}` : ""}`)}">
-          ${safe(b.cover) ? `<img src="${esc(b.cover)}" alt="" loading="lazy" />` : ""}
+          ${safe(b.cover) ? `<img src="${esc(b.cover)}" alt="" loading="lazy" crossorigin="anonymous" />` : ""}
           <span class="bk-spine"><span>${esc(b.title)}</span></span>
         </a>`;
     };
     const shelf = (list) => `<div class="bk-shelf"><div class="bk-shelf-books">${list.map(book).join("")}<span class="bk-end" aria-hidden="true"></span></div><div class="bk-plank"></div><p class="bk-caption" aria-live="polite"></p></div>`;
     const start = async () => {
-      const r = await Books.forPerson(p.name).catch(() => null);
+      const r = await Books.forPerson(p.name, p.birthday).catch(() => null);
       if (!r || (!r.by.length && !r.about.length)) return;
       box.innerHTML = `<h2 class="t-section-title"><i class="fa-solid fa-book-open"></i> Books</h2>
-        <div class="bk-shelves" data-by="${r.by.length}" data-about="${r.about.length}">
+        <div class="bk-shelves">
           ${r.by.length ? `<div class="bk-shelf-wrap"><h3 class="xr-sub">By ${esc(p.name)}</h3>${shelf(r.by)}</div>` : ""}
           ${r.about.length ? `<div class="bk-shelf-wrap"><h3 class="xr-sub">About ${esc(p.name)}</h3>${shelf(r.about)}</div>` : ""}
         </div>
@@ -480,6 +480,20 @@
         sh.querySelectorAll(".bk-book.up").forEach((x) => x !== bk && x.classList.remove("up"));
         bk.classList.add("up");
         sh.querySelector(".bk-caption").innerHTML = `<strong>${esc(bk.dataset.title)}</strong>${bk.dataset.meta ? ` <span>${esc(bk.dataset.meta)}</span>` : ""}`;
+      };
+      // each cover once it's in: a plain grey card (no artwork) leaves the shelf; the others, lifted,
+      // are as wide as their cover's own shape (not cropped to one size)
+      const seen = (bk, img) => {
+        if (!img.naturalWidth || Books.plainCover(img)) {
+          const wrap = bk.closest(".bk-shelf-wrap");
+          bk.remove();
+          if (!wrap.querySelector(".bk-book")) wrap.remove();
+          if (!box.querySelector(".bk-book")) box.hidden = true;
+          else fill();
+          return;
+        }
+        const h = parseFloat(bk.style.getPropertyValue("--bh")) || 220;
+        bk.style.setProperty("--cw", `${Math.round(Math.min(200, Math.max(110, (h * img.naturalWidth) / img.naturalHeight)))}px`);
       };
       box.querySelectorAll(".bk-book").forEach((bk) => {
         bk.addEventListener("mouseenter", () => lift(bk));
@@ -496,8 +510,8 @@
       // books need (the short one at least wide enough for its title), so neither stands half empty
       const fill = () => {
         const wrap = box.querySelector(".bk-shelves");
-        const by = Number(wrap.dataset.by);
-        const about = Number(wrap.dataset.about);
+        // (counted each time: a book with a plain cover leaves its shelf)
+        const [by = 0, about = 0] = [...wrap.children].map((w) => w.querySelectorAll(".bk-book").length);
         const side = window.innerWidth > 900 && wrap.children.length === 2 && Math.min(by, about) <= 8;
         wrap.classList.toggle("side", side);
         // (the short shelf: just as wide as its books at their widest, its title fitting; the other: the rest)
@@ -513,6 +527,12 @@
       };
       fill();
       window.addEventListener("resize", fill);
+      box.querySelectorAll(".bk-book img").forEach((img) => {
+        const bk = img.closest(".bk-book");
+        if (img.complete) return seen(bk, img);
+        img.addEventListener("load", () => seen(bk, img), { once: true });
+        img.addEventListener("error", () => seen(bk, img), { once: true });
+      });
       box.querySelectorAll(".bk-shelf").forEach((sh) => {
         sh.addEventListener("mouseleave", () => {
           sh.querySelectorAll(".bk-book.up").forEach((x) => x.classList.remove("up"));

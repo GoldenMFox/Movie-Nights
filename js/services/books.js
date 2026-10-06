@@ -15,7 +15,7 @@
   const COVERS = "https://covers.openlibrary.org/b/id";
   const FIELDS = "key,title,author_name,first_publish_year,cover_i,number_of_pages_median,ratings_average,ratings_count,edition_count,isbn,subject,publish_year";
   // (a shelf of someone's books needs less: a tenth of the size)
-  const SHELF_FIELDS = "key,title,author_name,first_publish_year,cover_i,edition_count,publish_year";
+  const SHELF_FIELDS = "key,title,author_name,first_publish_year,cover_i,edition_count,publish_year,readinglog_count";
   const days = () => (window.Site ? Site.api("openlibrary").days : 30) || 30;
   // books can be shown: the service is on (no key needed)
   const ready = () => !!window.Api && Api.enabled("openlibrary");
@@ -47,6 +47,7 @@
       rating: d.ratings_average ? Math.round(d.ratings_average * 10) / 10 : null,
       ratings: d.ratings_count || 0,
       editions: d.edition_count || 0,
+      readers: d.readinglog_count || 0, // (people who logged it on Open Library: how popular it is)
       url: d.key ? `${API}${d.key}` : "",
       subjects: (d.subject || []).slice(0, 12),
       description: "",
@@ -64,8 +65,8 @@
     const seen = new Set();
     return ((r && r.docs) || [])
       .map(book)
-      // (with a cover; not a translation's title in another script, nor a bundle "A / B / C")
-      .filter((b) => b.title && b.cover && /[a-z]/i.test(b.title) && !/ \/ /.test(b.title))
+      // (with a cover; not a translation's title in another script (11/22/63 is fine), nor a bundle "A / B / C")
+      .filter((b) => b.title && b.cover && /^[\p{Script=Latin}\p{N}\s\p{P}\p{S}\p{M}]+$/u.test(b.title) && !/ \/ /.test(b.title))
       .filter((b) => {
         const k = `${norm(b.title)}|${norm(b.authors[0])}`;
         return !seen.has(k) && seen.add(k);
@@ -119,17 +120,53 @@
     return null;
   }
 
-  // a person's books: written by them, and about them (biographies)
-  async function forPerson(name) {
-    // (enough to fill a bookshelf: up to 40 of theirs, the most published first)
-    const [by, about] = await Promise.all([
-      search({ author: name, sort: "editions" }, 40, SHELF_FIELDS).catch(() => []),
-      search(`person:"${String(name).replace(/"/g, "")}"`, 24, SHELF_FIELDS).catch(() => []),
+  // a person's books: written by them, and about them (biographies). The most read first, by how
+  // many people logged them on Open Library; of theirs only the well-known ones (at least 4% of
+  // their most-read book's readers), up to 24, so the shelf isn't their whole back catalogue
+  //
+  // About them: libraries file a book about a writer under "King, Stephen, 1947-" (their birth year
+  // tells them from a namesake); a looser search by name finds the rest, but only those with the
+  // whole name in the title count from it ("King Stephen" of England, 1135, isn't Stephen King)
+  async function forPerson(name, birthday) {
+    const clean = String(name).replace(/"/g, "");
+    const parts = clean.split(/\s+/);
+    const year = String(birthday || "").slice(0, 4);
+    const filed = /^\d{4}$/.test(year) && parts.length > 1 ? `subject:"${parts.slice(-1)[0]}, ${parts.slice(0, -1).join(" ")}, ${year}"` : "";
+    const [by, exact, loose] = await Promise.all([
+      search({ author: name, sort: "readinglog" }, 40, SHELF_FIELDS).catch(() => []),
+      filed ? search({ q: filed, sort: "readinglog" }, 24, SHELF_FIELDS).catch(() => []) : [],
+      search({ q: `person:"${clean}"`, sort: "readinglog" }, 24, SHELF_FIELDS).catch(() => []),
     ]);
-    const mine = by.filter((b) => b.authors.some((a) => norm(a) === norm(name))).sort((x, y) => y.editions - x.editions);
-    const aboutThem = about.filter((b) => !b.authors.some((a) => norm(a) === norm(name)));
-    return { by: mine.slice(0, 40), about: aboutThem.filter((b) => !mine.some((m) => m.key === b.key)).slice(0, 24) };
+    const about = [...exact, ...loose.filter((b) => norm(b.title).includes(norm(name)) && !exact.some((x) => x.key === b.key))];
+    const mine = by.filter((b) => b.authors.some((a) => norm(a) === norm(name))).sort((x, y) => y.readers - x.readers);
+    const top = mine.length ? mine[0].readers : 0;
+    // (never fewer than 8 when they have them: a writer few people log still gets a shelf)
+    const known = mine.filter((b, i) => i < 8 || b.readers >= top * 0.04).slice(0, 24);
+    const aboutThem = about.filter((b) => !b.authors.some((a) => norm(a) === norm(name)) && !mine.some((m) => m.key === b.key));
+    // (seven different books called just "Stephen King": the most read of them)
+    const titled = new Set();
+    const aboutOnce = aboutThem.sort((x, y) => y.readers - x.readers).filter((b) => !titled.has(norm(b.title)) && titled.add(norm(b.title)));
+    return { by: known, about: aboutOnce.slice(0, 24) };
   }
 
-  window.Books = { ready, search, fromBook, basedOn, forPerson };
+  // a cover that's only a plain grey card (a publisher's text on grey, no artwork): next to no
+  // colour in it. Needs the image loaded with crossorigin="anonymous" (Open Library allows it);
+  // can't tell: false
+  function plainCover(img) {
+    try {
+      const c = document.createElement("canvas");
+      c.width = 24;
+      c.height = 36;
+      const x = c.getContext("2d");
+      x.drawImage(img, 0, 0, 24, 36);
+      const d = x.getImageData(0, 0, 24, 36).data;
+      let sat = 0;
+      for (let i = 0; i < d.length; i += 4) sat += Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]);
+      return sat / (d.length / 4) < 6;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  window.Books = { ready, search, fromBook, basedOn, forPerson, plainCover };
 })();
