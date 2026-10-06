@@ -67,6 +67,7 @@
       weights: {},
       breaking: {},
       dupes: "balanced",
+      maxAgeDays: 7,
       catsOff: [],
       promote: [],
       breakingMarks: [],

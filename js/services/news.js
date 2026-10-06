@@ -39,21 +39,26 @@
   const TIERS = { 1: "Primary sources", 2: "Film publications", 3: "Supplementary" };
   // the feeds: each source's movie news, TV news and industry news
   const FEEDS = [
-    { id: "variety-film", source: "variety", kind: "movies", url: "https://variety.com/v/film/feed/" },
-    { id: "thr", source: "thr", kind: "movies", url: "https://www.hollywoodreporter.com/c/movies/movie-news/feed/" },
+    // (wp: the same section from the site's WordPress posts API, which goes back as far as the news is
+    // kept, with pictures; the RSS feed is what's read when that can't be had)
+    { id: "variety-film", source: "variety", kind: "movies", url: "https://variety.com/v/film/feed/", wp: "vertical=524" },
+    { id: "thr", source: "thr", kind: "movies", url: "https://www.hollywoodreporter.com/c/movies/movie-news/feed/", wp: "categories=65852" },
     { id: "slashfilm", source: "slashfilm", kind: "movies", url: "https://www.slashfilm.com/feed/" },
     { id: "collider", source: "collider", kind: "movies", url: "https://collider.com/feed/category/movie-news/" },
     { id: "screenrant", source: "screenrant", kind: "movies", url: "https://screenrant.com/feed/movie-news/" },
-    { id: "variety-tv", source: "variety", kind: "tv", url: "https://variety.com/v/tv/feed/" },
-    { id: "thr-tv", source: "thr", kind: "tv", url: "https://www.hollywoodreporter.com/c/tv/tv-news/feed/" },
+    { id: "variety-tv", source: "variety", kind: "tv", url: "https://variety.com/v/tv/feed/", wp: "vertical=462" },
+    { id: "thr-tv", source: "thr", kind: "tv", url: "https://www.hollywoodreporter.com/c/tv/tv-news/feed/", wp: "categories=65855" },
     { id: "collider-tv", source: "collider", kind: "tv", url: "https://collider.com/feed/category/tv-news/" },
     { id: "screenrant-tv", source: "screenrant", kind: "tv", url: "https://screenrant.com/feed/tv-news/" },
-    { id: "variety-biz", source: "variety", kind: "industry", url: "https://variety.com/v/biz/feed/" },
-    { id: "thr-biz", source: "thr", kind: "industry", url: "https://www.hollywoodreporter.com/c/business/feed/" },
+    { id: "variety-biz", source: "variety", kind: "industry", url: "https://variety.com/v/biz/feed/", wp: "vertical=20095" },
+    { id: "thr-biz", source: "thr", kind: "industry", url: "https://www.hollywoodreporter.com/c/business/feed/", wp: "categories=65850" },
   ];
   const KIND_LABEL = { movies: "Movies", tv: "TV", industry: "Industry" };
   const RSS2JSON = "https://api.rss2json.com/v1/api.json?rss_url=";
   const cfg = () => (window.Site && Site.get().news) || {};
+  const DAY = 86400000;
+  // how far back the news goes (Admin → News → Ranking: news.maxAgeDays, 7 days unless set)
+  const maxAge = () => Math.max(1, Math.min(30, Number(cfg().maxAgeDays) || 7)) * DAY;
   const minutes = () => (window.Site ? Site.api("news").minutes : 30) || 30;
 
   // the categories (a story can have several), in the order of the chips
@@ -136,18 +141,63 @@
     return feedKind === "industry" ? "industry" : feedKind;
   }
 
-  // one feed -> [story]
+  // a WordPress section, as far back as the news is kept (at most 200 stories): its posts API, asked
+  // straight (the site lets any page read it), kept like the feeds; 8 seconds at most
+  async function wpItems(f) {
+    const base = (SOURCES[f.source] || {}).wp;
+    if (!base || !f.wp) return null;
+    const key = `news|wp|${f.id}|${cfg().maxAgeDays || 7}`;
+    const saved = await Api.cacheGet(key);
+    if (saved && saved.v && Date.now() - saved.at < minutes() * 60000) return saved.v;
+    // (from the hour: the same address for an hour)
+    const after = new Date(Math.floor((Date.now() - maxAge()) / 3600000) * 3600000).toISOString().slice(0, 19);
+    const ask = async (page) => {
+      const stop = new AbortController();
+      const timer = setTimeout(() => stop.abort(), 8000);
+      try {
+        const res = await fetch(`${base}/wp-json/wp/v2/posts?${f.wp}&after=${after}&per_page=100&page=${page}&_fields=id,link,date_gmt,title,excerpt,jetpack_featured_media_url`, { signal: stop.signal, credentials: "omit" });
+        if (!res.ok) throw new Error(`${f.name} answered ${res.status}`);
+        return { items: await res.json(), pages: Number(res.headers.get("X-WP-TotalPages")) || 1 };
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+    const first = await ask(1);
+    let items = Array.isArray(first.items) ? first.items : [];
+    if (first.pages > 1) items = items.concat((await ask(2).catch(() => ({ items: [] }))).items || []);
+    // (as the RSS items look: title, link, pubDate, thumbnail, description)
+    const out = items.map((x) => ({
+      title: (x.title && x.title.rendered) || "",
+      link: x.link,
+      guid: `?p=${x.id}`,
+      pubDate: String(x.date_gmt || "").replace("T", " "),
+      thumbnail: x.jetpack_featured_media_url ? `${x.jetpack_featured_media_url}?w=800` : "",
+      description: (x.excerpt && x.excerpt.rendered) || "",
+      categories: [],
+    }));
+    Api.cacheSet(key, out);
+    return out;
+  }
+
+  // one feed -> [story] (a WordPress section from its API when it can, else its RSS feed)
   async function feed(f) {
-    let r;
+    let items = null;
     try {
-      r = await Api.get("news", RSS2JSON + encodeURIComponent(f.url), { minutes: minutes() });
-      if (!r || r.status !== "ok") throw new Error((r && r.message) || `${f.name} couldn't be read`);
-    } catch (e) {
-      noteStatus(f.id, { ok: false, n: 0, error: e.message });
-      throw e;
+      items = await wpItems(f);
+    } catch (e) {}
+    if (!items) {
+      let r;
+      try {
+        r = await Api.get("news", RSS2JSON + encodeURIComponent(f.url), { minutes: minutes() });
+        if (!r || r.status !== "ok") throw new Error((r && r.message) || `${f.name} couldn't be read`);
+      } catch (e) {
+        noteStatus(f.id, { ok: false, n: 0, error: e.message });
+        throw e;
+      }
+      items = r.items || [];
     }
-    noteStatus(f.id, { ok: true, n: (r.items || []).length });
-    const stories = (r.items || []).map((it) => {
+    noteStatus(f.id, { ok: true, n: items.length });
+    const stories = items.map((it) => {
       const title = text(it.title);
       const excerpt = text(it.description || it.content);
       const tags = (it.categories || []).join(" ");
@@ -426,29 +476,69 @@
 
   /* ---------------- getting the news ---------------- */
 
-  // stories from several feeds: newest first, the same link once
+  // stories from several feeds: newest first, the same link once, nothing older than the news goes back
   function merge(results) {
     const seen = new Set();
+    const since = Date.now() - maxAge();
     return results
       .flatMap((r) => r.s || [])
-      .filter((s) => s.title && s.link && !seen.has(s.link) && seen.add(s.link))
+      .filter((s) => s.title && s.link && s.date >= since && !seen.has(s.link) && seen.add(s.link))
       .sort((a, b) => b.date - a.date);
   }
 
+  // the stories this browser has seen (mn:newsArchive), as far back as the news goes: the feeds that
+  // only give their newest ten (/Film, Collider, Screen Rant) build up a week this way
+  const ARCHIVE = "mn:newsArchive";
+  function archived() {
+    try {
+      const list = JSON.parse(localStorage.getItem(ARCHIVE) || "[]");
+      const since = Date.now() - maxAge();
+      return Array.isArray(list) ? list.filter((s) => s && s.link && s.date >= since) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  function archive(fresh) {
+    try {
+      const seen = new Set();
+      const keep = fresh
+        .concat(archived())
+        .filter((s) => s.link && !seen.has(s.link) && seen.add(s.link))
+        .sort((a, b) => b.date - a.date)
+        .slice(0, 900)
+        .map((s) => ({ id: s.id, title: s.title, link: s.link, date: s.date, image: s.image, excerpt: s.excerpt, source: s.source, sourceKey: s.sourceKey, sourceId: s.sourceId, priority: s.priority, tier: s.tier, site: s.site, kind: s.kind, cats: s.cats, cat: s.cat, post: s.post }));
+      localStorage.setItem(ARCHIVE, JSON.stringify(keep));
+    } catch (e) {}
+  }
+
   // every feed at once. -> { stories (grouped and ranked), failed: [names], at }. onPart (optional)
-  // gets the stories so far each time a feed answers, so the page can show them without waiting
+  // gets the stories so far as the feeds answer (at most every 400 ms), so the page can show them
+  // without waiting for the slowest one
   async function latest(onPart) {
     const list = feeds();
     const results = [];
+    const old = archived().filter((s) => list.some((f) => f.id === s.sourceId));
+    let partTimer = null;
+    const part = () => {
+      if (!onPart || partTimer) return;
+      partTimer = setTimeout(() => {
+        partTimer = null;
+        if (results.some((r) => r.s)) onPart({ stories: rank(cluster(merge(results.concat([{ s: old }])))), failed: [], at: Date.now(), partial: true });
+      }, 400);
+    };
     await Promise.all(
       list.map((f) =>
         feed(f)
           .then((s) => results.push({ s }))
           .catch((e) => results.push({ e, f }))
-          .then(() => onPart && results.some((r) => r.s) && onPart({ stories: rank(cluster(merge(results))), failed: [], at: Date.now(), partial: true }))
+          .then(part)
       )
     );
-    const raw = merge(results);
+    clearTimeout(partTimer);
+    const fresh = merge(results);
+    archive(fresh);
+    // (what the feeds give now first, then what was seen before)
+    const raw = merge([{ s: fresh }, { s: old }]);
     const failed = results.filter((r) => r.e).map((r) => r.f.name);
     if (!raw.length && failed.length) throw new Error("The news feeds couldn't be reached");
     const out = { stories: rank(cluster(raw)), failed, at: Date.now() };
@@ -460,15 +550,16 @@
   const SNAP = "mn:newsSnap";
   function keep(r) {
     try {
-      localStorage.setItem(SNAP, JSON.stringify({ v: 2, at: r.at, stories: r.stories.slice(0, 150) }));
+      localStorage.setItem(SNAP, JSON.stringify({ v: 2, at: r.at, stories: r.stories.slice(0, 400) }));
     } catch (e) {}
   }
   function saved() {
     try {
       const v = JSON.parse(localStorage.getItem(SNAP) || "null");
       if (!v || v.v !== 2 || !Array.isArray(v.stories) || !v.stories.length) return null;
-      // (scored again: the time has moved on, and the owner may have changed something)
-      v.stories = rank(v.stories);
+      // (scored again: the time has moved on, and the owner may have changed something; too old: out)
+      const since = Date.now() - maxAge();
+      v.stories = rank(v.stories.filter((s) => s.date >= since || s.pinned));
       return v;
     } catch (e) {
       return null;

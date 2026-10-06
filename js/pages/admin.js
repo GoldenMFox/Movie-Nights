@@ -903,7 +903,16 @@
           `<div class="ad-opts ad-opts-3">${opt("news.dupes", "strict", n.dupes || "balanced", "fa-lock", "Strict", "Only near-identical headlines", "#7ea4ff")}${opt("news.dupes", "balanced", n.dupes || "balanced", "fa-scale-balanced", "Balanced", "The same names, the same event", "#4cd97b")}${opt("news.dupes", "loose", n.dupes || "balanced", "fa-object-group", "Loose", "Groups more, may join related stories", "#ff9f43")}</div>`,
           2
         )}
-        ${box("news-refresh", "fa-rotate", "Refreshing", tiles(numTile("apis.news.minutes", "fa-rotate", "#5ad1d1", "Ask the feeds again after", "Each reader's browser keeps the stories this long", Site.api("news").minutes, 5, 720, "min")), 1)}
+        ${box(
+          "news-refresh",
+          "fa-clock-rotate-left",
+          "How far back, how often",
+          tiles(
+            numTile("news.maxAgeDays", "fa-calendar-week", "#c49bff", "Show news from the last", "Older stories leave Movie News", n.maxAgeDays || 7, 1, 30, "days") +
+              numTile("apis.news.minutes", "fa-rotate", "#5ad1d1", "Ask the feeds again after", "Each reader's browser keeps the stories this long", Site.api("news").minutes, 5, 720, "min")
+          ),
+          1
+        )}
         ${box(
           "news-cats",
           "fa-tags",
