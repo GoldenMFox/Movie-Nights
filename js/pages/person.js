@@ -442,6 +442,9 @@
       }
       if (!/^\d+$/.test(String(id || ""))) return message("fa-regular fa-face-frown", "That link doesn't look right.");
       p = await TMDB.person(id);
+      // (a title TMDB has no poster for is one barely known or only announced: left out everywhere,
+      // counts included)
+      p.titles = p.titles.filter((t) => t.poster);
     } catch (err) {
       return message("fa-solid fa-triangle-exclamation", esc(err.message));
     }
