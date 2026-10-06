@@ -386,8 +386,9 @@
       // (more outlets telling it = it matters more)
       s.importance = Math.min(100, importanceOf(s) + Math.min(30, (s.also || []).length * 12));
       const recency = 100 * Math.exp(-hours / 12);
-      const hay = `${s.title} ${s.excerpt}`;
-      const about = mine.find((m) => mentions(hay, m.title));
+      // (about a title only when its headline names it: an excerpt mentions others in passing, "ahead of
+      // Avengers: Doomsday"; several named: the longest, the most particular)
+      const about = mine.filter((m) => mentions(s.title, m.title)).sort((a, b) => b.title.length - a.title.length)[0];
       s.about = about ? { id: about.id, title: about.title, watch: about.watch } : null;
       const relevance = about ? 100 * about.weight : 0;
       s.score = (w.authority * s.priority + w.recency * recency + w.importance * s.importance + w.relevance * relevance) / total;
@@ -475,14 +476,14 @@
   }
 
   // a title's or a person's news, from the last news this browser got (no asking)
-  // -> [story], newest first: what mentions one of the names (a title said whole, a person's full name)
+  // -> [story], newest first: the ones whose headline names it (a title said whole, a person's full name)
   function about(names, max) {
     const snap = saved();
     if (!snap) return [];
     const ns = (names || []).filter((n) => n && String(n).trim().length >= 4).map(String);
     if (!ns.length) return [];
     return snap.stories
-      .filter((s) => ns.some((n) => mentions(`${s.title} ${s.excerpt}`, n)))
+      .filter((s) => ns.some((n) => mentions(s.title, n) || (s.also || []).some((a) => mentions(a.title, n))))
       .sort((a, b) => b.date - a.date)
       .slice(0, max || 6);
   }
