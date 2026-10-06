@@ -26887,6 +26887,56 @@ html.no-list-fx .lt .poster-link::after {
   background: rgba(0, 0, 0, 0.04);
 }
 
+/* (one tile on its own fills its box) */
+.ad-lt-grid:has(> :only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* a member's photo in their tile */
+.ad-member-face {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--glass-border);
+}
+
+.ad-inline .btn {
+  white-space: nowrap;
+}
+
+/* a tile that only tells (no switch) */
+.ad-info-tile {
+  grid-template-columns: auto minmax(0, 1fr);
+  cursor: default;
+}
+
+.ad-info-tile .ad-lt-text small {
+  display: block;
+  -webkit-line-clamp: unset;
+}
+
+.ad-info-tile:hover {
+  border-color: var(--glass-border);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+/* the fields under a card's tiles */
+.ad-card .ad-lt-grid + .ad-field,
+.ad-card .ad-lt-grid + .ad-part {
+  margin-top: 4px;
+}
+
+/* the big buttons inside a card (This device, Backup, Add a title) */
+.ad-card .ad-action-grid {
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+}
+
+.ad-card .ad-action {
+  align-content: start;
+  padding: 14px 8px;
+}
+
 /* ============================== Site-wide: the notice and maintenance (js/core/site.js) ============================== */
 .site-notice {
   position: relative;
@@ -27191,16 +27241,42 @@ html.app-ui .site-maint.owner {
   color: var(--text-muted);
 }
 
+/* a service's numbers: three small tiles (answered, from memory, failed), then when it last answered */
 .ad-api-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
   color: var(--text-muted);
-  font-size: 12.5px;
+  font-size: 11.5px;
+}
+
+.ad-api-stats span {
+  display: grid;
+  justify-items: center;
+  padding: 8px 4px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  text-align: center;
+}
+
+.ad-api-stats span:last-child {
+  grid-column: 1 / -1;
+  display: block;
+  padding: 2px 0 0;
+  border: 0;
+  background: none;
+  text-align: left;
 }
 
 .ad-api-stats b {
   color: var(--text);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.ad-api-stats span:last-child b {
+  font-size: inherit;
 }
 
 .ad-err {

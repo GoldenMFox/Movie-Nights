@@ -441,6 +441,36 @@
       <span class="sv-switch"><input type="checkbox" ${attr}="${esc(key)}"${on ? " checked" : ""} aria-label="${esc(name)}" /><span class="switch-track"><span class="switch-thumb"></span></span></span>
     </label>`;
 
+  // a setting's switch as a tile (data-k: its path in the settings)
+  const tileK = (path, icon, color, name, sub, on) => swTile("data-k", path, on, `<i class="fa-solid ${icon}"></i>`, `--c:${color}`, name, sub);
+  // a tile that only tells something (no switch)
+  const infoTile = (icon, color, name, sub) => `<div class="ad-lt-tile ad-info-tile"><span class="ad-lt-swatch ad-tile-icon2" style="--c:${color}" aria-hidden="true"><i class="fa-solid ${icon}"></i></span><span class="ad-lt-text"><strong>${esc(name)}</strong><small>${sub}</small></span></div>`;
+  const tiles = (html) => `<div class="ad-lt-grid">${html}</div>`;
+  // big buttons, the Overview's quick actions look ([class, icon, label, tone, extra])
+  const actions = (list) =>
+    `<div class="ad-action-grid">${list.map(([cls, icon, label, tone, extra]) => (extra && extra.label ? `<label class="ad-action ${tone || ""} ${cls}"><i class="fa-solid ${icon}"></i><span>${label}</span>${extra.label}</label>` : `<button type="button" class="ad-action ${tone || ""} ${cls}"${extra || ""}><i class="fa-solid ${icon}"></i><span>${label}</span></button>`)).join("")}</div>`;
+  const PALETTE = ["#ff6b6f", "#f5c518", "#4cd97b", "#7ea4ff", "#c49bff", "#ff9f43", "#5ad1d1", "#f39ad0"];
+  const PAGE_LOOK = {
+    home: ["fa-house", "The front page"],
+    movie: ["fa-film", "Your movies and Explore"],
+    tv: ["fa-tv", "Your shows and Explore"],
+    anime: ["fa-dragon", "Your anime"],
+    watchlist: ["fa-bookmark", "What people plan to watch"],
+    tiers: ["fa-ranking-star", "Rank titles in tiers"],
+    boxoffice: ["fa-sack-dollar", "This weekend's numbers"],
+    news: ["fa-newspaper", "Movie News"],
+    animeExplore: ["fa-compass", "The anime explorer (phones' Library tab, footer)"],
+  };
+  const FEATURE_LOOK = {
+    picker: "fa-shuffle", trivia: "fa-circle-question", soundtrack: "fa-music", xray: "fa-bolt", tvmaze: "fa-calendar-days", animeDetails: "fa-dragon",
+    animeExplore: "fa-compass", books: "fa-book-open", news: "fa-newspaper", boxOffice: "fa-sack-dollar", listThemes: "fa-wand-magic-sparkles", notifications: "fa-bell", share: "fa-share-nodes",
+  };
+  const FEATURE_GROUPS = [
+    ["On title pages", ["trivia", "soundtrack", "xray", "tvmaze", "animeDetails", "books", "share"]],
+    ["Pages", ["news", "boxOffice", "animeExplore"]],
+    ["Across the site", ["picker", "listThemes", "notifications"]],
+  ];
+
   /* ---------------- the sections ---------------- */
 
   const render = {
@@ -551,24 +581,73 @@
     },
     website() {
       return `<div class="ad-grid">
-        ${card("fa-signature", "Branding", `${text("branding.name", "Site name (browser tabs)", draft.branding.name, 'maxlength="40"')}
-          ${area("branding.tagline", "Tagline (footer)", draft.branding.tagline)}
-          <label class="ad-field"><span>Accent colour</span><span class="ad-color"><input type="color" data-k="branding.accent" value="${esc(draft.branding.accent || "#b92222")}" />
-          <button type="button" class="btn ad-reset-accent">Site red</button></span></label>`, "The logo stays the site's own picture.")}
-        ${card("fa-screwdriver-wrench", "Maintenance", `${sw("maintenance.on", "Maintenance mode", "Everyone but you sees the “back soon” screen", draft.maintenance.on)}${area("maintenance.message", "Message", draft.maintenance.message)}`)}
-        ${card("fa-bullhorn", "Notice across the top", `${sw("notice.on", "Show it", "On every page, until a visitor closes it", draft.notice.on)}
+        ${box(
+          "site-maint",
+          "fa-screwdriver-wrench",
+          "Maintenance",
+          `${tiles(tileK("maintenance.on", "fa-screwdriver-wrench", "#f5c518", "Maintenance mode", "Everyone but you sees the “back soon” screen", draft.maintenance.on))}${area("maintenance.message", "Message", draft.maintenance.message)}`,
+          1
+        )}
+        ${box(
+          "site-notice",
+          "fa-bullhorn",
+          "Notice across the top",
+          `${tiles(tileK("notice.on", "fa-bullhorn", "#ff6b6f", "Show it", "On every page, until a visitor closes it", draft.notice.on))}
           ${text("notice.text", "Text", draft.notice.text, 'maxlength="160" placeholder="New: Movie News!"')}
           ${text("notice.link", "Link (optional)", draft.notice.link, 'placeholder="news.html or https://…"')}
-          ${select("notice.tone", "Look", draft.notice.tone, [["info", "News (red bullhorn)"], ["warn", "Warning (amber)"]])}
-          <div class="ad-two">${text("notice.from", "From (optional)", draft.notice.from, 'type="date"')}${text("notice.until", "Until (optional)", draft.notice.until, 'type="date"')}</div>`, "With days set, it shows only between them: switch it on now, it appears and goes by itself.")}
+          ${part("Look", "", `<div class="ad-opts ad-opts-2">${opt("notice.tone", "info", draft.notice.tone || "info", "fa-bullhorn", "News", "Red, a bullhorn", "#ff6b6f")}${opt("notice.tone", "warn", draft.notice.tone || "info", "fa-triangle-exclamation", "Warning", "Amber", "#f5c518")}</div>`)}
+          <div class="ad-two">${text("notice.from", "From (optional)", draft.notice.from, 'type="date"')}${text("notice.until", "Until (optional)", draft.notice.until, 'type="date"')}</div>`,
+          2,
+          "With days set, it shows only between them: switch it on now, it appears and goes by itself."
+        )}
+        ${box(
+          "site-brand",
+          "fa-signature",
+          "Branding",
+          `${text("branding.name", "Site name (browser tabs)", draft.branding.name, 'maxlength="40"')}
+          ${area("branding.tagline", "Tagline (footer)", draft.branding.tagline)}
+          <label class="ad-field"><span>Accent colour</span><span class="ad-color"><input type="color" data-k="branding.accent" value="${esc(draft.branding.accent || "#b92222")}" />
+          <button type="button" class="btn ad-reset-accent">Site red</button></span></label>`,
+          3,
+          "The logo stays the site's own picture."
+        )}
       </div>`;
     },
     pages() {
+      const hidden = draft.nav.hidden || [];
       return `<div class="ad-grid">
-        ${card("fa-bars", "Pages in the navigation", PAGE_NAMES.map(([id, l]) => `<div class="sv-row"><span class="sv-name"><strong>${esc(l)}</strong></span>
-          <label class="sv-switch"><input type="checkbox" data-nav-page="${id}"${(draft.nav.hidden || []).includes(id) ? "" : " checked"} aria-label="${esc(l)}" /><span class="switch-track"><span class="switch-thumb"></span></span></label></div>`).join(""),
-          "Hidden pages still open from a link; they just leave the navbar, the tab bar's Library panel and the footer.")}
-        ${card("fa-toggle-on", "Features", FEATURES.map(([k, l, sub]) => sw(`features.${k}`, l, sub, draft.features[k] !== false)).join(""))}
+        ${box(
+          "nav-pages",
+          "fa-bars",
+          "Pages in the navigation",
+          tiles(
+            PAGE_NAMES.map(([id, l], i) => {
+              const [icon, sub] = PAGE_LOOK[id] || ["fa-file", ""];
+              return swTile("data-nav-page", id, !hidden.includes(id), `<i class="fa-solid ${icon}"></i>`, `--c:${PALETTE[i % PALETTE.length]}`, l.replace(/ \(.*\)$/, ""), sub);
+            }).join("")
+          ),
+          3,
+          "Hidden pages still open from a link; they just leave the navbar, the tab bar's Library panel and the footer."
+        )}
+        ${box(
+          "features",
+          "fa-toggle-on",
+          "Features",
+          FEATURE_GROUPS.map(([title, keys]) =>
+            part(
+              title,
+              "",
+              tiles(
+                keys
+                  .map((k) => FEATURES.find((f) => f[0] === k))
+                  .filter(Boolean)
+                  .map(([k, l, sub], i) => tileK(`features.${k}`, FEATURE_LOOK[k] || "fa-toggle-on", PALETTE[(i + 3) % PALETTE.length], l, sub, draft.features[k] !== false))
+                  .join("")
+              )
+            )
+          ).join(""),
+          3
+        )}
       </div>`;
     },
     content() {
@@ -589,15 +668,24 @@
         ${card("fa-eye-slash", "Hidden titles (moderation)", `<div class="ad-chips">${hidden.map((h, i) => chip(h.title || h.ref, `data-rm="content.hidden" data-i="${i}"`)).join("") || '<span class="muted">None</span>'}</div>
           <div class="ad-search" data-search="hide"><input class="input" placeholder="Find a title to hide…" /><div class="ad-results"></div></div>`, "Hidden from Discover, Home and search rows for everyone (people's own libraries keep it).")}
         ${card("fa-compass", "Explore pages", `${num("discover.phoneFirst", "Titles at first, phones", draft.discover.phoneFirst, 10, 40)}${num("discover.desktopFirst", "Titles at first, computers", draft.discover.desktopFirst, 20, 60)}`, "Movies and TV Shows → Explore, before “Load more”. Posters load as they come near the screen.")}
-        ${card("fa-plus", "Add a title by hand", '<p class="sv-note sv-lead">A title TMDB doesn\'t have, straight into your own library.</p><button class="btn" type="button" data-action="add-title"><i class="fa-solid fa-plus"></i> Add a title</button>')}
+        ${card("fa-plus", "Add a title by hand", `<p class="sv-note sv-lead">A title TMDB doesn't have, straight into your own library.</p>${actions([["", "fa-plus", "Add a title", "gold", ' data-action="add-title"']])}`)}
       </div>`;
     },
     news() {
       const hidden = draft.news.hiddenSources || [];
       const pins = draft.news.featured || [];
       return `<div class="ad-grid">
-        ${card("fa-rss", "Sources", News.FEEDS.map((f) => `<div class="sv-row"><span class="sv-name"><strong>${esc(f.name)}</strong><small>${esc(f.kind === "tv" ? "TV news" : "Movie news")} · ${esc(f.url.replace(/^https:\/\//, ""))}</small></span>
-          <label class="sv-switch"><input type="checkbox" data-news-src="${f.id}"${hidden.includes(f.id) ? "" : " checked"} aria-label="${esc(f.name)}" /><span class="switch-track"><span class="switch-thumb"></span></span></label></div>`).join(""))}
+        ${box(
+          "news-sources",
+          "fa-rss",
+          "Sources",
+          tiles(
+            News.FEEDS.map((f) =>
+              swTile("data-news-src", f.id, !hidden.includes(f.id), `<i class="fa-solid ${f.kind === "tv" ? "fa-tv" : "fa-film"}"></i>`, `--c:${f.kind === "tv" ? "#7ea4ff" : "#ff6b6f"}`, f.name, `${f.kind === "tv" ? "TV news" : "Movie news"} · ${f.url.replace(/^https:\/\//, "").split("/")[0]}`)
+            ).join("")
+          ),
+          2
+        )}
         ${card("fa-thumbtack", "Pinned stories", `${pins.map((p, i) => `<span class="ad-chip">${esc(p.title)}<button type="button" data-rm="news.featured" data-i="${i}" aria-label="Remove"><i class="fa-solid fa-xmark"></i></button></span>`).join("") || '<p class="muted">None pinned.</p>'}
           <div class="ad-pin">
             <input class="input" name="title" placeholder="Headline" maxlength="160" />
@@ -631,7 +719,7 @@
             "fa-plug",
             esc(label),
             `<div class="ad-api-head"><span class="ad-health ${s.health}"><i></i>${{ ok: "Working", down: "Not answering", off: "Switched off", unknown: "Not asked yet" }[s.health] || ""}</span><small>${esc(what)}</small></div>
-            ${sw(`apis.${k}.on`, "On", "Off: the site doesn't ask it at all and shows what it can without it", a.on !== false)}
+            ${tiles(tileK(`apis.${k}.on`, "fa-power-off", "#4cd97b", `Use ${label.replace(/ \(.*\)$/, "")}`, "Off: the site doesn't ask it at all and shows what it can without it", a.on !== false))}
             ${num(`apis.${k}.${unit}`, `Keep answers for (${unit})`, a[unit], 1, max)}
             <div class="ad-api-stats"><span><b>${s.ok || 0}</b> answered</span><span><b>${s.cached || 0}</b> from memory</span><span><b>${s.fail || 0}</b> failed</span><span>Last good: ${ago(s.lastOk)}</span></div>
             ${s.lastError ? `<p class="sv-note ad-err"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(s.lastError)} (${ago(s.lastFail)})</p>` : ""}
@@ -717,14 +805,31 @@
       </div>`;
     },
     notifications() {
+      const n = draft.notifications;
       return `<div class="ad-grid">
-        ${card("fa-bell", "Release alerts", `${sw("notifications.on", "Alerts and notifications", "The bell in the navbar with its number, and notifications for those who turn them on", draft.notifications.on !== false)}
-          ${sw("notifications.release", "Movie releases", "", draft.notifications.release !== false)}
-          ${sw("notifications.season", "New seasons", "", draft.notifications.season !== false)}
-          ${sw("notifications.episode", "New episodes", "", draft.notifications.episode !== false)}
-          ${sw("notifications.recommendation", "Weekly recommendation", "A well-known title like one they loved", draft.notifications.recommendation !== false)}
-          ${sw("notifications.announcement", "Announcements", "Your messages to everyone (below)", draft.notifications.announcement !== false)}`,
-          "Each person turns notifications on for their own devices in Settings → Notifications, and picks the kinds they want.")}
+        ${box(
+          "alerts",
+          "fa-bell",
+          "Release alerts",
+          `${tiles(tileK("notifications.on", "fa-bell", "#ff6b6f", "Alerts and notifications", "The bell in the navbar with its number, and notifications for those who turn them on", n.on !== false))}
+          ${part(
+            "The kinds",
+            "",
+            tiles(
+              [
+                ["release", "fa-film", "#f5c518", "Movie releases", "A movie on someone's Watchlist comes out"],
+                ["season", "fa-layer-group", "#7ea4ff", "New seasons", "A show they follow gets a new season"],
+                ["episode", "fa-tv", "#5ad1d1", "New episodes", "The next episode of a show they're watching"],
+                ["recommendation", "fa-heart", "#f39ad0", "Weekly recommendation", "A well-known title like one they loved"],
+                ["announcement", "fa-bullhorn", "#ff9f43", "Announcements", "Your messages to everyone"],
+              ]
+                .map(([k, icon, c, name, sub]) => tileK(`notifications.${k}`, icon, c, name, sub, n[k] !== false))
+                .join("")
+            )
+          )}`,
+          2,
+          "Each person turns notifications on for their own devices in Settings → Notifications, and picks the kinds they want."
+        )}
         ${card(
           "fa-bullhorn",
           "Announcement to everyone",
@@ -741,11 +846,18 @@
           </div>`,
           "It lands in every member's bell (and as a notification for those who turned them on) the next time they open the site. Sending another replaces it."
         )}
-        ${card("fa-mobile-screen", "How they arrive", `<ul class="ad-list">
-          <li><b>Android, installed app:</b> the phone checks in the background now and then (Periodic Background Sync), so they can come while the app is closed.</li>
-          <li><b>Computers and Android in the browser:</b> when the site is open.</li>
-          <li><b>iPhone / iPad:</b> after adding the site to the Home Screen; when the app is opened.</li>
-          <li>Instant push while everything is closed would need a server (Firebase Cloud Messaging on the paid plan): not used, the site stays free.</li></ul>`)}
+        ${box(
+          "arrive",
+          "fa-mobile-screen",
+          "How they arrive",
+          tiles(
+            infoTile("fa-robot", "#4cd97b", "Android, installed app", "The phone checks in the background now and then, so they can come while the app is closed") +
+              infoTile("fa-laptop", "#7ea4ff", "Computers, Android in the browser", "When the site is open") +
+              infoTile("fa-mobile-screen-button", "#c49bff", "iPhone / iPad", "After adding the site to the Home Screen; when the app is opened") +
+              infoTile("fa-server", "#8a8a8a", "Instant push, everything closed", "Would need a server (Firebase Cloud Messaging, paid plan): not used, the site stays free")
+          ),
+          3
+        )}
       </div>`;
     },
     users() {
@@ -759,13 +871,19 @@
     && validTime(request.resource.data);
 }`;
       return `<div class="ad-grid">
-        ${card("fa-users", "Members", '<div class="member-list ad-members"><p class="sv-note">Loading…</p></div>', "Who may sign in is decided by the allowlist in your Firestore rules (Firebase console → Firestore → Rules). You see how big each library is, never anyone's ratings.")}
+        ${box("members", "fa-users", "Members", '<div class="member-list ad-members"><p class="sv-note">Loading…</p></div>', 2, "Who may sign in is decided by the allowlist in your Firestore rules (Firebase console → Firestore → Rules). You see how big each library is, never anyone's ratings.")}
         ${card("fa-user-slash", "Turned away", `<div class="ad-chips">${blocked.map((e, i) => `<span class="ad-chip">${esc(e)}<button type="button" data-unblock="${i}" aria-label="Remove"><i class="fa-solid fa-xmark"></i></button></span>`).join("") || '<span class="muted">Nobody</span>'}</div>
           <div class="ad-inline"><input class="input ad-block-email" type="email" placeholder="their Google email" /><button class="btn ad-block" type="button">Turn away</button></div>`,
           "They're signed out on their next visit; with the rules below published, the account refuses them too.")}
-        ${card("fa-shield-halved", "Roles", `<div class="sv-row"><span class="sv-name"><strong>Owner</strong><small>You: every setting here, Add a title, Members</small></span></div>
-          <div class="sv-row"><span class="sv-name"><strong>Member</strong><small>Their own private library, lists, ratings, notifications</small></span></div>
-          <div class="sv-row"><span class="sv-name"><strong>Visitor</strong><small>Discover, title pages, News, the anime explorer: no library</small></span></div>`)}
+        ${card(
+          "fa-shield-halved",
+          "Roles",
+          tiles(
+            infoTile("fa-crown", "#f5c518", "Owner", "You: every setting here, Add a title, Members") +
+              infoTile("fa-user", "#7ea4ff", "Member", "Their own private library, lists, ratings, notifications") +
+              infoTile("fa-eye", "#8a8a8a", "Visitor", "Discover, title pages, News, the anime explorer: no library")
+          )
+        )}
         ${card("fa-file-shield", "Rules for site settings", `<p class="sv-note sv-lead">So your settings reach everyone, add this inside <code>match /databases/{database}/documents</code> in the Firebase console (Firestore → Rules), then Publish. A full copy is in <code>docs/firestore.rules</code>.</p>
           <pre class="ad-pre">${esc(rules)}</pre><button class="btn ad-copy-rules" type="button"><i class="fa-regular fa-copy"></i> Copy</button>`)}
       </div>`;
@@ -803,7 +921,16 @@
       const hist = changeLog();
       return `<div class="ad-grid">
         ${card("fa-stethoscope", "Service checks", '<p class="sv-note sv-lead">Asks each outside service one small question, now, and times the answer.</p><div class="ad-checks"></div><button class="btn btn-primary ad-run-checks" type="button"><i class="fa-solid fa-play"></i> Run the checks</button>')}
-        ${card("fa-hard-drive", "This device", '<div class="ad-storage">Measuring…</div><div class="sv-buttons"><button class="btn ad-clear-api" type="button"><i class="fa-solid fa-broom"></i> Forget saved answers</button><button class="btn ad-clear-tmdb" type="button"><i class="fa-solid fa-film"></i> Forget TMDB details</button><button class="btn ad-reset-counts" type="button"><i class="fa-solid fa-rotate-left"></i> Reset service counts</button></div>', "Only this browser: answers are asked for again as pages need them.")}
+        ${card(
+          "fa-hard-drive",
+          "This device",
+          `<div class="ad-storage">Measuring…</div>${actions([
+            ["ad-clear-api", "fa-broom", "Forget saved answers", "blue"],
+            ["ad-clear-tmdb", "fa-film", "Forget TMDB details", "red"],
+            ["ad-reset-counts", "fa-rotate-left", "Reset service counts", "gold"],
+          ])}`,
+          "Only this browser: answers are asked for again as pages need them."
+        )}
         ${card(
           "fa-clock-rotate-left",
           "Change history",
@@ -819,13 +946,17 @@
       </div>`;
     },
     backup() {
-      return `<div class="ad-grid">${card(
+      return `<div class="ad-grid">${box(
+        "backup",
         "fa-floppy-disk",
         "Settings backup",
         `<p class="sv-note sv-lead">A file with every setting on this page (not anyone's library).</p>
-        <div class="sv-buttons"><button class="btn ad-export" type="button"><i class="fa-solid fa-file-export"></i> Download</button>
-        <label class="btn"><i class="fa-solid fa-file-import"></i> Restore<input type="file" accept=".json,application/json" class="ad-import" hidden /></label>
-        <button class="btn btn-danger ad-defaults" type="button"><i class="fa-solid fa-rotate-left"></i> Back to defaults</button></div>`
+        ${actions([
+          ["ad-export", "fa-file-export", "Download a backup", "green"],
+          ["", "fa-file-import", "Restore from a file", "blue", { label: '<input type="file" accept=".json,application/json" class="ad-import" hidden />' }],
+          ["ad-defaults", "fa-rotate-left", "Back to defaults", "red"],
+        ])}`,
+        2
       )}</div>`;
     },
   };
@@ -1393,12 +1524,16 @@
     try {
       const list = await Cloud.members();
       box.innerHTML = full
-        ? list
-            .map(
-              (m) => `<div class="sv-row"><img class="ad-face" src="${esc(/^https:\/\//.test(m.photo || "") ? m.photo : "images/placeholders/user.svg")}" alt="" referrerpolicy="no-referrer" />
-              <span class="sv-name"><strong>${esc(m.name)}${m.me ? " (you)" : ""}</strong><small>${m.titles} titles · ${m.rated} rated · ${m.watchlist} on Watchlist · synced ${ago(m.updatedAt)}</small></span></div>`
+        ? list.length
+          ? tiles(
+              list
+                .map(
+                  (m) => `<div class="ad-lt-tile ad-info-tile"><img class="ad-member-face" src="${esc(/^https:\/\//.test(m.photo || "") ? m.photo : "images/placeholders/user.svg")}" alt="" referrerpolicy="no-referrer" />
+              <span class="ad-lt-text"><strong>${esc(m.name)}${m.me ? " (you)" : ""}</strong><small>${m.titles} titles · ${m.rated} rated · ${m.watchlist} on Watchlist · synced ${ago(m.updatedAt)}</small></span></div>`
+                )
+                .join("")
             )
-            .join("") || '<p class="sv-note">Nobody yet.</p>'
+          : '<p class="sv-note">Nobody yet.</p>'
         : `<div class="ad-stats"><span><b>${list.length}</b><small>members</small></span><span><b>${list.filter((m) => Date.now() - m.updatedAt < 7 * 86400000).length}</b><small>active this week</small></span></div>`;
     } catch (e) {
       box.innerHTML = `<p class="sv-note">Couldn't load the members: ${esc(e.message)}</p>`;
