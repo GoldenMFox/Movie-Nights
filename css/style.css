@@ -27237,6 +27237,116 @@ html.no-list-fx .lt .poster-link::after {
   font-size: 13px;
 }
 
+/* API integrations: every service at a glance (a tile each: its icon, health, numbers; a dot that
+   glows green / red), each card's icon in its service's colour, "Keep its answers for [n] hours" on one line */
+.ad-svc-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ad-svc-sum {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ad-svc-sum.ok i {
+  color: #4cd97b;
+}
+
+.ad-svc-sum.down i {
+  color: #ff6b6f;
+}
+
+.ad-svc-btns,
+.ad-svc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ad-svc-btns .btn,
+.ad-svc-actions .btn {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.ad-svc-grid {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.ad-svc-tile {
+  position: relative;
+  grid-template-columns: auto minmax(0, 1fr);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+.ad-svc-dot {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8a8a8a;
+}
+
+.ad-svc-tile.ok .ad-svc-dot {
+  background: #34c759;
+  box-shadow: 0 0 8px rgba(52, 199, 89, 0.8);
+}
+
+.ad-svc-tile.down {
+  border-color: rgba(229, 72, 77, 0.4);
+  background: rgba(229, 72, 77, 0.07);
+}
+
+.ad-svc-tile.down .ad-svc-dot {
+  background: #ff453a;
+  box-shadow: 0 0 8px rgba(255, 69, 58, 0.8);
+}
+
+.ad-svc-tile.off {
+  opacity: 0.6;
+}
+
+.ad-card > .xr-label[style] i {
+  border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+  background: radial-gradient(80% 80% at 30% 25%, color-mix(in srgb, var(--c) 38%, transparent), transparent 75%), color-mix(in srgb, var(--c) 10%, #121214);
+  color: var(--c);
+}
+
+.ad-keep {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.ad-keep > i {
+  font-size: 12px;
+}
+
+.ad-keep .input {
+  width: 74px;
+  height: 36px;
+  padding: 0 10px;
+  text-align: center;
+}
+
+.ad-api-stats span.bad b {
+  color: #ff6b6f;
+}
+
 /* (one tile on its own fills its box) */
 .ad-lt-grid:has(> :only-child) {
   grid-template-columns: minmax(0, 1fr);

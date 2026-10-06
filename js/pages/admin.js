@@ -85,6 +85,15 @@
   };
   const SEASON_IDS = Object.keys(SEASON_LOOK);
 
+  // the outside services' icons and colours (API integrations)
+  const SVC_LOOK = {
+    tvmaze: ["fa-tv", "#5ad1d1"],
+    anilist: ["fa-dragon", "#7ea4ff"],
+    openlibrary: ["fa-book-open", "#ff9f43"],
+    news: ["fa-newspaper", "#ff6b6f"],
+    itunes: ["fa-music", "#f39ad0"],
+  };
+
   // not the owner: nothing to see here
   const isOwner = () => window.Cloud && Cloud.isOwner && Cloud.isOwner();
   function gate() {
@@ -782,30 +791,71 @@
       try {
         browserKey = localStorage.getItem(Store.KEYS.tmdbKey) || "";
       } catch (e) {}
+      const r = window.Ratings ? Ratings.status() : { enabled: false };
+      const HEALTH = { ok: "Working", down: "Not answering", off: "Switched off", unknown: "Not asked yet" };
+      // every service at a glance: its health, what it answered; a tap goes to its card
+      const glance = [
+        ["tmdb", "TMDB", "fa-film", "#01b4e4", src ? "ok" : "down", src ? (src === "config" ? "Key in js/config.js" : "This browser's key") : "No key"],
+        ["omdb", "IMDb (OMDb)", "fa-star", "#f5c518", r.enabled ? (r.blocked ? "down" : "ok") : "off", r.enabled ? `${Math.max(0, r.limit - r.used)} lookups left today` : "No key"],
+        ...Object.keys(API_NAMES).map((k) => {
+          const x = st[k] || {};
+          return [k, API_NAMES[k][0].replace(/ \(.*\)$/, ""), SVC_LOOK[k][0], SVC_LOOK[k][1], x.health || "unknown", `${HEALTH[x.health] || "Not asked yet"} · ${(x.ok || 0) + (x.cached || 0)} answered${x.fail ? ` · ${x.fail} failed` : ""}`];
+        }),
+      ];
+      const tile = ([k, name, icon, color, health, sub]) =>
+        `<button type="button" class="ad-lt-tile ad-svc-tile ${health}" data-svc-go="${k}"><span class="ad-lt-swatch ad-tile-icon2" style="--c:${color}" aria-hidden="true"><i class="fa-solid ${icon}"></i></span>
+          <span class="ad-lt-text"><strong>${esc(name)}</strong><small>${esc(sub)}</small></span><i class="ad-svc-dot" aria-hidden="true"></i></button>`;
+      // a card's head: its icon in the service's colour
+      const head = (html, color) => html.replace('<span class="xr-label">', `<span class="xr-label" style="--c:${color}">`);
+      const down = glance.filter((g) => g[4] === "down").length;
       return `<div class="ad-grid">
-        ${card("fa-film", "TMDB", `<div class="ad-api-head"><span class="ad-health ${src ? "ok" : "down"}"><i></i>${src === "config" ? "On · js/config.js" : src === "browser" ? "On · this browser's key" : "No key"}</span><small>Titles, posters, trailers, cast, Explore</small></div>
+        ${box(
+          "svc-glance",
+          "fa-satellite-dish",
+          "Every service",
+          `<div class="ad-svc-top"><span class="ad-svc-sum ${down ? "down" : "ok"}"><i class="fa-solid ${down ? "fa-triangle-exclamation" : "fa-circle-check"}"></i> ${down ? `${down} not answering` : "Everything is answering"}</span>
+            <span class="ad-svc-btns"><button type="button" class="btn ad-test-all"><i class="fa-solid fa-stethoscope"></i> Test them all</button><button type="button" class="btn ad-reset-stats"><i class="fa-solid fa-rotate-left"></i> Reset the numbers</button></span></div>
+          <div class="ad-lt-grid ad-svc-grid">${glance.map(tile).join("")}</div>`,
+          3,
+          "The numbers are counted in this browser since they were last reset. Tap a service to go to its settings."
+        )}
+        ${head(
+          box(
+            "svc-tmdb",
+            "fa-film",
+            "TMDB",
+            `<div class="ad-api-head"><span class="ad-health ${src ? "ok" : "down"}"><i></i>${src === "config" ? "On · js/config.js" : src === "browser" ? "On · this browser's key" : "No key"}</span><small>Titles, posters, trailers, cast, Explore</small></div>
           <label class="ad-field"><span>A key for this browser only (overrides js/config.js)</span><input class="input ad-tmdb-key" type="password" autocomplete="off" placeholder="API key or read access token" value="${esc(browserKey)}" /></label>
-          <div class="sv-buttons"><button class="btn btn-primary ad-key-save" type="button">Save key</button><button class="btn ad-key-test" type="button">Test</button><button class="btn ad-key-clear" type="button">Remove</button></div>`,
-          "Free at themoviedb.org → Settings → API. The key everyone uses is the one in js/config.js.")}
-        ${card("fa-star", "IMDb ratings (OMDb)", '<div class="ad-omdb"></div>', "1,000 free lookups a day: the site uses at most 900, one per title, and keeps every rating about a month.")}
+          <div class="ad-svc-actions"><button class="btn btn-primary ad-key-save" type="button"><i class="fa-solid fa-check"></i> Save key</button><button class="btn ad-key-test" type="button"><i class="fa-solid fa-stethoscope"></i> Test</button><button class="btn ad-key-clear" type="button"><i class="fa-solid fa-trash-can"></i> Remove</button></div>`,
+            1,
+            "Free at themoviedb.org → Settings → API. The key everyone uses is the one in js/config.js."
+          ),
+          "#01b4e4"
+        )}
+        ${head(box("svc-omdb", "fa-star", "IMDb ratings (OMDb)", '<div class="ad-omdb"></div>', 1, "1,000 free lookups a day: the site uses at most 900, one per title, and keeps every rating about a month."), "#f5c518")}
         ${Object.entries(API_NAMES)
-        .map(([k, [label, what, unit]]) => {
-          const s = st[k] || {};
-          const a = Object.assign({}, Site.DEFAULTS.apis[k] || {}, draft.apis[k] || {});
-          const max = unit === "minutes" ? 720 : unit === "hours" ? 168 : 365;
-          return card(
-            "fa-plug",
-            esc(label),
-            `<div class="ad-api-head"><span class="ad-health ${s.health}"><i></i>${{ ok: "Working", down: "Not answering", off: "Switched off", unknown: "Not asked yet" }[s.health] || ""}</span><small>${esc(what)}</small></div>
-            ${tiles(tileK(`apis.${k}.on`, "fa-power-off", "#4cd97b", `Use ${label.replace(/ \(.*\)$/, "")}`, "Off: the site doesn't ask it at all and shows what it can without it", a.on !== false))}
-            ${num(`apis.${k}.${unit}`, `Keep answers for (${unit})`, a[unit], 1, max)}
-            <div class="ad-api-stats"><span><b>${s.ok || 0}</b> answered</span><span><b>${s.cached || 0}</b> from memory</span><span><b>${s.fail || 0}</b> failed</span><span>Last good: ${ago(s.lastOk)}</span></div>
-            ${s.lastError ? `<p class="sv-note ad-err"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(s.lastError)} (${ago(s.lastFail)})</p>` : ""}
-            <div class="sv-buttons"><button class="btn" type="button" data-api-test="${k}"><i class="fa-solid fa-stethoscope"></i> Test</button><button class="btn" type="button" data-api-clear="${k}"><i class="fa-solid fa-broom"></i> Clear its memory</button></div>`
-          );
-        })
-        .join("")}
-        ${card("fa-chart-simple", "These numbers", '<p class="sv-note sv-lead">Counted in this browser since the last reset.</p><button class="btn ad-reset-stats" type="button">Reset the numbers</button>')}
+          .map(([k, [label, what, unit]]) => {
+            const x = st[k] || {};
+            const a = Object.assign({}, Site.DEFAULTS.apis[k] || {}, draft.apis[k] || {});
+            const max = unit === "minutes" ? 720 : unit === "hours" ? 168 : 365;
+            const name = label.replace(/ \(.*\)$/, "");
+            return head(
+              box(
+                `svc-${k}`,
+                SVC_LOOK[k][0],
+                esc(label),
+                `<div class="ad-api-head"><span class="ad-health ${x.health}"><i></i>${HEALTH[x.health] || ""}</span><small>${esc(what)}</small></div>
+            ${tiles(tileK(`apis.${k}.on`, "fa-power-off", "#4cd97b", `Use ${name}`, "Off: it's never asked; the site shows what it can without it", a.on !== false))}
+            <label class="ad-keep"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i><span>Keep its answers for</span><input class="input" type="number" min="1" max="${max}" data-k="apis.${k}.${unit}" data-num value="${esc(a[unit])}" aria-label="Keep answers for (${unit})" /><span>${unit}</span></label>
+            <div class="ad-api-stats"><span><b>${x.ok || 0}</b> answered</span><span><b>${x.cached || 0}</b> from memory</span><span class="${x.fail ? "bad" : ""}"><b>${x.fail || 0}</b> failed</span><span>Last good: ${ago(x.lastOk)}</span></div>
+            ${x.lastError ? `<p class="sv-note ad-err"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(x.lastError)} (${ago(x.lastFail)})</p>` : ""}
+            <div class="ad-svc-actions"><button class="btn" type="button" data-api-test="${k}"><i class="fa-solid fa-stethoscope"></i> Test</button><button class="btn" type="button" data-api-clear="${k}"><i class="fa-solid fa-broom"></i> Clear its memory</button></div>`,
+                1
+              ),
+              SVC_LOOK[k][1]
+            );
+          })
+          .join("")}
       </div>`;
     },
     themes() {
@@ -1913,6 +1963,17 @@
     if (e.target.closest(".ad-key-save")) return tmdbKey("save");
     if (e.target.closest(".ad-key-test")) return tmdbKey("test");
     if (e.target.closest(".ad-key-clear")) return tmdbKey("clear");
+    if (e.target.closest(".ad-test-all")) return testAll(e.target.closest(".ad-test-all"));
+    const svc = e.target.closest("[data-svc-go]");
+    if (svc) {
+      const el = root.querySelector(`[data-box="svc-${svc.dataset.svcGo}"]`);
+      if (!el) return;
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      el.classList.remove("ad-flash");
+      void el.offsetWidth;
+      el.classList.add("ad-flash");
+      return;
+    }
     const test = e.target.closest("[data-api-test]");
     if (test) return testApi(test.dataset.apiTest, test);
     const clear = e.target.closest("[data-api-clear]");
@@ -1988,23 +2049,38 @@
     }
   }
 
-  // Test: one small question to the service, the answer's time
+  // one small question to a service; the answer's time (ms)
+  async function probe(k) {
+    const t0 = performance.now();
+    if (k === "tvmaze") await Api.get("tvmaze", "https://api.tvmaze.com/shows/1", { fresh: true });
+    else if (k === "anilist")
+      await Api.get("anilist", "https://graphql.anilist.co", { fresh: true, key: "test", init: { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: "{ Media(id: 1) { id } }" }) } });
+    else if (k === "openlibrary") await Api.get("openlibrary", "https://openlibrary.org/search.json?q=dune&limit=1&fields=key", { fresh: true, key: "test" });
+    else if (k === "news") await Api.get("news", `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(News.FEEDS[0].url)}`, { fresh: true });
+    else if (k === "itunes") await Api.get("itunes", "https://itunes.apple.com/search?term=inception&media=music&entity=album&limit=1", { fresh: true, key: "test" });
+    return Math.round(performance.now() - t0);
+  }
+  // Test: that question, its answer's time
   async function testApi(k, btn) {
     btn.disabled = true;
-    const t0 = performance.now();
     try {
-      if (k === "tvmaze") await Api.get("tvmaze", "https://api.tvmaze.com/shows/1", { fresh: true });
-      else if (k === "anilist")
-        await Api.get("anilist", "https://graphql.anilist.co", { fresh: true, key: "test", init: { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: "{ Media(id: 1) { id } }" }) } });
-      else if (k === "openlibrary") await Api.get("openlibrary", "https://openlibrary.org/search.json?q=dune&limit=1&fields=key", { fresh: true, key: "test" });
-      else if (k === "news") await Api.get("news", `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(News.FEEDS[0].url)}`, { fresh: true });
-      toast(`${API_NAMES[k][0]} answered in ${Math.round(performance.now() - t0)} ms`);
+      toast(`${API_NAMES[k][0]} answered in ${await probe(k)} ms`);
     } catch (e) {
       toast(`${API_NAMES[k][0]}: ${e.message}`);
     } finally {
       btn.disabled = false;
       if (section === "apis") show("apis");
     }
+  }
+  // Test them all: every service at once (and TMDB), then how many answered
+  async function testAll(btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Testing…';
+    const keys = Object.keys(API_NAMES).filter((k) => Site.api(k).on !== false);
+    const results = await Promise.all([TMDB.test().then(() => true, () => false), ...keys.map((k) => probe(k).then(() => true, () => false))]);
+    const bad = results.filter((x) => !x).length;
+    toast(bad ? `${bad} of ${results.length} didn't answer` : `All ${results.length} answered`);
+    if (section === "apis") show("apis");
   }
 
   // leaving with unsaved changes: the browser asks first
