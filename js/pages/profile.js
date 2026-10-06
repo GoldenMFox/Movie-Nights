@@ -129,6 +129,7 @@
   // Like picking a Netflix avatar. Tabs (the site's pill switch):
   //  - Movie & TV cast: characters grouped by title (the actor's TMDB photo, named after the
   //    character), or search any movie / show and pick from its cast
+  //  - Anime: the most-loved anime characters (AniList), or search any of them
   //  - Superheroes, Harry Potter, Star Wars, Game of Thrones, Disney: the best-known
   //    characters of each, pictures of the characters themselves from free fan-made character
   //    databases (Superheroes: the Marvel and DC movie fan wikis)
@@ -190,8 +191,34 @@
   // (Disney is searched name by name, and its matches can be "Anna" from anywhere: the exact name first)
   const disneyPick = (list, name) => (list || []).find((c) => c && c.imageUrl && c.name.toLowerCase() === name.toLowerCase()) || (list || []).find((c) => c && c.imageUrl);
 
-  // each set: load() -> [{ name, img, title }] (kept for this visit)
+  // Anime: AniList's characters (free, no key), the most-loved first; a search asks it for the rest
+  const ANILIST_CHARS = `characters(sort: [FAVOURITES_DESC]) { name { full } image { large } media(perPage: 1, sort: POPULARITY_DESC, type: ANIME) { nodes { title { english romaji } } } }`;
+  const anilistChars = (query, variables) =>
+    fetch("https://graphql.anilist.co", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ query, variables }),
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`error ${r.status}`))))
+      .then((d) =>
+        ((d.data && d.data.Page && d.data.Page.characters) || [])
+          .filter((c) => c.image && c.image.large && !/default\.jpg$/.test(c.image.large))
+          .map((c) => {
+            const t = (c.media && c.media.nodes[0] && c.media.nodes[0].title) || {};
+            return { name: c.name.full, img: c.image.large, title: t.english || t.romaji || "Anime" };
+          })
+      );
+
+  // each set: load() -> [{ name, img, title }] (kept for this visit); find(q) (optional) -> more
   const SETS = {
+    anime: {
+      label: "Anime",
+      load: async () => {
+        const [a, b] = await Promise.all([1, 2].map((page) => anilistChars(`query ($page: Int) { Page(page: $page, perPage: 50) { ${ANILIST_CHARS} } }`, { page })));
+        return a.concat(b);
+      },
+      find: (q) => anilistChars(`query ($q: String) { Page(perPage: 30) { ${ANILIST_CHARS.replace("sort: [FAVOURITES_DESC]", "search: $q, sort: [FAVOURITES_DESC]")} } }`, { q }),
+    },
     heroes: { label: "Superheroes", load: heroesLoad },
     hp: {
       label: "Harry Potter",

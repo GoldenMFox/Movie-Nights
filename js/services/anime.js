@@ -48,9 +48,17 @@
   const date = (d) => (d && d.year ? `${d.year}-${String(d.month || 1).padStart(2, "0")}-${String(d.day || 1).padStart(2, "0")}` : "");
   const keyOf = (m) => `al-${m.id}`;
   const CARD_FIELDS = "id idMal title { romaji english } coverImage { large extraLarge } format episodes averageScore seasonYear season status popularity startDate { year } genres isAdult";
-  // rows and grids leave out adult and fan-service anime (a page of its own still opens)
+  // rows and grids leave out adult and fan-service anime (a page of its own still opens), unless
+  // you turned "Mature anime" on in Settings (this browser: mn:adultAnime = "on")
   const ADULT = /^(ecchi|hentai|erotica)$/i;
-  const adult = (m) => m.isAdult || (m.genres || []).some((g) => ADULT.test(g));
+  const adultOk = () => {
+    try {
+      return localStorage.getItem("mn:adultAnime") === "on";
+    } catch (e) {
+      return false;
+    }
+  };
+  const adult = (m) => !adultOk() && (m.isAdult || (m.genres || []).some((g) => ADULT.test(g)));
   function card(m) {
     return {
       key: keyOf(m),
@@ -358,9 +366,10 @@
       const m = res && res.Studio && res.Studio.media;
       return { list: await mainOnly(((m && m.nodes) || []).filter((x) => !x.type || x.type === "ANIME")), more: !!(m && m.pageInfo.hasNextPage) };
     }
-    const q = `query ($page: Int, $perPage: Int, $sort: [MediaSort], $season: MediaSeason, $seasonYear: Int, $status: MediaStatus, $genre: String, $search: String) {
+    // (Mature anime on: $isAdult and $notGenres are left empty, and AniList doesn't filter)
+    const q = `query ($page: Int, $perPage: Int, $sort: [MediaSort], $season: MediaSeason, $seasonYear: Int, $status: MediaStatus, $genre: String, $search: String, $isAdult: Boolean, $notGenres: [String]) {
       Page(page: $page, perPage: $perPage) { pageInfo { hasNextPage }
-        media(type: ANIME, isAdult: false, genre_not_in: ["Ecchi", "Hentai"], format_in: [TV, TV_SHORT, ONA, MOVIE], sort: $sort, season: $season, seasonYear: $seasonYear, status: $status, genre: $genre, search: $search) { ${LIST_FIELDS} } } }`;
+        media(type: ANIME, isAdult: $isAdult, genre_not_in: $notGenres, format_in: [TV, TV_SHORT, ONA, MOVIE], sort: $sort, season: $season, seasonYear: $seasonYear, status: $status, genre: $genre, search: $search) { ${LIST_FIELDS} } } }`;
     const S = (s) => String(s || "").toUpperCase();
     const routes = {
       trending: { sort: ["TRENDING_DESC", "POPULARITY_DESC"] },
@@ -373,7 +382,8 @@
       genre: { sort: ["POPULARITY_DESC"], genre: opts.genreName },
       search: { search: opts.q, sort: ["SEARCH_MATCH", "POPULARITY_DESC"] },
     };
-    const res = await anilist(q, Object.assign({ page, perPage: PER }, routes[kind] || routes.top));
+    const mature = adultOk() ? {} : { isAdult: false, notGenres: ["Ecchi", "Hentai"] };
+    const res = await anilist(q, Object.assign({ page, perPage: PER }, mature, routes[kind] || routes.top));
     const p = res && res.Page;
     return { list: await mainOnly((p && p.media) || []), more: !!(p && p.pageInfo.hasNextPage) };
   }

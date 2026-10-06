@@ -166,10 +166,11 @@
 
   // back, share, and "Add to a list" (a badge: how many of your lists it's in).
   // listAction: "lists" (a library title) or "t-lists" (a TMDB title: it joins your library first)
-  function topbarHtml(listAction, inLists) {
+  function topbarHtml(listAction, inLists, book) {
     return `<div class="t-topbar">
       <button class="t-round" data-t="back" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button>
       <span class="t-spacer"></span>
+      ${book ? `<button class="t-round t-based-round" type="button" data-t="book" aria-label="${esc(book)}" title="${esc(book)}"><i class="fa-solid fa-book-open"></i></button>` : ""}
       <button class="t-round" data-t="share" data-feature="share" aria-label="Share"><i class="fa-solid fa-arrow-up-from-bracket"></i></button>
       <button class="t-round t-lists${inLists ? " on" : ""}" data-action="${listAction}" aria-label="Add to a list" title="Add to a list"><i class="fa-solid fa-list-ul"></i>${
         inLists ? `<b class="t-lists-n">${inLists}</b>` : ""
@@ -192,10 +193,30 @@
   }
   addEventListener("resize", () => fitMeta());
 
+  // officially based on a book (TMDB: a novel / book credit, or its "based on novel or book" keyword):
+  // "Based on the novel by Frank Herbert" ("" when it isn't). Shown as a pill beside the ⋯ menu (a book
+  // button in the phone's top bar); it takes you to the "Based on the book" section
+  function bookLine(d) {
+    if (!d || !window.Books || !Books.fromBook(d)) return "";
+    const src = (d.sourceAuthors || []).filter((a) => /novel|book|author|short story|comic|graphic|memoir|play|story/i.test(a.job));
+    if (!src.length) return "Based on a book";
+    const job = String(src[0].job).toLowerCase();
+    const kind = job === "characters" ? "characters" : /novel/.test(job) ? "novel" : /comic|graphic/.test(job) ? "comic" : /short story/.test(job) ? "short story" : /memoir/.test(job) ? "memoir" : /play/.test(job) ? "play" : "book";
+    return `Based on the ${kind} by ${src.slice(0, 2).map((a) => a.name).join(" & ")}`;
+  }
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest('[data-t="book"]');
+    if (!b) return;
+    const sec = document.querySelector(".t-books");
+    if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+    else UI.toast(b.getAttribute("title") || "Based on a book");
+  });
+
   // computers and tablets: the ⋯ menu at the picture's top right (Share, Add to a list); phones
   // have the same in the round buttons of the top bar
-  function moreMenuHtml(listAction, inLists) {
+  function moreMenuHtml(listAction, inLists, book) {
     return `<div class="t-more">
+      ${book ? `<button class="t-based" type="button" data-t="book" title="${esc(book)}"><i class="fa-solid fa-book-open"></i><span>Based on a book</span></button>` : ""}
       <button class="t-more-btn" type="button" aria-label="More" title="More" aria-haspopup="menu" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical"></i></button>
       <div class="t-more-menu" role="menu">
         <button type="button" role="menuitem" data-t="share" data-feature="share"><i class="fa-solid fa-arrow-up-from-bracket"></i><span>Share</span></button>
@@ -230,8 +251,8 @@
           ? `<picture>${d.artPoster ? `<source media="(max-width: 700px)" srcset="${Store.img(d.artPoster, "w780")}" />` : ""}<img src="${backdrop}" alt="" /></picture>`
           : ""
       }</div>
-      ${topbarHtml(listAction, inLists)}
-      ${moreMenuHtml(listAction, inLists)}
+      ${topbarHtml(listAction, inLists, bookLine(d))}
+      ${moreMenuHtml(listAction, inLists, bookLine(d))}
       <div class="container t-hero-inner">
         <img class="t-poster" src="${Store.poster(Lang.isRu() && d.posterRu ? d.posterRu : Cards.posterOf(t), "w500")}" alt="${esc(Lang.title(t))} poster" />
         <div class="t-head">
@@ -786,6 +807,33 @@
       .catch(() => {});
   }
 
+  // each episode's own videos (TMDB: its promo / preview, clips, behind the scenes), asked for when
+  // its card is on screen: "s-e" -> [{ key, name, type }] | "loading". Drawn again once they're in
+  const epVids = new Map();
+  let epVidsTimer = null;
+  function ensureEpVideos(eps) {
+    const d = currentDetails();
+    if (!d || !d.tmdbId || !TMDB.episodeVideos) return;
+    const soon = Store.today();
+    eps
+      .filter((ep) => ep && ep.e && ep.s && (!ep.date || ep.date <= soon || daysTo(ep.date) <= 30) && !epVids.has(`${ep.s}-${ep.e}`))
+      .forEach((ep) => {
+        const k = `${ep.s}-${ep.e}`;
+        epVids.set(k, "loading");
+        TMDB.episodeVideos(d.tmdbId, ep.s, ep.e)
+          .catch(() => [])
+          .then((list) => {
+            epVids.set(k, list);
+            // (one redraw for the lot)
+            if (list.length) {
+              clearTimeout(epVidsTimer);
+              epVidsTimer = setTimeout(redrawEpisodes, 150);
+            }
+          });
+      });
+  }
+  const VID_LABEL = { Trailer: "Preview", Teaser: "Teaser", Clip: "Clip", Recap: "Recap", Featurette: "Featurette", "Behind the Scenes": "Behind the scenes" };
+
   const seenEp = (ep) => {
     const item = id && Store.get(id);
     const p = item && item.progress;
@@ -808,10 +856,14 @@
   function epCard(ep, big) {
     const future = ep.date && ep.date > Store.today();
     const seen = seenEp(ep);
+    const vids = epVids.get(`${ep.s}-${ep.e}`);
+    const v = Array.isArray(vids) && vids.length ? vids : null;
     return `<article class="ep-card${future ? " future" : ""}${seen ? " seen" : ""}${big ? " big" : ""}" data-ep="${ep.id}" data-se="${ep.s}-${ep.e || ""}">
         <div class="ep-still">${
           safeUrl(ep.image) ? `<img src="${esc(safeUrl(ep.image))}" alt="" loading="lazy" />` : '<span class="ep-noimg"><i class="fa-solid fa-film"></i></span>'
-        }<span class="ep-code">${epCode(ep)}</span>${seen ? '<span class="ep-seen" title="You\'ve seen it"><i class="fa-solid fa-check"></i></span>' : ""}</div>
+        }<span class="ep-code">${epCode(ep)}</span>${seen ? '<span class="ep-seen" title="You\'ve seen it"><i class="fa-solid fa-check"></i></span>' : ""}${
+          v ? `<button class="ep-play" type="button" data-video="${esc(v[0].key)}" data-name="${esc(`${epCode(ep)} · ${v[0].name}`)}" aria-label="Play: ${esc(v[0].name)}" title="${esc(v[0].name)}"><i class="fa-solid fa-play"></i></button>` : ""
+        }</div>
         <div class="ep-text">
           <strong>${esc(ep.name || epCode(ep))}</strong>
           <div class="ep-meta">
@@ -820,6 +872,14 @@
             ${ep.rating ? `<span><i class="fa-solid fa-star"></i> ${ep.rating.toFixed(1)}</span>` : ""}
           </div>
           ${ep.summary ? `<p class="ep-sum clamp">${esc(ep.summary)}</p>` : ""}
+          ${
+            v
+              ? `<div class="ep-vids">${v
+                  .slice(0, big ? 2 : 4)
+                  .map((x) => `<button class="ep-vid" type="button" data-video="${esc(x.key)}" data-name="${esc(`${epCode(ep)} · ${x.name}`)}" title="${esc(x.name)}"><i class="fa-solid fa-play"></i> ${esc(VID_LABEL[x.type] || x.type)}</button>`)
+                  .join("")}${v.length > (big ? 2 : 4) ? `<span class="ep-vid-more">+${v.length - (big ? 2 : 4)} more</span>` : ""}</div>`
+              : ""
+          }
           <div class="ep-foot">${safeUrl(ep.url) ? `<a class="ep-link" href="${esc(safeUrl(ep.url))}" target="_blank" rel="noopener">TVmaze <i class="fa-solid fa-arrow-up-right-from-square"></i></a>` : ""}${
             ep.e ? `<button class="ep-share" type="button" data-feature="share" data-ep-share="${ep.s}-${ep.e}" aria-label="Share this episode" title="Share this episode"><i class="fa-solid fa-arrow-up-from-bracket"></i></button>` : ""
           }</div>
@@ -841,6 +901,7 @@
     const list = epData.get(epSeason);
     if (list === undefined) setTimeout(() => openSeason(epSeason), 0);
     const top = [tm.next && ["Next episode", "fa-forward", tm.next], tm.previous && ["Latest episode", "fa-clock-rotate-left", tm.previous]].filter(Boolean);
+    ensureEpVideos(top.map((x) => x[2]).concat(Array.isArray(list) ? list.slice(0, epAll ? list.length : EP_SHOWN) : []));
     const total = seasons.reduce((a, s) => a + (s.episodes || 0), 0);
     let body;
     if (list === undefined || list === "loading") body = '<p class="muted ep-wait"><i class="fa-solid fa-spinner fa-spin"></i> Loading the episodes…</p>';
@@ -947,9 +1008,19 @@
       if (!epAll) mainEl.querySelector(".t-episodes").scrollIntoView({ block: "start", behavior: "smooth" });
       return;
     }
+    const more = e.target.closest(".ep-vid-more");
+    if (more) {
+      const c = more.closest(".ep-card");
+      const vids = epVids.get(c.dataset.se) || [];
+      const name = (c.querySelector(".ep-text strong") || {}).textContent || "";
+      more.parentElement.innerHTML = vids
+        .map((x) => `<button class="ep-vid" type="button" data-video="${esc(x.key)}" data-name="${esc(`${name} · ${x.name}`)}" title="${esc(x.name)}"><i class="fa-solid fa-play"></i> ${esc(x.name)}</button>`)
+        .join("");
+      return;
+    }
     // tap an episode: its whole story
     const card = e.target.closest(".ep-card");
-    if (card && !e.target.closest("a")) {
+    if (card && !e.target.closest("a, [data-video]")) {
       const p = card.querySelector(".ep-sum");
       if (p) p.classList.toggle("clamp");
     }

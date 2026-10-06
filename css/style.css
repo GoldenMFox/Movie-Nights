@@ -10314,16 +10314,24 @@ html.no-match:not(.posters-only) .hover-preview .match + .dot {
   justify-content: center;
 }
 
-/* the main studio, a little bigger */
+/* the main studio / network, big enough to read: a wide logo up to 200px across, a square one (Warner
+   Bros.' shield) up to 78px tall */
 .xr-brands .xr-logo {
-  height: 58px;
-  padding: 10px 20px;
-  border-radius: 14px;
+  height: auto;
+  min-height: 64px;
+  padding: 12px 22px;
+  border-radius: 16px;
 }
 
 .xr-brands .xr-logo img {
-  max-width: 160px;
-  max-height: 38px;
+  max-width: 200px;
+  max-height: 78px;
+}
+
+.xr-brands .xr-logo.tone-color,
+.xr-brands .xr-logo.tone-mono-dark,
+.xr-brands .xr-logo.tone-mono-light {
+  padding: 4px 6px;
 }
 
 /* "Where you've seen the cast": a card per person */
@@ -22429,6 +22437,55 @@ html.app-ui.tabs-away .t-shared {
   top: 18px;
   right: 22px;
   z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* "Based on a book": a glass pill beside the ⋯ (the book's warm paper colour on its icon) */
+.t-based {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 42px;
+  padding: 0 16px 0 7px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.t-based i {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #f3dfb4, #c9a46a);
+  color: #4a3218;
+  font-size: 13px;
+  box-shadow: 0 4px 12px -4px rgba(201, 164, 106, 0.8);
+}
+
+.t-based:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.t-based-round i {
+  color: #f3dfb4;
+}
+
+/* (the ⋯ menu stays under its button, not under the pill) */
+.t-more .t-more-menu {
+  right: 0;
 }
 
 .t-more-btn {
@@ -30027,6 +30084,82 @@ html.feat-off-share [data-feature="share"] {
   color: var(--text);
 }
 
+/* an episode's own videos (TMDB): a play button on its still, its preview / clips as small pills */
+.ep-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0 0 0 3px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.ep-play:hover {
+  background: var(--accent);
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.ep-vids {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.ep-vid {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 5px 11px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.ep-vid i {
+  color: var(--accent-hover);
+  font-size: 10px;
+}
+
+.ep-vid:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: var(--glass-bg-hover);
+}
+
+.ep-vid-more {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ep-vid-more:hover {
+  color: var(--text);
+}
+
 .ep-card.target {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent) inset, 0 0 24px rgba(229, 9, 20, 0.25);
@@ -32464,7 +32597,7 @@ button.xr-sq:hover {
 .bk-book {
   position: relative;
   flex: none;
-  width: var(--bw, 52px);
+  width: var(--bw, 60px);
   height: var(--bh, 220px);
   overflow: hidden;
   border-radius: 3px 5px 5px 3px;
@@ -32618,11 +32751,19 @@ button.xr-sq:hover {
   border-radius: 50%;
 }
 
-/* few books: "By" and "About" side by side, each shelf filling its half */
-.bk-shelves.side {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 22px;
+/* each shelf as long as its books need (never the whole width for three books); "By" and "About"
+   side by side when they fit, a long one on its own line, its books scrolling */
+.bk-shelves {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0 28px;
+}
+
+.bk-shelf-wrap {
+  flex: 0 1 auto;
+  min-width: min(260px, 100%);
+  max-width: 100%;
 }
 
 /* ============================== Seasonal look (js/components/season.js) ==============================

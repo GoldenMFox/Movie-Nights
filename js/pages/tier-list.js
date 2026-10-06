@@ -123,6 +123,7 @@
       <button class="btn btn-primary tl-quick" type="button"><i class="fa-solid fa-bolt"></i> Quick rank</button>
       <button class="btn tl-fill" type="button"><i class="fa-solid fa-wand-magic-sparkles"></i> Fill from my ratings</button>
       <button class="btn tl-clear" type="button"><i class="fa-solid fa-rotate-left"></i> Clear</button>
+      <button class="btn tl-photo" type="button" title="Save the board as a picture (PNG)"><i class="fa-regular fa-image"></i> <span class="tl-word">Save picture</span></button>
       <span class="tl-status" aria-live="polite"></span>
       <button class="btn tl-saveas" type="button" hidden><i class="fa-regular fa-copy"></i> <span class="tl-word">Save as new</span></button>
       <button class="btn tl-save" type="button"><i class="fa-solid fa-floppy-disk"></i> Save</button>
@@ -375,6 +376,11 @@
     if (e.target.closest(".tl-new")) return newBoard();
     if (e.target.closest(".tl-save")) return saveBoard(false);
     if (e.target.closest(".tl-saveas")) return saveBoard(true);
+    if (e.target.closest(".tl-photo")) {
+      if (!countOf(tiers)) return toast("Rank a few titles first");
+      const a = active();
+      return savePicture(a ? a.name : "My tier list", tiers);
+    }
     if (e.target.closest(".tl-quick")) return quickRank();
     if (e.target.closest(".tl-fill")) return fillFromRatings();
     if (e.target.closest(".tl-clear")) return clearAll();
@@ -617,6 +623,10 @@
           if (!(await openForEdit(viewing))) view(viewing);
           else window.scrollTo({ top: 0, behavior: "smooth" });
         }
+        if (e.target.closest(".tlv-photo")) {
+          const l = Store.tierLists().find((x) => x.id === viewing);
+          if (l) savePicture(l.name, tiersOf(l));
+        }
         if (e.target.closest(".tlv-rename")) renameList(viewing);
         if (e.target.closest(".tlv-delete")) deleteList(viewing);
         const poster = e.target.closest("[data-open]");
@@ -651,10 +661,176 @@
       ).join("")}</div>
       <div class="tlv-buttons">
         <button class="btn btn-primary tlv-open" type="button"><i class="fa-solid fa-pen"></i> ${on ? "Back to editing" : "Open to edit"}</button>
+        <button class="btn tlv-photo" type="button"><i class="fa-regular fa-image"></i> Save picture</button>
         <button class="btn tlv-rename" type="button"><i class="fa-solid fa-i-cursor"></i> Rename</button>
         <button class="btn tlv-delete" type="button" aria-label="Delete" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
       </div>`;
     Cards.openModal(viewer);
+  }
+
+  /* ---------- a tier list as a picture (PNG): its name on top, then its rows, posters and all ---------- */
+
+  // a poster, ready to draw (null when it can't be had: a box with the title instead)
+  const loadPoster = (src) =>
+    new Promise((resolve) => {
+      const im = new Image();
+      im.crossOrigin = "anonymous";
+      im.onload = () => resolve(im);
+      im.onerror = () => resolve(null);
+      // (its own copy: the one the page already shows was fetched without permission to draw it)
+      im.src = /^https:/.test(src) ? `${src}${src.includes("?") ? "&" : "?"}mn=png` : src;
+    });
+  function roundRect(x, X, Y, w, h, r) {
+    x.beginPath();
+    x.moveTo(X + r, Y);
+    x.arcTo(X + w, Y, X + w, Y + h, r);
+    x.arcTo(X + w, Y + h, X, Y + h, r);
+    x.arcTo(X, Y + h, X, Y, r);
+    x.arcTo(X, Y, X + w, Y, r);
+    x.closePath();
+  }
+  async function savePicture(name, t) {
+    toast("Making the picture…");
+    const font = getComputedStyle(document.body).fontFamily || "system-ui, sans-serif";
+    const W = 1400;
+    const PAD = 40;
+    const LABEL = 150;
+    const PW = 104; // a poster: 104 × 156
+    const PH = 156;
+    const GAP = 8;
+    const per = Math.floor((W - PAD * 2 - LABEL - 24 + GAP) / (PW + GAP));
+    const rows = TIERS.map((x) => {
+      const ids = (t[x.id] || []).filter((id) => Store.get(id));
+      const lines = Math.max(1, Math.ceil(ids.length / per));
+      return { x, ids, h: lines * PH + (lines - 1) * GAP + 24 };
+    });
+    const HEAD = 150;
+    const FOOT = 60;
+    const H = HEAD + rows.reduce((s, r) => s + r.h + 12, 0) + FOOT;
+    // every poster first (TMDB lets a page draw them)
+    const all = [...new Set(rows.flatMap((r) => r.ids))];
+    const pics = new Map(await Promise.all(all.map(async (id) => [id, await loadPoster(Store.poster(Cards.posterOf(Store.get(id)), "w185"))])));
+
+    const c = document.createElement("canvas");
+    const scale = 2; // (sharp on any screen)
+    c.width = W * scale;
+    c.height = H * scale;
+    const x = c.getContext("2d");
+    x.scale(scale, scale);
+    // the page: dark, a red glow at the top
+    x.fillStyle = "#0c0c0f";
+    x.fillRect(0, 0, W, H);
+    const glow = x.createRadialGradient(W * 0.2, 0, 0, W * 0.2, 0, W * 0.7);
+    glow.addColorStop(0, "rgba(229, 9, 20, 0.28)");
+    glow.addColorStop(1, "rgba(229, 9, 20, 0)");
+    x.fillStyle = glow;
+    x.fillRect(0, 0, W, H);
+    // its name
+    const count = rows.reduce((s, r) => s + r.ids.length, 0);
+    x.textBaseline = "alphabetic";
+    x.fillStyle = "#ff4d57";
+    x.font = `800 15px ${font}`;
+    x.fillText("TIER LIST", PAD, 58);
+    x.fillStyle = "#ffffff";
+    x.font = `800 46px ${font}`;
+    let title = name;
+    while (x.measureText(title).width > W - PAD * 2 && title.length > 4) title = `${title.slice(0, -2)}…`;
+    x.fillText(title, PAD, 108);
+    x.fillStyle = "rgba(255, 255, 255, 0.55)";
+    x.font = `600 16px ${font}`;
+    x.fillText(`${count} title${count === 1 ? "" : "s"}`, PAD, 134);
+    // the rows
+    let y = HEAD;
+    rows.forEach(({ x: tier, ids, h }) => {
+      x.fillStyle = "rgba(255, 255, 255, 0.045)";
+      roundRect(x, PAD, y, W - PAD * 2, h, 16);
+      x.fill();
+      // its letter, on the tier's colour
+      x.save();
+      roundRect(x, PAD, y, LABEL, h, 16);
+      x.clip();
+      x.fillStyle = tier.color;
+      x.fillRect(PAD, y, LABEL, h);
+      x.fillStyle = "rgba(0, 0, 0, 0.18)";
+      x.fillRect(PAD, y + h / 2, LABEL, h / 2);
+      x.restore();
+      x.fillStyle = "#fff";
+      x.textAlign = "center";
+      x.font = `900 54px ${font}`;
+      x.fillText(tier.id, PAD + LABEL / 2, y + h / 2 + 10);
+      x.font = `700 14px ${font}`;
+      x.fillStyle = "rgba(255, 255, 255, 0.85)";
+      x.fillText(tier.name.toUpperCase(), PAD + LABEL / 2, y + h / 2 + 34);
+      x.textAlign = "left";
+      // its posters
+      if (!ids.length) {
+        x.fillStyle = "rgba(255, 255, 255, 0.3)";
+        x.font = `600 15px ${font}`;
+        x.fillText("Nothing here", PAD + LABEL + 24, y + h / 2 + 5);
+      }
+      ids.forEach((id, i) => {
+        const px = PAD + LABEL + 12 + (i % per) * (PW + GAP);
+        const py = y + 12 + Math.floor(i / per) * (PH + GAP);
+        x.save();
+        roundRect(x, px, py, PW, PH, 8);
+        x.clip();
+        const im = pics.get(id);
+        if (im) x.drawImage(im, px, py, PW, PH);
+        else {
+          x.fillStyle = "#26262c";
+          x.fillRect(px, py, PW, PH);
+          x.fillStyle = "rgba(255, 255, 255, 0.75)";
+          x.font = `700 12px ${font}`;
+          const words = Lang.title(Store.get(id)).split(/\s+/);
+          let line = "";
+          let ly = py + 24;
+          words.forEach((w) => {
+            if (x.measureText(`${line} ${w}`).width > PW - 14 && line) {
+              x.fillText(line, px + 7, ly);
+              line = w;
+              ly += 16;
+            } else line = line ? `${line} ${w}` : w;
+          });
+          if (line && ly < py + PH - 6) x.fillText(line, px + 7, ly);
+        }
+        x.restore();
+      });
+      y += h + 12;
+    });
+    // the site's name, at the foot
+    x.fillStyle = "rgba(255, 255, 255, 0.4)";
+    x.font = `700 14px ${font}`;
+    x.textAlign = "right";
+    x.fillText("MOVIE NIGHTS", W - PAD, H - 24);
+    x.textAlign = "left";
+
+    let blob;
+    try {
+      blob = await new Promise((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error("no picture"))), "image/png"));
+    } catch (e) {
+      return toast("Couldn't make the picture on this device");
+    }
+    const file = `${name.replace(/[^\w\s-]+/g, "").trim().replace(/\s+/g, "-").toLowerCase() || "tier-list"}.png`;
+    // (a phone: its share sheet, so it can go straight to Photos; elsewhere: downloaded)
+    const f = typeof File === "function" ? new File([blob], file, { type: "image/png" }) : null;
+    if (touch && f && navigator.canShare && navigator.canShare({ files: [f] })) {
+      try {
+        await navigator.share({ files: [f], title: name });
+        return;
+      } catch (e) {
+        if (e && e.name === "AbortError") return;
+      }
+    }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = file;
+    document.body.append(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 1000);
+    toast(`Saved "${file}"`);
   }
 
   async function renameList(listId) {

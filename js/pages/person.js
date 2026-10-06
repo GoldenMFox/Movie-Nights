@@ -4,7 +4,7 @@
  *   person.html?name=Zendaya   found by name (library titles keep their cast without ids)
  *
  * Layout: backdrop from their best-known title; on the left a card with their photo,
- * name, age and how many of their titles are in your library, and their top genres;
+ * name, age and how many of their titles are in your library;
  * on the right their best-known title + photos, a few numbers, the biography and facts.
  * Below, in the order set in Admin → Person page: "Best known for", the full filmography (newest
  * first), their books.
@@ -74,15 +74,6 @@
     return { count: items.length, rated: rated.length, avg };
   }
 
-  function topGenres(list) {
-    const n = {};
-    list.forEach((t) => (t.genres || []).forEach((g) => (n[g] = (n[g] || 0) + 1)));
-    return Object.entries(n)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([g]) => g);
-  }
-
   /* ---------------- top: photo card + overview ---------------- */
 
   function render() {
@@ -95,7 +86,6 @@
     const years = work.map((t) => t.year).filter((y) => y && y <= new Date().getFullYear());
     const firstYear = years.length ? Math.min(...years) : null;
     const age = p.birthday ? yearsBetween(p.birthday, p.deathday) : null;
-    const genres = topGenres(known);
     const dept = p.department === "Acting" ? "Actor" : p.department === "Directing" ? "Director" : p.department === "Writing" ? "Writer" : p.department;
 
     document.title = `${p.name} · Movie Nights`;
@@ -162,13 +152,6 @@
               </div>
             </div>
           </div>
-          ${
-            genres.length
-              ? `<div class="p-card p-genres"><h3>Top genres</h3><div class="p-chips">${genres
-                  .map((g) => `<a href="movies-explore.html?genre=${encodeURIComponent(g)}">${esc(g)}</a>`)
-                  .join("")}</div></div>`
-              : ""
-          }
         </aside>
 
         <div class="p-body">
@@ -256,9 +239,13 @@
   const savedRows = () => (window.Site && Site.personRows ? Site.personRows() : { order: ["known", "filmography", "books", "news"], hidden: [] });
   // the rows' order: the owner's (Admin → Person page), but for a writer (TMDB says they write, or
   // you came from a book's author) their books come first, right before the filmography
+  // a writer: TMDB says they write, a film is based on their novel / book, or you came from a book's
+  // author. Only a writer has a Books row (an actor's memoir or a biography of them isn't the point)
+  const BOOK_JOB = /^(novel|book|author|original story|short story|comic book|graphic novel|characters)$/i;
+  const isWriter = () => params.get("from") === "book" || (p && (p.department === "Writing" || p.titles.some((t) => (t.jobs || []).some((j) => BOOK_JOB.test(j)))));
   function rowOrder() {
     let { order } = savedRows();
-    if ((params.get("from") === "book" || (p && p.department === "Writing")) && order.includes("books")) {
+    if (isWriter() && order.includes("books")) {
       order = order.filter((k) => k !== "books");
       order.splice(Math.max(0, order.indexOf("filmography")), 0, "books");
     }
@@ -484,7 +471,7 @@
   /* ---------------- books by them, and about them (js/services/books.js, Open Library) ----------------
      Under the filmography, looked for once when it comes near the screen; nothing found: no section */
   function mountBooks() {
-    if (!window.Books || !window.Site || !Site.feature("books") || !Books.ready() || !p) return;
+    if (!window.Books || !window.Site || !Site.feature("books") || !Books.ready() || !p || !isWriter()) return;
     const box = document.createElement("section");
     box.className = "container t-section p-books";
     box.dataset.prow = "books";
@@ -533,7 +520,6 @@
           bk.remove();
           if (!wrap.querySelector(".bk-book")) wrap.remove();
           if (!box.querySelector(".bk-book")) box.hidden = true;
-          else fill();
           return;
         }
         const h = parseFloat(bk.style.getPropertyValue("--bh")) || 220;
@@ -549,28 +535,8 @@
           }
         });
       });
-      // a shelf with few books: their spines a little wider, so the shelf isn't left half empty
-      // one shelf with few books (8 or fewer): the two side by side on one row, each as wide as its
-      // books need (the short one at least wide enough for its title), so neither stands half empty
-      const fill = () => {
-        const wrap = box.querySelector(".bk-shelves");
-        // (counted each time: a book with a plain cover leaves its shelf)
-        const [by = 0, about = 0] = [...wrap.children].map((w) => w.querySelectorAll(".bk-book").length);
-        const side = window.innerWidth > 900 && wrap.children.length === 2 && Math.min(by, about) <= 8;
-        wrap.classList.toggle("side", side);
-        // (the short shelf: just as wide as its books at their widest, its title fitting; the other: the rest)
-        const snug = (n) => `${Math.max(190, n * 74 + 70)}px`;
-        wrap.style.gridTemplateColumns = !side ? "" : by <= about ? `${snug(by)} minmax(0, 1fr)` : `minmax(0, 1fr) ${snug(about)}`;
-        box.querySelectorAll(".bk-shelf-books").forEach((row) => {
-          const n = row.querySelectorAll(".bk-book").length;
-          const room = row.clientWidth - 40; // (the bookend)
-          const phone = window.innerWidth <= 700;
-          const per = Math.floor(room / Math.max(1, n)) - 4;
-          row.style.setProperty("--bw", `${Math.max(phone ? 44 : 52, Math.min(phone ? 58 : 96, per))}px`);
-        });
-      };
-      fill();
-      window.addEventListener("resize", fill);
+      // (each shelf is as long as its books need: a few books, a short shelf; "By" and "About" side
+      // by side when they fit, see .bk-shelves in css/style.css)
       box.querySelectorAll(".bk-book img").forEach((img) => {
         const bk = img.closest(".bk-book");
         if (img.complete) return seen(bk, img);

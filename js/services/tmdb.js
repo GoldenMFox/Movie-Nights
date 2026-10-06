@@ -257,6 +257,25 @@
   // first while RU is on), then anything else TMDB has for it (clips, bloopers…), best
   // quality first. Many seasons have few or none. Kept for this visit.
   const seasonCache = new Map();
+  // one episode's own videos (TMDB keeps the promos, previews, clips and behind-the-scenes of many
+  // shows per episode): [{ key, name, type }], its trailer / preview first, then clips, then the
+  // rest. Kept 3 days; none: []
+  const EP_ORDER = ["Trailer", "Teaser", "Clip", "Recap", "Featurette", "Behind the Scenes"];
+  async function episodeVideos(id, s, e) {
+    const ck = `ev1:${id}-${s}-${e}`;
+    const saved = await cacheGet(ck);
+    if (saved && Date.now() - saved.at < 3 * 86400000) return saved.list;
+    const d = await request(`/tv/${id}/season/${s}/episode/${e}/videos`, { include_video_language: "en,null" });
+    const rank = (v) => (EP_ORDER.indexOf(v.type) + 1 || 9) * 10 - (v.official ? 1 : 0);
+    const list = ((d && d.results) || [])
+      .filter((v) => v.site === "YouTube" && v.key)
+      .sort((a, b) => rank(a) - rank(b) || (b.size || 0) - (a.size || 0))
+      .slice(0, 12)
+      .map((v) => ({ key: v.key, name: v.name || v.type, type: v.type }));
+    cacheSet(ck, { at: Date.now(), list });
+    return list;
+  }
+
   function seasonVideos(id, n) {
     const ck = `${id}-${n}-${wantRu() ? "ru" : "en"}`;
     if (seasonCache.has(ck)) return seasonCache.get(ck);
@@ -394,8 +413,9 @@
     const byDate = (r) =>
       category === "upcoming" ? !!r.release_date && r.release_date > today : category === "now-playing" ? !r.release_date || r.release_date <= today : true;
     // (titles without a poster yet are left out, like on Home's Top 10; TV lists leave out
-    // animation: anime has its own page, and cartoons aren't what the TV Shows page is for)
-    const notCartoon = (r) => c.media !== "tv" || !(r.genre_ids || []).includes(ANIMATION);
+    // animation: anime has its own page, and cartoons aren't what the TV Shows page is for; the
+    // anime lists are animation themselves)
+    const notCartoon = (r) => c.media !== "tv" || /anime/.test(category) || !(r.genre_ids || []).includes(ANIMATION);
     return {
       results: applyRu(data.results.filter((r) => r.poster_path && (c.media || isTitle(r)) && byDate(r) && notCartoon(r)).map((r) => simplify(r, c.media)), ru, c.media),
       totalPages: Math.min(data.total_pages || 1, 500),
@@ -676,7 +696,7 @@
   }
 
   // a title's details depend on your country (streaming services, age rating)
-  const detailsKey = (media, id) => `d3:${country()}:${media}-${id}`; // d3: release dates, episodes and keywords too
+  const detailsKey = (media, id) => `d4:${country()}:${media}-${id}`; // d4: release dates, episodes, keywords, more pictures
 
   function certificationOf(d, media, country) {
     if (media === "movie") {
@@ -771,7 +791,16 @@
         .sort(byQuality)
         .slice(0, 12)
         .map((v) => ({ key: v.key, name: v.name, type: v.type })),
-      images: ((d.images && d.images.backdrops) || []).slice(0, 12).map((i) => i.file_path),
+      // the scenes themselves first (pictures with no words on them: stills from the film), up to 40,
+      // then a few of the promotional ones with the title on them
+      images: (() => {
+        const all = (d.images && d.images.backdrops) || [];
+        return all
+          .filter((i) => !i.iso_639_1)
+          .slice(0, 40)
+          .concat(all.filter((i) => i.iso_639_1).slice(0, 4))
+          .map((i) => i.file_path);
+      })(),
       // poster art without the title printed on it: used as the tall header image on phones
       artPoster: (((d.images && d.images.posters) || []).find((p) => p.iso_639_1 === null) || {}).file_path || "",
       // (TMDB lists them oldest first: the newest 10 of them, newest first)
@@ -1464,7 +1493,7 @@
     discover, searchPeople, keywordId, cardsFor, store: { get: (k) => cacheGet(k), set: (k, v) => cacheSet(k, v) },
     facts, credits, tagline, moodPicks, boxOffice, boxOfficeOf, franchiseBoxOffice, searchCollections, yearTop, directorBoxOffice, searchDirectors,
     knownRecommendations, collection, findByImdb, findFilm, providersFor, providerCatalog, nextUp, enabled, keySource, search, searchIn, searchSmart, ruInfo, ruVideos,
-    seasonVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, findMatch, person, findPerson, test, CATEGORIES,
+    seasonVideos, episodeVideos, list, top10, byGenre, details, detailsById, basic, releaseDate, localDate, knownLocalDate, findMatch, person, findPerson, test, CATEGORIES,
     genreNames, genresFor, country, countryName, sameCountry, regions, clearCache,
     // the country picked in Settings (or the site's default)
     get COUNTRY() {

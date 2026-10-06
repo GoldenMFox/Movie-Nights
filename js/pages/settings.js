@@ -64,6 +64,12 @@
                 : "How much you'll probably like each title (86%), on the posters and in the hover preview",
               `<label class="sv-switch"><input type="checkbox" class="sv-match" aria-label="Match %" /><span class="switch-track"><span class="switch-thumb"></span></span></label>`
             )}
+            ${row(
+              "fa-dragon",
+              "Mature anime",
+              "Ecchi and adult (18+) anime in the anime lists and rows. Off: they're left out",
+              `<label class="sv-switch"><input type="checkbox" class="sv-adult-anime" aria-label="Mature anime" /><span class="switch-track"><span class="switch-thumb"></span></span></label>`
+            )}
             <p class="sv-note"><i class="fa-solid fa-circle-info"></i> Russian titles, Dim watched and Poster details are switches in the profile menu (your picture, top right). Your notifications are in the bell beside it.</p>`
           )}
 
@@ -289,6 +295,18 @@
       } catch (err) {}
     });
   }
+  // Mature anime: a word in this browser's storage, read by js/services/anime.js
+  const adultAnime = $(".sv-adult-anime");
+  try {
+    adultAnime.checked = localStorage.getItem("mn:adultAnime") === "on";
+  } catch (err) {}
+  adultAnime.addEventListener("change", () => {
+    try {
+      if (adultAnime.checked) localStorage.setItem("mn:adultAnime", "on");
+      else localStorage.removeItem("mn:adultAnime");
+    } catch (err) {}
+    toast(adultAnime.checked ? "Mature anime: shown in the anime lists" : "Mature anime: left out of the anime lists");
+  });
   const match = $(".sv-match");
   // (posters only: the match is just in the hover preview, and stays there: shown on, greyed)
   const postersOnly = html.classList.contains("posters-only");
