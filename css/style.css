@@ -25660,7 +25660,8 @@ li[hidden] {
 }
 
 /* blood (Horror): along the top of each poster, following its rounded corners (clipped by them),
-   running down both sides and in a few drips */
+   glossy and dark, running down both sides and in drips of different lengths, each narrowing to a
+   round bulb; three patterns (the two drips where the drops form are in the same place on each) */
 .lt[data-caps="blood"] .movie-item::after {
   content: "";
   position: absolute;
@@ -25670,9 +25671,17 @@ li[hidden] {
   z-index: 4;
   height: 80px;
   border-radius: 15px 15px 0 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80' preserveAspectRatio='none'%3E%3Cpath d='M0 0 H200 V12 C198 14 197 20 197 30 C197 36 193 36 193 30 C193 22 192 16 188 14 C182 12 176 13 172 14 C168 15 166 18 165.5 26 C165 33 159.5 33 159.6 25 C159.8 18 157 15 150 14 C134 12 118 14 104 13 C98 13 96 15 95.6 19 C95.2 23 91.4 23 91.2 18.5 C91 15 88 13.5 80 13 C66 12 56 13 48 14 C44 15 42.6 19 42.4 30 C42.2 42 35.8 42 35.8 30 C35.8 20 34 16 28 15 C18 14 8 14 5 16 C3 18 3 24 3 34 C3 40 0 40 0 34 Z' fill='%236e0007'/%3E%3Cpath d='M0 0 H200 V5 C150 7 60 6 0 5 Z' fill='%23a3101b'/%3E%3Cpath d='M38.4 31 C38.2 36 37 39 36.8 36' stroke='%23d0303a' stroke-width='0.9' fill='none' stroke-linecap='round' opacity='0.7'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='b' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23b3121e'/%3E%3Cstop offset='0.18' stop-color='%238a0611'/%3E%3Cstop offset='0.55' stop-color='%23600008'/%3E%3Cstop offset='1' stop-color='%233d0004'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 0 H200 V30 C200 36 196.5 37 196.5 31 C196.5 22 195 15 191 13 L178.1 12.5 C178.7 14.6 179.9 15.2 179.9 16.7 C179.9 16.1 179.2 16.4 179.2 17 A1.6 1.6 0 0 0 182.4 17 C182.4 16.4 181.7 16.1 181.7 16.7 C181.7 15.2 182.8 14.6 183.4 12.5 L158.8 12.4 C159.3 19.6 161.2 21.7 161.2 26.4 C161.2 29.4 160.2 29.9 160.2 30.8 A2.2 2.2 0 0 0 164.8 30.8 C164.8 29.9 163.8 29.4 163.8 26.4 C163.8 21.7 165.7 19.6 166.2 12.4 L145.1 11.8 C145.7 13.7 147.3 14.3 147.3 15.6 C147.3 14.1 146.4 14.5 146.4 15.3 A2 2 0 0 0 150.5 15.3 C150.5 14.5 149.6 14.1 149.6 15.6 C149.6 14.3 151.3 13.7 151.9 11.8 Q139 10.2 134 9.1 L124.8 11.6 C125.4 16.9 127 18.4 127 22 C127 23.7 126.1 24.1 126.1 24.9 A2 2 0 0 0 130.1 24.9 C130.1 24.1 129.2 23.7 129.2 22 C129.2 18.4 130.8 16.9 131.4 11.6 Q121.5 10.4 116.5 10 L104.9 10.6 C105.5 13.2 107 13.9 107 15.6 C107 14.9 106.2 15.3 106.2 16.1 A1.9 1.9 0 0 0 110 16.1 C110 15.3 109.1 14.9 109.1 15.6 C109.1 13.9 110.6 13.2 111.2 10.6 Q99.6 11.5 94.6 12.4 Q89 12.4 84 11 Q77.7 11.6 72.7 10.1 Q64.7 14 59.7 12.4 Q53.1 10.9 48.1 9.9 L34.5 11.1 C35.1 21.9 37.5 25 37.5 32.1 C37.5 37.7 36.3 38.2 36.3 39.3 A2.7 2.7 0 0 0 41.7 39.3 C41.7 38.2 40.5 37.7 40.5 32.1 C40.5 25 42.9 21.9 43.5 11.1 Q31.1 12.9 26.1 10.6 Q18.9 11.2 13.9 12.8 C5 13 3.5 18 3.5 28 C3.5 36 0 36 0 30 Z' fill='url(%23b)'/%3E%3Cpath d='M4 2.2 C40 3.6 80 2.4 120 3.2 C150 3.8 176 2.6 196 2.4 C176 4.6 150 5.6 120 4.8 C80 4.2 40 5.6 4 4.2 Z' fill='%23ffffff' fill-opacity='0.22'/%3E%3Cg fill='%23ff8080' fill-opacity='0.4'%3E%3Cellipse cx='180.2' cy='16.6' rx='0.4' ry='0.7'/%3E%3Cellipse cx='161.7' cy='30.2' rx='0.6' ry='1'/%3E%3Cellipse cx='147.8' cy='14.8' rx='0.6' ry='0.9'/%3E%3Cellipse cx='127.4' cy='24.4' rx='0.5' ry='0.9'/%3E%3Cellipse cx='107.4' cy='15.6' rx='0.5' ry='0.9'/%3E%3Cellipse cx='38.1' cy='38.6' rx='0.8' ry='1.2'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.55));
   pointer-events: none;
+}
+
+.lt[data-caps="blood"] .movie-item:nth-child(3n + 2)::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='b' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23b3121e'/%3E%3Cstop offset='0.18' stop-color='%238a0611'/%3E%3Cstop offset='0.55' stop-color='%23600008'/%3E%3Cstop offset='1' stop-color='%233d0004'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 0 H200 V30 C200 36 196.5 37 196.5 31 C196.5 22 195 15 191 13 L180.1 12.2 C180.7 16.4 182.7 17.6 182.7 20.4 C182.7 20.5 181.7 21 181.7 21.9 A2.3 2.3 0 0 0 186.3 21.9 C186.3 21 185.3 20.5 185.3 20.4 C185.3 17.6 187.2 16.4 187.8 12.2 Q176.2 13.9 171.2 9.9 L158.8 12.1 C159.3 19.4 161.2 21.5 161.2 26.3 C161.2 29.4 160.2 29.9 160.2 30.8 A2.2 2.2 0 0 0 164.8 30.8 C164.8 29.9 163.8 29.4 163.8 26.3 C163.8 21.5 165.7 19.4 166.2 12.1 Q152.4 12.6 147.4 11.1 Q141.7 11.4 136.7 10.1 L120.8 12 C121.4 15.5 123.4 16.5 123.4 18.9 C123.4 18.4 122.4 18.9 122.4 19.8 A2.3 2.3 0 0 0 127 19.8 C127 18.9 126 18.4 126 18.9 C126 16.5 127.9 15.5 128.5 12 Q113.7 13.8 108.7 10.9 Q105 10.9 100 10.2 L81.6 11.9 C82.2 14.1 84 14.7 84 16.1 C84 14.6 83.1 15 83.1 15.9 A2.2 2.2 0 0 0 87.4 15.9 C87.4 15 86.4 14.6 86.4 16.1 C86.4 14.7 88.2 14.1 88.8 11.9 Q76.3 13.2 71.3 12.4 Q63.8 12.8 58.8 12.6 Q51.5 10.7 46.5 11.8 L34.5 12.1 C35.1 22.6 37.5 25.6 37.5 32.4 C37.5 37.7 36.3 38.2 36.3 39.3 A2.7 2.7 0 0 0 41.7 39.3 C41.7 38.2 40.5 37.7 40.5 32.4 C40.5 25.6 42.9 22.6 43.5 12.1 Q28.7 10.2 23.7 11.5 L10.1 11.4 C10.7 17 11.2 18.6 11.2 22.2 C11.2 24.8 10.5 25.1 10.5 25.8 A1.6 1.6 0 0 0 13.7 25.8 C13.7 25.1 13 24.8 13 22.2 C13 18.6 13.6 17 14.2 11.4 C5 13 3.5 18 3.5 28 C3.5 36 0 36 0 30 Z' fill='url(%23b)'/%3E%3Cpath d='M4 2.2 C40 3.6 80 2.4 120 3.2 C150 3.8 176 2.6 196 2.4 C176 4.6 150 5.6 120 4.8 C80 4.2 40 5.6 4 4.2 Z' fill='%23ffffff' fill-opacity='0.22'/%3E%3Cg fill='%23ff8080' fill-opacity='0.4'%3E%3Cellipse cx='183.2' cy='21.3' rx='0.6' ry='1'/%3E%3Cellipse cx='161.7' cy='30.2' rx='0.6' ry='1'/%3E%3Cellipse cx='123.9' cy='19.2' rx='0.6' ry='1'/%3E%3Cellipse cx='84.5' cy='15.3' rx='0.6' ry='1'/%3E%3Cellipse cx='38.1' cy='38.6' rx='0.8' ry='1.2'/%3E%3Cellipse cx='11.6' cy='25.4' rx='0.4' ry='0.7'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.lt[data-caps="blood"] .movie-item:nth-child(3n)::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='b' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23b3121e'/%3E%3Cstop offset='0.18' stop-color='%238a0611'/%3E%3Cstop offset='0.55' stop-color='%23600008'/%3E%3Cstop offset='1' stop-color='%233d0004'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 0 H200 V30 C200 36 196.5 37 196.5 31 C196.5 22 195 15 191 13 Q183.9 10.9 178.9 10.7 Q174.7 11.8 169.7 10.8 L158.8 11 C159.3 18.7 161.2 20.9 161.2 26 C161.2 29.4 160.2 29.9 160.2 30.8 A2.2 2.2 0 0 0 164.8 30.8 C164.8 29.9 163.8 29.4 163.8 26 C163.8 20.9 165.7 18.7 166.2 11 Q152.9 12.7 147.9 10.4 Q143.2 12.1 138.2 9.8 L126.9 12.1 C127.5 13.9 129.2 14.4 129.2 15.6 C129.2 13.9 128.3 14.3 128.3 15.1 A2.1 2.1 0 0 0 132.4 15.1 C132.4 14.3 131.5 13.9 131.5 15.6 C131.5 14.4 133.2 13.9 133.8 12.1 Q120.2 13.7 115.2 9.5 L109.7 10.7 C110.3 16.7 110.8 18.5 110.8 22.4 C110.8 25.4 110.1 25.7 110.1 26.4 A1.6 1.6 0 0 0 113.3 26.4 C113.3 25.7 112.6 25.4 112.6 22.4 C112.6 18.5 113.1 16.7 113.7 10.7 Q103.8 11.8 98.8 12.3 L82.1 10.7 C82.7 14.2 83.7 15.2 83.7 17.5 C83.7 18.2 83 18.5 83 19.1 A1.6 1.6 0 0 0 86.2 19.1 C86.2 18.5 85.5 18.2 85.5 17.5 C85.5 15.2 86.5 14.2 87.1 10.7 Q74.7 10.5 69.7 11.8 Q65 11.6 60 9.4 Q54.9 11.1 49.9 12.5 L34.5 12.3 C35.1 22.7 37.5 25.6 37.5 32.5 C37.5 37.7 36.3 38.2 36.3 39.3 A2.7 2.7 0 0 0 41.7 39.3 C41.7 38.2 40.5 37.7 40.5 32.5 C40.5 25.6 42.9 22.7 43.5 12.3 Q27.5 13.1 22.5 12.7 L13.3 11.2 C13.9 16 15.7 17.3 15.7 20.4 C15.7 21.3 14.8 21.8 14.8 22.6 A2.2 2.2 0 0 0 19.1 22.6 C19.1 21.8 18.1 21.3 18.1 20.4 C18.1 17.3 19.9 16 20.5 11.2 C5 13 3.5 18 3.5 28 C3.5 36 0 36 0 30 Z' fill='url(%23b)'/%3E%3Cpath d='M4 2.2 C40 3.6 80 2.4 120 3.2 C150 3.8 176 2.6 196 2.4 C176 4.6 150 5.6 120 4.8 C80 4.2 40 5.6 4 4.2 Z' fill='%23ffffff' fill-opacity='0.22'/%3E%3Cg fill='%23ff8080' fill-opacity='0.4'%3E%3Cellipse cx='161.7' cy='30.2' rx='0.6' ry='1'/%3E%3Cellipse cx='129.6' cy='14.6' rx='0.6' ry='0.9'/%3E%3Cellipse cx='111.1' cy='26' rx='0.4' ry='0.7'/%3E%3Cellipse cx='84' cy='18.7' rx='0.4' ry='0.7'/%3E%3Cellipse cx='38.1' cy='38.6' rx='0.8' ry='1.2'/%3E%3Cellipse cx='16.2' cy='22.1' rx='0.6' ry='1'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .lt[data-caps="blood"] .movie-item:nth-child(even)::after {
@@ -25692,7 +25701,7 @@ li[hidden] {
   width: 8px;
   height: 11px;
   margin-left: -4px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cpath d='M5 0 C6 4 9.5 6.5 9.5 9.6 A4.5 4.5 0 0 1 0.5 9.6 C0.5 6.5 4 4 5 0 Z' fill='%2376000a'/%3E%3Cellipse cx='3.5' cy='9.4' rx='0.9' ry='1.5' fill='%23ff6b6b' opacity='0.55'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cdefs%3E%3CradialGradient id='d' cx='0.38' cy='0.62' r='0.7'%3E%3Cstop offset='0' stop-color='%23a30c18'/%3E%3Cstop offset='0.6' stop-color='%236a0009'/%3E%3Cstop offset='1' stop-color='%233a0004'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath d='M5 0 C6 4 9.5 6.5 9.5 9.6 A4.5 4.5 0 0 1 0.5 9.6 C0.5 6.5 4 4 5 0 Z' fill='url(%23d)'/%3E%3Cellipse cx='3.4' cy='9' rx='0.9' ry='1.6' fill='%23ffffff' fill-opacity='0.45'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
   opacity: 0;
   transform-origin: 50% 0;
   pointer-events: none;
@@ -25733,7 +25742,7 @@ li[hidden] {
 }
 
 @keyframes lt-drip {
-  /* a bead, gathering */
+  /* a bead, gathering at the tip */
   0% {
     opacity: 0;
     transform: translate3d(0, -3px, 0) scale(0.15, 0.1);
@@ -25742,28 +25751,18 @@ li[hidden] {
   8% {
     opacity: 1;
   }
-  /* swollen, hanging */
-  52% {
+  /* full and heavy: from here one movement, as gravity does it: it starts to slide from rest,
+     stretching as it picks up speed, and runs down the cover faster and faster, no stop */
+  56% {
+    transform: translate3d(0, 0, 0) scale(0.9, 0.9);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.5);
+  }
+  90% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(0.9, 0.85);
-    animation-timing-function: ease-in-out;
-  }
-  /* heavy, stretching */
-  64% {
-    transform: translate3d(0, 2px, 0) scale(0.95, 1.25);
-    animation-timing-function: ease-in;
-  }
-  /* let go: it falls, faster and faster, thinning */
-  68% {
-    transform: translate3d(0, 10px, 0) scale(0.85, 1.35);
-    animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6);
-  }
-  92% {
-    opacity: 0.9;
   }
   100% {
     opacity: 0;
-    transform: translate3d(0, 190px, 0) scale(0.7, 1.6);
+    transform: translate3d(0, 200px, 0) scale(0.68, 1.7);
   }
 }
 
