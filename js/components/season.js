@@ -13,8 +13,10 @@
  *  - When: Halloween 1 Oct - 1 Nov, Christmas 1-26 Dec, Easter the week before Easter Sunday to
  *    Easter Monday (worked out each year), Winter 27 Dec - end of Feb, Autumn 22 Sep - 30 Nov
  *    (around Halloween). Spring and summer: the site's own look.
- *  - The owner decides for everyone (Admin → Themes → Seasonal look): by the date, off, or one
- *    season all the time (to see it). Visitors don't have a switch.
+ *  - The owner decides for everyone (Admin → Overview's lock, or Atmosphere & themes): by the
+ *    date, off, or one season locked on; how much of it (full, light: half as much drifting, calm:
+ *    the colours and decoration only); the blood / snow on the navbar's capsule; which seasons "by
+ *    the date" uses (themes.seasonsOff). Visitors don't have a switch.
  *  - Light on the device: only transform / opacity move, a few dozen small things at most (half on a
  *    phone), nothing in a hidden tab, nothing with "reduce motion" or the owner's "Animated
  *    atmosphere" off (the colours and the decoration stay).
@@ -39,23 +41,43 @@
     const n = h + l - 7 * m + 114;
     return new Date(y, Math.floor(n / 31) - 1, (n % 31) + 1);
   }
-  // the season a day falls in, or ""
-  function byDate(now) {
+  // the seasons a day falls in, the first one first (Halloween before Autumn)
+  function seasonsOn(now) {
     const day = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const e = easterOf(day.getFullYear());
     const from = new Date(e.getFullYear(), e.getMonth(), e.getDate() - 7);
     const to = new Date(e.getFullYear(), e.getMonth(), e.getDate() + 1);
-    if (day >= from && day <= to) return "easter";
     const md = (day.getMonth() + 1) * 100 + day.getDate();
-    if (md >= 1001 && md <= 1101) return "halloween";
-    if (md >= 1201 && md <= 1226) return "christmas";
-    if (md >= 1227 || md <= 229) return "winter";
-    if (md >= 922 && md <= 1130) return "autumn";
-    return "";
+    return [
+      ["easter", day >= from && day <= to],
+      ["halloween", md >= 1001 && md <= 1101],
+      ["christmas", md >= 1201 && md <= 1226],
+      ["winter", md >= 1227 || md <= 229],
+      ["autumn", md >= 922 && md <= 1130],
+    ]
+      .filter((x) => x[1])
+      .map((x) => x[0]);
+  }
+  const themes = () => (window.Site && Site.get().themes) || {};
+  // the season a day falls in, or "" (leaving out the ones the owner switched off: skip)
+  function byDate(now, skip) {
+    const off = skip || themes().seasonsOff || [];
+    return seasonsOn(now).find((id) => !off.includes(id)) || "";
+  }
+  // the next day a season starts (by the date, from tomorrow): { id, at }
+  function next(now) {
+    let prev = byDate(now);
+    for (let i = 1; i <= 366; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+      const id = byDate(d);
+      if (id && id !== prev) return { id, at: d };
+      prev = id;
+    }
+    return null;
   }
   // what the owner set: "auto" (by the date), "off", or one season
   function current() {
-    const set = (window.Site && Site.get().themes && Site.get().themes.season) || "auto";
+    const set = themes().season || "auto";
     if (set === "off") return "";
     if (SEASONS[set]) return set;
     return byDate(new Date());
@@ -254,11 +276,14 @@
   let shown = "";
   function apply() {
     const id = current();
+    const t = themes();
+    const level = ["light", "calm"].includes(t.seasonLevel) ? t.seasonLevel : "full";
+    const sig = id && [id, level, t.seasonPill !== false].join("|");
     const html = document.documentElement;
-    if (id === shown && (!id || document.querySelector(".season-bg"))) return play();
-    shown = id;
+    if (sig === shown && (!id || document.querySelector(".season-bg"))) return play();
+    shown = sig;
     document.querySelectorAll(".season-bg, .season-nav").forEach((el) => el.remove());
-    pill(id && SEASONS[id].pill);
+    pill(id && t.seasonPill !== false && SEASONS[id].pill);
     if (!id) {
       delete html.dataset.season;
       html.classList.remove("season-play");
@@ -269,7 +294,9 @@
     const bg = document.createElement("div");
     bg.className = "season-bg";
     bg.setAttribute("aria-hidden", "true");
-    bg.innerHTML = `${s.extras.map((x) => EXTRA[x]).join("")}<span class="ss-parts" data-k="${s.parts}">${drifting(s.parts, Math.round(s.count * (phone() ? 0.5 : 1)))}</span>`;
+    // (light: half as many things drifting · calm: none, nor the season's extras)
+    const n = level === "calm" ? 0 : Math.round(s.count * (phone() ? 0.5 : 1) * (level === "light" ? 0.5 : 1));
+    bg.innerHTML = `${level === "calm" ? "" : s.extras.map((x) => EXTRA[x]).join("")}<span class="ss-parts" data-k="${s.parts}">${drifting(s.parts, n)}</span>`;
     document.body.append(bg);
     const nav = document.querySelector(".site-nav");
     if (nav) {
@@ -296,5 +323,5 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
   else start();
 
-  window.Season = { SEASONS, current, byDate, easterOf, refresh: apply };
+  window.Season = { SEASONS, current, byDate, seasonsOn, next, easterOf, refresh: apply };
 })();

@@ -28,6 +28,8 @@
     titlePage: { order: [], hidden: [] },
     // the person page's rows under its top part (Admin → Person page)
     personPage: { order: [], hidden: [] },
+    // Home's rows under the slideshow (Admin → Home page)
+    homePage: { order: [], hidden: [] },
     // pages left out of the navbar, the tab bar and the profile menu (by their id in layout.js)
     nav: { hidden: [] },
     features: {
@@ -58,7 +60,10 @@
       news: { on: true, minutes: 30 },
       itunes: { on: true, days: 30 },
     },
-    themes: { siteDefault: "dark", listThemes: true, animations: true, season: "auto", available: ["halloween", "christmas", "winter", "spring", "summer", "noir", "space"] },
+    // season: "auto" (by the date), "off" or one season all the time · seasonsOff: the ones "by the date"
+    // skips · seasonLevel: "full", "light" (fewer things drifting) or "calm" (colours and decoration only)
+    // · seasonPill: blood / snow on the navbar's capsule of links
+    themes: { siteDefault: "dark", listThemes: true, animations: true, season: "auto", seasonsOff: [], seasonLevel: "full", seasonPill: true, available: ["halloween", "christmas", "winter", "spring", "summer", "noir", "space"] },
     notifications: { on: true, release: true, season: true, episode: true, recommendation: true, announcement: true },
   };
 
@@ -300,9 +305,27 @@
     ["filmography", "Filmography", "Everything they've done, with the filters", "fa-film"],
     ["books", "Books", "Books by them and about them, on a shelf", "fa-book-open"],
   ];
+  // Home's rows under the slideshow (js/pages/home.js; with a TMDB key)
+  const HOME_ROWS = [
+    ["top10", "Top 10 today", "Movies or TV shows, the big numbers", "fa-trophy"],
+    ["featured", "Our picks", "The titles you feature (Content)", "fa-star"],
+    ["featured-books", "Books behind the films", "The books you feature (Content)", "fa-book"],
+    ["trending", "Trending this week", "What everyone's watching", "fa-fire"],
+    ["now-playing", "In cinemas now", "Movies in theatres", "fa-ticket"],
+    ["upcoming", "Coming soon", "Movies on the way", "fa-calendar"],
+    ["popular-movies", "Popular movies", "", "fa-film"],
+    ["popular-tv", "Popular TV shows", "", "fa-tv"],
+    ["top-movies", "Top rated movies", "Of all time", "fa-medal"],
+    ["top-tv", "Top rated TV shows", "Of all time", "fa-medal"],
+    ["because", "Because you liked…", "Two rows from each member's best-rated titles", "fa-heart"],
+    ["anime", "Popular anime", "", "fa-dragon"],
+    ["top-anime", "Top rated anime", "", "fa-dragon"],
+    ["because-anime", "Because you liked… (anime)", "From their best-rated anime", "fa-heart"],
+  ];
   // the rows in the saved order (rows added to the site later go where they come by default)
   const titleRows = () => rowsOf(TITLE_ROWS, "titlePage");
   const personRows = () => rowsOf(PERSON_ROWS, "personPage");
+  const homeRows = () => rowsOf(HOME_ROWS, "homePage");
   function rowsOf(defs, key) {
     const t = (config && config[key]) || {};
     const known = defs.map((r) => r[0]);
@@ -315,5 +338,5 @@
     return { order, hidden: (t.hidden || []).filter((k) => known.includes(k)) };
   }
 
-  window.Site = { TITLE_ROWS, PERSON_ROWS, titleRows, personRows, rowsOf, DEFAULTS, get, feature, api, navHidden, state, blocked, refresh, save, onChange: (fn) => listeners.push(fn), merge };
+  window.Site = { TITLE_ROWS, PERSON_ROWS, HOME_ROWS, titleRows, personRows, homeRows, rowsOf, DEFAULTS, get, feature, api, navHidden, state, blocked, refresh, save, onChange: (fn) => listeners.push(fn), merge };
 })();

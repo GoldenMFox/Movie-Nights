@@ -30283,3 +30283,394 @@ html.tablet[data-season] .nav-links > .season-pill {
     transform: translate3d(8px, 250px, 0) rotate(140deg);
   }
 }
+
+/* ---------- Admin Overview: the site's atmosphere (lock), Needs attention, the year, Latest saves ---------- */
+.ad-season-pick {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 12px 0 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ad-season-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.ad-season-head strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 15px;
+}
+
+.ad-season-head strong i {
+  color: var(--gold);
+  font-size: 13px;
+}
+
+.ad-season-head small {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 12.5px;
+}
+
+.ad-season-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ad-season-chips button {
+  --c: rgba(255, 255, 255, 0.85);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.82);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+}
+
+.ad-season-chips button i {
+  color: var(--c);
+  font-size: 12px;
+}
+
+.ad-season-chips button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.ad-season-chips button.on {
+  border-color: color-mix(in srgb, var(--c) 70%, transparent);
+  background: color-mix(in srgb, var(--c) 22%, transparent);
+  color: #fff;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 35%, transparent), 0 6px 18px color-mix(in srgb, var(--c) 22%, transparent);
+}
+
+.ad-season-chips button[data-season-set="auto"].on,
+.ad-season-chips button[data-season-set="off"].on {
+  --c: #fff;
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+}
+
+/* the count beside a panel's title */
+.ad-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(245, 197, 24, 0.18);
+  color: var(--gold);
+  font-size: 12px;
+  vertical-align: 2px;
+}
+
+/* Needs attention */
+.ad-attn {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ad-attn li {
+  --t: #7ea4ff;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.ad-attn li.gold {
+  --t: var(--gold);
+}
+
+.ad-attn li.red {
+  --t: #ff6b6f;
+  border-color: rgba(229, 72, 77, 0.35);
+  background: rgba(229, 72, 77, 0.07);
+}
+
+.ad-attn-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--t) 16%, transparent);
+  color: var(--t);
+  font-size: 14px;
+}
+
+.ad-attn-text {
+  display: grid;
+  min-width: 0;
+}
+
+.ad-attn-text strong {
+  font-size: 14px;
+}
+
+.ad-attn-text small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-attn-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ad-attn-go:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.ad-attn-go i {
+  font-size: 10px;
+}
+
+.ad-allgood {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(52, 199, 89, 0.08);
+}
+
+.ad-allgood > i {
+  color: #4cd97b;
+  font-size: 26px;
+}
+
+.ad-allgood span {
+  display: grid;
+}
+
+.ad-allgood small {
+  color: var(--text-muted);
+}
+
+/* Site atmosphere: now, the year, next */
+.ad-season-now {
+  --c: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ad-season-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--c) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 35%, transparent);
+  color: var(--c);
+  font-size: 22px;
+}
+
+.ad-season-now > span:last-child {
+  display: grid;
+}
+
+.ad-season-now small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.ad-season-now strong {
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.ad-season-now em {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-style: normal;
+}
+
+.ad-season-now em i {
+  color: var(--gold);
+}
+
+.ad-year {
+  display: grid;
+  gap: 6px;
+}
+
+.ad-year-bar {
+  position: relative;
+  height: 14px;
+  overflow: visible;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ad-year-bar i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: var(--c);
+  opacity: 0.85;
+}
+
+.ad-year-bar b {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.45);
+}
+
+.ad-year-months {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  color: var(--text-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.ad-season-next {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.ad-season-next i {
+  margin-right: 4px;
+}
+
+.ad-season-switches {
+  display: grid;
+  gap: 2px;
+  padding-top: 6px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.ad-season-row strong i {
+  width: 18px;
+  color: var(--c);
+  text-align: center;
+}
+
+/* Latest saves */
+.ad-recent {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ad-recent li {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.ad-recent li > i {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.15);
+}
+
+.ad-recent li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 22px;
+  bottom: -6px;
+  left: 4px;
+  width: 1px;
+  background: var(--glass-border);
+}
+
+.ad-recent span {
+  display: grid;
+  min-width: 0;
+}
+
+.ad-recent strong {
+  font-size: 13.5px;
+}
+
+.ad-recent small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.ad-action.purple i {
+  background: rgba(175, 110, 255, 0.16);
+  color: #c49bff;
+}
+
+:root[data-theme="light"] .ad-season-chips button {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+@media (max-width: 640px) {
+  .ad-attn li {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .ad-attn-go {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+:root[data-theme="light"] .ad-year-bar {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+:root[data-theme="light"] .ad-attn-go:hover {
+  background: rgba(0, 0, 0, 0.05);
+}

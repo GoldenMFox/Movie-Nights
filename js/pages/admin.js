@@ -7,13 +7,16 @@
  * doesn't take site settings yet (its rules need the site/config part, shown under Users), the
  * copy is kept on this device and used here until the rules are published.
  *
- * Sections: Overview · Website · Pages & features · Title page (the order of its rows) · Content · News · API integrations · Themes ·
- * Notifications · Users · Tools (service checks, this device's storage, change history) · Backup
+ * Sections: Overview · Look & feel (Website, Atmosphere & themes) · Pages (Pages & features, the order of the
+ * rows on Home, title pages and person pages) · Content (Content, News, Notifications) · System (API
+ * integrations, Users, Tools: service checks, this device's storage, change history · Backup)
  *
  * The look: a sidebar of the sections in groups (with badges: services down, maintenance on), a top
  * bar (where you are, a search through every setting, saved or not) and, on Overview, a dashboard:
- * a welcome card with the quick switches, stat tiles, and charts drawn here as SVG (what everyone
- * watched month by month, the services' health, movies / TV / anime, the scores, the members).
+ * a welcome card with the quick switches and the site's atmosphere (by the date, off, or locked to
+ * one season), stat tiles, what needs attention, the atmosphere through the year, the latest saves,
+ * and charts drawn here as SVG (what everyone watched month by month, the services' health,
+ * movies / TV / anime, the scores, the members).
  *
  * Customize (top bar, every section): drag the boxes where you want them (mouse or finger), give
  * each one a size (one column, two, the whole row) or hide it; each section keeps its own layout,
@@ -26,12 +29,13 @@
     ["overview", "fa-gauge", "Overview"],
     ["website", "fa-globe", "Website"],
     ["pages", "fa-toggle-on", "Pages & features"],
+    ["homepage", "fa-house", "Home page"],
     ["titlepage", "fa-table-list", "Title page"],
     ["personpage", "fa-id-card", "Person page"],
     ["content", "fa-star", "Content"],
     ["news", "fa-newspaper", "News"],
     ["apis", "fa-plug", "API integrations"],
-    ["themes", "fa-palette", "Themes"],
+    ["themes", "fa-palette", "Atmosphere & themes"],
     ["notifications", "fa-bell", "Notifications"],
     ["users", "fa-users", "Users"],
     ["backup", "fa-floppy-disk", "Backup"],
@@ -39,8 +43,9 @@
   ];
   const GROUPS = [
     ["Dashboard", ["overview"]],
-    ["Site", ["website", "pages", "titlepage", "personpage", "themes", "notifications"]],
-    ["Content", ["content", "news"]],
+    ["Look & feel", ["website", "themes"]],
+    ["Pages", ["pages", "homepage", "titlepage", "personpage"]],
+    ["Content", ["content", "news", "notifications"]],
     ["System", ["apis", "users", "tools", "backup"]],
   ];
   const PAGE_NAMES = [
@@ -69,6 +74,16 @@
     news: ["News feeds (rss2json)", "Movie News", "minutes"],
     itunes: ["Apple Music (iTunes)", "Soundtracks and their previews on title pages", "days"],
   };
+
+  // the site's seasonal looks (js/components/season.js): icon, colour, when
+  const SEASON_LOOK = {
+    halloween: ["fa-ghost", "#ff7a1a", "1 Oct – 1 Nov"],
+    christmas: ["fa-tree", "#e8424a", "1–26 Dec"],
+    easter: ["fa-egg", "#f39ad0", "The week before Easter Sunday – Easter Monday"],
+    winter: ["fa-snowflake", "#8fd3ff", "27 Dec – end of Feb"],
+    autumn: ["fa-leaf", "#c9a227", "22 Sep – 30 Nov (Halloween first)"],
+  };
+  const SEASON_IDS = Object.keys(SEASON_LOOK);
 
   // not the owner: nothing to see here
   const isOwner = () => window.Cloud && Cloud.isOwner && Cloud.isOwner();
@@ -99,6 +114,7 @@
     o[keys[keys.length - 1]] = value;
     paintBar();
     if (typeof paintBadges === "function") paintBadges();
+    if (typeof paintOverview === "function") paintOverview();
   }
 
   let section = (location.hash || "").slice(1);
@@ -174,7 +190,7 @@
       order.splice(after ? order.indexOf(after) + 1 : 0, 0, k);
     });
     const hidden = saved.hidden || [];
-    const LOOK = { cast: 6, xray: 3, yours: 3, books: 1, soundtrack: 1, known: 5, filmography: 4 };
+    const LOOK = { cast: 6, xray: 3, yours: 3, books: 1, soundtrack: 1, known: 5, filmography: 4, top10: 4, featured: 6, "featured-books": 6, because: 6, "because-anime": 6 };
     const row = (k) => {
       const [, name, what, icon] = defs.find((r) => r[0] === k);
       return `<li class="tp-row${hidden.includes(k) ? " off" : ""}" data-row="${k}">
@@ -190,7 +206,7 @@
         </li>`;
     };
     return `<div class="ad-grid ad-grid-one">${card(
-      path === "personPage" ? "fa-id-card" : "fa-table-list",
+      { personPage: "fa-id-card", homePage: "fa-house" }[path] || "fa-table-list",
       title,
       `<div class="tp-page">
         <div class="tp-hero" aria-hidden="true">${hero}</div>
@@ -199,6 +215,161 @@
       <div class="sv-buttons"><button type="button" class="btn tp-reset" data-path="${path}"><i class="fa-solid fa-rotate-left"></i> The site's own order</button></div>`,
       `Drag a row by its handle (or use the arrows) to move it; the eye leaves it out. ${note} Save changes to send it to everyone.`
     )}</div>`;
+  }
+
+  /* ---------------- Overview: the site's atmosphere, what needs attention, the latest saves ---------------- */
+
+  const seasonName = (id) => (window.Season && Season.SEASONS[id] ? Season.SEASONS[id].label : id);
+  const skipOf = () => (draft.themes && draft.themes.seasonsOff) || [];
+  const dateOf = (id, now = new Date()) => (window.Season ? Season.byDate(now, skipOf()) : "") === id;
+  // what everyone sees today with the settings being edited: { id, how: "date" | "locked" | "off" }
+  function seasonNow() {
+    const set = (draft.themes && draft.themes.season) || "auto";
+    if (set === "off") return { id: "", how: "off" };
+    if (SEASON_LOOK[set]) return { id: set, how: "locked" };
+    return { id: window.Season ? Season.byDate(new Date(), skipOf()) : "", how: "date" };
+  }
+  // the next day a season starts by the date (skipping the ones switched off)
+  function seasonNext() {
+    if (!window.Season) return null;
+    const now = new Date();
+    let prev = Season.byDate(now, skipOf());
+    for (let i = 1; i <= 366; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+      const id = Season.byDate(d, skipOf());
+      if (id && id !== prev) return { id, at: d, days: i };
+      prev = id;
+    }
+    return null;
+  }
+  // until when today's season lasts (by the date)
+  function seasonEnd(id) {
+    const now = new Date();
+    for (let i = 1; i <= 120; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+      if (!dateOf(id, d)) return new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
+    }
+    return null;
+  }
+  const day = (d) => d.toLocaleDateString([], { day: "numeric", month: "short" });
+
+  // the lock on the welcome card: by the date, off, or one season all the time
+  function seasonPick() {
+    const now = seasonNow();
+    const set = (draft.themes && draft.themes.season) || "auto";
+    const status =
+      now.how === "off"
+        ? "Off for everyone"
+        : now.how === "locked"
+          ? `Locked to ${esc(seasonName(now.id))}`
+          : now.id
+            ? `By the date · ${esc(seasonName(now.id))} now`
+            : "By the date · the site's own look now";
+    const chip = (v, icon, label, color) =>
+      `<button type="button" data-season-set="${v}" class="${set === v ? "on" : ""}"${color ? ` style="--c:${color}"` : ""} aria-pressed="${set === v}" title="${esc(label)}"><i class="fa-solid ${icon}"></i><span>${esc(label)}</span></button>`;
+    return `<div class="ad-season-head"><strong><i class="fa-solid ${now.how === "locked" ? "fa-lock" : now.how === "off" ? "fa-ban" : "fa-lock-open"}"></i> Site atmosphere</strong><small>${status}</small></div>
+      <div class="ad-season-chips" role="group" aria-label="Site atmosphere">${chip("auto", "fa-calendar-days", "By date")}${chip("off", "fa-ban", "Off")}${SEASON_IDS.map((id) => chip(id, SEASON_LOOK[id][0], seasonName(id), SEASON_LOOK[id][1])).join("")}</div>`;
+  }
+
+  // the atmosphere panel: now, the year at a glance (by the date), what comes next
+  function seasonPanel() {
+    if (!window.Season) return '<p class="sv-note">The seasonal look isn\'t loaded on this page.</p>';
+    const now = seasonNow();
+    const y = new Date().getFullYear();
+    const start = new Date(y, 0, 1);
+    const days = Math.round((new Date(y + 1, 0, 1) - start) / 86400000);
+    // the year by the date, in stretches of one season
+    const parts = [];
+    for (let i = 0; i < days; i++) {
+      const id = Season.byDate(new Date(y, 0, 1 + i), skipOf());
+      const last = parts[parts.length - 1];
+      if (last && last.id === id) last.to = i;
+      else parts.push({ id, from: i, to: i });
+    }
+    const today = Math.floor((new Date() - start) / 86400000);
+    const pct = (n) => ((n / days) * 100).toFixed(2);
+    const months = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+    const look = now.id ? SEASON_LOOK[now.id] : ["fa-film", "var(--accent)"];
+    const end = now.how === "date" && now.id ? seasonEnd(now.id) : null;
+    const nx = seasonNext();
+    return `<div class="ad-season-now" style="--c:${look[1]}">
+        <span class="ad-season-icon"><i class="fa-solid ${now.how === "off" ? "fa-ban" : look[0]}"></i></span>
+        <span><small>Everyone sees now</small><strong>${now.how === "off" ? "No seasonal look" : now.id ? esc(seasonName(now.id)) : "The site's own look"}</strong>
+        <em>${now.how === "locked" ? `<i class="fa-solid fa-lock"></i> Locked by you${dateOf(now.id) ? "" : ", outside its dates"}` : now.how === "off" ? "Switched off" : end ? `By the date, until ${day(end)}` : "By the date: nothing today"}</em></span>
+      </div>
+      <div class="ad-year" aria-label="The seasonal look through ${y}">
+        <div class="ad-year-bar">${parts
+          .filter((p) => p.id)
+          .map((p) => `<i style="left:${pct(p.from)}%;width:${pct(p.to - p.from + 1)}%;--c:${SEASON_LOOK[p.id][1]}" title="${esc(seasonName(p.id))}: ${day(new Date(y, 0, 1 + p.from))} – ${day(new Date(y, 0, 1 + p.to))}"></i>`)
+          .join("")}<b style="left:${pct(today + 0.5)}%" title="Today"></b></div>
+        <div class="ad-year-months">${months.map((m) => `<span>${m}</span>`).join("")}</div>
+      </div>
+      ${nx ? `<p class="ad-season-next"><i class="fa-solid fa-forward"></i> Next by the date: <b style="color:${SEASON_LOOK[nx.id][1]}">${esc(seasonName(nx.id))}</b> from ${day(nx.at)} · in ${nx.days} day${nx.days === 1 ? "" : "s"}${now.how === "date" ? "" : " (when it's on By date)"}</p>` : ""}`;
+  }
+
+  // the things that may need you, each with where to fix it
+  function attention() {
+    const out = [];
+    const add = (tone, icon, title, sub, go) => out.push({ tone, icon, title, sub, go });
+    if (dirty()) add("gold", "fa-pen", "Unsaved changes", "Save them to send them to everyone", "");
+    if (draft.maintenance.on) add("gold", "fa-screwdriver-wrench", "Maintenance mode is on", "Visitors see the “back soon” screen", "website");
+    if (Site.state() === "unpublished") add("red", "fa-triangle-exclamation", "Settings only on this device", "Publish the rules so they reach everyone", "users");
+    if (window.TMDB && !TMDB.keySource()) add("red", "fa-key", "No TMDB key", "Titles, posters and Explore need one", "apis");
+    const down = Object.values(Api.status()).filter((x) => x.health === "down");
+    if (down.length) add("red", "fa-plug-circle-xmark", `${down.length} service${down.length > 1 ? "s" : ""} not answering`, down.map((x) => x.label.replace(/ \(.*\)$/, "")).join(", "), "apis");
+    const n = draft.notice;
+    const todayStr = Store.today ? Store.today() : new Date().toISOString().slice(0, 10);
+    if (n.on && !String(n.text || "").trim()) add("gold", "fa-bullhorn", "The notice is on but empty", "Write its text, or switch it off", "website");
+    else if (n.on && n.until && n.until < todayStr) add("", "fa-bullhorn", "The notice has ended", `Its last day was ${n.until}: switch it off or give it new days`, "website");
+    const sn = seasonNow();
+    if (sn.how === "locked" && !dateOf(sn.id)) add("", "fa-lock", `${esc(seasonName(sn.id))} is locked on`, "Outside its dates: set the atmosphere back to By date when you're done", "themes");
+    if (draft.announce && draft.announce.at && Date.now() - draft.announce.at > 30 * 86400000)
+      add("", "fa-paper-plane", "An old announcement is still up", `Sent ${ago(draft.announce.at)}: withdraw it or send a new one`, "notifications");
+    const off = FEATURES.filter(([k]) => draft.features[k] === false);
+    if (off.length) add("", "fa-toggle-off", `${off.length} feature${off.length > 1 ? "s" : ""} switched off`, off.map((f) => f[1]).join(", "), "pages");
+    const hiddenPages = (draft.nav.hidden || []).length;
+    if (hiddenPages) add("", "fa-eye-slash", `${hiddenPages} page${hiddenPages > 1 ? "s" : ""} left out of the navigation`, "They still open from a link", "pages");
+    if (window.Ratings) {
+      const r = Ratings.status();
+      if (r.enabled && (r.blocked || r.used >= r.limit)) add("", "fa-star-half-stroke", "IMDb lookups used up for today", "Cards show TMDB's score until tomorrow", "apis");
+    }
+    if (!out.length) return '<div class="ad-allgood"><i class="fa-solid fa-circle-check"></i><span><strong>All good</strong><small>Nothing needs you right now.</small></span></div>';
+    return `<ul class="ad-attn">${out
+      .map(
+        (a) => `<li class="${a.tone}"><span class="ad-attn-icon"><i class="fa-solid ${a.icon}"></i></span><span class="ad-attn-text"><strong>${a.title}</strong><small>${esc(a.sub)}</small></span>${
+          a.go
+            ? `<button type="button" class="ad-attn-go" data-go="${a.go}" title="${esc(sec(a.go)[2])}">Open <i class="fa-solid fa-chevron-right"></i></button>`
+            : '<button type="button" class="ad-attn-go ad-save-now">Save <i class="fa-solid fa-check"></i></button>'
+        }</li>`
+      )
+      .join("")}</ul>`;
+  }
+
+  // the latest saves (this browser)
+  function recentSaves() {
+    const hist = changeLog().slice(0, 5);
+    return hist.length
+      ? `<ul class="ad-recent">${hist.map((h) => `<li><i></i><span><strong>${esc(h.what)}</strong><small>${ago(h.at)}</small></span></li>`).join("")}</ul>`
+      : '<p class="sv-note">Nothing saved from this browser yet.</p>';
+  }
+
+  // the Overview's live parts, drawn again as the settings change (the charts stay)
+  function paintOverview() {
+    if (section !== "overview") return;
+    const put = (sel, html) => {
+      const el = root.querySelector(sel);
+      if (el) el.innerHTML = html;
+    };
+    put("[data-season-pick]", seasonPick());
+    put("[data-season-panel]", seasonPanel());
+    put("[data-attention]", attention());
+    put("[data-recent]", recentSaves());
+    const n = root.querySelector("[data-attn-count]");
+    if (n) {
+      const c = root.querySelectorAll(".ad-attn li").length;
+      n.textContent = c || "";
+      n.hidden = !c;
+    }
   }
 
   /* ---------------- the sections ---------------- */
@@ -230,6 +401,7 @@
           <div class="ad-hero-switches">
             ${sw("maintenance.on", "Maintenance mode", "Visitors see “back soon”", draft.maintenance.on)}
             ${sw("notice.on", "Notice across the top", draft.notice.text ? esc(draft.notice.text) : "Write it under Website", draft.notice.on)}
+            <div class="ad-season-pick" data-season-pick>${seasonPick()}</div>
           </div>
           <i class="fa-solid fa-film ad-hero-art" aria-hidden="true"></i>
         </section>
@@ -240,6 +412,20 @@
           ${tile("fa-plug-circle-check", healthPct >= 95 ? "green" : healthPct >= 80 ? "gold" : "red", `${healthPct}%`, "Requests answered", `<span class="ad-tile-sub">${answered + failed} asked · ${cachedPct}% from memory</span>`)}
           ${tile("fa-toggle-on", featuresOff.length ? "gold" : "green", `${FEATURES.length - featuresOff.length}/${FEATURES.length}`, "Features on", `<span class="ad-tile-sub">${featuresOff.length ? `Off: ${esc(featuresOff.map((f) => f[1]).slice(0, 2).join(", "))}${featuresOff.length > 2 ? "…" : ""}` : "Everything is on"}</span>`)}
         </div>
+
+        <section class="ad-panel" data-box="attention">
+          <div class="ad-panel-head"><div><h3>Needs attention <b class="ad-count" data-attn-count hidden></b></h3><small>What's worth a look, and where to fix it</small></div></div>
+          <div data-attention>${attention()}</div>
+        </section>
+
+        <section class="ad-panel ad-season-panel" data-box="season">
+          <div class="ad-panel-head"><div><h3>Site atmosphere</h3><small>The seasonal look through the year, by the date</small></div><a class="t-link" href="#themes" data-sec="themes">Settings <i class="fa-solid fa-chevron-right"></i></a></div>
+          <div data-season-panel>${seasonPanel()}</div>
+          <div class="ad-season-switches">
+            ${sw("themes.animations", "Animated atmosphere", "Snow, embers, mist… on lists and pages", draft.themes.animations !== false)}
+            ${sw("themes.listThemes", "Atmospheres on people's lists", "Halloween, Christmas… on their own lists", draft.themes.listThemes !== false)}
+          </div>
+        </section>
 
         <section class="ad-panel" data-box="months">
           <div class="ad-panel-head"><div><h3>Watched, month by month</h3><small>Everyone's watch dates, the last 12 months</small></div><span class="ad-panel-big" data-months-total></span></div>
@@ -277,7 +463,15 @@
             <a href="index.html" target="_blank" rel="noopener" class="ad-action blue"><i class="fa-solid fa-arrow-up-right-from-square"></i><span>Open the site</span></a>
             <button type="button" class="ad-action ad-export"><i class="fa-solid fa-file-export"></i><span>Back up settings</span></button>
             <button type="button" data-go="tools" class="ad-action"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></button>
+            <button type="button" data-go="homepage" class="ad-action purple"><i class="fa-solid fa-house"></i><span>Home rows</span></button>
+            <button type="button" data-go="content" class="ad-action"><i class="fa-solid fa-eye-slash"></i><span>Hide a title</span></button>
+            <button type="button" data-action="add-title" class="ad-action gold"><i class="fa-solid fa-plus"></i><span>Add a title</span></button>
           </div>
+        </section>
+
+        <section class="ad-panel" data-box="recent">
+          <div class="ad-panel-head"><div><h3>Latest saves</h3><small>From this browser</small></div><a class="t-link" href="#tools" data-sec="tools">History <i class="fa-solid fa-chevron-right"></i></a></div>
+          <div data-recent>${recentSaves()}</div>
         </section>
 
         <section class="ad-panel" data-box="members">
@@ -298,7 +492,6 @@
           ${text("notice.link", "Link (optional)", draft.notice.link, 'placeholder="news.html or https://…"')}
           ${select("notice.tone", "Look", draft.notice.tone, [["info", "News (red bullhorn)"], ["warn", "Warning (amber)"]])}
           <div class="ad-two">${text("notice.from", "From (optional)", draft.notice.from, 'type="date"')}${text("notice.until", "Until (optional)", draft.notice.until, 'type="date"')}</div>`, "With days set, it shows only between them: switch it on now, it appears and goes by itself.")}
-        ${card("fa-circle-half-stroke", "Appearance", `${select("themes.siteDefault", "Theme for new visitors", draft.themes.siteDefault, [["dark", "Dark"], ["light", "Light"]])}`, "People who pick a theme themselves keep theirs.")}
       </div>`;
     },
     pages() {
@@ -383,10 +576,43 @@
     themes() {
       // (the ones switched off; a new atmosphere is on until switched off)
       const off = ListThemes.offOf(draft.themes);
+      const seasonsOff = draft.themes.seasonsOff || [];
+      const today = window.Season ? Season.byDate(new Date(), seasonsOff) : "";
+      const easter = window.Season ? Season.easterOf(new Date().getFullYear()) : null;
+      const dates = (id) =>
+        id === "easter" && easter
+          ? `${SEASON_LOOK.easter[2]} (this year ${day(new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() - 7))} – ${day(new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 1))})`
+          : SEASON_LOOK[id][2];
       return `<div class="ad-grid">
+        ${card(
+          "fa-calendar-days",
+          "Seasonal look",
+          `${select("themes.season", "The whole site in the season's look, for everyone", draft.themes.season || "auto", [
+            ["auto", "By the date"],
+            ["off", "Off"],
+            ...SEASON_IDS.map((id) => [id, `${seasonName(id)}, locked on`]),
+          ])}
+          ${select("themes.seasonLevel", "How much of it", draft.themes.seasonLevel || "full", [
+            ["full", "Full: everything drifting, mist and bats"],
+            ["light", "Light: half as much drifting"],
+            ["calm", "Calm: the colours and the navbar's decoration only"],
+          ])}
+          ${sw("themes.seasonPill", "Blood and snow on the navbar", "On computers and tablets, on the capsule of page links (Halloween, Christmas, Winter)", draft.themes.seasonPill !== false)}
+          <p class="sv-note"><i class="fa-solid fa-circle-info"></i> Today by the date: <b>${today ? esc(seasonName(today)) : "none"}</b>. Locked on: that season all the time, whatever the date (to see it, or for an event). "Animated atmosphere" (below) stops its movement too.</p>`
+        )}
+        ${card(
+          "fa-calendar-check",
+          "Seasons by the date",
+          SEASON_IDS.map(
+            (id) => `<div class="sv-row"><span class="sv-name ad-season-row" style="--c:${SEASON_LOOK[id][1]}"><strong><i class="fa-solid ${SEASON_LOOK[id][0]}"></i> ${esc(seasonName(id))}</strong><small>${esc(dates(id))}</small></span>
+          <label class="sv-switch"><input type="checkbox" data-season-off="${id}"${seasonsOff.includes(id) ? "" : " checked"} aria-label="${esc(seasonName(id))}" /><span class="switch-track"><span class="switch-thumb"></span></span></label></div>`
+          ).join(""),
+          "The ones “By the date” uses. Off: those days get the next season that fits (Autumn around a switched-off Halloween) or the site's own look."
+        )}
         ${card("fa-wand-magic-sparkles", "List atmospheres", `${sw("themes.listThemes", "Atmospheres on people's lists", "Off: every list in the site's own look", draft.themes.listThemes !== false)}
-          ${sw("themes.animations", "Animated atmosphere", "Snow, rain, embers, fog… Off: the colours stay, nothing moves", draft.themes.animations !== false)}
+          ${sw("themes.animations", "Animated atmosphere", "Snow, rain, embers, fog… on lists and pages. Off: the colours stay, nothing moves", draft.themes.animations !== false)}
           <p class="sv-note"><i class="fa-solid fa-circle-info"></i> A list on Auto gets one when its name or its titles point clearly at it (${Math.round(ListThemes.THRESHOLD * 100)}% sure or more).</p>`)}
+        ${card("fa-circle-half-stroke", "Site theme", select("themes.siteDefault", "Theme for new visitors", draft.themes.siteDefault, [["dark", "Dark"], ["light", "Light"]]), "People who pick a theme themselves keep theirs.")}
         ${card(
           "fa-swatchbook",
           "Atmospheres on offer",
@@ -398,23 +624,6 @@
               )
               .join("")}`
           ).join("")
-        )}
-        ${card("fa-circle-half-stroke", "Site theme", select("themes.siteDefault", "Theme for new visitors", draft.themes.siteDefault, [["dark", "Dark"], ["light", "Light"]]))}
-        ${card(
-          "fa-calendar-days",
-          "Seasonal look",
-          `${select("themes.season", "The whole site in the season's look, for everyone", draft.themes.season || "auto", [
-            ["auto", "By the date"],
-            ["off", "Off"],
-            ["halloween", "Halloween, all the time"],
-            ["christmas", "Christmas, all the time"],
-            ["easter", "Easter, all the time"],
-            ["winter", "Winter, all the time"],
-            ["autumn", "Autumn, all the time"],
-          ])}
-          <p class="sv-note"><i class="fa-solid fa-circle-info"></i> By the date: Halloween 1 Oct – 1 Nov, Christmas 1–26 Dec, Easter the week before Easter Sunday to Easter Monday, Winter 27 Dec – end of Feb, Autumn 22 Sep – 30 Nov; the rest of the year the site's own look.${
-            window.Season ? ` Today: <b>${window.Season.byDate(new Date()) ? esc(window.Season.SEASONS[window.Season.byDate(new Date())].label) : "none"}</b>.` : ""
-          } Pick one to see it now; "Animated atmosphere" (above) stops its movement too.</p>`
         )}
       </div>`;
     },
@@ -483,6 +692,15 @@
         "A row shows only when the title has something for it (Episodes: shows, Collection: films of a franchise…)."
       );
     },
+    homepage() {
+      return rowsEditor(
+        Site.HOME_ROWS,
+        "homePage",
+        "Home page: the order of its rows",
+        `<span class="tp-hero-text"><b>The slideshow: this week's trending</b><i></i><i></i><span><em></em><em></em><em></em></span></span>`,
+        "Under the slideshow; each member's own rows (Continue watching, favorites…) stay at the bottom. Our picks and the books show only with titles featured (Content); Trending still fills the slideshow when its row is left out."
+      );
+    },
     personpage() {
       return rowsEditor(
         Site.PERSON_ROWS,
@@ -528,7 +746,7 @@
   const HISTORY = "mn:adminHistory";
   const changeLog = () => Store.read(HISTORY, []) || [];
   // what changed between two versions, in words ("Maintenance, Notice, Features")
-  const LABELS = { branding: "Branding", maintenance: "Maintenance", notice: "Notice", nav: "Navigation", features: "Features", discover: "Explore pages", home: "Home picks", anime: "Featured anime", content: "Hidden titles", news: "News", apis: "API integrations", themes: "Themes", notifications: "Notifications", announce: "Announcement", titlePage: "Title page rows", personPage: "Person page rows" };
+  const LABELS = { branding: "Branding", maintenance: "Maintenance", notice: "Notice", nav: "Navigation", features: "Features", discover: "Explore pages", home: "Home picks", anime: "Featured anime", content: "Hidden titles", news: "News", apis: "API integrations", themes: "Themes", notifications: "Notifications", announce: "Announcement", titlePage: "Title page rows", personPage: "Person page rows", homePage: "Home page rows" };
   function changes(before, after, blockedBefore, blockedAfter) {
     const keys = [...new Set(Object.keys(before || {}).concat(Object.keys(after || {})))].filter((k) => JSON.stringify((before || {})[k]) !== JSON.stringify((after || {})[k]));
     const out = keys.map((k) => LABELS[k] || k);
@@ -707,6 +925,8 @@
     set("website", draft.maintenance.on ? "On" : "", "gold");
     const off = FEATURES.filter(([k]) => draft.features[k] === false).length;
     set("pages", off ? `${off} off` : "", "");
+    const season = draft.themes.season || "auto";
+    set("themes", SEASON_LOOK[season] ? "Locked" : season === "off" ? "Off" : "", "gold");
   }
 
   /* ---------------- find a setting ---------------- */
@@ -821,7 +1041,7 @@
   /* ---------------- Customize: move, size and hide the boxes of every section ---------------- */
 
   // the boxes: the dashboard's (data-box) or each section's cards (named after their title)
-  const WIDE = { hero: 3, tiles: 3, months: 3 };
+  const WIDE = { hero: 3, tiles: 3, months: 3, season: 2 };
   const slug = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const gridOf = () => body.querySelector(".ad-dash, .ad-grid");
   function boxesOf(grid) {
@@ -863,9 +1083,14 @@
     if (!grid) return;
     const l = layoutOf(k);
     const boxes = boxesOf(grid);
+    const ids = boxes.map((b) => b.dataset.box);
     const at = (id) => {
       const i = l.order.indexOf(id);
-      return i < 0 ? 1000 + boxes.findIndex((b) => b.dataset.box === id) : i;
+      if (i >= 0) return i;
+      // (right after the nearest box before it that the saved layout has)
+      const j = ids.indexOf(id);
+      for (let k = j - 1; k >= 0; k--) if (l.order.includes(ids[k])) return l.order.indexOf(ids[k]) + 0.5 + j / 1000;
+      return -1 + j / 1000;
     };
     boxes
       .slice()
@@ -1026,7 +1251,7 @@
     if (k === "users") members(root.querySelector(".ad-members"), true);
     if (k === "apis") omdbMeter();
     applyLayout(k);
-    if (k === "overview") dashboard();
+    if (k === "overview") dashboard(), paintOverview();
     if (k === "tools") storage(root.querySelector(".ad-storage"));
     root.querySelector(".ad-crumb").textContent = sec(k)[2];
     paintBadges();
@@ -1114,6 +1339,11 @@
       const hidden = new Set(draft.news.hiddenSources || []);
       el.checked ? hidden.delete(el.dataset.newsSrc) : hidden.add(el.dataset.newsSrc);
       return setPath("news.hiddenSources", [...hidden]);
+    }
+    if (el.dataset.seasonOff) {
+      const off = new Set(draft.themes.seasonsOff || []);
+      el.checked ? off.delete(el.dataset.seasonOff) : off.add(el.dataset.seasonOff);
+      return setPath("themes.seasonsOff", SEASON_IDS.filter((id) => off.has(id)));
     }
     if (el.dataset.themeAvail) {
       const off = new Set(ListThemes.offOf(draft.themes));
@@ -1241,6 +1471,9 @@
       return paintVeils(box.parentElement);
     }
     if (editing && e.target.closest(".ad-veil")) return; // (in Customize, a box's own buttons rest)
+    const ss = e.target.closest("[data-season-set]");
+    if (ss) return setPath("themes.season", ss.dataset.seasonSet);
+    if (e.target.closest(".ad-save-now")) return save(root.querySelector(".ad-save"));
     const go = e.target.closest("[data-go]");
     if (go) {
       history.replaceState(null, "", `#${go.dataset.go}`);
@@ -1406,6 +1639,7 @@
       saved = JSON.stringify([draft, blocked]);
       if (section === "notifications" || section === "tools") show(section);
       paintBar();
+      paintOverview();
       paintState();
       toast(where === "live" ? "Saved: everyone gets the new settings" : "Saved on this device only: publish the rules (Users) to reach everyone");
     } catch (e) {

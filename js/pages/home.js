@@ -339,16 +339,25 @@
     const movieRows = seeds.slice(0, 2).map((s, n) => ({ row: `because-${n}`, s }));
     const because = ({ row, s }) => rowShell(row, `Because you liked ${Lang.title(s)}`, "");
     // movies / shows: right before the anime rows; anime: under them (the last ones)
+    // the owner's order, and the rows they left out (Admin → Home page)
+    const { order, hidden } = window.Site ? Site.homeRows() : { order: [], hidden: [] };
+    const off = (k) => hidden.includes(k);
     rowsEl.innerHTML =
-      top10Shell() +
+      (off("top10") ? "" : top10Shell()) +
       featuredRows() +
-      LIVE_ROWS.map((r) => (r.cat === "anime" ? movieRows.map(because).join("") : "") + rowShell(r.cat, r.title, seeAll(r.cat))).join("") +
-      (animeSeeds.length ? because({ row: "because-anime", s: animeSeeds[0] }) : "");
-    fillTop10(top10Media);
-    if (movieRows.length) fillBecause(seeds, movieRows.map((r) => r.row), false);
-    if (animeSeeds.length) fillBecause(animeSeeds, ["because-anime"], true);
+      LIVE_ROWS.map((r) => (r.cat === "anime" && !off("because") ? movieRows.map(because).join("") : "") + rowShell(r.cat, r.title, seeAll(r.cat))).join("") +
+      (animeSeeds.length && !off("because-anime") ? because({ row: "because-anime", s: animeSeeds[0] }) : "");
+    const keyOf = (s) => (/^because-\d/.test(s.dataset.row) ? "because" : s.dataset.row);
+    const rank = (s) => (order.includes(keyOf(s)) ? order.indexOf(keyOf(s)) : 999);
+    [...rowsEl.children].sort((a, b) => rank(a) - rank(b)).forEach((s) => rowsEl.append(s));
+    // (Trending still fills the slideshow when its row is left out)
+    rowsEl.querySelectorAll(".row-section").forEach((s) => off(keyOf(s)) && (s.hidden = true));
+    if (!off("top10")) fillTop10(top10Media);
+    if (movieRows.length && !off("because")) fillBecause(seeds, movieRows.map((r) => r.row), false);
+    if (animeSeeds.length && !off("because-anime")) fillBecause(animeSeeds, ["because-anime"], true);
 
     LIVE_ROWS.forEach(async (r) => {
+      if (off(r.cat) && r.cat !== "trending") return;
       const row = rowsEl.querySelector(`[data-row="${r.cat}"] .movie-row`);
       try {
         const results = await cachedList(r.cat);
