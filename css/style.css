@@ -27156,6 +27156,87 @@ html.no-list-fx .lt .poster-link::after {
   font-size: 15px;
 }
 
+/* Seasons by the date: each season's tile with its dates to edit under it */
+.ad-season-grid {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.ad-season-card {
+  display: grid;
+  align-content: start;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.ad-season-card > .ad-lt-tile {
+  border: 0;
+  background: transparent;
+}
+
+.ad-range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.ad-range-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.ad-range select,
+.ad-range input {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.ad-range select {
+  padding-right: 4px;
+  cursor: pointer;
+}
+
+.ad-range select option {
+  background: #1b1b1f;
+}
+
+.ad-range input {
+  width: 54px;
+}
+
+.ad-range select:focus,
+.ad-range input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.ad-season-card .ad-lt-tile.off ~ .ad-range {
+  opacity: 0.5;
+}
+
+:root[data-theme="light"] .ad-range select option {
+  background: #fff;
+}
+
+/* the Overview's atmosphere panel: the way to the dates */
+.ad-season-edit {
+  justify-self: start;
+  font-size: 13px;
+}
+
 /* (one tile on its own fills its box) */
 .ad-lt-grid:has(> :only-child) {
   grid-template-columns: minmax(0, 1fr);

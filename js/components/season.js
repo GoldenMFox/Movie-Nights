@@ -10,9 +10,10 @@
  * hanging from its underside and dripping at Halloween, snow resting on top at Christmas and in winter.
  * Everything sits behind the page's content (or over the capsule) and lets the clicks through.
  *
- *  - When: Halloween 1 Oct - 1 Nov, Christmas 1-26 Dec, Easter the week before Easter Sunday to
- *    Easter Monday (worked out each year), Winter 27 Dec - end of Feb, Autumn 22 Sep - 30 Nov
- *    (around Halloween). Spring and summer: the site's own look.
+ *  - When (the usual dates; the owner can change each one): Halloween 1 Oct - 1 Nov, Christmas
+ *    1-26 Dec, Easter the week before Easter Sunday to Easter Monday (worked out each year), Winter
+ *    27 Dec - end of Feb, Autumn 22 Sep - 30 Nov (around Halloween). Spring and summer: the site's
+ *    own look.
  *  - The owner decides for everyone (Admin → Overview's lock, or Atmosphere & themes): by the
  *    date, off, or one season locked on; how much of it (full, light: half as much drifting, calm:
  *    the colours and decoration only); the blood / snow on the navbar's capsule; which seasons "by
@@ -41,28 +42,49 @@
     const n = h + l - 7 * m + 114;
     return new Date(y, Math.floor(n / 31) - 1, (n % 31) + 1);
   }
+  // when each season is, the usual way ("MM-DD", from / to, both days in; a range can run over New
+  // Year), Easter around its Sunday (days before / after); the owner can change them
+  // (Admin → Atmosphere & themes → Seasons by the date: themes.seasonDates)
+  const DATES = {
+    easter: { before: 7, after: 1 },
+    halloween: { from: "10-01", to: "11-01" },
+    christmas: { from: "12-01", to: "12-26" },
+    winter: { from: "12-27", to: "02-29" },
+    autumn: { from: "09-22", to: "11-30" },
+  };
+  const themes = () => (window.Site && Site.get().themes) || {};
+  // the dates in use: the owner's (or the ones given, e.g. the Admin's unsaved ones) over the usual
+  function datesOf(given) {
+    const set = given || themes().seasonDates || {};
+    const out = {};
+    Object.keys(DATES).forEach((id) => (out[id] = Object.assign({}, DATES[id], set[id] || {})));
+    return out;
+  }
+  const md = (t) => Number(String(t).replace("-", "")) || 0;
+  const inRange = (day, from, to) => (md(from) <= md(to) ? day >= md(from) && day <= md(to) : day >= md(from) || day <= md(to));
   // the seasons a day falls in, the first one first (Halloween before Autumn)
-  function seasonsOn(now) {
+  function seasonsOn(now, dates) {
+    const d = datesOf(dates);
     const day = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const e = easterOf(day.getFullYear());
-    const from = new Date(e.getFullYear(), e.getMonth(), e.getDate() - 7);
-    const to = new Date(e.getFullYear(), e.getMonth(), e.getDate() + 1);
-    const md = (day.getMonth() + 1) * 100 + day.getDate();
+    const from = new Date(e.getFullYear(), e.getMonth(), e.getDate() - (Number(d.easter.before) || 0));
+    const to = new Date(e.getFullYear(), e.getMonth(), e.getDate() + (Number(d.easter.after) || 0));
+    const today = (day.getMonth() + 1) * 100 + day.getDate();
     return [
       ["easter", day >= from && day <= to],
-      ["halloween", md >= 1001 && md <= 1101],
-      ["christmas", md >= 1201 && md <= 1226],
-      ["winter", md >= 1227 || md <= 229],
-      ["autumn", md >= 922 && md <= 1130],
+      ["halloween", inRange(today, d.halloween.from, d.halloween.to)],
+      ["christmas", inRange(today, d.christmas.from, d.christmas.to)],
+      ["winter", inRange(today, d.winter.from, d.winter.to)],
+      ["autumn", inRange(today, d.autumn.from, d.autumn.to)],
     ]
       .filter((x) => x[1])
       .map((x) => x[0]);
   }
-  const themes = () => (window.Site && Site.get().themes) || {};
-  // the season a day falls in, or "" (leaving out the ones the owner switched off: skip)
-  function byDate(now, skip) {
+  // the season a day falls in, or "" (leaving out the ones the owner switched off: skip; dates: the
+  // owner's unsaved dates, in the Admin)
+  function byDate(now, skip, dates) {
     const off = skip || themes().seasonsOff || [];
-    return seasonsOn(now).find((id) => !off.includes(id)) || "";
+    return seasonsOn(now, dates).find((id) => !off.includes(id)) || "";
   }
   // the next day a season starts (by the date, from tomorrow): { id, at }
   function next(now) {
@@ -323,5 +345,5 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
   else start();
 
-  window.Season = { SEASONS, current, byDate, seasonsOn, next, easterOf, refresh: apply };
+  window.Season = { SEASONS, DATES, datesOf, current, byDate, seasonsOn, next, easterOf, refresh: apply };
 })();

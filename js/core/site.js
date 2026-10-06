@@ -62,8 +62,9 @@
     },
     // season: "auto" (by the date), "off" or one season all the time · seasonsOff: the ones "by the date"
     // skips · seasonLevel: "full", "light" (fewer things drifting) or "calm" (colours and decoration only)
-    // · seasonPill: blood / snow on the navbar's capsule of links
-    themes: { siteDefault: "dark", listThemes: true, animations: true, season: "auto", seasonsOff: [], seasonLevel: "full", seasonPill: true, available: ["halloween", "christmas", "winter", "spring", "summer", "noir", "space"] },
+    // · seasonPill: blood / snow on the navbar's capsule of links · seasonDates: when each season is, where
+    // the owner changed it ({ halloween: { from: "10-01", to: "11-01" }, easter: { before, after } })
+    themes: { siteDefault: "dark", listThemes: true, animations: true, season: "auto", seasonsOff: [], seasonDates: {}, seasonLevel: "full", seasonPill: true, available: ["halloween", "christmas", "winter", "spring", "summer", "noir", "space"] },
     notifications: { on: true, release: true, season: true, episode: true, recommendation: true, announcement: true },
   };
 

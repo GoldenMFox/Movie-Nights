@@ -221,22 +221,60 @@
 
   const seasonName = (id) => (window.Season && Season.SEASONS[id] ? Season.SEASONS[id].label : id);
   const skipOf = () => (draft.themes && draft.themes.seasonsOff) || [];
-  const dateOf = (id, now = new Date()) => (window.Season ? Season.byDate(now, skipOf()) : "") === id;
+  // the season dates being edited (unsaved too), and in words: "1 Oct – 1 Nov"
+  const datesSet = () => (draft.themes && draft.themes.seasonDates) || {};
+  const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const mdWords = (t) => {
+    const [m, d] = String(t).split("-").map(Number);
+    return `${d} ${MONTHS_SHORT[(m || 1) - 1]}`;
+  };
+  function dateWords(id) {
+    if (!window.Season) return "";
+    const d = Season.datesOf(datesSet())[id];
+    if (id === "easter") {
+      const e = Season.easterOf(new Date().getFullYear());
+      const at = (n) => day(new Date(e.getFullYear(), e.getMonth(), e.getDate() + n));
+      return `${d.before} day${Number(d.before) === 1 ? "" : "s"} before Easter Sunday – ${d.after} after (this year ${at(-Number(d.before))} – ${at(Number(d.after))})`;
+    }
+    return `${mdWords(d.from)} – ${mdWords(d.to)}`;
+  }
+  // a season's dates to edit: From (month, day) to (month, day); Easter: days before and after its Sunday
+  function dateEditor(id) {
+    const d = Season.datesOf(datesSet())[id];
+    if (id === "easter")
+      return `<div class="ad-range"><span class="ad-range-part"><input class="ad-range-d" type="number" min="0" max="30" data-easter="before" value="${esc(d.before)}" aria-label="Days before Easter Sunday" /><span>days before Easter Sunday,</span></span><span class="ad-range-part"><input class="ad-range-d" type="number" min="0" max="14" data-easter="after" value="${esc(d.after)}" aria-label="Days after" /><span>after</span></span></div>`;
+    const one = (end, label) => {
+      const [m, dd] = String(d[end]).split("-").map(Number);
+      return `<span class="ad-range-part"><span>${label}</span><select class="ad-range-m" data-sd="${id}" data-end="${end}" aria-label="${label}: month">${MONTHS_SHORT.map((n, i) => `<option value="${String(i + 1).padStart(2, "0")}"${i + 1 === m ? " selected" : ""}>${n}</option>`).join("")}</select><input class="ad-range-d" type="number" min="1" max="31" data-sd="${id}" data-end="${end}" value="${dd}" aria-label="${label}: day" /></span>`;
+    };
+    return `<div class="ad-range">${one("from", "From")}${one("to", "to")}</div>`;
+  }
+  // after a date changes: the words under each season, today's season
+  function paintDates() {
+    SEASON_IDS.forEach((id) => {
+      const el = root.querySelector(`[data-season-label="${id}"]`);
+      if (el) el.textContent = dateWords(id);
+    });
+    const t = root.querySelector("[data-season-today]");
+    const today = Season.byDate(new Date(), skipOf(), datesSet());
+    if (t) t.textContent = today ? seasonName(today) : "none";
+  }
+  const dateOf = (id, now = new Date()) => (window.Season ? Season.byDate(now, skipOf(), datesSet()) : "") === id;
   // what everyone sees today with the settings being edited: { id, how: "date" | "locked" | "off" }
   function seasonNow() {
     const set = (draft.themes && draft.themes.season) || "auto";
     if (set === "off") return { id: "", how: "off" };
     if (SEASON_LOOK[set]) return { id: set, how: "locked" };
-    return { id: window.Season ? Season.byDate(new Date(), skipOf()) : "", how: "date" };
+    return { id: window.Season ? Season.byDate(new Date(), skipOf(), datesSet()) : "", how: "date" };
   }
   // the next day a season starts by the date (skipping the ones switched off)
   function seasonNext() {
     if (!window.Season) return null;
     const now = new Date();
-    let prev = Season.byDate(now, skipOf());
+    let prev = Season.byDate(now, skipOf(), datesSet());
     for (let i = 1; i <= 366; i++) {
       const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
-      const id = Season.byDate(d, skipOf());
+      const id = Season.byDate(d, skipOf(), datesSet());
       if (id && id !== prev) return { id, at: d, days: i };
       prev = id;
     }
@@ -282,7 +320,7 @@
     // the year by the date, in stretches of one season
     const parts = [];
     for (let i = 0; i < days; i++) {
-      const id = Season.byDate(new Date(y, 0, 1 + i), skipOf());
+      const id = Season.byDate(new Date(y, 0, 1 + i), skipOf(), datesSet());
       const last = parts[parts.length - 1];
       if (last && last.id === id) last.to = i;
       else parts.push({ id, from: i, to: i });
@@ -305,7 +343,8 @@
           .join("")}<b style="left:${pct(today + 0.5)}%" title="Today"></b></div>
         <div class="ad-year-months">${months.map((m) => `<span>${m}</span>`).join("")}</div>
       </div>
-      ${nx ? `<p class="ad-season-next"><i class="fa-solid fa-forward"></i> Next by the date: <b style="color:${SEASON_LOOK[nx.id][1]}">${esc(seasonName(nx.id))}</b> from ${day(nx.at)} · in ${nx.days} day${nx.days === 1 ? "" : "s"}${now.how === "date" ? "" : " (when it's on By date)"}</p>` : ""}`;
+      ${nx ? `<p class="ad-season-next"><i class="fa-solid fa-forward"></i> Next by the date: <b style="color:${SEASON_LOOK[nx.id][1]}">${esc(seasonName(nx.id))}</b> from ${day(nx.at)} · in ${nx.days} day${nx.days === 1 ? "" : "s"}${now.how === "date" ? "" : " (when it's on By date)"}</p>` : ""}
+      <a class="t-link ad-season-edit" href="#themes" data-sec="themes"><i class="fa-solid fa-pen"></i> Edit when each season is</a>`;
   }
 
   // the things that may need you, each with where to fix it; under them, what was checked and is fine
@@ -765,12 +804,7 @@
       // (the ones switched off; a new atmosphere is on until switched off)
       const off = ListThemes.offOf(draft.themes);
       const seasonsOff = draft.themes.seasonsOff || [];
-      const today = window.Season ? Season.byDate(new Date(), seasonsOff) : "";
-      const easter = window.Season ? Season.easterOf(new Date().getFullYear()) : null;
-      const dates = (id) =>
-        id === "easter" && easter
-          ? `${SEASON_LOOK.easter[2]} (this year ${day(new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() - 7))} – ${day(new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 1))})`
-          : SEASON_LOOK[id][2];
+      const today = window.Season ? Season.byDate(new Date(), seasonsOff, datesSet()) : "";
       const set = draft.themes.season || "auto";
       const level = draft.themes.seasonLevel || "full";
       return `<div class="ad-grid">
@@ -780,7 +814,7 @@
           "Seasonal look",
           `${part(
             "What everyone sees",
-            today ? `Today by the date: <b>${esc(seasonName(today))}</b>` : "Today by the date: the site's own look",
+            `Today by the date: <b data-season-today>${today ? esc(seasonName(today)) : "none"}</b>`,
             `<div class="ad-opts ad-opts-season">${opt("themes.season", "auto", set, "fa-calendar-days", "By date", "Each season on its days", "#9aa4b5")}${opt("themes.season", "off", set, "fa-ban", "Off", "The site's own look", "#8a8a8a")}${SEASON_IDS.map((id) =>
               opt("themes.season", id, set, SEASON_LOOK[id][0], seasonName(id), "Locked on, any day", SEASON_LOOK[id][1])
             ).join("")}</div>`
@@ -792,10 +826,15 @@
           )}
           ${part(
             "Seasons by the date",
-            "The ones “By date” uses; off, those days get the next season that fits (Autumn around Halloween) or the site's own look",
-            `<div class="ad-lt-grid">${SEASON_IDS.map((id) =>
-              swTile("data-season-off", id, !seasonsOff.includes(id), `<i class="fa-solid ${SEASON_LOOK[id][0]}"></i>`, `--c:${SEASON_LOOK[id][1]}`, seasonName(id), dates(id))
-            ).join("")}</div>`
+            "The ones “By date” uses, and when; off, those days get the next season that fits (Autumn around Halloween) or the site's own look",
+            `<div class="ad-lt-grid ad-season-grid">${SEASON_IDS.map(
+              (id) =>
+                `<div class="ad-season-card">${swTile("data-season-off", id, !seasonsOff.includes(id), `<i class="fa-solid ${SEASON_LOOK[id][0]}"></i>`, `--c:${SEASON_LOOK[id][1]}`, seasonName(id), dateWords(id)).replace(
+                  "<small>",
+                  `<small data-season-label="${id}">`
+                )}${dateEditor(id)}</div>`
+            ).join("")}</div>
+            <div class="sv-buttons"><button type="button" class="btn ad-dates-reset"><i class="fa-solid fa-rotate-left"></i> The usual dates</button></div>`
           )}
           ${part(
             "On the navbar",
@@ -1599,6 +1638,23 @@
       el.checked ? hidden.delete(el.dataset.newsSrc) : hidden.add(el.dataset.newsSrc);
       return setPath("news.hiddenSources", [...hidden]);
     }
+    if (el.dataset.sd) {
+      const row = el.closest(".ad-range");
+      const end = el.dataset.end;
+      const m = row.querySelector(`select[data-end="${end}"]`).value;
+      const dEl = row.querySelector(`input[data-end="${end}"]`);
+      // (the days that month has; February with the 29th)
+      const d = Math.max(1, Math.min(new Date(2024, Number(m), 0).getDate(), Math.round(Number(dEl.value)) || 1));
+      dEl.value = d;
+      setPath(`themes.seasonDates.${el.dataset.sd}.${end}`, `${m}-${String(d).padStart(2, "0")}`);
+      return paintDates();
+    }
+    if (el.dataset.easter) {
+      const n = Math.max(0, Math.min(Number(el.max) || 30, Math.round(Number(el.value)) || 0));
+      el.value = n;
+      setPath(`themes.seasonDates.easter.${el.dataset.easter}`, n);
+      return paintDates();
+    }
     if (el.dataset.seasonOff) {
       const off = new Set(draft.themes.seasonsOff || []);
       el.checked ? off.delete(el.dataset.seasonOff) : off.add(el.dataset.seasonOff);
@@ -1731,6 +1787,11 @@
       return paintVeils(box.parentElement);
     }
     if (editing && e.target.closest(".ad-veil")) return; // (in Customize, a box's own buttons rest)
+    if (e.target.closest(".ad-dates-reset")) {
+      setPath("themes.seasonDates", {});
+      show(section);
+      return toast("The usual dates are back: Save changes to send them to everyone");
+    }
     const op = e.target.closest("[data-opt]");
     if (op) {
       root.querySelectorAll(`[data-opt="${op.dataset.opt}"]`).forEach((b) => {
