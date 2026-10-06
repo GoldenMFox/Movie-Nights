@@ -24691,9 +24691,14 @@ html.app-ui.tabs-away .t-shared {
 }
 
 @media (max-width: 700px) {
-  /* (a phone: no card around the header, the title and its Live light on one line, a slim search) */
+  /* (a phone: no card around the header; the title, its Live light, and on the right the search as an
+     icon (it opens across the line when tapped: .searching) and Refresh) */
   .nw-hero {
+    position: relative;
+    flex-wrap: nowrap;
+    align-items: center;
     gap: 12px;
+    min-height: 42px;
     margin: 12px 0 12px;
     padding: 0;
     border: 0;
@@ -24705,9 +24710,10 @@ html.app-ui.tabs-away .t-shared {
   .nw-hero-text {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 10px;
     width: 100%;
+    padding-right: 104px;
+    transition: opacity 0.25s;
   }
 
   .nw-hero .page-title {
@@ -24727,13 +24733,63 @@ html.app-ui.tabs-away .t-shared {
   }
 
   .nw-hero-tools {
-    width: 100%;
+    position: absolute;
+    top: 50%;
+    right: 0;
+    left: 0;
+    justify-content: flex-end;
     gap: 8px;
+    width: auto;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .nw-hero-tools > * {
+    pointer-events: auto;
+  }
+
+  .nw-search {
+    flex: none;
+    width: 42px;
+    max-width: none;
+    transition: width 0.35s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .nw-search .input {
     height: 42px;
+    padding-left: 40px;
     font-size: 15px;
+    cursor: pointer;
+  }
+
+  .nw-search > i {
+    left: 14px;
+    color: var(--text);
+  }
+
+  .nw-hero:not(.searching) .nw-search .input {
+    padding: 0;
+  }
+
+  .nw-hero:not(.searching) .nw-search .input::placeholder {
+    color: transparent;
+  }
+
+  .nw-hero.searching .nw-search {
+    width: calc(100% - 50px);
+  }
+
+  .nw-hero.searching .nw-search .input {
+    cursor: text;
+  }
+
+  .nw-hero.searching .nw-search > i {
+    color: var(--text-muted);
+  }
+
+  .nw-hero.searching .nw-hero-text {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .nw-refresh {

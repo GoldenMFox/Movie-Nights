@@ -314,6 +314,22 @@
     clearTimeout(typing);
     typing = setTimeout(() => set({ q: e.target.value.trim() }), 250);
   });
+  // phones: the search is an icon until tapped, then opens across the line (closes again when
+  // left empty, or with Escape)
+  const hero = root.querySelector(".nw-hero");
+  const searchBox = root.querySelector(".nw-search input");
+  const phone = () => window.matchMedia("(max-width: 700px)").matches;
+  const openSearch = (on) => hero.classList.toggle("searching", on);
+  if (state.q) openSearch(true);
+  searchBox.addEventListener("focus", () => phone() && openSearch(true));
+  searchBox.addEventListener("blur", () => setTimeout(() => !searchBox.value.trim() && openSearch(false), 120));
+  searchBox.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    searchBox.value = "";
+    set({ q: "" });
+    searchBox.blur();
+    openSearch(false);
+  });
   root.querySelector(".nw-search").addEventListener("submit", (e) => {
     e.preventDefault();
     set({ q: e.target.elements.q.value.trim() });
