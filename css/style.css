@@ -24767,6 +24767,16 @@ li[hidden] {
   animation-name: lt-rise;
 }
 
+/* the near embers, rising in front of the posters: bigger, quicker */
+.lt-parts.near[data-k="embers"] i {
+  width: calc(6px * var(--s));
+  height: calc(6px * var(--s));
+}
+
+.lt-play .lt-parts.near[data-k="embers"] i {
+  animation-duration: calc(var(--t) * 0.75);
+}
+
 /* hearts: a few, small, rising slowly */
 .lt-parts[data-k="hearts"] i {
   --lt-o: 0.7;

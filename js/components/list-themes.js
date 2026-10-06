@@ -26,14 +26,14 @@
     {
       id: "halloween", label: "Halloween", emoji: "🎃", group: "holiday", hint: "Embers, drifting fog, a flickering light",
       colors: { a: "rgba(255, 112, 20, 0.36)", b: "rgba(124, 44, 196, 0.38)", c: "rgba(178, 6, 22, 0.5)", base: "rgba(22, 4, 4, 0.58)", edge: "rgba(255, 110, 40, 0.5)", dot: "#ffa04a", dot2: "#b98cff", dot3: "#e0101e" },
-      parts: "embers", count: 16, layers: ["fog", "mist", "flicker", "ghost"],
+      parts: "embers", count: 34, front: 10, layers: ["fog", "mist", "flicker", "ghost"],
       words: [["halloween", 1.5], ["hallowe'en", 1.5], ["all hallows", 1.2], ["trick or treat", 1.3], ["spooky", 0.9], ["spooky season", 1.4], ["pumpkin", 1], ["pumpkins", 1], ["october", 0.6], ["witch", 0.5], ["witches", 0.5], ["haunted", 0.5], ["ghost", 0.4], ["ghosts", 0.4], ["hocus pocus", 0.8]],
       months: [10], from: "horror",
     },
     {
       id: "christmas", label: "Christmas", emoji: "🎄", group: "holiday", hint: "Snowfall, warm lights, pine and red",
       colors: { a: "rgba(206, 26, 38, 0.4)", b: "rgba(16, 122, 66, 0.4)", c: "rgba(255, 184, 90, 0.16)", base: "rgba(6, 18, 12, 0.55)", edge: "rgba(235, 80, 64, 0.5)", dot: "#ffffff", dot2: "#ffc96b" },
-      parts: "snow", count: 46, front: 16, caps: "snow", layers: ["garland", "snowbank", "pines", "bokeh"],
+      parts: "snow", count: 80, front: 26, caps: "snow", layers: ["garland", "snowbank", "pines", "bokeh"],
       words: [["christmas", 1.5], ["xmas", 1.5], ["x-mas", 1.5], ["santa", 1], ["noel", 0.8], ["festive", 0.8], ["holiday season", 0.9], ["mistletoe", 1], ["reindeer", 0.9], ["snowman", 0.6], ["grinch", 0.9], ["elf", 0.5], ["december", 0.5], ["yuletide", 1.2], ["home alone", 0.6]],
       months: [12],
     },
@@ -70,7 +70,7 @@
     {
       id: "winter", label: "Winter", emoji: "❄️", group: "season", hint: "Icy blue, frost and gentle snow",
       colors: { a: "rgba(110, 170, 255, 0.32)", b: "rgba(200, 230, 255, 0.16)", base: "rgba(6, 14, 30, 0.55)", edge: "rgba(160, 210, 255, 0.46)", dot: "#eaf4ff", dot2: "#9cc8ff" },
-      parts: "snow", count: 34, front: 10, caps: "snow", layers: ["frost"],
+      parts: "snow", count: 56, front: 16, caps: "snow", layers: ["frost"],
       words: [["winter", 1.3], ["wintry", 1.2], ["snow", 0.8], ["snowy", 0.9], ["blizzard", 1], ["frost", 0.8], ["frozen", 0.5], ["ice", 0.4], ["cold", 0.4]],
       months: [12, 1, 2],
     },
