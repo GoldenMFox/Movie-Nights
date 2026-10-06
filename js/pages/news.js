@@ -1,7 +1,7 @@
 /*
  * Movie News (news.html): the latest from the film trade (js/services/news.js).
  *
- * The look: a header with a "Live" light (when it was last updated) and the sources, a ticker of
+ * The look: a header with a "Live" light (when it was last updated), the search and Refresh, a ticker of
  * the newest headlines running under it, then the top story big (its picture filling the card,
  * the words over it) beside a "Latest" column, then every other story as a card, by day (Today,
  * Yesterday, Earlier this week, Older). A story without a picture gets a card in its source's
@@ -80,14 +80,12 @@
         <span class="nw-live"><i></i> Live <span class="nw-updated">· getting the latest…</span></span>
         <h1 class="page-title">Movie News</h1>
         <p class="page-sub">The day's stories from Hollywood's trade press, in one place.</p>
-        <div class="nw-sources" aria-label="Sources">${sources().map((n) => `<span title="${esc(n)}">${mono(n)}<span>${esc(n)}</span></span>`).join("")}</div>
       </div>
       <div class="nw-hero-tools">
         <form class="ax-search nw-search" role="search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
           <input class="input" name="q" type="search" placeholder="Search the news…" aria-label="Search the news" value="${esc(state.q)}" autocomplete="off" /></form>
         <button class="btn nw-refresh" type="button" title="Check for new stories"><i class="fa-solid fa-rotate"></i><span> Refresh</span></button>
       </div>
-      <i class="fa-solid fa-newspaper nw-hero-art" aria-hidden="true"></i>
     </header>
     <div class="nw-ticker" hidden><span class="nw-ticker-label"><i class="fa-solid fa-bolt"></i> Just in</span><div class="nw-ticker-track"><div class="nw-ticker-run"></div></div></div>
     <div class="chips nw-chips" role="group" aria-label="Show">${CHIPS.map(([k, l, i]) => `<button type="button" class="chip${state.cat === k ? " active" : ""}" data-cat="${k}" aria-pressed="${state.cat === k}"><i class="fa-solid ${i}"></i> ${esc(l)}</button>`).join("")}</div>

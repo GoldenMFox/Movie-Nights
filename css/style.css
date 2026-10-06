@@ -24020,16 +24020,6 @@ html.app-ui.tabs-away .t-shared {
     var(--surface);
 }
 
-.nw-hero-art {
-  position: absolute;
-  right: -20px;
-  top: -30px;
-  color: rgba(255, 255, 255, 0.04);
-  font-size: 210px;
-  transform: rotate(-10deg);
-  pointer-events: none;
-}
-
 .nw-hero-text,
 .nw-hero-tools {
   position: relative;
@@ -24074,26 +24064,6 @@ html.app-ui.tabs-away .t-shared {
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
-}
-
-.nw-sources {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 16px;
-}
-
-.nw-sources > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 4px 11px 4px 4px;
-  border: 1px solid var(--glass-border);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-muted);
-  font-size: 12.5px;
-  font-weight: 600;
 }
 
 /* a source's mark: its letters on its colour */
@@ -24735,14 +24705,6 @@ html.app-ui.tabs-away .t-shared {
     display: none;
   }
 
-  .nw-sources > span > span {
-    display: none;
-  }
-
-  .nw-sources > span {
-    padding: 4px;
-  }
-
   .nw-feature {
     min-height: 380px;
     border-radius: 22px;
@@ -24796,10 +24758,6 @@ html.app-ui.tabs-away .t-shared {
   .nw-feature-img img {
     transition: none;
   }
-}
-
-:root[data-theme="light"] .nw-hero-art {
-  color: rgba(0, 0, 0, 0.05);
 }
 
 :root[data-theme="light"] .nw-ph b {
