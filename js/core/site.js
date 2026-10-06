@@ -53,7 +53,26 @@
     anime: { featured: [] },
     // moderation: TMDB titles kept out of Discover, Home and search rows ({ ref, title })
     content: { hidden: [] },
-    news: { featured: [], feeds: null, hiddenSources: [] },
+    // Movie News (Admin → News): the owner's stories, the feeds switched off (and their own), sources'
+    // priorities, the scores' weights, Breaking, how close the same story must be, the categories off,
+    // and the owner's marks on stories (promote, breaking, hidden: { link, title }; merges: [[links]])
+    news: {
+      featured: [],
+      feeds: null,
+      hiddenSources: [],
+      extraSources: [],
+      movies: true,
+      tv: true,
+      priority: {},
+      weights: {},
+      breaking: {},
+      dupes: "balanced",
+      catsOff: [],
+      promote: [],
+      breakingMarks: [],
+      hidden: [],
+      merges: [],
+    },
     apis: {
       tvmaze: { on: true, hours: 12 },
       anilist: { on: true, hours: 24 },
@@ -66,7 +85,7 @@
     // · seasonPill: blood / snow on the navbar's capsule of links · seasonDates: when each season is, where
     // the owner changed it ({ halloween: { from: "10-01", to: "11-01" }, easter: { before, after } })
     themes: { siteDefault: "dark", listThemes: true, animations: true, season: "auto", seasonsOff: [], seasonDates: {}, seasonLevel: "full", seasonPill: true, available: ["halloween", "christmas", "winter", "spring", "summer", "noir", "space"] },
-    notifications: { on: true, release: true, season: true, episode: true, recommendation: true, announcement: true },
+    notifications: { on: true, release: true, season: true, episode: true, recommendation: true, announcement: true, breaking: true, trailer: true },
   };
 
   // DEFAULTS with the saved settings on top, one level at a time (a setting added to the site
@@ -314,6 +333,7 @@
     ["soundtrack", "Soundtrack", "Its album with 30-second previews", "fa-music"],
     ["books", "Based on the book", "The book it's adapted from", "fa-book-open"],
     ["reviews", "Reviews", "What people wrote on TMDB", "fa-comments"],
+    ["news", "Latest news", "Stories about it from Movie News", "fa-newspaper"],
     ["more", "More like this", "From your library or TMDB's recommendations", "fa-clapperboard"],
   ];
   // the person page's rows, under its top part (js/pages/person.js)
@@ -321,6 +341,7 @@
     ["known", "Best known for", "Their best-known films and shows", "fa-star"],
     ["filmography", "Filmography", "Everything they've done, with the filters", "fa-film"],
     ["books", "Books", "Books by them and about them, on a shelf", "fa-book-open"],
+    ["news", "Latest news", "Stories about them from Movie News", "fa-newspaper"],
   ];
   // Home's rows under the slideshow (js/pages/home.js; with a TMDB key)
   const HOME_ROWS = [

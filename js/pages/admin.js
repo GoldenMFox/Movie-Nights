@@ -85,6 +85,11 @@
   };
   const SEASON_IDS = Object.keys(SEASON_LOOK);
 
+  // the news sources' marks and colours (as on Movie News)
+  const SRC_LOOK = { variety: ["V", "#d9a93a"], thr: ["THR", "#d4243b"], slashfilm: ["/F", "#ff7a3d"], screenrant: ["SR", "#2fb8d6"], collider: ["C", "#4f7dff"] };
+  const srcMark = (key, name) => (SRC_LOOK[key] ? SRC_LOOK[key][0] : String(name || key).replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase());
+  const srcColor = (key) => (SRC_LOOK[key] ? SRC_LOOK[key][1] : "#9aa4b5");
+
   // the outside services' icons and colours (API integrations)
   const SVC_LOOK = {
     tvmaze: ["fa-tv", "#5ad1d1"],
@@ -758,19 +763,140 @@
       </div>`;
     },
     news() {
-      const hidden = draft.news.hiddenSources || [];
-      const pins = draft.news.featured || [];
+      const n = draft.news;
+      const hidden = n.hiddenSources || [];
+      const pins = n.featured || [];
+      const src = News.sources();
+      const feeds = News.allFeeds();
+      const host = (u) => String(u || "").replace(/^https?:\/\//, "").split("/")[0];
+      const KIND = { movies: ["Movie news", "fa-film"], tv: ["TV news", "fa-tv"], industry: ["Industry", "fa-building"] };
+      // a feed's tile: its source's mark, its name, what it carries, its site; its switch
+      const feedTile = (f) =>
+        swTile("data-news-src", f.id, !hidden.includes(f.id), `<b class="ad-src-mark">${esc(srcMark(f.source, f.name))}</b>`, `--c:${srcColor(f.source)}`, f.name, `${KIND[f.kind] ? KIND[f.kind][0] : f.kind} · ${host(f.url)}`).replace(
+          "</small>",
+          `</small>${f.custom ? `<button type="button" class="ad-src-rm" data-rm-src="${esc(f.id)}" title="Remove this source"><i class="fa-solid fa-trash-can"></i> Remove</button>` : ""}`
+        );
+      const byKind = (kind) =>
+        [1, 2, 3]
+          .map((tier) => {
+            const list = feeds.filter((f) => f.kind === kind && (src[f.source] || {}).tier === tier);
+            return list.length ? `<h5 class="ad-sub-tier">${esc(News.TIERS[tier])}</h5>${tiles(list.map(feedTile).join(""))}` : "";
+          })
+          .join("");
+      const status = News.status();
+      const w = Object.assign({}, News.WEIGHTS, n.weights || {});
+      const br = Object.assign({}, News.BREAKING, n.breaking || {});
+      const catsOff = n.catsOff || [];
+      const numTile = (path, icon, color, name, sub, value, min, max, unit) =>
+        `<label class="ad-lt-tile ad-num-tile"><span class="ad-lt-swatch ad-tile-icon2" style="--c:${color}" aria-hidden="true"><i class="fa-solid ${icon}"></i></span>
+          <span class="ad-lt-text"><strong>${esc(name)}</strong><small>${esc(sub)}</small></span>
+          <span class="ad-num-in"><input class="input" type="number" min="${min}" max="${max}" data-k="${path}" data-num value="${esc(value)}" aria-label="${esc(name)}" />${unit ? `<em>${esc(unit)}</em>` : ""}</span></label>`;
       return `<div class="ad-grid">
         ${box(
           "news-sources",
           "fa-rss",
-          "Sources",
+          "News sources",
+          `${part('<i class="fa-solid fa-film"></i> Movie news', "", byKind("movies"))}
+          ${part('<i class="fa-solid fa-tv"></i> TV news', "", byKind("tv"))}
+          ${part('<i class="fa-solid fa-building"></i> Industry', "Business and studio news (from the primary sources)", tiles(feeds.filter((f) => f.kind === "industry").map(feedTile).join("")))}
+          ${part(
+            "Add a source",
+            "Any site's RSS feed: its stories join the others (grouped, scored by the priority you give it)",
+            `<div class="ad-add-src">
+              <input class="input" name="name" placeholder="Name (e.g. Deadline)" maxlength="40" />
+              <input class="input" name="url" placeholder="Its feed: https://…/feed/" />
+              <span class="glass-select"><select name="kind" aria-label="What it carries"><option value="movies">Movie news</option><option value="tv">TV news</option><option value="industry">Industry</option></select></span>
+              <input class="input" name="priority" type="number" min="0" max="100" value="70" aria-label="Priority (0-100)" title="Priority (0-100)" />
+              <button type="button" class="btn ad-src-add"><i class="fa-solid fa-plus"></i> Add</button>
+            </div>`
+          )}`,
+          3,
+          "Switched off, a feed isn't asked at all. Readers can still narrow it down to their own sources on Movie News (Preferences)."
+        )}
+        ${box(
+          "news-kinds",
+          "fa-toggle-on",
+          "Movie & TV news",
           tiles(
-            News.FEEDS.map((f) =>
-              swTile("data-news-src", f.id, !hidden.includes(f.id), `<i class="fa-solid ${f.kind === "tv" ? "fa-tv" : "fa-film"}"></i>`, `--c:${f.kind === "tv" ? "#7ea4ff" : "#ff6b6f"}`, f.name, `${f.kind === "tv" ? "TV news" : "Movie news"} · ${f.url.replace(/^https:\/\//, "").split("/")[0]}`)
-            ).join("")
+            tileK("news.movies", "fa-film", "#ff6b6f", "Movie news", "The movie feeds, the Movies chip and section", n.movies !== false) +
+              tileK("news.tv", "fa-tv", "#7ea4ff", "TV news", "The TV feeds, the TV chip and section", n.tv !== false)
           ),
-          2
+          1
+        )}
+        ${box(
+          "news-ranking",
+          "fa-ranking-star",
+          "Ranking",
+          `${part(
+            "Source priority",
+            "0-100: how much a source's word counts (Variety and The Hollywood Reporter 100)",
+            tiles(
+              Object.values(src)
+                .map((x) => numTile(`news.priority.${x.key}`, "fa-star", srcColor(x.key), x.name, News.TIERS[x.tier] || "", (n.priority || {})[x.key] != null ? n.priority[x.key] : x.priority, 0, 100, ""))
+                .join("")
+            )
+          )}
+          ${part(
+            "What makes a top story",
+            "How much each counts (they're weighed against each other)",
+            tiles(
+              numTile("news.weights.authority", "fa-landmark", "#f5c518", "Source authority", "Its source's priority", w.authority, 0, 100, "") +
+                numTile("news.weights.recency", "fa-clock", "#5ad1d1", "Recency", "How new it is", w.recency, 0, 100, "") +
+                numTile("news.weights.importance", "fa-bolt", "#ff6b6f", "Importance", "What kind of news, how many outlets have it", w.importance, 0, 100, "") +
+                numTile("news.weights.relevance", "fa-user", "#c49bff", "Relevance", "About a title in the reader's library", w.relevance, 0, 100, "")
+            )
+          )}
+          ${part(
+            "Breaking",
+            "A story counts as breaking when it's this new and at least this important",
+            tiles(
+              numTile("news.breaking.threshold", "fa-bolt", "#ff453a", "Importance at least", "0-100 (a casting announcement scores about 40, more with several outlets)", br.threshold, 0, 100, "") +
+                numTile("news.breaking.hours", "fa-hourglass-half", "#ff9f43", "Within", "How long a story can be breaking", br.hours, 1, 48, "hours")
+            )
+          )}
+          ${part(
+            "The same story from several outlets",
+            "How close two headlines must be to show as one story",
+            `<div class="ad-opts ad-opts-3">${opt("news.dupes", "strict", n.dupes || "balanced", "fa-lock", "Strict", "Only near-identical headlines", "#7ea4ff")}${opt("news.dupes", "balanced", n.dupes || "balanced", "fa-scale-balanced", "Balanced", "The same names, the same event", "#4cd97b")}${opt("news.dupes", "loose", n.dupes || "balanced", "fa-object-group", "Loose", "Groups more, may join related stories", "#ff9f43")}</div>`
+          )}
+          ${part(
+            "Categories",
+            "The chips and sections on Movie News",
+            tiles(
+              News.CATEGORIES.map(([k, l, icon]) => swTile("data-news-cat", k, !catsOff.includes(k), `<i class="fa-solid ${icon}"></i>`, "--c:#ff6b6f", l, "")).join("")
+            )
+          )}
+          ${part(
+            "Refreshing",
+            "",
+            tiles(numTile("apis.news.minutes", "fa-rotate", "#5ad1d1", "Ask the feeds again after", "Each reader's browser keeps the stories this long", Site.api("news").minutes, 5, 720, "min"))
+          )}`,
+          3
+        )}
+        ${box(
+          "news-stories",
+          "fa-newspaper",
+          "Stories",
+          `<div class="ad-stories" data-stories><p class="sv-note">Loading the news…</p></div>`,
+          3,
+          "Promote: first on Movie News for two days · Breaking: marked as breaking · Hide: kept off Movie News · Tick two or more, then Merge: shown as one story. Save changes to send it to everyone."
+        )}
+        ${box(
+          "news-feeds",
+          "fa-heart-pulse",
+          "Feeds",
+          tiles(
+            feeds
+              .map((f) => {
+                const x = status[f.id];
+                const off = hidden.includes(f.id);
+                return `<div class="ad-lt-tile ad-info-tile ad-feed-tile ${off ? "off" : x ? (x.ok ? "ok" : "down") : ""}"><span class="ad-lt-swatch ad-tile-icon2" style="--c:${srcColor(f.source)}" aria-hidden="true"><b class="ad-src-mark">${esc(srcMark(f.source, f.name))}</b></span>
+                  <span class="ad-lt-text"><strong>${esc(f.name)} · ${esc(KIND[f.kind] ? KIND[f.kind][0] : f.kind)}</strong><small>${off ? "Switched off" : x ? (x.ok ? `${x.n} stories · ${ago(x.at)}` : `Failed ${ago(x.at)}: ${esc(x.error || "")}`) : "Not asked yet on this device"}</small></span><i class="ad-svc-dot" aria-hidden="true"></i></div>`;
+              })
+              .join("")
+          ),
+          3,
+          "As this browser last asked them (open Movie News, or Refresh there, to ask again)."
         )}
         ${card("fa-thumbtack", "Pinned stories", `${pins.map((p, i) => `<span class="ad-chip">${esc(p.title)}<button type="button" data-rm="news.featured" data-i="${i}" aria-label="Remove"><i class="fa-solid fa-xmark"></i></button></span>`).join("") || '<p class="muted">None pinned.</p>'}
           <div class="ad-pin">
@@ -780,7 +906,7 @@
             <input class="input" name="image" placeholder="Picture address (https://…, optional)" />
             <textarea class="input" name="excerpt" rows="2" maxlength="300" placeholder="A line or two (optional)"></textarea>
             <button class="btn ad-pin-add" type="button"><i class="fa-solid fa-thumbtack"></i> Pin it</button>
-          </div>`, "Pinned stories come first on Movie News, the top one as the big story.")}
+          </div>`, "Your own story, first on Movie News (the top one as the big story).")}
       </div>`;
     },
     apis() {
@@ -949,6 +1075,8 @@
                 ["episode", "fa-tv", "#5ad1d1", "New episodes", "The next episode of a show they're watching"],
                 ["recommendation", "fa-heart", "#f39ad0", "Weekly recommendation", "A well-known title like one they loved"],
                 ["announcement", "fa-bullhorn", "#ff9f43", "Announcements", "Your messages to everyone"],
+                ["breaking", "fa-bolt", "#ff453a", "Breaking news", "Only the big stories (Movie News: News → Ranking → Breaking)"],
+                ["trailer", "fa-play", "#c49bff", "New trailers", "A trailer for a title on someone's Watchlist"],
               ]
                 .map(([k, icon, c, name, sub]) => tileK(`notifications.${k}`, icon, c, name, sub, n[k] !== false))
                 .join("")
@@ -1597,6 +1725,7 @@
     body.classList.add("ad-in");
     if (k === "users") members(root.querySelector(".ad-members"), true);
     if (k === "apis") omdbMeter();
+    if (k === "news") newsStories();
     applyLayout(k);
     if (k === "overview") dashboard(), paintOverview();
     if (k === "tools") storage(root.querySelector(".ad-storage"));
@@ -1604,6 +1733,46 @@
     paintBadges();
     paintState();
     paintBar();
+  }
+
+  // News → Stories: the latest stories (as readers get them, plus the hidden ones), each with Promote,
+  // Breaking, Hide, and a tick for Merge
+  let newsCache = null;
+  const linkOf = (x) => (x && x.link) || x;
+  const inList = (path, link) => (getPath(path) || []).some((x) => linkOf(x) === link);
+  async function newsStories() {
+    const box = root.querySelector("[data-stories]");
+    if (!box || !window.News) return;
+    try {
+      if (!newsCache) newsCache = (News.saved() || (await News.latest())).stories;
+    } catch (e) {
+      box.innerHTML = `<p class="sv-note">Couldn't load the news: ${esc(e.message)}</p>`;
+      return;
+    }
+    paintStories();
+  }
+  function paintStories() {
+    const box = root.querySelector("[data-stories]");
+    if (!box || !newsCache) return;
+    const hiddenOnes = (draft.news.hidden || []).filter((x) => x && x.title && !newsCache.some((s) => s.link === linkOf(x)));
+    const rows = newsCache.slice(0, 40).map((s) => {
+      const promoted = inList("news.promote", s.link);
+      const breaking = inList("news.breakingMarks", s.link);
+      const hidden = inList("news.hidden", s.link);
+      return `<li class="ad-story${hidden ? " is-hidden" : ""}">
+          <label class="ad-story-pick"><input type="checkbox" data-merge-pick="${esc(s.link)}" aria-label="Pick for Merge" /></label>
+          <span class="ad-story-text"><strong>${esc(s.title)}</strong><small><b class="ad-src-mark" style="--c:${srcColor(s.sourceKey)}">${esc(srcMark(s.sourceKey, s.source))}</b> ${esc(s.source)} · ${ago(s.date)}${(s.also || []).length ? ` · also ${s.also.map((x) => esc(x.source)).join(", ")}` : ""}${s.breaking ? ' · <em class="hot">Breaking</em>' : ""}</small></span>
+          <span class="ad-story-btns">
+            <button type="button" class="ad-story-btn${promoted ? " on" : ""}" data-story="promote" data-link="${esc(s.link)}" data-title="${esc(s.title)}" title="First on Movie News for two days"><i class="fa-solid fa-star"></i><span>Promote</span></button>
+            <button type="button" class="ad-story-btn hot${breaking ? " on" : ""}" data-story="breakingMarks" data-link="${esc(s.link)}" data-title="${esc(s.title)}" title="Mark as breaking"><i class="fa-solid fa-bolt"></i><span>Breaking</span></button>
+            <button type="button" class="ad-story-btn${hidden ? " on" : ""}" data-story="hidden" data-link="${esc(s.link)}" data-title="${esc(s.title)}" title="Keep it off Movie News"><i class="fa-solid fa-eye-slash"></i><span>${hidden ? "Hidden" : "Hide"}</span></button>
+          </span></li>`;
+    });
+    box.innerHTML = `<div class="ad-stories-top"><span class="muted">${newsCache.length} stories now · the top 40</span><button type="button" class="btn ad-merge" disabled><i class="fa-solid fa-object-group"></i> Merge selected</button>${
+      (draft.news.merges || []).length ? `<button type="button" class="btn ad-unmerge"><i class="fa-solid fa-object-ungroup"></i> Undo merges (${draft.news.merges.length})</button>` : ""
+    }</div>
+      <ul class="ad-story-list">${rows.join("")}</ul>
+      ${hiddenOnes.length ? `<p class="sv-note">Hidden earlier: ${hiddenOnes.map((x) => `<span class="ad-chip">${esc(x.title)}<button type="button" data-story="hidden" data-link="${esc(linkOf(x))}" aria-label="Show it again"><i class="fa-solid fa-xmark"></i></button></span>`).join("")}</p>` : ""}`;
   }
 
   // today's OMDb lookups: used / the day's budget, what's left, when it starts again
@@ -1711,6 +1880,16 @@
       el.value = n;
       setPath(`themes.seasonDates.easter.${el.dataset.easter}`, n);
       return paintDates();
+    }
+    if (el.dataset.newsCat) {
+      const off = new Set(draft.news.catsOff || []);
+      el.checked ? off.delete(el.dataset.newsCat) : off.add(el.dataset.newsCat);
+      return setPath("news.catsOff", [...off]);
+    }
+    if (el.dataset.mergePick !== undefined) {
+      const btn = root.querySelector(".ad-merge");
+      if (btn) btn.disabled = root.querySelectorAll("[data-merge-pick]:checked").length < 2;
+      return;
     }
     if (el.dataset.seasonOff) {
       const off = new Set(draft.themes.seasonsOff || []);
@@ -1963,6 +2142,47 @@
     if (e.target.closest(".ad-key-test")) return tmdbKey("test");
     if (e.target.closest(".ad-key-clear")) return tmdbKey("clear");
     if (e.target.closest(".ad-test-all")) return testAll(e.target.closest(".ad-test-all"));
+    const st = e.target.closest("[data-story]");
+    if (st) {
+      const path = `news.${st.dataset.story}`;
+      const link = st.dataset.link;
+      const list = (getPath(path) || []).slice();
+      const i = list.findIndex((x) => linkOf(x) === link);
+      if (i >= 0) list.splice(i, 1);
+      else list.unshift(st.dataset.story === "promote" ? { link, title: st.dataset.title || "", until: Date.now() + 2 * 86400000 } : { link, title: st.dataset.title || "" });
+      setPath(path, list.slice(0, 60));
+      return paintStories();
+    }
+    if (e.target.closest(".ad-merge")) {
+      const links = [...root.querySelectorAll("[data-merge-pick]:checked")].map((x) => x.dataset.mergePick);
+      if (links.length < 2) return;
+      setPath("news.merges", (draft.news.merges || []).concat([links]).slice(-40));
+      toast("Merged: Save changes to send it to everyone");
+      return paintStories();
+    }
+    if (e.target.closest(".ad-unmerge")) {
+      setPath("news.merges", []);
+      return paintStories();
+    }
+    const rmSrc = e.target.closest("[data-rm-src]");
+    if (rmSrc) {
+      e.preventDefault();
+      setPath("news.extraSources", (draft.news.extraSources || []).filter((x) => x.id !== rmSrc.dataset.rmSrc));
+      return show(section);
+    }
+    if (e.target.closest(".ad-src-add")) {
+      const f = e.target.closest(".ad-add-src");
+      const v = (nm) => f.querySelector(`[name="${nm}"]`).value.trim();
+      const name = v("name");
+      const url = v("url");
+      if (!name || !/^https:\/\/\S+$/.test(url)) return toast("A name and the feed's address (https://…) are needed");
+      const id = `src-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || Date.now().toString(36)}`;
+      const list = (draft.news.extraSources || []).filter((x) => x.id !== id);
+      list.push({ id, name: name.slice(0, 40), url, kind: v("kind") || "movies", priority: Math.max(0, Math.min(100, Number(v("priority")) || 60)), site: `https://${url.replace(/^https:\/\//, "").split("/")[0]}` });
+      setPath("news.extraSources", list.slice(0, 20));
+      toast(`${name} added: Save changes, then it shows on Movie News`);
+      return show(section);
+    }
     const svc = e.target.closest("[data-svc-go]");
     if (svc) {
       const el = root.querySelector(`[data-box="svc-${svc.dataset.svcGo}"]`);

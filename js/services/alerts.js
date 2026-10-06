@@ -9,6 +9,8 @@
  *   episode         a new episode of a show you follow
  *   recommendation  once a week: a well-known title like one you loved ("Because you loved Dune")
  *   announcement    the site owner's message to everyone (Admin → Notifications)
+ *   breaking        an important story that's just broken (Movie News: js/services/news.js)
+ *   trailer         a new trailer for a title on your Watchlist (Movie News)
  * The first three come from what js/services/watch.js already looks up once a day.
  *
  * Each is kept with your profile (so it follows you to your other devices), as
@@ -60,6 +62,19 @@
       label: "Recommendations",
       words: (a) => ({ title: `You might like ${a.title}`, body: a.extra && a.extra.because ? `Because you loved ${a.extra.because}.` : "Picked for you." }),
       href: (a) => `title.html?tmdb=${encodeURIComponent(a.ref)}`,
+    },
+    // Movie News (js/services/news.js): only what's important, never every story
+    breaking: {
+      icon: "fa-bolt",
+      label: "Breaking news",
+      words: (a) => ({ title: `Breaking: ${a.title}`, body: (a.extra && a.extra.source) || "Movie News" }),
+      href: (a) => (a.extra && /^https:\/\//.test(a.extra.link || "") ? a.extra.link : "news.html?cat=breaking"),
+    },
+    trailer: {
+      icon: "fa-play",
+      label: "New trailers",
+      words: (a) => ({ title: `New trailer: ${a.title}`, body: (a.extra && a.extra.headline) || "It's on your Watchlist." }),
+      href: (a) => (a.extra && /^https:\/\//.test(a.extra.link || "") ? a.extra.link : "news.html?cat=trailers"),
     },
     // from the site's owner (Admin → Notifications → Announcement)
     announcement: {
@@ -177,7 +192,7 @@
   /* ---------------- notifications on this device ---------------- */
 
   const supported = () => "Notification" in window && "serviceWorker" in navigator;
-  const prefs = () => Object.assign({ on: false, release: true, season: true, episode: true, recommendation: true, announcement: true }, Store.read(PREFS, {}));
+  const prefs = () => Object.assign({ on: false, release: true, season: true, episode: true, recommendation: true, announcement: true, breaking: true, trailer: true }, Store.read(PREFS, {}));
   function setPrefs(p) {
     Store.write(PREFS, Object.assign(prefs(), p));
     snapshot();

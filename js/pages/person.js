@@ -207,8 +207,37 @@
         <div class="movie-row">${known.map(Cards.tmdbCard).join("")}</div>`
       : "";
     rowsEl().append(knownEl);
+    newsRow();
     renderFilmography();
     arrangeRows();
+  }
+
+  // their latest news: the stories from Movie News that name them in full (js/services/news.js, the
+  // last news this browser got: nothing asked for here)
+  let newsEl = null;
+  function newsRow() {
+    if (!window.News || !News.about || !window.Site || !Site.feature("news") || !p || !p.name) return;
+    const list = News.about([p.name], 4);
+    if (!newsEl) {
+      newsEl = document.createElement("section");
+      newsEl.className = "container t-section p-news-row";
+      newsEl.dataset.prow = "news";
+    }
+    newsEl.hidden = !list.length;
+    const ago = (t) => {
+      const h = Math.round((Date.now() - t) / 3600000);
+      return h < 1 ? "just now" : h < 24 ? `${h} h ago` : `${Math.round(h / 24)} d ago`;
+    };
+    newsEl.innerHTML = list.length
+      ? `<div class="row-head"><h2 class="t-section-title"><i class="fa-solid fa-newspaper"></i> Latest news</h2><a class="t-link" href="news.html?q=${encodeURIComponent(p.name)}">More on Movie News <i class="fa-solid fa-arrow-right"></i></a></div>
+        <div class="t-news-list">${list
+          .map(
+            (s) => `<a class="t-news-item" href="${esc(s.link)}" target="_blank" rel="noopener">${s.image ? `<img src="${esc(s.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" />` : '<span class="t-news-ph"><i class="fa-solid fa-newspaper"></i></span>'}
+              <span><small>${esc(s.source)} · ${ago(s.date)}</small><strong>${esc(s.title)}</strong></span></a>`
+          )
+          .join("")}</div>`
+      : "";
+    rowsEl().append(newsEl);
   }
 
   // the rows' box (once), right under the top part; the filmography (mainEl) goes in it too
@@ -224,7 +253,7 @@
     }
     return rowsBox;
   }
-  const savedRows = () => (window.Site && Site.personRows ? Site.personRows() : { order: ["known", "filmography", "books"], hidden: [] });
+  const savedRows = () => (window.Site && Site.personRows ? Site.personRows() : { order: ["known", "filmography", "books", "news"], hidden: [] });
   // the rows' order: the owner's (Admin → Person page), but for a writer (TMDB says they write, or
   // you came from a book's author) their books come first, right before the filmography
   function rowOrder() {

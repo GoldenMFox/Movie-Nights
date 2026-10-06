@@ -1,40 +1,70 @@
 /*
- * News: movie and TV news for news.html, from the film trade's own feeds.
+ * News: movie and TV news for news.html (and a title's / a person's latest news on their pages).
  *
- * Where it comes from: the public RSS feeds of Variety, /Film, Screen Rant, Collider and The
- * Hollywood Reporter (made to be read by news readers), turned into JSON by rss2json.com (free, no
- * key, 10,000 requests a day; it keeps each feed about an hour). Only the headline, the date, the
- * picture the feed offers and a short excerpt are shown, always with the source's name, and every
- * story opens on the source's own site: nothing is copied beyond what the feed itself shares.
+ * Where it comes from: the public RSS feeds of the film trade (made to be read by news readers),
+ * turned into JSON by rss2json.com (free, no key). Only the headline, the date, the picture the feed
+ * offers and a short excerpt are shown, always with the source's name, and every story opens on the
+ * source's own site: nothing is copied beyond what the feed itself shares.
  *
- * The owner can change the feeds and hide sources (Admin Control Center → News); answers are
- * kept 30 minutes (Admin → API integrations), so the feeds are asked at most twice an hour.
- * Fast: every feed is asked at once and the page gets each one's stories as it answers; the last
- * news is kept in this browser (mn:newsSnap) and shown straight away the next time.
+ * Not an RSS list: a curated feed that answers "what matters in film and TV right now".
+ *  - Sources have an authority (priority 0-100) and a tier: Primary (Variety, The Hollywood
+ *    Reporter: 100), Film publications (/Film 85, Collider 75), Supplementary (Screen Rant 55). Each
+ *    source has its feeds by kind (movie news, TV news, industry). The owner changes priorities,
+ *    switches feeds off and adds their own (Admin → News: news.priority, hiddenSources, extraSources).
+ *  - Every story gets its kind from what it says (a movie, a show, or neither), not from its feed,
+ *    and its categories (several when they fit): Trailers, Casting, Production, Release dates, Box
+ *    Office, Awards, Industry.
+ *  - The same story told by several outlets is one story: told by its best source, "also reported
+ *    by" the others (title words and names, within two days; how close they must be: news.dupes).
+ *  - Each story is scored: authority + recency + importance (what kind of news it is, how many
+ *    outlets have it) + relevance to you (the titles in your library), with the owner's weights
+ *    (news.weights). Breaking: recent and important enough (news.breaking: threshold, hours), or
+ *    marked by the owner. The owner can also promote, hide and merge stories.
+ *  - Notifications: a breaking story, or a trailer for a title on your Watchlist (js/services/alerts.js).
+ *
+ * Fast: every feed asked at once (answers kept 30 minutes: Admin → API integrations), the page gets
+ * each feed's stories as it answers, and the work (categories, grouping, scores) is done once per
+ * fetch; the last news is kept in this browser (mn:newsSnap) and shown the moment a page opens.
  */
 (function () {
+  // the sources: name, authority, tier (1 primary, 2 film publications, 3 supplementary), site
+  const SOURCES = {
+    variety: { name: "Variety", priority: 100, tier: 1, site: "https://variety.com" },
+    thr: { name: "The Hollywood Reporter", priority: 100, tier: 1, site: "https://www.hollywoodreporter.com" },
+    slashfilm: { name: "/Film", priority: 85, tier: 2, site: "https://www.slashfilm.com" },
+    collider: { name: "Collider", priority: 75, tier: 2, site: "https://collider.com" },
+    screenrant: { name: "Screen Rant", priority: 55, tier: 3, site: "https://screenrant.com" },
+  };
+  const TIERS = { 1: "Primary sources", 2: "Film publications", 3: "Supplementary" };
+  // the feeds: each source's movie news, TV news and industry news
   const FEEDS = [
-    { id: "variety-film", name: "Variety", url: "https://variety.com/v/film/feed/", kind: "movies", site: "https://variety.com" },
-    { id: "variety-tv", name: "Variety", url: "https://variety.com/v/tv/feed/", kind: "tv", site: "https://variety.com" },
-    { id: "slashfilm", name: "/Film", url: "https://www.slashfilm.com/feed/", kind: "movies", site: "https://www.slashfilm.com" },
-    { id: "screenrant", name: "Screen Rant", url: "https://screenrant.com/feed/movie-news/", kind: "movies", site: "https://screenrant.com" },
-    { id: "collider", name: "Collider", url: "https://collider.com/feed/category/movie-news/", kind: "movies", site: "https://collider.com" },
-    { id: "thr", name: "The Hollywood Reporter", url: "https://www.hollywoodreporter.com/c/movies/movie-news/feed/", kind: "movies", site: "https://www.hollywoodreporter.com" },
+    { id: "variety-film", source: "variety", kind: "movies", url: "https://variety.com/v/film/feed/" },
+    { id: "thr", source: "thr", kind: "movies", url: "https://www.hollywoodreporter.com/c/movies/movie-news/feed/" },
+    { id: "slashfilm", source: "slashfilm", kind: "movies", url: "https://www.slashfilm.com/feed/" },
+    { id: "collider", source: "collider", kind: "movies", url: "https://collider.com/feed/category/movie-news/" },
+    { id: "screenrant", source: "screenrant", kind: "movies", url: "https://screenrant.com/feed/movie-news/" },
+    { id: "variety-tv", source: "variety", kind: "tv", url: "https://variety.com/v/tv/feed/" },
+    { id: "thr-tv", source: "thr", kind: "tv", url: "https://www.hollywoodreporter.com/c/tv/tv-news/feed/" },
+    { id: "collider-tv", source: "collider", kind: "tv", url: "https://collider.com/feed/category/tv-news/" },
+    { id: "screenrant-tv", source: "screenrant", kind: "tv", url: "https://screenrant.com/feed/tv-news/" },
+    { id: "variety-biz", source: "variety", kind: "industry", url: "https://variety.com/v/biz/feed/" },
+    { id: "thr-biz", source: "thr", kind: "industry", url: "https://www.hollywoodreporter.com/c/business/feed/" },
   ];
+  const KIND_LABEL = { movies: "Movies", tv: "TV", industry: "Industry" };
   const RSS2JSON = "https://api.rss2json.com/v1/api.json?rss_url=";
+  const cfg = () => (window.Site && Site.get().news) || {};
   const minutes = () => (window.Site ? Site.api("news").minutes : 30) || 30;
 
-  // the categories, in the order of the chips; the first rule that fits a story wins
+  // the categories (a story can have several), in the order of the chips
   const CATEGORIES = [
-    ["trailers", "Trailers", "fa-play", /\b(trailer|teaser|first look|clip|sneak peek)\b/i],
-    ["boxoffice", "Box Office", "fa-sack-dollar", /\b(box office|opening weekend|grosses?|ticket sales|debuts? (to|with) \$|\$\d+(\.\d+)?\s?(m|million|b|billion)\b)/i],
-    ["casting", "Casting", "fa-user-plus", /\b(cast(s|ing)?|joins|to star|set to star|in talks|tapped|boards|lands role|to play|will play)\b/i],
-    ["awards", "Awards", "fa-trophy", /\b(oscars?|academy awards?|emmys?|golden globes?|baftas?|cannes|venice|sundance|tiff|berlinale|awards?|nominations?|festival)\b/i],
-    ["streaming", "Streaming", "fa-tv", /\b(netflix|disney\+|hbo max|\bmax\b|prime video|apple tv\+?|hulu|peacock|paramount\+|streaming|streamer)\b/i],
-    ["upcoming", "Upcoming", "fa-calendar-day", /\b(release date|coming soon|delayed|moves? to|dated|sets? .* release|premiere date|arrives?)\b/i],
-    ["production", "Production", "fa-clapperboard", /\b(filming|production|wraps?|shoot(ing)?|sequel|greenlit|green-lit|in development|reboot|remake|adaptation|to direct|director)\b/i],
+    ["trailers", "Trailers", "fa-play", /\b(trailers?|teasers?|first[- ]look|clip|sneak peek|footage)\b/i],
+    ["casting", "Casting", "fa-user-plus", /\b(cast(s|ing)?|joins?|to star|set to star|in talks|tapped|boards|lands (lead )?role|to play|will play|co-?stars?|ensemble|recast)\b/i],
+    ["production", "Production", "fa-clapperboard", /\b(filming|in production|production (begins|starts|wraps|update)|wraps?|shoot(ing)?|greenlit|green-?lit|in development|sequel|reboot|remake|adaptation|to direct|attached to direct|set to helm|helm|script|screenplay|showrunner|renewed|cancel(l)?ed|picked up)\b/i],
+    ["release", "Release dates", "fa-calendar-day", /\b(release date|dated|delayed|postponed|pushed (back|to)|moves? (up |back )?to|sets? .{0,40}(release|premiere|debut)|premiere date|in theaters|theatrical release|streaming date|arrives? (on|in)|coming (to|in) )/i],
+    ["boxoffice", "Box Office", "fa-sack-dollar", /\b(box office|opening weekend|grosses?|ticket sales|global haul|debuts? (to|with) \$|\$\d+(\.\d+)?\s?(m|million|b|billion)\b)/i],
+    ["awards", "Awards", "fa-trophy", /\b(oscars?|academy awards?|emmys?|golden globes?|baftas?|sag awards?|cannes|venice|sundance|tiff|berlinale|awards?|nominations?|nominees?|festival)\b/i],
+    ["industry", "Industry", "fa-building", /\b(studios?|mergers?|acquisitions?|acquires?|buys|deal|exec(utive)?s?|ceo|chairman|chief|president|layoffs?|strike|union|wga|sag-aftra|agency|caa|wme|uta|signs with|distribution|rights|investors?|earnings|stock|revenue|subscribers)\b/i],
   ];
-  const KIND_LABEL = { movies: "Movies", tv: "TV" };
 
   const parser = new DOMParser();
   // feeds write in HTML: just the words (an inert document: nothing in it can run or load)
@@ -45,58 +75,316 @@
   };
   const safe = (u) => (/^https:\/\//i.test(String(u || "")) ? String(u) : "");
 
+  /* ---------------- the sources (the owner's changes on top) ---------------- */
+
+  // every source: the site's, then the owner's own ({ id, name, url, kind, priority, site })
+  function sources() {
+    const out = {};
+    const pri = cfg().priority || {};
+    Object.entries(SOURCES).forEach(([k, s]) => (out[k] = Object.assign({}, s, { key: k, priority: pri[k] != null ? Number(pri[k]) : s.priority })));
+    (cfg().extraSources || []).forEach((x) => {
+      if (!x || !x.id) return;
+      out[x.id] = { key: x.id, name: x.name || x.id, priority: Number(x.priority) || 60, tier: Number(x.priority) >= 90 ? 1 : Number(x.priority) >= 70 ? 2 : 3, site: safe(x.site) || "", custom: true };
+    });
+    return out;
+  }
+  // every feed (the site's and the owner's own), whether it's on or not
+  function allFeeds() {
+    const custom = cfg().feeds;
+    const base = Array.isArray(custom) && custom.length ? custom : FEEDS;
+    const extra = (cfg().extraSources || []).filter((x) => x && x.id && /^https:\/\//.test(x.url || "")).map((x) => ({ id: x.id, source: x.id, kind: x.kind || "movies", url: x.url, custom: true }));
+    const src = sources();
+    return base.concat(extra).map((f) => {
+      const s = src[f.source] || { name: f.name || f.source, priority: 60, tier: 3 };
+      return Object.assign({}, f, { name: s.name, priority: s.priority, tier: s.tier, site: s.site || f.site || "" });
+    });
+  }
+  // the feeds in use: switched on, and their kind on (Movie news / TV news, Admin → News)
   function feeds() {
-    const custom = window.Site && Site.get().news.feeds;
-    const list = Array.isArray(custom) && custom.length ? custom : FEEDS;
-    const hidden = (window.Site && Site.get().news.hiddenSources) || [];
-    return list.filter((f) => f && f.url && !hidden.includes(f.id));
+    const c = cfg();
+    const hidden = c.hiddenSources || [];
+    return allFeeds().filter((f) => f.url && !hidden.includes(f.id) && !(f.kind === "movies" && c.movies === false) && !(f.kind === "tv" && c.tv === false));
+  }
+
+  /* ---------------- reading a feed ---------------- */
+
+  const STATUS = "mn:newsStatus"; // { feedId: { ok, n, at, error } } (Admin → News: Feeds)
+  function noteStatus(id, v) {
+    try {
+      const all = JSON.parse(localStorage.getItem(STATUS) || "{}");
+      all[id] = Object.assign({ at: Date.now() }, v);
+      localStorage.setItem(STATUS, JSON.stringify(all));
+    } catch (e) {}
+  }
+  const status = () => {
+    try {
+      return JSON.parse(localStorage.getItem(STATUS) || "{}");
+    } catch (e) {
+      return {};
+    }
+  };
+
+  // a movie or a show? (what the story says, the feed only when it says nothing)
+  const TV_WORDS = /\b(series|season \d+|seasons?|episodes?|showrunner|renewed|cancel(l)?ed|pilot|miniseries|limited series|docuseries|sitcom|emmys?|tv show|the show|spinoff|spin-off|streaming series|late-night|talk show)\b/i;
+  const MOVIE_WORDS = /\b(film|films|movie|movies|box office|theatrical|in theaters|sequel|oscars?|director'?s cut|feature|biopic|blockbuster|trilogy)\b/i;
+  function kindOf(hay, feedKind) {
+    const tv = (hay.match(new RegExp(TV_WORDS, "gi")) || []).length;
+    const mv = (hay.match(new RegExp(MOVIE_WORDS, "gi")) || []).length;
+    if (tv > mv) return "tv";
+    if (mv > tv) return "movies";
+    return feedKind === "industry" ? "industry" : feedKind;
   }
 
   // one feed -> [story]
   async function feed(f) {
-    const r = await Api.get("news", RSS2JSON + encodeURIComponent(f.url), { minutes: minutes() });
-    if (!r || r.status !== "ok") throw new Error((r && r.message) || `${f.name} couldn't be read`);
+    let r;
+    try {
+      r = await Api.get("news", RSS2JSON + encodeURIComponent(f.url), { minutes: minutes() });
+      if (!r || r.status !== "ok") throw new Error((r && r.message) || `${f.name} couldn't be read`);
+    } catch (e) {
+      noteStatus(f.id, { ok: false, n: 0, error: e.message });
+      throw e;
+    }
+    noteStatus(f.id, { ok: true, n: (r.items || []).length });
     return (r.items || []).map((it) => {
       const title = text(it.title);
       const excerpt = text(it.description || it.content);
-      const cats = (it.categories || []).join(" ");
-      const hay = `${title} ${cats}`;
-      const cat = CATEGORIES.find((c) => c[3].test(hay));
+      const tags = (it.categories || []).join(" ");
+      const hay = `${title} ${tags}`;
+      const cats = CATEGORIES.filter((c) => c[3].test(hay)).map((c) => c[0]);
+      if (f.kind === "industry" && !cats.includes("industry")) cats.push("industry");
       return {
         id: it.link || it.guid,
         title,
         link: safe(it.link) || (/^http:\/\//i.test(it.link || "") ? it.link : ""),
         // (rss2json gives the time in UTC: "2026-10-05 10:00:00")
         date: it.pubDate ? new Date(`${it.pubDate.replace(" ", "T")}Z`).getTime() || 0 : 0,
-        image: safe(it.thumbnail) || safe(it.enclosure && it.enclosure.link) || safe(firstImg(it.description || it.content)),
+        image: safe(it.thumbnail) || safe(it.enclosure && it.enclosure.link) || safe(firstImg(it.content)) || safe(firstImg(it.description)),
         excerpt: excerpt.length > 220 ? `${excerpt.slice(0, 217).replace(/\s+\S*$/, "")}…` : excerpt,
         source: f.name,
+        sourceKey: f.source,
         sourceId: f.id,
+        priority: f.priority,
+        tier: f.tier,
         site: safe(f.site),
-        kind: f.kind === "tv" || /\b(season \d+|series|showrunner|episode)\b/i.test(hay) ? "tv" : "movies",
-        cat: cat ? cat[0] : "",
+        kind: kindOf(`${hay} ${excerpt}`, f.kind),
+        cats,
+        cat: cats[0] || "",
       };
     });
   }
 
-  // stories from several feeds: newest first, the same story once
+  /* ---------------- what kind of news it is (importance 0-100) ---------------- */
+
+  const IMPORTANT = [
+    [/\b(dies|dead at|passes away|has died|death of|obituary|rip)\b/i, 30],
+    [/\bexclusive\b/i, 14],
+    [/\b(announce[sd]?|unveil(s|ed)?)\b/i, 12],
+    [/\b(first reactions|first reviews|world premiere)\b/i, 6],
+    [/\b(casts?|joins|to star|set to star|lands role|in talks)\b/i, 12],
+    [/\b(first[- ]look|official trailer|teaser trailer|trailer)\b/i, 10],
+    [/\b(release date|delayed|postponed|moves? to|sets? .{0,30}(release|premiere))\b/i, 12],
+    [/\b(greenlit|green-?lit|renewed|cancel(l)?ed|picked up)\b/i, 11],
+    [/\b(acquires?|acquisition|merger|buys|sells|deal)\b/i, 12],
+    [/\b(names|hires|appoints|exits|exiting|steps down|ousted|promoted to)\b/i, 9],
+    [/\b(box office|opening weekend|record)\b/i, 9],
+    [/\b(oscars?|emmys?|golden globes?) (nominations?|winners?|nominees?)\b/i, 12],
+    [/\b(sequel|franchise|marvel|dc studios|star wars|pixar|disney|warner bros|universal|paramount|sony|netflix|a24|lionsgate|amazon mgm)\b/i, 5],
+    [/\b(officially|confirmed|confirms)\b/i, 6],
+  ];
+  const MINOR = [
+    [/\b(review|reviews|recap|ranked|ranking|best|worst|every|top \d+|\d+ (movies|films|shows|series|moments|things|reasons))\b/i, -14],
+    [/\b(explained|ending explained|theory|theories|easter eggs?|why|how|what we know|everything we know|quiz|guide)\b/i, -14],
+    [/\b(where to watch|how to watch|streaming now|you need to watch|you should watch|underrated|hidden gem)\b/i, -16],
+    [/\b(interview|podcast|opinion|essay|column)\b/i, -5],
+    // (someone talking about something isn't the news itself)
+    [/\b(wants? to see|would love|explains why|says|said|talks|teases|hopes|opens up|reflects|addresses|responds|recalls|remembers|admits|weighs in|praises|slams|reacts)\b/i, -12],
+  ];
+  function importanceOf(s) {
+    const t = s.title;
+    let v = 14;
+    IMPORTANT.forEach(([re, w]) => re.test(t) && (v += w));
+    MINOR.forEach(([re, w]) => re.test(t) && (v += w));
+    return Math.max(0, Math.min(100, v));
+  }
+
+  /* ---------------- the same story from several outlets ---------------- */
+
+  const STOP = new Set(
+    "a an the and or of to in on for with at by from as is are was were be been it its this that these those his her their our your my new first after over into about up out off more most than then just will would could should can may might has have had do does did not no but so if says said report reports reportedly how why what who when where which official officially confirmed confirms reveals revealed exclusive update news sets set gets get takes take makes make film movie series season show tv trailer star stars".split(
+      " "
+    )
+  );
+  const tokens = (t) =>
+    String(t)
+      .toLowerCase()
+      .replace(/['’]s\b/g, "")
+      .replace(/[^a-z0-9$]+/g, " ")
+      .split(" ")
+      .filter((w) => w.length > 2 && !STOP.has(w));
+  // what's in quotes in a headline (a title: 'Artificial', 'The Social Reckoning')
+  const quoted = (t) =>
+    (String(t).match(/[‘'"“]([^’'"”]{3,60})[’'"”]/g) || [])
+      .map((q) => q.slice(1, -1).toLowerCase().trim())
+      .filter((q) => q.length >= 4);
+  // how close two headlines are (0-1): the words they share, a rare word (a name: Sorkin, Skydance,
+  // CAA) counting for much more than a common one; they must share a rare word or a quoted title
+  // ("first reactions" alone doesn't make two films' stories one)
+  const SENSITIVITY = { strict: 0.45, balanced: 0.34, loose: 0.24 };
+  function similarity(a, b, weight, rare) {
+    let shared = 0;
+    let union = 0;
+    let hasRare = false;
+    new Set([...a._t, ...b._t]).forEach((w) => {
+      const x = weight(w);
+      union += x;
+      if (a._t.has(w) && b._t.has(w)) {
+        shared += x;
+        if (rare(w)) hasRare = true;
+      }
+    });
+    const lowA = a.title.toLowerCase();
+    const lowB = b.title.toLowerCase();
+    const sameTitle = a._q.some((q) => lowB.includes(q)) || b._q.some((q) => lowA.includes(q));
+    if (!hasRare && !sameTitle) return 0;
+    return shared / (union || 1) + (sameTitle ? 0.2 : 0);
+  }
+  // stories -> [story]: one per real story, told by its best source (then the newest), the others in its
+  // "also" ({ source, sourceKey, link, title })
+  function cluster(stories) {
+    const c = cfg();
+    const need = SENSITIVITY[c.dupes] || SENSITIVITY.balanced;
+    const TWO_DAYS = 2 * 86400000;
+    // (how many headlines have each word: the fewer, the more it says)
+    const df = new Map();
+    stories.forEach((s) => {
+      s._t = new Set(tokens(s.title));
+      s._q = quoted(s.title);
+      s._t.forEach((w) => df.set(w, (df.get(w) || 0) + 1));
+    });
+    const N = stories.length || 1;
+    const weight = (w) => Math.log(1 + N / (df.get(w) || 1));
+    const rare = (w) => (df.get(w) || 0) <= 3;
+    const order = stories.slice().sort((a, b) => b.priority - a.priority || b.date - a.date);
+    const groups = [];
+    order.forEach((s) => {
+      const g = groups.find((x) => x.members.some((m) => Math.abs(m.date - s.date) < TWO_DAYS && m.sourceKey !== s.sourceKey && similarity(m, s, weight, rare) >= need));
+      if (g) g.members.push(s);
+      else groups.push({ members: [s] });
+    });
+    // the owner's merges: stories they put together
+    (c.merges || []).filter(Array.isArray).forEach((pair) => {
+      const gs = groups.filter((g) => g.members.some((m) => pair.includes(m.link)));
+      if (gs.length < 2) return;
+      gs.slice(1).forEach((g) => {
+        gs[0].members.push(...g.members);
+        groups.splice(groups.indexOf(g), 1);
+      });
+    });
+    return groups.map((g) => {
+      const members = g.members.sort((a, b) => b.priority - a.priority || b.date - a.date);
+      const lead = Object.assign({}, members[0]);
+      // (one story, everything it is: every outlet's categories, the newest time, a picture if any has one)
+      lead.cats = [...new Set(members.flatMap((m) => m.cats))];
+      lead.cat = lead.cats[0] || "";
+      lead.date = Math.max(...members.map((m) => m.date));
+      // (every outlet's picture: the page tries the next one when one doesn't load)
+      lead.images = [...new Set(members.map((m) => m.image).filter(Boolean))];
+      if (!lead.image) lead.image = lead.images[0] || "";
+      lead.also = members.slice(1).map((m) => ({ source: m.source, sourceKey: m.sourceKey, link: m.link, title: m.title }));
+      members.forEach((m) => {
+        delete m._t;
+        delete m._q;
+      });
+      delete lead._t;
+      delete lead._q;
+      return lead;
+    });
+  }
+
+  /* ---------------- scores ---------------- */
+
+  // the titles in your library (and their alternatives), for "relevant to you" and the links to them
+  function libraryTitles() {
+    if (!window.Store || Store.guest) return [];
+    const seen = new Set();
+    return Store.all()
+      .filter((i) => i.title && String(i.title).length >= 4)
+      .map((i) => ({ id: i.id, title: String(i.title), watch: !!i.watchlist, weight: i.favorite ? 1 : i.watchlist ? 0.9 : typeof i.rating === "number" && i.rating >= 8 ? 0.8 : 0.5 }))
+      .filter((x) => !seen.has(x.title.toLowerCase()) && seen.add(x.title.toLowerCase()));
+  }
+  const reEsc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const mentions = (hay, title) => new RegExp(`(^|[^\\w])${reEsc(title)}([^\\w]|$)`, "i").test(hay);
+
+  // the scores' weights (the owner can change them: Admin → News → Ranking)
+  const WEIGHTS = { authority: 35, recency: 30, importance: 30, relevance: 15 };
+  const BREAKING = { threshold: 50, hours: 6 };
+
+  // every story's score, Breaking, and the title of yours it's about
+  function score(list) {
+    const c = cfg();
+    const w = Object.assign({}, WEIGHTS, c.weights || {});
+    const total = w.authority + w.recency + w.importance + w.relevance || 1;
+    const br = Object.assign({}, BREAKING, c.breaking || {});
+    const mine = libraryTitles();
+    const now = Date.now();
+    const promoted = new Set((c.promote || []).filter((x) => !x.until || x.until > now).map((x) => x.link || x));
+    const marked = new Set((c.breakingMarks || []).map((x) => x.link || x));
+    list.forEach((s) => {
+      const hours = Math.max(0, (now - s.date) / 3600000);
+      // (more outlets telling it = it matters more)
+      s.importance = Math.min(100, importanceOf(s) + Math.min(30, (s.also || []).length * 12));
+      const recency = 100 * Math.exp(-hours / 12);
+      const hay = `${s.title} ${s.excerpt}`;
+      const about = mine.find((m) => mentions(hay, m.title));
+      s.about = about ? { id: about.id, title: about.title, watch: about.watch } : null;
+      const relevance = about ? 100 * about.weight : 0;
+      s.score = (w.authority * s.priority + w.recency * recency + w.importance * s.importance + w.relevance * relevance) / total;
+      s.promoted = promoted.has(s.link);
+      if (s.promoted) s.score += 1000;
+      s.breaking = (marked.has(s.link) && hours < 48) || (hours <= br.hours && s.importance >= br.threshold);
+    });
+    return list;
+  }
+
+  // the owner's hidden stories out; then by score
+  function rank(list) {
+    const hidden = new Set((cfg().hidden || []).map((x) => x.link || x));
+    return score(list.filter((s) => !hidden.has(s.link) && !(s.also || []).some((a) => hidden.has(a.link)))).sort((a, b) => b.score - a.score);
+  }
+
+  // which stories to show, for the way you read the news (News preferences on news.html):
+  //  "recommended": every source, the supplementary ones weighed down and kept to about a quarter
+  //  "all": every source on the site, as scored · "mine": only the sources you picked
+  function view(list, mode, mySources) {
+    if (mode === "mine" && Array.isArray(mySources)) return list.filter((s) => mySources.includes(s.sourceKey) || (s.also || []).some((a) => mySources.includes(a.sourceKey)));
+    if (mode !== "recommended") return list;
+    const out = [];
+    const later = [];
+    let low = 0;
+    list.forEach((s) => {
+      if (s.tier >= 3 && !s.promoted) {
+        if (low + 1 > Math.max(1, Math.round(out.length * 0.25))) return later.push(s);
+        low++;
+      }
+      out.push(s);
+    });
+    return out.concat(later);
+  }
+
+  /* ---------------- getting the news ---------------- */
+
+  // stories from several feeds: newest first, the same link once
   function merge(results) {
     const seen = new Set();
     return results
       .flatMap((r) => r.s || [])
-      .filter((s) => s.title && s.link)
-      .filter((s) => {
-        const k = s.title.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 60);
-        if (seen.has(k) || seen.has(s.link)) return false;
-        seen.add(k);
-        seen.add(s.link);
-        return true;
-      })
+      .filter((s) => s.title && s.link && !seen.has(s.link) && seen.add(s.link))
       .sort((a, b) => b.date - a.date);
   }
 
-  // every feed at once. -> { stories, failed: [names], at }. onPart (optional) gets the stories so
-  // far each time a feed answers, so the page can show them without waiting for the slowest one
+  // every feed at once. -> { stories (grouped and ranked), failed: [names], at }. onPart (optional)
+  // gets the stories so far each time a feed answers, so the page can show them without waiting
   async function latest(onPart) {
     const list = feeds();
     const results = [];
@@ -105,32 +393,79 @@
         feed(f)
           .then((s) => results.push({ s }))
           .catch((e) => results.push({ e, f }))
-          .then(() => onPart && results.some((r) => r.s) && onPart({ stories: merge(results), failed: [], at: Date.now(), partial: true }))
+          .then(() => onPart && results.some((r) => r.s) && onPart({ stories: rank(cluster(merge(results))), failed: [], at: Date.now(), partial: true }))
       )
     );
-    const stories = merge(results);
+    const raw = merge(results);
     const failed = results.filter((r) => r.e).map((r) => r.f.name);
-    if (!stories.length && failed.length) throw new Error("The news feeds couldn't be reached");
-    const out = { stories, failed, at: Date.now() };
+    if (!raw.length && failed.length) throw new Error("The news feeds couldn't be reached");
+    const out = { stories: rank(cluster(raw)), failed, at: Date.now() };
     keep(out);
     return out;
   }
 
-  // the last news this browser got, shown the moment the page opens (then the fresh news comes in)
+  // the last news this browser got (grouped), shown the moment a page opens
   const SNAP = "mn:newsSnap";
   function keep(r) {
     try {
-      localStorage.setItem(SNAP, JSON.stringify({ at: r.at, stories: r.stories.slice(0, 120) }));
+      localStorage.setItem(SNAP, JSON.stringify({ v: 2, at: r.at, stories: r.stories.slice(0, 150) }));
     } catch (e) {}
   }
   function saved() {
     try {
       const v = JSON.parse(localStorage.getItem(SNAP) || "null");
-      return v && Array.isArray(v.stories) && v.stories.length ? v : null;
+      if (!v || v.v !== 2 || !Array.isArray(v.stories) || !v.stories.length) return null;
+      // (scored again: the time has moved on, and the owner may have changed something)
+      v.stories = rank(v.stories);
+      return v;
     } catch (e) {
       return null;
     }
   }
 
-  window.News = { FEEDS, CATEGORIES, KIND_LABEL, feeds, latest, saved };
+  // a title's or a person's news, from the last news this browser got (no asking)
+  // -> [story], newest first: what mentions one of the names (a title said whole, a person's full name)
+  function about(names, max) {
+    const snap = saved();
+    if (!snap) return [];
+    const ns = (names || []).filter((n) => n && String(n).trim().length >= 4).map(String);
+    if (!ns.length) return [];
+    return snap.stories
+      .filter((s) => ns.some((n) => mentions(`${s.title} ${s.excerpt}`, n)))
+      .sort((a, b) => b.date - a.date)
+      .slice(0, max || 6);
+  }
+
+  /* ---------------- notifications: breaking news, a trailer for a title on your Watchlist ---------------- */
+
+  function alertsFrom(stories) {
+    if (!window.Alerts || !Alerts.add) return;
+    const now = Date.now();
+    const items = [];
+    stories
+      .filter((s) => s.breaking && now - s.date < 3 * 3600000)
+      .slice(0, 2)
+      .forEach((s) => items.push({ key: `news|${s.link}`, kind: "breaking", title: s.title, date: Store.today(), poster: "", extra: { link: s.link, source: s.source } }));
+    stories
+      .filter((s) => s.about && s.about.watch && s.cats.includes("trailers") && now - s.date < 2 * 86400000)
+      .slice(0, 2)
+      .forEach((s) => items.push({ key: `trailer|${s.link}`, kind: "trailer", title: s.about.title, id: s.about.id, date: Store.today(), poster: "", extra: { link: s.link, source: s.source, headline: s.title } }));
+    if (items.length) Alerts.add(items);
+  }
+
+  // on other pages: now and then (at most every 45 minutes, when the page has been open a while),
+  // the news in the background, for these notifications
+  function backgroundCheck() {
+    if (!window.Site || !Site.feature("news") || !window.Alerts || Store.guest) return;
+    const nt = Site.get().notifications || {};
+    if (nt.on === false || (nt.breaking === false && nt.trailer === false)) return;
+    const snap = saved();
+    if (snap && Date.now() - snap.at < 45 * 60000) return alertsFrom(snap.stories);
+    setTimeout(() => latest().then((r) => alertsFrom(r.stories), () => {}), 8000);
+  }
+
+  // (Home: the background check, once the page has settled)
+  document.addEventListener("DOMContentLoaded", () => document.body.dataset.page === "home" && backgroundCheck());
+
+  window.News = { WEIGHTS, BREAKING, SENSITIVITY, SOURCES, TIERS, FEEDS, CATEGORIES, KIND_LABEL, sources, allFeeds, feeds, latest, saved, about, rank, view, status, alertsFrom, backgroundCheck };
 })();

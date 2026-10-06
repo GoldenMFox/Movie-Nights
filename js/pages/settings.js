@@ -105,6 +105,8 @@
                 ["episode", "fa-tv", "New episodes", "A new episode of a show on your Watchlist or Favorites"],
                 ["recommendation", "fa-wand-magic-sparkles", "Recommendations", "Once a week, a well-known title like one you loved"],
                 ["announcement", "fa-bullhorn", "Announcements", "News about the site from its owner"],
+                ["breaking", "fa-bolt", "Breaking news", "Only the big stories, as they break (Movie News)"],
+                ["trailer", "fa-play", "New trailers", "A trailer for a title on your Watchlist"],
               ]
                 .map(([k, icon, name, sub]) =>
                   row(

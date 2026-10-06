@@ -728,7 +728,28 @@
     if (window.Soundtrack) parts.soundtrack = Soundtrack.html(d); // (js/components/soundtrack.js: filled in when it's near)
     parts.books = booksHtml(d);
     if (reviews.length) parts.reviews = block("Reviews", reviews.length, reviewsPanel(reviews, d.tmdbUrl));
+    const news = newsAbout(d);
+    if (news.length) parts.news = block('<i class="fa-solid fa-newspaper"></i> Latest news', news.length, newsPanel(news, d.title), "t-news");
     return parts;
+  }
+  // its latest news: the stories from Movie News that name it (js/services/news.js, the last news
+  // this browser got: nothing asked for here)
+  function newsAbout(d) {
+    if (!window.News || !News.about || !window.Site || !Site.feature("news")) return [];
+    const names = [d.title, d.originalTitle].filter((n, i, a) => n && a.indexOf(n) === i && String(n).length >= 4);
+    return News.about(names, 4);
+  }
+  function newsPanel(list, title) {
+    const ago = (t) => {
+      const h = Math.round((Date.now() - t) / 3600000);
+      return h < 1 ? "just now" : h < 24 ? `${h} h ago` : `${Math.round(h / 24)} d ago`;
+    };
+    return `<div class="t-news-list">${list
+      .map(
+        (s) => `<a class="t-news-item" href="${esc(s.link)}" target="_blank" rel="noopener">${s.image ? `<img src="${esc(s.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" />` : '<span class="t-news-ph"><i class="fa-solid fa-newspaper"></i></span>'}
+          <span><small>${esc(s.source)} · ${ago(s.date)}${(s.also || []).length ? ` · +${s.also.length} more` : ""}</small><strong>${esc(s.title)}</strong></span></a>`
+      )
+      .join("")}</div><p><a class="t-link" href="news.html?q=${encodeURIComponent(title || "")}">More on Movie News <i class="fa-solid fa-chevron-right"></i></a></p>`;
   }
   // the rows in the order the owner set (Admin → Title page), the hidden ones left out
   function arrange(parts, tail) {
