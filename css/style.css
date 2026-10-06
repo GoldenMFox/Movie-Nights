@@ -24518,9 +24518,10 @@ li[hidden] {
   background:
     radial-gradient(95% 130% at 0% 0%, var(--lt-a), transparent 62%),
     radial-gradient(85% 120% at 100% 100%, var(--lt-b), transparent 62%),
+    radial-gradient(70% 85% at 28% 112%, var(--lt-c, transparent), transparent 64%),
     linear-gradient(180deg, var(--lt-base), rgba(0, 0, 0, 0.42)),
     #0c0c0f;
-  box-shadow: 0 26px 60px -30px var(--lt-a), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  box-shadow: 0 26px 60px -30px var(--lt-a), inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 -34px 46px -30px var(--lt-c, transparent);
   color: var(--text);
 }
 
@@ -24650,6 +24651,12 @@ li[hidden] {
   width: calc(4px * var(--s));
   height: calc(4px * var(--s));
   box-shadow: 0 0 10px 2px var(--lt-dot);
+}
+
+/* (every third one in the third colour: Halloween's blood-red embers) */
+.lt-parts[data-k="embers"] i:nth-child(3n) {
+  background: var(--lt-dot3);
+  box-shadow: 0 0 10px 2px var(--lt-dot3);
 }
 
 .lt-parts[data-k="motes"] i {

@@ -25,7 +25,7 @@
     /* ---- holidays ---- */
     {
       id: "halloween", label: "Halloween", emoji: "🎃", group: "holiday", hint: "Embers, drifting fog, a flickering light",
-      colors: { a: "rgba(255, 112, 20, 0.36)", b: "rgba(124, 44, 196, 0.38)", base: "rgba(22, 8, 2, 0.55)", edge: "rgba(255, 140, 40, 0.5)", dot: "#ffa04a", dot2: "#b98cff" },
+      colors: { a: "rgba(255, 112, 20, 0.36)", b: "rgba(124, 44, 196, 0.38)", c: "rgba(178, 6, 22, 0.5)", base: "rgba(22, 4, 4, 0.58)", edge: "rgba(255, 110, 40, 0.5)", dot: "#ffa04a", dot2: "#b98cff", dot3: "#e0101e" },
       parts: "embers", count: 16, layers: ["fog", "mist", "flicker", "ghost"],
       words: [["halloween", 1.5], ["hallowe'en", 1.5], ["all hallows", 1.2], ["trick or treat", 1.3], ["spooky", 0.9], ["spooky season", 1.4], ["pumpkin", 1], ["pumpkins", 1], ["october", 0.6], ["witch", 0.5], ["witches", 0.5], ["haunted", 0.5], ["ghost", 0.4], ["ghosts", 0.4], ["hocus pocus", 0.8]],
       months: [10], from: "horror",
@@ -351,6 +351,10 @@
       "--lt-edge": c.edge,
       "--lt-dot": c.dot,
       "--lt-dot2": b ? b.colors.dot : c.dot2 || c.dot,
+      // (a third light from below and a third particle colour, for the ones that have them:
+      // Halloween's blood red)
+      "--lt-c": c.c || (b && b.colors.c) || "transparent",
+      "--lt-dot3": c.dot3 || c.dot,
     };
     const parts = a.parts || (b && b.parts) || "";
     const count = a.parts ? a.count : b ? b.count : 0;
@@ -415,7 +419,7 @@
       dropFx(sec);
       const emblem = sec.querySelector(".lt-emblem");
       if (emblem) emblem.remove();
-      ["--lt-a", "--lt-b", "--lt-base", "--lt-edge", "--lt-dot", "--lt-dot2"].forEach((v) => sec.style.removeProperty(v));
+      ["--lt-a", "--lt-b", "--lt-c", "--lt-base", "--lt-edge", "--lt-dot", "--lt-dot2", "--lt-dot3"].forEach((v) => sec.style.removeProperty(v));
       sec.classList.remove("lt-play");
       if (io && !(opts && opts.preview)) {
         io.unobserve(sec);
