@@ -25659,24 +25659,51 @@ li[hidden] {
   transform: scaleX(-1);
 }
 
-/* blood running over the top edge (Horror) */
+/* blood (Horror): along the top of each poster, following its rounded corners (clipped by them),
+   running down both sides and in a few drips; while the list plays, a drop gathers at two of them
+   and runs down the cover, fading */
 .lt[data-caps="blood"] .movie-item::after {
   content: "";
   position: absolute;
-  top: -3px;
+  top: 0;
   left: 0;
   right: 0;
   z-index: 4;
-  height: 30px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 30' preserveAspectRatio='none'%3E%3Cpath d='M0 0 H200 V5 C196 6 194 6 192 8 C191 14 188 15 187.5 9 C186 6 178 7 170 6 C164 7 162 8 161 12 C160 24 155 24 154.5 12 C154 8 150 7 140 6 C120 7 110 6 100 7 C96 8 95 9 94.5 13 C94 17 90.5 17 90 12 C89.6 8 86 7 76 6 C62 6 52 7 46 8 C44 9 43 12 42.6 20 C42.2 28 36.8 28 36.6 19 C36.4 11 34 8 28 7 C18 6 8 7 0 6 Z' fill='%237a0008'/%3E%3Cpath d='M0 0 H200 V2 C150 3.5 60 3 0 2.5 Z' fill='%23b0101c'/%3E%3C/svg%3E")
-    0 0 / 100% 100% no-repeat;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
-  border-radius: 16px 16px 0 0;
+  height: 240px;
+  border-radius: 15px 15px 0 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80' preserveAspectRatio='none'%3E%3Cpath d='M39.1 37 C42.5 41.5 43.1 45 39.1 47.2 C35.1 45 35.7 41.5 39.1 37 Z M162.5 28 C165.9 32.5 166.5 36 162.5 38.2 C158.5 36 159.1 32.5 162.5 28 Z' fill='%237a0008'/%3E%3C/svg%3E") 0 0 / 100% 80px no-repeat, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80' preserveAspectRatio='none'%3E%3Cpath d='M0 0 H200 V12 C198 14 197 20 197 30 C197 36 193 36 193 30 C193 22 192 16 188 14 C182 12 176 13 172 14 C168 15 166 18 165.5 26 C165 33 159.5 33 159.6 25 C159.8 18 157 15 150 14 C134 12 118 14 104 13 C98 13 96 15 95.6 19 C95.2 23 91.4 23 91.2 18.5 C91 15 88 13.5 80 13 C66 12 56 13 48 14 C44 15 42.6 19 42.4 30 C42.2 42 35.8 42 35.8 30 C35.8 20 34 16 28 15 C18 14 8 14 5 16 C3 18 3 24 3 34 C3 40 0 40 0 34 Z' fill='%236e0007'/%3E%3Cpath d='M0 0 H200 V5 C150 7 60 6 0 5 Z' fill='%23a3101b'/%3E%3Cpath d='M38.4 31 C38.2 36 37 39 36.8 36' stroke='%23d0303a' stroke-width='0.9' fill='none' stroke-linecap='round' opacity='0.7'/%3E%3C/svg%3E") 0 0 / 100% 80px no-repeat;
+  -webkit-mask-image: linear-gradient(180deg, #000 40%, transparent 92%);
+  mask-image: linear-gradient(180deg, #000 40%, transparent 92%);
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
   pointer-events: none;
 }
 
 .lt[data-caps="blood"] .movie-item:nth-child(even)::after {
   transform: scaleX(-1);
+}
+
+.lt-play[data-caps="blood"] .movie-item::after {
+  animation: lt-bleed 6s ease-in infinite;
+}
+
+/* (not all at once) */
+.lt-play[data-caps="blood"] .movie-item:nth-child(3n + 2)::after {
+  animation-delay: -2.4s;
+}
+
+.lt-play[data-caps="blood"] .movie-item:nth-child(3n)::after {
+  animation-delay: -4.8s;
+  animation-duration: 8.5s;
+}
+
+@keyframes lt-bleed {
+  0%,
+  58% {
+    background-position: 0 0, 0 0;
+  }
+  100% {
+    background-position: 0 190px, 0 0;
+  }
 }
 
 /* raindrops clinging along the top edge (Rainy day) */
@@ -26020,7 +26047,8 @@ li[hidden] {
   .lt-fx *,
   .lt-fx *::before,
   .lt-fx *::after,
-  .lt-over * {
+  .lt-over *,
+  .lt .movie-item::after {
     animation: none !important;
   }
 }
@@ -26028,7 +26056,8 @@ li[hidden] {
 html.no-list-fx .lt-fx *,
 html.no-list-fx .lt-fx *::before,
 html.no-list-fx .lt-fx *::after,
-html.no-list-fx .lt-over * {
+html.no-list-fx .lt-over *,
+html.no-list-fx .lt .movie-item::after {
   animation: none !important;
 }
 
