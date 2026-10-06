@@ -24781,6 +24781,82 @@ li[hidden] {
   animation-direction: alternate-reverse;
 }
 
+/* mist: wisps of fog drifting right across the box, in front of the posters (.lt-over), thin
+   enough to read them through, thinner still while one is pointed at. Off screen when still */
+.lt > .lt-over {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+.lt:has(.movie-item:hover) > .lt-over {
+  opacity: 0.4;
+}
+
+.lt-l-mist {
+  top: 30%;
+  left: 0;
+  width: 65%;
+  height: 55%;
+  border-radius: 50%;
+  background:
+    radial-gradient(42% 38% at 35% 55%, rgba(228, 222, 242, 0.5), rgba(228, 222, 242, 0.2) 50%, transparent 75%),
+    radial-gradient(38% 30% at 68% 42%, rgba(214, 206, 236, 0.42), rgba(214, 206, 236, 0.14) 55%, transparent 78%);
+  filter: blur(12px);
+  opacity: 0;
+  transform: translate3d(-110%, 0, 0);
+}
+
+.lt-l-mist.two {
+  top: 5%;
+  width: 50%;
+  height: 45%;
+}
+
+.lt-l-mist.three {
+  top: 55%;
+  width: 80%;
+  height: 50%;
+}
+
+.lt-play .lt-l-mist {
+  animation: lt-mist 30s linear infinite;
+}
+
+.lt-play .lt-l-mist.two {
+  animation-duration: 38s;
+  animation-delay: -14s;
+}
+
+.lt-play .lt-l-mist.three {
+  animation-duration: 46s;
+  animation-delay: -30s;
+}
+
+@keyframes lt-mist {
+  0% {
+    opacity: 0;
+    transform: translate3d(-110%, 0, 0) scale(1);
+  }
+  12% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate3d(60%, -8%, 0) scale(1.15);
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(180%, 4%, 0) scale(1);
+  }
+}
+
 /* a light that now and then fails for a moment */
 .lt-l-flicker {
   inset: 0;
@@ -25252,14 +25328,16 @@ li[hidden] {
 @media (prefers-reduced-motion: reduce) {
   .lt-fx *,
   .lt-fx *::before,
-  .lt-fx *::after {
+  .lt-fx *::after,
+  .lt-over * {
     animation: none !important;
   }
 }
 
 html.no-list-fx .lt-fx *,
 html.no-list-fx .lt-fx *::before,
-html.no-list-fx .lt-fx *::after {
+html.no-list-fx .lt-fx *::after,
+html.no-list-fx .lt-over * {
   animation: none !important;
 }
 
@@ -25274,7 +25352,8 @@ html.no-list-fx .lt-fx *::after {
   /* (lighter on a phone: no blur on the big layers) */
   .lt-l-nebula,
   .lt-l-bokeh,
-  .lt-l-fog {
+  .lt-l-fog,
+  .lt-l-mist {
     filter: none;
   }
 

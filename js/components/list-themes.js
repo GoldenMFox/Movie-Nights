@@ -26,7 +26,7 @@
     {
       id: "halloween", label: "Halloween", emoji: "🎃", group: "holiday", hint: "Embers, drifting fog, a flickering light",
       colors: { a: "rgba(255, 112, 20, 0.36)", b: "rgba(124, 44, 196, 0.38)", base: "rgba(22, 8, 2, 0.55)", edge: "rgba(255, 140, 40, 0.5)", dot: "#ffa04a", dot2: "#b98cff" },
-      parts: "embers", count: 16, layers: ["fog", "flicker", "ghost"],
+      parts: "embers", count: 16, layers: ["fog", "mist", "flicker", "ghost"],
       words: [["halloween", 1.5], ["hallowe'en", 1.5], ["all hallows", 1.2], ["trick or treat", 1.3], ["spooky", 0.9], ["spooky season", 1.4], ["pumpkin", 1], ["pumpkins", 1], ["october", 0.6], ["witch", 0.5], ["witches", 0.5], ["haunted", 0.5], ["ghost", 0.4], ["ghosts", 0.4], ["hocus pocus", 0.8]],
       months: [10], from: "horror",
     },
@@ -333,7 +333,11 @@
     burst: '<b class="lt-l lt-l-burst"></b><b class="lt-l lt-l-burst two"></b><b class="lt-l lt-l-burst three"></b>',
     streaks: '<b class="lt-l lt-l-streak"></b><b class="lt-l lt-l-streak two"></b>',
     ghost: '<b class="lt-l lt-l-ghost"><i class="fa-solid fa-ghost"></i></b>',
+    // wisps of fog drifting right across, over the posters too (in front: OVER)
+    mist: '<b class="lt-l lt-l-mist"></b><b class="lt-l lt-l-mist two"></b><b class="lt-l lt-l-mist three"></b>',
   };
+  // the layers that pass in front of the posters (the rest stay behind them)
+  const OVER = ["mist"];
   const layerHtml = (name) => LAYER[name] || `<b class="lt-l lt-l-${name}"></b>`;
 
   // the look of one or two atmospheres: { vars, parts, layers }
@@ -358,10 +362,17 @@
   function fxLayer(ids) {
     const l = look(ids);
     const n = Math.round(l.count * (phone() ? 0.5 : 1));
-    return `<span class="lt-fx" aria-hidden="true">${l.layers.map(layerHtml).join("")}${
-      l.parts && n ? `<span class="lt-parts" data-k="${l.parts}">${particles(n, seedOf(ids.join("+")))}</span>` : ""
-    }</span>`;
+    return `<span class="lt-fx" aria-hidden="true">${l.layers
+      .filter((x) => !OVER.includes(x))
+      .map(layerHtml)
+      .join("")}${l.parts && n ? `<span class="lt-parts" data-k="${l.parts}">${particles(n, seedOf(ids.join("+")))}</span>` : ""}</span>`;
   }
+  // the ones in front, or ""
+  function overLayer(ids) {
+    const over = look(ids).layers.filter((x) => OVER.includes(x));
+    return over.length ? `<span class="lt-over" aria-hidden="true">${over.map(layerHtml).join("")}</span>` : "";
+  }
+  const dropFx = (sec) => sec.querySelectorAll(":scope > .lt-fx, :scope > .lt-over").forEach((x) => x.remove());
 
   /* ---------------- playing only what's on screen ---------------- */
 
@@ -401,8 +412,7 @@
       sec.dataset.theme = ids[0] || "";
       sec.dataset.fx = fx ? "1" : "0";
       sec.classList.toggle("lt", !!ids.length);
-      const old = sec.querySelector(":scope > .lt-fx");
-      if (old) old.remove();
+      dropFx(sec);
       const emblem = sec.querySelector(".lt-emblem");
       if (emblem) emblem.remove();
       ["--lt-a", "--lt-b", "--lt-base", "--lt-edge", "--lt-dot", "--lt-dot2"].forEach((v) => sec.style.removeProperty(v));
@@ -415,6 +425,7 @@
       if (!ids.length) return replay(), r;
       Object.entries(look(ids).vars).forEach(([k, v]) => sec.style.setProperty(k, v));
       sec.insertAdjacentHTML("afterbegin", fxLayer(ids));
+      sec.insertAdjacentHTML("beforeend", overLayer(ids));
       const h2 = sec.querySelector("h2, .wl-title");
       if (h2) h2.insertAdjacentHTML("afterbegin", `<span class="lt-emblem" aria-hidden="true" title="${UI.esc(nameOf(ids))}">${byId(ids[0]).emoji}</span>`);
       if (opts && opts.preview) sec.classList.toggle("lt-play", fx && motionOk());
@@ -426,8 +437,7 @@
     } catch (e) {
       // (whatever goes wrong, the list keeps the site's own look)
       sec.classList.remove("lt", "lt-play");
-      const old = sec.querySelector(":scope > .lt-fx");
-      if (old) old.remove();
+      dropFx(sec);
       if (window.Store && Store.logError) Store.logError(`List atmosphere: ${e.message}`, "list-themes.js");
       return null;
     }
