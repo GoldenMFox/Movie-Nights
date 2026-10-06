@@ -224,9 +224,21 @@
     }
     return rowsBox;
   }
+  const savedRows = () => (window.Site && Site.personRows ? Site.personRows() : { order: ["known", "filmography", "books"], hidden: [] });
+  // the rows' order: the owner's (Admin → Person page), but for a writer (TMDB says they write, or
+  // you came from a book's author) their books come first, right before the filmography
+  function rowOrder() {
+    let { order } = savedRows();
+    if ((params.get("from") === "book" || (p && p.department === "Writing")) && order.includes("books")) {
+      order = order.filter((k) => k !== "books");
+      order.splice(Math.max(0, order.indexOf("filmography")), 0, "books");
+    }
+    return order;
+  }
   function arrangeRows() {
     if (!rowsBox) return;
-    const { order, hidden } = window.Site && Site.personRows ? Site.personRows() : { order: ["known", "filmography", "books"], hidden: [] };
+    const { hidden } = savedRows();
+    const order = rowOrder();
     [...rowsBox.children].forEach((el) => {
       const k = el.dataset.prow;
       el.style.order = String(Math.max(0, order.indexOf(k)));
@@ -426,7 +438,7 @@
       if (!id && params.get("name")) {
         id = await TMDB.findPerson(params.get("name"));
         if (!id) return message("fa-regular fa-face-frown", `Couldn't find ${esc(params.get("name"))} on TMDB.`);
-        history.replaceState(null, "", `?id=${id}`);
+        history.replaceState(null, "", `?id=${id}${params.get("from") ? `&from=${encodeURIComponent(params.get("from"))}` : ""}`);
       }
       if (!/^\d+$/.test(String(id || ""))) return message("fa-regular fa-face-frown", "That link doesn't look right.");
       p = await TMDB.person(id);
@@ -540,7 +552,9 @@
         });
       });
     };
-    if (!("IntersectionObserver" in window)) return start();
+    // (above the filmography, a writer's: straight away)
+    const order = rowOrder();
+    if (!("IntersectionObserver" in window) || order.indexOf("books") < order.indexOf("filmography")) return start();
     // (watch the filmography's end: the books come after it)
     const io = new IntersectionObserver((en) => {
       if (en.some((x) => x.isIntersecting)) {

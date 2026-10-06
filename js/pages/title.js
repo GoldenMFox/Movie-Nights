@@ -1083,7 +1083,7 @@
             <h3>${esc(b.title)}</h3>
             <p class="bk-by">by ${(b.authors.length ? b.authors.slice(0, 3) : [based.author])
               .filter(Boolean)
-              .map((a) => `<a class="bk-author" href="person.html?name=${encodeURIComponent(a)}">${esc(a)}</a>`)
+              .map((a) => `<a class="bk-author" href="person.html?name=${encodeURIComponent(a)}&amp;from=book">${esc(a)}</a>`)
               .join(", ")}${b.year ? ` · first published ${b.year}` : ""}</p>
             <div class="bk-facts">${[
               b.rating ? `<span><i class="fa-solid fa-star"></i> ${b.rating.toFixed(1)} <small>(${b.ratings.toLocaleString()} ratings)</small></span>` : "",

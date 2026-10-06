@@ -461,7 +461,7 @@
         "personPage",
         "Person page: the order of its rows",
         `<span class="tp-poster tp-face"></span><span class="tp-hero-text"><b>An actor, a director, a writer</b><i></i><i></i><span><em></em><em></em></span></span>`,
-        "Under the top part (their card, the photos, the numbers and the biography). Books show for people with books on Open Library."
+        "Under the top part (their card, the photos, the numbers and the biography). Books show for people with books on Open Library; a writer's (or a book's author you tapped) come right before the Filmography."
       );
     },
     tools() {
