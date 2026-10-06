@@ -46,7 +46,25 @@
                 <button type="button" class="top10-tab" data-theme-pick="light"><i class="fa-solid fa-sun"></i> Light</button>
               </div>`
             )}
-            <p class="sv-note"><i class="fa-solid fa-circle-info"></i> Russian titles, Poster details and Match % are switches in the profile menu (your picture, top right). Your notifications are in the bell beside it.</p>`
+            ${
+              guest
+                ? ""
+                : row(
+                    "fa-star",
+                    "My rating",
+                    "On the posters in your library: your own score (off: their IMDb rating)",
+                    `<label class="sv-switch"><input type="checkbox" class="sv-my-rating" aria-label="My rating on the posters" /><span class="switch-track"><span class="switch-thumb"></span></span></label>`
+                  )
+            }
+            ${row(
+              "fa-percent",
+              "Match %",
+              document.documentElement.classList.contains("posters-only")
+                ? "With posters only, the match shows in the hover preview. Turn on Poster details (profile menu) to switch it off."
+                : "How much you'll probably like each title (86%), on the posters and in the hover preview",
+              `<label class="sv-switch"><input type="checkbox" class="sv-match" aria-label="Match %" /><span class="switch-track"><span class="switch-thumb"></span></span></label>`
+            )}
+            <p class="sv-note"><i class="fa-solid fa-circle-info"></i> Russian titles, Dim watched and Poster details are switches in the profile menu (your picture, top right). Your notifications are in the bell beside it.</p>`
           )}
 
           ${card(
@@ -253,6 +271,34 @@
       localStorage.setItem("mn:theme", b.dataset.themePick);
     } catch (err) {}
     paintTheme();
+  });
+
+  // My rating / Match %: a class on <html> (read on every page by js/core/layout.js) and a word
+  // in this browser's storage
+  const html = document.documentElement;
+  const myRating = $(".sv-my-rating");
+  if (myRating) {
+    myRating.checked = !html.classList.contains("ext-ratings");
+    myRating.addEventListener("change", () => {
+      html.classList.toggle("ext-ratings", !myRating.checked);
+      try {
+        if (myRating.checked) localStorage.removeItem("mn:myRatings");
+        else localStorage.setItem("mn:myRatings", "off");
+      } catch (err) {}
+    });
+  }
+  const match = $(".sv-match");
+  // (posters only: the match is just in the hover preview, and stays there: shown on, greyed)
+  const postersOnly = html.classList.contains("posters-only");
+  match.checked = postersOnly || !html.classList.contains("no-match");
+  match.disabled = postersOnly;
+  if (postersOnly) match.closest(".sv-row").classList.add("disabled");
+  match.addEventListener("change", () => {
+    html.classList.toggle("no-match", !match.checked);
+    try {
+      if (match.checked) localStorage.removeItem("mn:showMatch");
+      else localStorage.setItem("mn:showMatch", "off");
+    } catch (err) {}
   });
 
   /* ---------------- backup ---------------- */

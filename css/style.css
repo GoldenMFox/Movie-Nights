@@ -9642,13 +9642,15 @@ html.no-match:not(.posters-only) .hover-preview .match + .dot {
   display: none;
 }
 
-/* a switch that can't be used right now (Match % while Poster details is off) */
-.menu-switch.disabled {
+/* a switch that can't be used right now (Settings → Match % while Poster details is off) */
+.menu-switch.disabled,
+.sv-row.disabled .sv-switch {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.menu-switch.disabled .switch-track {
+.menu-switch.disabled .switch-track,
+.sv-row.disabled .switch-track {
   pointer-events: none;
 }
 

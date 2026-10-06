@@ -123,15 +123,6 @@
               ${
                 Store.guest
                   ? ""
-                  : `<label class="menu-switch" title="On: your own rating on the posters in your library. Off: their IMDb rating">
-                <i class="fa-solid fa-star"></i><span>My rating</span>
-                <input type="checkbox" class="my-rating-switch" />
-                <span class="switch-track"><span class="switch-thumb"></span></span>
-              </label>`
-              }
-              ${
-                Store.guest
-                  ? ""
                   : `<label class="menu-switch fade-row" title="On Discover and Home, what you've already watched is dimmed (like Letterboxd)">
                 <i class="fa-solid fa-eye-low-vision"></i><span>Dim watched</span>
                 <input type="checkbox" class="fade-switch" />
@@ -141,11 +132,6 @@
               <label class="menu-switch" title="Title, ratings and buttons under each poster (off: posters only)">
                 <i class="fa-solid fa-table-cells-large"></i><span>Poster details</span>
                 <input type="checkbox" class="card-details-switch" />
-                <span class="switch-track"><span class="switch-thumb"></span></span>
-              </label>
-              <label class="menu-switch" title="How much you'll probably like each title (86%), on the posters and in the hover preview">
-                <i class="fa-solid fa-percent"></i><span>Match %</span>
-                <input type="checkbox" class="match-switch" />
                 <span class="switch-track"><span class="switch-thumb"></span></span>
               </label>
             </div>
@@ -557,39 +543,12 @@
   });
 
   // "Match %" off: no match on the posters or in the hover preview (title pages keep it).
-  // Only with Poster details on: with posters only, the match is just in the hover preview,
-  // and it stays there (the switch is greyed out)
+  // "My rating" off: the posters of your library show their IMDb rating instead of yours.
+  // Both are switched in Settings → Appearance (js/pages/settings.js)
   try {
     if (localStorage.getItem("mn:showMatch") === "off") document.documentElement.classList.add("no-match");
-  } catch (e) {}
-  const matchSwitch = nav.querySelector(".match-switch");
-  const matchRow = matchSwitch.closest(".menu-switch");
-  matchSwitch.checked = !document.documentElement.classList.contains("no-match");
-  matchSwitch.addEventListener("change", () => {
-    document.documentElement.classList.toggle("no-match", !matchSwitch.checked);
-    try {
-      if (matchSwitch.checked) localStorage.removeItem("mn:showMatch");
-      else localStorage.setItem("mn:showMatch", "off");
-    } catch (e) {}
-  });
-  // "My rating": the posters of your library show your own rating (on, at first) or their
-  // IMDb rating (off, html.ext-ratings). One or the other, never both.
-  try {
     if (localStorage.getItem("mn:myRatings") === "off") document.documentElement.classList.add("ext-ratings");
   } catch (e) {}
-  const myRatingSwitch = nav.querySelector(".my-rating-switch");
-  if (myRatingSwitch) {
-    myRatingSwitch.checked = !document.documentElement.classList.contains("ext-ratings");
-    myRatingSwitch.addEventListener("change", () => {
-      document.documentElement.classList.toggle("ext-ratings", !myRatingSwitch.checked);
-      try {
-        if (myRatingSwitch.checked) localStorage.removeItem("mn:myRatings");
-        else localStorage.setItem("mn:myRatings", "off");
-      } catch (e) {}
-      // (IMDb shown now: look up the ones still missing)
-      if (!myRatingSwitch.checked && window.Cards && Cards.scanForScores) Cards.scanForScores();
-    });
-  }
   // "Dim watched" (like Letterboxd's "fade watched"): titles you've already
   // watched are dimmed on Discover and Home's rows, so the new ones stand out. Off at first.
   try {
@@ -606,19 +565,6 @@
       } catch (e) {}
     });
   }
-
-  function syncMatchSwitch() {
-    const usable = detailsSwitch.checked;
-    matchSwitch.disabled = !usable;
-    // posters only: shown as on (the hover preview has it); back to your choice with details on
-    matchSwitch.checked = usable ? !document.documentElement.classList.contains("no-match") : true;
-    matchRow.classList.toggle("disabled", !usable);
-    matchRow.title = usable
-      ? "How much you'll probably like each title (86%), on the posters and in the hover preview"
-      : "With posters only, the match shows in the hover preview. Turn on Poster details to switch it off.";
-  }
-  syncMatchSwitch();
-  detailsSwitch.addEventListener("change", syncMatchSwitch);
 
   // the navbar turns see-through over the top of the page (tablet slideshow) and
   // frosted once you scroll

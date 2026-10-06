@@ -202,13 +202,17 @@ engines only read one at the root of `goldenmfox.github.io`.)
 In the **profile menu**:
 
 - **Russian titles**: names, posters and trailers in Russian (dubbed trailers when TMDB has them in HD).
-- **My rating** (menu, under Russian titles): the posters of your library show your own rating
-  (on, at first) or their IMDb rating (off). While it's on, no IMDb lookups are made for posters.
   On narrow computer windows it's the EN | RU switch in the side menu.
+- **Dim watched**: what you've already watched is dimmed on Discover and Home.
 - **Poster details** (computers): off = posters only, like on phones and tablets.
-- **Match %** (computers): off = no match on the posters or in the hover preview (title
-  pages keep it). Only with Poster details on: with posters only it's greyed out and the
-  match always shows in the hover preview.
+
+In **Settings → Appearance**:
+
+- **My rating**: the posters of your library show your own rating (on, at first) or their
+  IMDb rating (off). While it's on, no IMDb lookups are made for posters.
+- **Match %**: off = no match on the posters or in the hover preview (title pages keep it).
+  Only with Poster details on: with posters only it's greyed out and the match always shows
+  in the hover preview.
 
 Trailers play in the best quality available; if YouTube blocks one on other sites, the next one plays.
 
