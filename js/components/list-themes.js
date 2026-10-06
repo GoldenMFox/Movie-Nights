@@ -33,7 +33,7 @@
     {
       id: "christmas", label: "Christmas", emoji: "🎄", group: "holiday", hint: "Snowfall, warm lights, pine and red",
       colors: { a: "rgba(206, 26, 38, 0.4)", b: "rgba(16, 122, 66, 0.4)", c: "rgba(255, 184, 90, 0.16)", base: "rgba(6, 18, 12, 0.55)", edge: "rgba(235, 80, 64, 0.5)", dot: "#ffffff", dot2: "#ffc96b" },
-      parts: "snow", count: 30, layers: ["garland", "snowbank", "pines", "bokeh"],
+      parts: "snow", count: 46, front: 16, caps: "snow", layers: ["garland", "snowbank", "pines", "bokeh"],
       words: [["christmas", 1.5], ["xmas", 1.5], ["x-mas", 1.5], ["santa", 1], ["noel", 0.8], ["festive", 0.8], ["holiday season", 0.9], ["mistletoe", 1], ["reindeer", 0.9], ["snowman", 0.6], ["grinch", 0.9], ["elf", 0.5], ["december", 0.5], ["yuletide", 1.2], ["home alone", 0.6]],
       months: [12],
     },
@@ -70,7 +70,7 @@
     {
       id: "winter", label: "Winter", emoji: "❄️", group: "season", hint: "Icy blue, frost and gentle snow",
       colors: { a: "rgba(110, 170, 255, 0.32)", b: "rgba(200, 230, 255, 0.16)", base: "rgba(6, 14, 30, 0.55)", edge: "rgba(160, 210, 255, 0.46)", dot: "#eaf4ff", dot2: "#9cc8ff" },
-      parts: "snow", count: 18, layers: ["frost"],
+      parts: "snow", count: 34, front: 10, caps: "snow", layers: ["frost"],
       words: [["winter", 1.3], ["wintry", 1.2], ["snow", 0.8], ["snowy", 0.9], ["blizzard", 1], ["frost", 0.8], ["frozen", 0.5], ["ice", 0.4], ["cold", 0.4]],
       months: [12, 1, 2],
     },
@@ -325,7 +325,10 @@
       const dur = (9 + rnd() * 9).toFixed(2);
       const size = (0.6 + rnd() * 0.9).toFixed(2);
       const drift = ((rnd() - 0.5) * 60).toFixed(0);
-      return `<i style="--x:${left}%;--y:${top}%;--d:${delay}s;--t:${dur}s;--s:${size};--dx:${drift}px"></i>`;
+      // (a sway of its own, side to side: how far and how fast)
+      const sway = (8 + rnd() * 22).toFixed(0);
+      const swayT = (2.6 + rnd() * 3.4).toFixed(2);
+      return `<i style="--x:${left}%;--y:${top}%;--d:${delay}s;--t:${dur}s;--s:${size};--dx:${drift}px;--sw:${sway}px;--st:${swayT}s"></i>`;
     }).join("");
   }
   const seedOf = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7);
@@ -364,7 +367,11 @@
     const count = a.parts ? a.count : b ? b.count : 0;
     // (the first one's layers, then the second's; five at most)
     const layers = [...new Set([...(a.layers || []), ...((b && b.layers) || [])])].slice(0, 5);
-    return { vars, parts, count, layers };
+    // front: how many of its particles fall in front of the posters (nearer, bigger); caps: what
+    // settles on top of each poster ("snow")
+    const front = a.parts ? a.front || 0 : (b && b.front) || 0;
+    const caps = a.caps || (b && b.caps) || "";
+    return { vars, parts, count, layers, front, caps };
   }
 
   function fxLayer(ids) {
@@ -375,10 +382,13 @@
       .map(layerHtml)
       .join("")}${l.parts && n ? `<span class="lt-parts" data-k="${l.parts}">${particles(n, seedOf(ids.join("+")))}</span>` : ""}</span>`;
   }
-  // the ones in front, or ""
+  // the ones in front (layers, the nearer particles), or ""
   function overLayer(ids) {
-    const over = look(ids).layers.filter((x) => OVER.includes(x));
-    return over.length ? `<span class="lt-over" aria-hidden="true">${over.map(layerHtml).join("")}</span>` : "";
+    const l = look(ids);
+    const over = l.layers.filter((x) => OVER.includes(x));
+    const n = Math.round(l.front * (phone() ? 0.5 : 1));
+    const near = l.parts && n ? `<span class="lt-parts near" data-k="${l.parts}">${particles(n, seedOf(ids.join("+")) + 101)}</span>` : "";
+    return over.length || near ? `<span class="lt-over" aria-hidden="true">${over.map(layerHtml).join("")}${near}</span>` : "";
   }
   const dropFx = (sec) => sec.querySelectorAll(":scope > .lt-fx, :scope > .lt-over").forEach((x) => x.remove());
 
@@ -419,6 +429,7 @@
       sec.dataset.lt = sign;
       sec.dataset.theme = ids[0] || "";
       sec.dataset.fx = fx ? "1" : "0";
+      sec.dataset.caps = ids.length ? look(ids).caps : "";
       sec.classList.toggle("lt", !!ids.length);
       dropFx(sec);
       const emblem = sec.querySelector(".lt-emblem");

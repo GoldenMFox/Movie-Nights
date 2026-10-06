@@ -24588,58 +24588,67 @@ li[hidden] {
   animation: lt-fall var(--t) linear var(--d) infinite;
 }
 
-/* snow: soft flakes swaying side to side as they fall; the bigger ones nearer (brighter), every
-   sixth a real flake shape */
+/* snow: soft round flakes, falling steadily (transform) while each sways side to side on its own
+   (translate: a second movement that doesn't fight the first); the far ones small and faint behind
+   the posters, the near ones (.near, in front of them) bigger and quicker */
 .lt-parts[data-k="snow"] i {
-  --lt-o: calc(0.35 + var(--s) * 0.4);
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.35);
+  --lt-o: calc(0.3 + var(--s) * 0.35);
+  width: calc(5px * var(--s));
+  height: calc(5px * var(--s));
+  background: radial-gradient(circle, #fff 0 32%, rgba(255, 255, 255, 0.55) 52%, transparent 72%);
 }
 
 .lt-play .lt-parts[data-k="snow"] i {
-  animation-name: lt-snow;
-  animation-timing-function: ease-in-out;
+  animation:
+    lt-fall var(--t) linear var(--d) infinite,
+    lt-sway var(--st) ease-in-out var(--d) infinite alternate;
 }
 
-.lt-parts[data-k="snow"] i:nth-child(6n) {
-  width: auto;
-  height: auto;
-  background: none;
-  box-shadow: none;
-  color: var(--lt-dot);
-  font-size: calc(11px * var(--s));
-  font-style: normal;
-  line-height: 1;
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+.lt-parts.near[data-k="snow"] i {
+  --lt-o: 0.9;
+  width: calc(9px * var(--s));
+  height: calc(9px * var(--s));
+  background: radial-gradient(circle, #fff 0 28%, rgba(255, 255, 255, 0.5) 50%, transparent 72%);
 }
 
-.lt-parts[data-k="snow"] i:nth-child(6n)::before {
-  content: "\2744";
+/* (the nearest few a little out of focus) */
+.lt-parts.near[data-k="snow"] i:nth-child(4n) {
+  width: calc(14px * var(--s));
+  height: calc(14px * var(--s));
+  filter: blur(1.5px);
 }
 
-@keyframes lt-snow {
+.lt-play .lt-parts.near[data-k="snow"] i {
+  animation-duration: calc(var(--t) * 0.7), var(--st);
+}
+
+@keyframes lt-sway {
   0% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0) rotate(0deg);
-  }
-  10% {
-    opacity: var(--lt-o, 0.75);
-  }
-  25% {
-    transform: translate3d(calc(var(--dx) * 0.3 + 14px), calc(var(--lt-h, 460px) * 0.25), 0) rotate(60deg);
-  }
-  50% {
-    transform: translate3d(calc(var(--dx) * 0.6 - 12px), calc(var(--lt-h, 460px) * 0.5), 0) rotate(120deg);
-  }
-  75% {
-    transform: translate3d(calc(var(--dx) * 0.8 + 12px), calc(var(--lt-h, 460px) * 0.75), 0) rotate(180deg);
-  }
-  90% {
-    opacity: var(--lt-o, 0.75);
+    translate: calc(var(--sw) * -1) 0;
   }
   100% {
-    opacity: 0;
-    transform: translate3d(var(--dx), var(--lt-h, 460px), 0) rotate(240deg);
+    translate: var(--sw) 0;
   }
+}
+
+/* snow settled on top of each poster (data-caps="snow"), a soft uneven cap over its top edge */
+.lt[data-caps="snow"] .movie-item::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: -3px;
+  right: -3px;
+  z-index: 4;
+  height: 17px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 17' preserveAspectRatio='none'%3E%3Cpath d='M0 13 C6 6 14 4 22 6 C30 1 42 2 50 6 C58 3 66 4 72 7 C80 2 94 1 102 6 C110 3 120 3 128 7 C136 2 150 2 158 6 C166 3 176 4 184 7 C190 5 196 7 200 12 L200 17 L0 17 Z' fill='%23f6f9ff'/%3E%3Cpath d='M0 15 C40 11 80 13 120 12 C150 11 180 13 200 15 L200 17 L0 17 Z' fill='%23d5e2f5'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+}
+
+/* (no two caps quite the same: every other one the other way round) */
+.lt[data-caps="snow"] .movie-item:nth-child(even)::after {
+  transform: scaleX(-1);
 }
 
 /* ash: small grey flakes, slow, drifting */
