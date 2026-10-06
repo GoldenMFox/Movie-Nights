@@ -32,8 +32,8 @@
     },
     {
       id: "christmas", label: "Christmas", emoji: "🎄", group: "holiday", hint: "Snowfall, warm lights, pine and red",
-      colors: { a: "rgba(214, 32, 42, 0.36)", b: "rgba(20, 134, 74, 0.36)", base: "rgba(8, 20, 12, 0.5)", edge: "rgba(235, 80, 64, 0.48)", dot: "#ffffff", dot2: "#ffc96b" },
-      parts: "snow", count: 24, layers: ["lights", "glow"],
+      colors: { a: "rgba(206, 26, 38, 0.4)", b: "rgba(16, 122, 66, 0.4)", c: "rgba(255, 184, 90, 0.16)", base: "rgba(6, 18, 12, 0.55)", edge: "rgba(235, 80, 64, 0.5)", dot: "#ffffff", dot2: "#ffc96b" },
+      parts: "snow", count: 30, layers: ["garland", "snowbank", "pines", "bokeh"],
       words: [["christmas", 1.5], ["xmas", 1.5], ["x-mas", 1.5], ["santa", 1], ["noel", 0.8], ["festive", 0.8], ["holiday season", 0.9], ["mistletoe", 1], ["reindeer", 0.9], ["snowman", 0.6], ["grinch", 0.9], ["elf", 0.5], ["december", 0.5], ["yuletide", 1.2], ["home alone", 0.6]],
       months: [12],
     },
@@ -255,9 +255,11 @@
     const n = titles.length;
     const month = (when || new Date()).getMonth() + 1;
     const raw = {};
+    const named = {}; // (its name or description says it: needed to be the second of two)
     ATMOS.forEach((t) => {
       // its name (the strongest sign), a description, then the titles in it (a little each)
       let s = Math.min(2, wordScore(name, t.words)) + Math.min(1, wordScore(about, t.words) * 0.6);
+      named[t.id] = s > 0;
       let inTitles = 0;
       titles.forEach((x) => (inTitles += wordScore(x, t.words) * 0.35));
       s += Math.min(0.8, inTitles);
@@ -279,7 +281,7 @@
       if (t.from && raw[t.from] > 0) raw[t.id] += raw[t.from] * 0.6;
     });
     const ORDER = GROUPS.map((g) => g[0]);
-    return ATMOS.map((t) => ({ id: t.id, score: raw[t.id], conf: Math.round((1 - Math.exp(-1.1 * raw[t.id])) * 100) / 100 }))
+    return ATMOS.map((t) => ({ id: t.id, score: raw[t.id], named: named[t.id], conf: Math.round((1 - Math.exp(-1.1 * raw[t.id])) * 100) / 100 }))
       .filter((x) => x.score > 0)
       .sort((a, b) => b.score - a.score || ORDER.indexOf(byId(a.id).group) - ORDER.indexOf(byId(b.id).group));
   }
@@ -299,7 +301,9 @@
       const [first, ...rest] = out.detected;
       if (first && first.conf >= THRESHOLD) {
         out.ids = [first.id];
-        const second = rest.find((d) => d.conf >= SECOND && pairs(byId(first.id), byId(d.id)));
+        // (a second one only when the name asks for it too: "Christmas Horror Marathon"; a
+        // Christmas list of comedies stays Christmas, not Christmas + Funny)
+        const second = rest.find((d) => d.conf >= SECOND && d.named && pairs(byId(first.id), byId(d.id)));
         if (second) out.ids.push(second.id);
       }
     }
@@ -358,8 +362,8 @@
     };
     const parts = a.parts || (b && b.parts) || "";
     const count = a.parts ? a.count : b ? b.count : 0;
-    // (the first one's layers, then the second's; four at most)
-    const layers = [...new Set([...(a.layers || []), ...((b && b.layers) || [])])].slice(0, 4);
+    // (the first one's layers, then the second's; five at most)
+    const layers = [...new Set([...(a.layers || []), ...((b && b.layers) || [])])].slice(0, 5);
     return { vars, parts, count, layers };
   }
 
