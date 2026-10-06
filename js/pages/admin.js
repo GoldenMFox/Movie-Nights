@@ -424,6 +424,23 @@
     paintOffer();
   }
 
+  /* ---------------- tiles (Atmosphere & themes) ---------------- */
+
+  // a card with its own box id (its own place in Customize) and its size when it comes
+  const box = (id, icon, title, inner, size, note) => card(icon, title, inner, note).replace("<section ", `<section data-box="${id}" data-size="${size || 1}" `);
+  // a part of a card: its heading (and a line under it), then what's in it
+  const part = (title, sub, inner) => `<div class="ad-part"><header class="ad-lt-head"><h4>${title}</h4>${sub ? `<small>${sub}</small>` : ""}</header>${inner}</div>`;
+  // one choice of several (a setting with a few values): a tile, the picked one lit
+  const opt = (path, value, current, icon, name, sub, color) =>
+    `<button type="button" class="ad-opt${String(value) === String(current) ? " on" : ""}" data-opt="${path}" data-value="${esc(value)}" aria-pressed="${String(value) === String(current)}"${color ? ` style="--c:${color}"` : ""}>
+      <span class="ad-opt-icon"><i class="fa-solid ${icon}"></i></span><span class="ad-opt-text"><strong>${esc(name)}</strong>${sub ? `<small>${esc(sub)}</small>` : ""}</span><i class="fa-solid fa-circle-check ad-opt-check"></i></button>`;
+  // an on / off setting as a tile: a coloured icon, its name and what it does, its switch
+  const swTile = (attr, key, on, icon, style, name, sub) => `<label class="ad-lt-tile${on ? "" : " off"}">
+      <span class="ad-lt-swatch ad-tile-icon2" style="${style}" aria-hidden="true">${icon}</span>
+      <span class="ad-lt-text"><strong>${esc(name)}</strong><small>${esc(sub)}</small></span>
+      <span class="sv-switch"><input type="checkbox" ${attr}="${esc(key)}"${on ? " checked" : ""} aria-label="${esc(name)}" /><span class="switch-track"><span class="switch-thumb"></span></span></span>
+    </label>`;
+
   /* ---------------- the sections ---------------- */
 
   const render = {
@@ -635,36 +652,67 @@
         id === "easter" && easter
           ? `${SEASON_LOOK.easter[2]} (this year ${day(new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() - 7))} – ${day(new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 1))})`
           : SEASON_LOOK[id][2];
+      const set = draft.themes.season || "auto";
+      const level = draft.themes.seasonLevel || "full";
       return `<div class="ad-grid">
-        ${card(
+        ${box(
+          "season-look",
           "fa-calendar-days",
           "Seasonal look",
-          `${select("themes.season", "The whole site in the season's look, for everyone", draft.themes.season || "auto", [
-            ["auto", "By the date"],
-            ["off", "Off"],
-            ...SEASON_IDS.map((id) => [id, `${seasonName(id)}, locked on`]),
-          ])}
-          ${select("themes.seasonLevel", "How much of it", draft.themes.seasonLevel || "full", [
-            ["full", "Full: everything drifting, mist and bats"],
-            ["light", "Light: half as much drifting"],
-            ["calm", "Calm: the colours and the navbar's decoration only"],
-          ])}
-          ${sw("themes.seasonPill", "Blood and snow on the navbar", "On computers and tablets, on the capsule of page links (Halloween, Christmas, Winter)", draft.themes.seasonPill !== false)}
-          <p class="sv-note"><i class="fa-solid fa-circle-info"></i> Today by the date: <b>${today ? esc(seasonName(today)) : "none"}</b>. Locked on: that season all the time, whatever the date (to see it, or for an event). "Animated atmosphere" (below) stops its movement too.</p>`
+          `${part(
+            "What everyone sees",
+            today ? `Today by the date: <b>${esc(seasonName(today))}</b>` : "Today by the date: the site's own look",
+            `<div class="ad-opts ad-opts-season">${opt("themes.season", "auto", set, "fa-calendar-days", "By date", "Each season on its days", "#9aa4b5")}${opt("themes.season", "off", set, "fa-ban", "Off", "The site's own look", "#8a8a8a")}${SEASON_IDS.map((id) =>
+              opt("themes.season", id, set, SEASON_LOOK[id][0], seasonName(id), "Locked on, any day", SEASON_LOOK[id][1])
+            ).join("")}</div>`
+          )}
+          ${part(
+            "How much of it",
+            "",
+            `<div class="ad-opts ad-opts-3">${opt("themes.seasonLevel", "full", level, "fa-wand-magic-sparkles", "Full", "Everything drifting, mist and bats")}${opt("themes.seasonLevel", "light", level, "fa-feather", "Light", "Half as much drifting")}${opt("themes.seasonLevel", "calm", level, "fa-mug-hot", "Calm", "The colours and the navbar's decoration only")}</div>`
+          )}
+          ${part(
+            "Seasons by the date",
+            "The ones “By date” uses; off, those days get the next season that fits (Autumn around Halloween) or the site's own look",
+            `<div class="ad-lt-grid">${SEASON_IDS.map((id) =>
+              swTile("data-season-off", id, !seasonsOff.includes(id), `<i class="fa-solid ${SEASON_LOOK[id][0]}"></i>`, `--c:${SEASON_LOOK[id][1]}`, seasonName(id), dates(id))
+            ).join("")}</div>`
+          )}
+          ${part(
+            "On the navbar",
+            "",
+            `<div class="ad-lt-grid">${swTile("data-k", "themes.seasonPill", draft.themes.seasonPill !== false, '<i class="fa-solid fa-droplet"></i>', "--c:#e8424a", "Blood and snow on the navbar", "On computers and tablets, on the capsule of page links (Halloween, Christmas, Winter)")}</div>`
+          )}`,
+          3
         )}
-        ${card(
-          "fa-calendar-check",
-          "Seasons by the date",
-          SEASON_IDS.map(
-            (id) => `<div class="sv-row"><span class="sv-name ad-season-row" style="--c:${SEASON_LOOK[id][1]}"><strong><i class="fa-solid ${SEASON_LOOK[id][0]}"></i> ${esc(seasonName(id))}</strong><small>${esc(dates(id))}</small></span>
-          <label class="sv-switch"><input type="checkbox" data-season-off="${id}"${seasonsOff.includes(id) ? "" : " checked"} aria-label="${esc(seasonName(id))}" /><span class="switch-track"><span class="switch-thumb"></span></span></label></div>`
-          ).join(""),
-          "The ones “By the date” uses. Off: those days get the next season that fits (Autumn around a switched-off Halloween) or the site's own look."
+        ${box(
+          "lt-switches",
+          "fa-wand-magic-sparkles",
+          "List atmospheres",
+          `<div class="ad-lt-grid">${swTile("data-k", "themes.listThemes", draft.themes.listThemes !== false, '<i class="fa-solid fa-list-ul"></i>', "--c:#b98cff", "Atmospheres on people's lists", "Off: every list in the site's own look")}${swTile(
+            "data-k",
+            "themes.animations",
+            draft.themes.animations !== false,
+            '<i class="fa-solid fa-snowflake"></i>',
+            "--c:#8fd3ff",
+            "Animated atmosphere",
+            "Snow, rain, embers, fog… on lists and pages. Off: the colours stay, nothing moves"
+          )}</div>
+          <p class="sv-note"><i class="fa-solid fa-circle-info"></i> A list on Auto gets one when its name or its titles point clearly at it (${Math.round(ListThemes.THRESHOLD * 100)}% sure or more).</p>`,
+          2
         )}
-        ${card("fa-wand-magic-sparkles", "List atmospheres", `${sw("themes.listThemes", "Atmospheres on people's lists", "Off: every list in the site's own look", draft.themes.listThemes !== false)}
-          ${sw("themes.animations", "Animated atmosphere", "Snow, rain, embers, fog… on lists and pages. Off: the colours stay, nothing moves", draft.themes.animations !== false)}
-          <p class="sv-note"><i class="fa-solid fa-circle-info"></i> A list on Auto gets one when its name or its titles point clearly at it (${Math.round(ListThemes.THRESHOLD * 100)}% sure or more).</p>`)}
-        ${card("fa-circle-half-stroke", "Site theme", select("themes.siteDefault", "Theme for new visitors", draft.themes.siteDefault, [["dark", "Dark"], ["light", "Light"]]), "People who pick a theme themselves keep theirs.")}
+        ${box(
+          "site-theme",
+          "fa-circle-half-stroke",
+          "Site theme",
+          `${part(
+            "For new visitors",
+            "",
+            `<div class="ad-opts ad-opts-2">${opt("themes.siteDefault", "dark", draft.themes.siteDefault || "dark", "fa-moon", "Dark", "", "#7ea4ff")}${opt("themes.siteDefault", "light", draft.themes.siteDefault || "dark", "fa-sun", "Light", "", "#f5c518")}</div>`
+          )}
+          <p class="sv-note">People who pick a theme themselves keep theirs.</p>`,
+          1
+        )}
         ${card("fa-swatchbook", "Atmospheres on offer", offerHtml(off), "Switched off: people can't pick it for a list, and Auto never gives it.").replace("<section ", '<section data-box="lt-offer" ')}
       </div>`;
     },
@@ -983,7 +1031,7 @@
       } catch (e) {
         return;
       }
-      tmp.querySelectorAll(".sv-name strong, .ad-field > span:first-child, .xr-label").forEach((el) => {
+      tmp.querySelectorAll(".sv-name strong, .ad-field > span:first-child, .xr-label, .ad-lt-text strong, .ad-lt-head h4").forEach((el) => {
         const t = el.textContent.replace(/\s+/g, " ").trim();
         if (t && !out.some((o) => o.t === t && o.k === k)) out.push({ t, k, icon, label });
       });
@@ -1005,8 +1053,8 @@
   function goTo(hit) {
     history.replaceState(null, "", `#${hit.k}`);
     show(hit.k);
-    const el = [...body.querySelectorAll(".sv-name strong, .ad-field > span:first-child, .xr-label")].find((x) => x.textContent.replace(/\s+/g, " ").trim() === hit.t);
-    const target = el && (el.closest(".sv-row, .ad-field, .ad-card") || el);
+    const el = [...body.querySelectorAll(".sv-name strong, .ad-field > span:first-child, .xr-label, .ad-lt-text strong, .ad-lt-head h4")].find((x) => x.textContent.replace(/\s+/g, " ").trim() === hit.t);
+    const target = el && (el.closest(".sv-row, .ad-field, .ad-lt-tile, .ad-part, .ad-card") || el);
     if (target) {
       target.scrollIntoView({ block: "center", behavior: "smooth" });
       target.classList.remove("ad-flash");
@@ -1138,7 +1186,7 @@
       .sort((a, b) => at(a.dataset.box) - at(b.dataset.box))
       .forEach((b) => grid.append(b));
     boxes.forEach((b) => {
-      b.dataset.size = l.size[b.dataset.box] || WIDE[b.dataset.box] || 1;
+      b.dataset.size = l.size[b.dataset.box] || WIDE[b.dataset.box] || b.dataset.size || 1;
       b.classList.toggle("ad-box-hidden", l.hidden.includes(b.dataset.box));
       if (packWatch) packWatch.observe(b);
     });
@@ -1369,6 +1417,10 @@
   });
   root.addEventListener("change", (e) => {
     const el = e.target;
+    if (el.type === "checkbox") {
+      const tile = el.closest(".ad-lt-tile");
+      if (tile) tile.classList.toggle("off", !el.checked);
+    }
     if (el.dataset.k && el.type === "checkbox") return setPath(el.dataset.k, el.checked);
     if (el.dataset.k && el.tagName === "SELECT") return setPath(el.dataset.k, el.value);
     if (el.dataset.navPage) {
@@ -1513,6 +1565,14 @@
       return paintVeils(box.parentElement);
     }
     if (editing && e.target.closest(".ad-veil")) return; // (in Customize, a box's own buttons rest)
+    const op = e.target.closest("[data-opt]");
+    if (op) {
+      root.querySelectorAll(`[data-opt="${op.dataset.opt}"]`).forEach((b) => {
+        b.classList.toggle("on", b === op);
+        b.setAttribute("aria-pressed", b === op);
+      });
+      return setPath(op.dataset.opt, op.dataset.value);
+    }
     const lts = e.target.closest("[data-lt-set]");
     if (lts) return setOffer(ListThemes.THEMES.filter((t) => t.group === lts.dataset.ltSet).map((t) => t.id), lts.dataset.on === "1");
     const lta = e.target.closest("[data-lt-all]");
