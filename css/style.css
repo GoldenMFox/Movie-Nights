@@ -7681,6 +7681,151 @@ html.custom-scrollbars .t-seasons.grabbing * {
   color: var(--accent-hover);
 }
 
+/* "Edit list" pop-up (js/pages/browse.js): its name, its titles (take any out), Appearance, Delete */
+.le-modal {
+  max-width: 560px;
+}
+
+.le-modal h3 {
+  margin: 0 0 16px;
+  padding-right: 40px;
+  text-align: left;
+  font-size: 19px;
+}
+
+.le-modal h3 i {
+  margin-right: 6px;
+  color: var(--accent-hover);
+}
+
+.le-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.le-field span,
+.le-head span {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.le-name {
+  padding: 11px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: var(--glass-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+}
+
+.le-name:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.le-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.le-items {
+  display: grid;
+  gap: 6px;
+  max-height: clamp(160px, calc(100vh - 470px), 380px);
+  margin: 0;
+  padding: 0 2px 0 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.le-items li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: var(--glass-bg);
+  transition: opacity 0.2s;
+}
+
+.le-items li.out {
+  opacity: 0.45;
+}
+
+.le-items li.out b {
+  text-decoration: line-through;
+}
+
+.le-items img {
+  flex: none;
+  width: 34px;
+  aspect-ratio: 2 / 3;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.le-items li > span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.le-items b {
+  overflow: hidden;
+  font-size: 14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.le-items small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.le-items .le-empty {
+  justify-content: center;
+  padding: 18px;
+  color: var(--text-muted);
+}
+
+.le-x {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.le-x:hover {
+  background: rgba(229, 9, 20, 0.2);
+  color: var(--text);
+}
+
+.le-more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.le-more .le-delete {
+  margin-left: auto;
+}
+
 /* "Add titles" pop-up: search your library and TMDB */
 .adder-modal {
   max-width: 520px;
@@ -24382,6 +24527,13 @@ li[hidden] {
 .lt > :not(.lt-fx) {
   position: relative;
   z-index: 1;
+}
+
+/* (the head above the posters: the row reaches up over it, which took its buttons' clicks) */
+.lt > .row-head,
+.lt > .wl-list-tools,
+.lt > .wl-switch-row {
+  z-index: 2;
 }
 
 .wl-panel.lt {

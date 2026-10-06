@@ -224,7 +224,7 @@
         <div class="wl-list-tools" hidden>
           <button type="button" class="btn btn-primary wl-add-panel"><i class="fa-solid fa-plus"></i> Add titles</button>
           <button type="button" class="btn wl-theme" data-feature="listThemes"><i class="fa-solid fa-wand-magic-sparkles"></i> Appearance</button>
-          <button type="button" class="btn wl-rename"><i class="fa-solid fa-pen"></i> Rename</button>
+          <button type="button" class="btn wl-rename"><i class="fa-solid fa-pen"></i> Edit list</button>
           <button type="button" class="btn wl-delete"><i class="fa-solid fa-trash-can"></i> Delete list</button>
         </div>
         ${listHtml}
@@ -448,10 +448,11 @@
               <button type="button" class="top10-tab" data-order="released" title="Newest releases first"><i class="fa-solid fa-film"></i><span class="wl-sort-l"> Newest releases</span><span class="wl-sort-s"> Newest</span></button>
             </div>`
           : "";
+        const editBtn = custom ? `<button type="button" class="wl-add wl-edit" data-edit-list="${esc(custom)}"><i class="fa-solid fa-pen"></i> Edit</button>` : "";
         sec.innerHTML = `<div class="row-head"><h2><i class="fa-solid ${LISTS[k].icon}"></i> <span class="wl-name"></span></h2>
             <div class="top10-switch wl-type" role="group" aria-label="Show" data-type-row="${esc(k)}"></div>
             ${sortSwitch}
-            <span class="wl-row-tools">${addBtn("wl-add", "Add titles")}<a href="?list=${encodeURIComponent(k)}" class="wl-see" data-see="${esc(k)}"></a></span></div>
+            <span class="wl-row-tools">${addBtn("wl-add", "Add titles")}${editBtn}<a href="?list=${encodeURIComponent(k)}" class="wl-see" data-see="${esc(k)}"></a></span></div>
           <div class="movie-row"></div>
           <div class="wl-row-empty" hidden><span></span>${addBtn("btn btn-primary wl-add-big", "Add titles")}</div>`;
       }
@@ -659,12 +660,9 @@
     if (add) Cards.openListAdder(add.dataset.addTo);
     if (e.target.closest(".wl-add-panel") && PAGE.custom) Cards.openListAdder(PAGE.custom);
     if (e.target.closest(".wl-theme") && PAGE.custom && window.ListThemes) ListThemes.picker(PAGE.custom);
-    if (e.target.closest(".wl-rename") && PAGE.custom) {
-      const listId = PAGE.custom;
-      UI.ask({ icon: "fa-pen", title: "Rename this list", value: PAGE.label, placeholder: "List name", ok: "Rename" }).then((name) => {
-        if (name) Store.renameList(listId, name);
-      });
-    }
+    if (e.target.closest(".wl-rename") && PAGE.custom) editList(PAGE.custom);
+    const edit = e.target.closest("[data-edit-list]");
+    if (edit) editList(edit.dataset.editList);
     if (e.target.closest(".wl-delete") && PAGE.custom) {
       const listId = PAGE.custom;
       UI.confirm({
@@ -680,6 +678,90 @@
       });
     }
   });
+
+  // Edit a list: its name, the titles in it (take any out), Add titles, Appearance, Delete. The
+  // name and the titles taken out are kept only with Save
+  let editor = null;
+  function editList(listId) {
+    const list = Store.lists().find((l) => l.id === listId);
+    if (!list) return;
+    if (!editor) editor = Cards.makeOverlay("le-modal", '<div class="le-in"></div>');
+    const out = new Set(); // (taken out, until Save)
+    const draw = () => {
+      const now = Store.lists().find((l) => l.id === listId) || list;
+      const items = now.items.map((id) => Store.get(id)).filter(Boolean);
+      const name = editor.querySelector(".le-name") ? editor.querySelector(".le-name").value : now.name;
+      editor.querySelector(".le-in").innerHTML = `
+        <h3><i class="fa-solid fa-pen"></i> Edit list</h3>
+        <label class="le-field"><span>Name</span>
+          <input type="text" class="le-name" maxlength="40" value="${esc(name)}" placeholder="List name" autocomplete="off" />
+        </label>
+        <div class="le-head"><span>${items.length - out.size} title${items.length - out.size === 1 ? "" : "s"}</span>
+          <button type="button" class="btn le-add"><i class="fa-solid fa-plus"></i> Add titles</button></div>
+        <ul class="le-items">${
+          items.length
+            ? items
+                .map(
+                  (i) => `<li class="${out.has(i.id) ? "out" : ""}">
+                <img src="${Store.poster(Cards.posterOf(i), "w92")}" alt="" loading="lazy" />
+                <span><b>${esc(Lang.title(i))}</b><small>${[i.year, Store.TYPE_LABEL[i.type]].filter(Boolean).join(" · ")}</small></span>
+                <button type="button" class="le-x" data-le-out="${esc(i.id)}" title="${out.has(i.id) ? "Keep it" : "Take it out"}" aria-label="${out.has(i.id) ? "Keep" : "Take out"} ${esc(Lang.title(i))}"><i class="fa-solid ${out.has(i.id) ? "fa-rotate-left" : "fa-xmark"}"></i></button>
+              </li>`
+                )
+                .join("")
+            : '<li class="le-empty">Nothing in it yet.</li>'
+        }</ul>
+        <div class="le-more">
+          ${window.ListThemes && ListThemes.enabled() ? '<button type="button" class="btn le-look"><i class="fa-solid fa-wand-magic-sparkles"></i> Appearance</button>' : ""}
+          <button type="button" class="btn btn-danger le-delete"><i class="fa-solid fa-trash-can"></i> Delete list</button>
+        </div>
+        <div class="lt-actions"><button type="button" class="btn le-cancel">Cancel</button><button type="button" class="btn btn-primary le-save">Save</button></div>`;
+    };
+    editor.querySelector(".le-in").innerHTML = ""; // (not the last list's name)
+    draw();
+    editor.onclick = (e) => {
+      const x = e.target.closest("[data-le-out]");
+      if (x) {
+        const id = x.dataset.leOut;
+        out.has(id) ? out.delete(id) : out.add(id);
+        return draw();
+      }
+      if (e.target.closest(".le-cancel")) Cards.closeModal(editor);
+      if (e.target.closest(".le-save")) {
+        const name = editor.querySelector(".le-name").value.trim();
+        if (!name) return editor.querySelector(".le-name").focus();
+        if (name !== list.name) Store.renameList(listId, name);
+        out.forEach((id) => {
+          const l = Store.lists().find((y) => y.id === listId);
+          if (l && l.items.includes(id)) Store.toggleInList(listId, id);
+        });
+        Cards.closeModal(editor);
+        UI.toast(out.size ? `Saved · ${out.size} title${out.size === 1 ? "" : "s"} taken out` : "List saved");
+      }
+      // (these leave the editor: what was typed or taken out isn't kept)
+      if (e.target.closest(".le-add")) {
+        Cards.closeModal(editor);
+        Cards.openListAdder(listId);
+      }
+      if (e.target.closest(".le-look")) {
+        Cards.closeModal(editor);
+        ListThemes.picker(listId);
+      }
+      if (e.target.closest(".le-delete")) {
+        Cards.closeModal(editor);
+        UI.confirm({ icon: "fa-trash-can", title: `Delete "${list.name}"?`, text: "The list goes away; the titles stay in your library.", ok: "Delete list", danger: true }).then((ok) => {
+          if (!ok) return;
+          Store.deleteList(listId);
+          UI.toast("List deleted");
+        });
+      }
+    };
+    editor.onkeydown = (e) => {
+      if (e.key === "Enter" && e.target.classList.contains("le-name")) editor.querySelector(".le-save").click();
+    };
+    Cards.openModal(editor);
+    setTimeout(() => editor.querySelector(".le-name").focus(), 50);
+  }
 
   if (isLists)
     root.querySelector(".wl-new-form").addEventListener("submit", (e) => {
