@@ -77,10 +77,10 @@
     frost: '<b class="ss-frost"></b>',
   };
   const NAV = {
-    spider: '<b class="ss-spider"><i></i></b>',
-    lights: '<b class="ss-lights"></b>',
+    spider: '<b class="ss-blood"></b><b class="ss-blood-drop"></b><b class="ss-blood-drop"></b><b class="ss-blood-drop"></b><b class="ss-spider"><i></i></b>',
+    lights: '<b class="ss-snowedge"></b><b class="ss-snow-puff"></b><b class="ss-snow-puff"></b><b class="ss-snow-puff"></b><b class="ss-lights"></b>',
     vine: '<b class="ss-vine"></b>',
-    icicles: '<b class="ss-icicles"></b>',
+    icicles: '<b class="ss-snowedge"></b><b class="ss-snow-puff"></b><b class="ss-snow-puff"></b><b class="ss-snow-puff"></b><b class="ss-icicles"></b>',
     leaves: '<b class="ss-leafline"></b>',
   };
 
