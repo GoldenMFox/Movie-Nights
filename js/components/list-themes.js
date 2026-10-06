@@ -75,6 +75,13 @@
       months: [12, 1, 2],
     },
     {
+      id: "autumn", label: "Autumn", emoji: "🍁", group: "season", hint: "Falling leaves, amber light over the hills",
+      colors: { a: "rgba(226, 112, 28, 0.36)", b: "rgba(150, 52, 18, 0.38)", c: "rgba(240, 190, 80, 0.2)", base: "rgba(28, 12, 4, 0.56)", edge: "rgba(232, 140, 56, 0.48)", dot: "#e8903a", dot2: "#c0441e", dot3: "#f2c14e" },
+      parts: "leaves", count: 34, front: 8, layers: ["hills", "sun", "haze"],
+      words: [["autumn", 1.5], ["autumnal", 1.4], ["fall vibes", 1.3], ["fall season", 1.3], ["falling leaves", 1.3], ["leaves", 0.5], ["harvest", 0.5], ["september", 0.5], ["november", 0.4]],
+      months: [9, 10, 11],
+    },
+    {
       id: "spring", label: "Spring", emoji: "🌸", group: "season", hint: "Blossom pink over a meadow, drifting petals",
       colors: { a: "rgba(255, 150, 200, 0.36)", b: "rgba(120, 200, 120, 0.3)", c: "rgba(255, 236, 140, 0.2)", base: "rgba(24, 18, 22, 0.45)", edge: "rgba(255, 170, 210, 0.5)", dot: "#ffb7d5", dot2: "#c8f0b0", dot3: "#ffffff" },
       parts: "petals", count: 40, front: 12, caps: "blossom", layers: ["meadow", "sun", "bokeh"],

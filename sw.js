@@ -15,7 +15,7 @@
  *
  * Bump VERSION when the list of app files below changes.
  */
-const VERSION = "v228";
+const VERSION = "v229";
 const APP_CACHE = `mn-app-${VERSION}`;
 
 const APP_FILES = [
@@ -73,6 +73,7 @@ const APP_FILES = [
   "js/components/soundtrack.js",
   "js/components/share.js",
   "js/components/list-themes.js",
+  "js/components/season.js",
   "js/pages/browse.js",
   "js/pages/home.js",
   "js/pages/discover.js",

@@ -29645,3 +29645,493 @@ button.xr-sq:hover {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0 22px;
 }
+
+/* ============================== Seasonal look (js/components/season.js) ==============================
+   The whole site in the season's colours (Admin → Themes → Seasonal look): a tint and a line along
+   the navbar with something hanging from it, a faint light in the page's corners and a few things
+   drifting behind the content. Its own look for a page, quieter than a list's atmosphere. Only
+   html.season-play moves */
+html[data-season="halloween"] {
+  --ss-a: rgba(255, 112, 20, 0.225);
+  --ss-b: rgba(124, 44, 196, 0.255);
+  --ss-c: rgba(178, 6, 22, 0.18);
+  --ss-dot: #ffa04a;
+  --ss-dot2: #e0101e;
+  --ss-dot3: #b98cff;
+  --ss-line: linear-gradient(90deg, transparent, #ff7a1a 18%, #a03cff 50%, #c8101e 82%, transparent);
+}
+
+html[data-season="christmas"] {
+  --ss-a: rgba(206, 26, 38, 0.21);
+  --ss-b: rgba(16, 122, 66, 0.24);
+  --ss-c: rgba(255, 184, 90, 0.12);
+  --ss-dot: #ffffff;
+  --ss-dot2: #ffe9b0;
+  --ss-dot3: #ffffff;
+  --ss-line: linear-gradient(90deg, transparent, #d6202a 20%, #ffc96b 50%, #14864a 80%, transparent);
+}
+
+html[data-season="easter"] {
+  --ss-a: rgba(255, 160, 206, 0.21);
+  --ss-b: rgba(140, 220, 130, 0.18);
+  --ss-c: rgba(255, 236, 140, 0.135);
+  --ss-dot: #ffc3dc;
+  --ss-dot2: #fff2a8;
+  --ss-dot3: #ffffff;
+  --ss-line: linear-gradient(90deg, transparent, #ff9cc8 20%, #fff2a8 50%, #8cdc82 80%, transparent);
+}
+
+html[data-season="winter"] {
+  --ss-a: rgba(110, 170, 255, 0.225);
+  --ss-b: rgba(200, 230, 255, 0.12);
+  --ss-c: rgba(120, 255, 200, 0.09);
+  --ss-dot: #eaf4ff;
+  --ss-dot2: #cfe6ff;
+  --ss-dot3: #ffffff;
+  --ss-line: linear-gradient(90deg, transparent, #6eaaff 20%, #ffffff 50%, #78ffc8 80%, transparent);
+}
+
+html[data-season="autumn"] {
+  --ss-a: rgba(226, 112, 28, 0.225);
+  --ss-b: rgba(150, 52, 18, 0.225);
+  --ss-c: rgba(240, 190, 80, 0.12);
+  --ss-dot: #e8903a;
+  --ss-dot2: #c0441e;
+  --ss-dot3: #f2c14e;
+  --ss-line: linear-gradient(90deg, transparent, #e8903a 20%, #c0441e 50%, #f2c14e 80%, transparent);
+}
+
+/* the light theme: the snow and the lights darker, so they show on white */
+:root[data-theme="light"][data-season="christmas"],
+:root[data-theme="light"][data-season="winter"] {
+  --ss-dot: #9db7d6;
+  --ss-dot2: #c9d8ea;
+  --ss-dot3: #9db7d6;
+}
+
+/* ---- behind the page ---- */
+.season-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(65% 55% at 0% 0%, var(--ss-a), transparent 72%), radial-gradient(60% 55% at 100% 100%, var(--ss-b), transparent 72%), radial-gradient(45% 40% at 100% 0%, var(--ss-c), transparent 72%), radial-gradient(40% 35% at 0% 100%, var(--ss-c), transparent 72%);
+}
+
+.ss-parts i {
+  position: absolute;
+  top: -16px;
+  left: var(--x);
+  width: calc(5px * var(--s));
+  height: calc(5px * var(--s));
+  border-radius: 50%;
+  background: var(--ss-dot);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.season-play .ss-parts i {
+  animation:
+    ss-fall var(--t) linear var(--d) infinite,
+    ss-sway var(--st) ease-in-out var(--d) infinite alternate;
+}
+
+/* snow: soft flakes */
+.ss-parts[data-k="snow"] i {
+  --o: calc(0.25 + var(--s) * 0.35);
+  background: radial-gradient(circle, var(--ss-dot) 0 32%, transparent 72%);
+  width: calc(7px * var(--s));
+  height: calc(7px * var(--s));
+}
+
+/* embers: rising from the bottom, glowing, some blood red */
+.ss-parts[data-k="ember"] i {
+  --o: 0.75;
+  top: auto;
+  bottom: -10px;
+  width: calc(3.5px * var(--s));
+  height: calc(3.5px * var(--s));
+  box-shadow: 0 0 9px 2px var(--ss-dot);
+}
+
+.ss-parts[data-k="ember"] i:nth-child(3n) {
+  background: var(--ss-dot2);
+  box-shadow: 0 0 9px 2px var(--ss-dot2);
+}
+
+.season-play .ss-parts[data-k="ember"] i {
+  animation-name: ss-rise, ss-sway;
+}
+
+/* petals and leaves: turning as they drift down */
+.ss-parts[data-k="petal"] i,
+.ss-parts[data-k="leaf"] i {
+  --o: 0.75;
+  width: calc(10px * var(--s));
+  height: calc(7px * var(--s));
+  border-radius: 70% 0 70% 0;
+}
+
+.ss-parts[data-k="leaf"] i {
+  width: calc(12px * var(--s));
+  height: calc(8px * var(--s));
+  border-radius: 0 80% 0 80%;
+}
+
+.ss-parts[data-k="petal"] i:nth-child(3n),
+.ss-parts[data-k="leaf"] i:nth-child(3n) {
+  background: var(--ss-dot2);
+}
+
+.ss-parts[data-k="petal"] i:nth-child(4n),
+.ss-parts[data-k="leaf"] i:nth-child(4n + 1) {
+  background: var(--ss-dot3);
+}
+
+.season-play .ss-parts[data-k="petal"] i,
+.season-play .ss-parts[data-k="leaf"] i {
+  animation-name: ss-turn, ss-sway;
+}
+
+/* Halloween: fog low on the page, and now and then a bat crossing it */
+.ss-fog {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  bottom: -70px;
+  height: 230px;
+  background: radial-gradient(50% 60% at 30% 60%, rgba(214, 204, 232, 0.2), transparent 70%), radial-gradient(40% 50% at 75% 50%, rgba(214, 204, 232, 0.15), transparent 70%);
+  filter: blur(10px);
+}
+
+.ss-fog.two {
+  bottom: -40px;
+  opacity: 0.7;
+}
+
+.season-play .ss-fog {
+  animation: ss-drift 32s ease-in-out infinite alternate;
+}
+
+.season-play .ss-fog.two {
+  animation-duration: 44s;
+  animation-direction: alternate-reverse;
+}
+
+.ss-bat {
+  position: absolute;
+  top: 18%;
+  left: -70px;
+  width: 46px;
+  height: 21px;
+  opacity: 0;
+}
+
+.ss-bat.two {
+  top: 36%;
+  width: 30px;
+  height: 14px;
+}
+
+.ss-bat i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 18'%3E%3Cpath d='M20 6 C17 2 12 1 8 3 C6 1 3 2 0 5 C4 5 6 7 6 9 C9 7 12 8 14 11 C16 9 18 10 20 14 C22 10 24 9 26 11 C28 8 31 7 34 9 C34 7 36 5 40 5 C37 2 34 1 32 3 C28 1 23 2 20 6Z' fill='%23080510'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.season-play .ss-bat {
+  animation: ss-bat 26s linear infinite;
+}
+
+.season-play .ss-bat.two {
+  animation-duration: 37s;
+  animation-delay: -14s;
+}
+
+.season-play .ss-bat i {
+  animation: ss-flap 0.2s ease-in-out infinite alternate;
+}
+
+/* Winter: frost creeping in at the corners */
+.ss-frost {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(30% 32% at 0 0, rgba(220, 240, 255, 0.16), transparent 70%), radial-gradient(28% 30% at 100% 0, rgba(220, 240, 255, 0.12), transparent 70%), radial-gradient(26% 28% at 0 100%, rgba(220, 240, 255, 0.12), transparent 70%), radial-gradient(28% 30% at 100% 100%, rgba(220, 240, 255, 0.16), transparent 70%);
+}
+
+/* ---- the navbar: tinted, a line of the season's colours along its edge, something hanging ---- */
+html[data-season] .site-nav::before {
+  background: linear-gradient(90deg, var(--ss-a), transparent 45%, var(--ss-b)), rgba(14, 14, 16, 0.72);
+}
+
+:root[data-theme="light"][data-season] .site-nav::before {
+  background: linear-gradient(90deg, var(--ss-a), transparent 45%, var(--ss-b)), rgba(14, 14, 16, 0.95);
+}
+
+.season-nav {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.season-nav::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--ss-line);
+  opacity: 0.85;
+}
+
+/* Christmas: a string of lights, twinkling in turns */
+.ss-lights {
+  position: absolute;
+  top: -5px;
+  left: 0;
+  right: 0;
+  height: 34px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='34'%3E%3Cpath d='M0 4 Q30 22 60 6 Q90 22 120 4' fill='none' stroke='%231c241e' stroke-width='1.5'/%3E%3Crect x='13.7' y='9.9' width='2.6' height='2.8' rx='0.6' fill='%234b524c'/%3E%3Cellipse cx='15' cy='15.3' rx='2.6' ry='3.6' fill='%23ff4a4a'/%3E%3Crect x='43.7' y='10.9' width='2.6' height='2.8' rx='0.6' fill='%234b524c'/%3E%3Cellipse cx='45' cy='16.3' rx='2.6' ry='3.6' fill='%23ffd166'/%3E%3Crect x='73.7' y='10.9' width='2.6' height='2.8' rx='0.6' fill='%234b524c'/%3E%3Cellipse cx='75' cy='16.3' rx='2.6' ry='3.6' fill='%2348e08f'/%3E%3Crect x='103.7' y='9.9' width='2.6' height='2.8' rx='0.6' fill='%234b524c'/%3E%3Cellipse cx='105' cy='15.3' rx='2.6' ry='3.6' fill='%2366b8ff'/%3E%3C/svg%3E") 0 0 / 120px 34px repeat-x;
+}
+
+.ss-lights::before,
+.ss-lights::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.ss-lights::before {
+  background: radial-gradient(circle at 15px 15.3px, rgba(255, 74, 74, 0.7), transparent 11px) 0 0 / 120px 34px repeat-x, radial-gradient(circle at 75px 16.3px, rgba(72, 224, 143, 0.6), transparent 11px) 0 0 / 120px 34px repeat-x;
+}
+
+.ss-lights::after {
+  background: radial-gradient(circle at 45px 16.3px, rgba(255, 209, 102, 0.75), transparent 11px) 0 0 / 120px 34px repeat-x, radial-gradient(circle at 105px 15.3px, rgba(102, 184, 255, 0.65), transparent 11px) 0 0 / 120px 34px repeat-x;
+}
+
+.season-play .ss-lights::before {
+  animation: ss-blink 2.6s ease-in-out infinite alternate;
+}
+
+.season-play .ss-lights::after {
+  animation: ss-blink 2.6s ease-in-out -1.3s infinite alternate;
+}
+
+/* Winter: icicles */
+.ss-icicles {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 26px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='26'%3E%3Cdefs%3E%3ClinearGradient id='i' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ffffff' stop-opacity='0.95'/%3E%3Cstop offset='1' stop-color='%23bfe0ff' stop-opacity='0.35'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 0 H64 V3 L61 3 L58.5 15 L56 3 L49 3 L47 9 L45 3 L37 3 L34 23 L31 3 L23 3 L21.5 10 L20 3 L13 3 L10.5 18 L8 3 L0 3 Z' fill='url(%23i)'/%3E%3Cpath d='M0 0 H64 V2.6 C48 3.6 16 3.4 0 2.6 Z' fill='%23ffffff'/%3E%3C/svg%3E") 0 0 / 64px 26px repeat-x;
+  filter: drop-shadow(0 2px 3px rgba(150, 200, 255, 0.25));
+}
+
+/* Easter: a vine of blossom */
+.ss-vine {
+  position: absolute;
+  top: -4px;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='20'%3E%3Cpath d='M0 5 C16 2 32 9 48 5 S80 1 96 5' fill='none' stroke='%234f8a4a' stroke-width='1.4'/%3E%3Cpath d='M22 5.5 q4 -5 9 -2 q-5 3 -9 2Z M58 4 q4 4 9 2 q-4 -4 -9 -2Z M84 4.6 q3 -4 7 -2 q-4 3 -7 2Z' fill='%236fbf6a'/%3E%3Ccircle cx='10' cy='5.6' r='2.2' fill='%23ffc3dc'/%3E%3Ccircle cx='12.3' cy='7.3' r='2.2' fill='%23ffc3dc'/%3E%3Ccircle cx='11.4' cy='10' r='2.2' fill='%23ffc3dc'/%3E%3Ccircle cx='8.6' cy='10' r='2.2' fill='%23ffc3dc'/%3E%3Ccircle cx='7.7' cy='7.3' r='2.2' fill='%23ffc3dc'/%3E%3Ccircle cx='10' cy='8' r='1.2' fill='%23ffd166'/%3E%3Ccircle cx='40' cy='7.1' r='2.2' fill='%23ffffff'/%3E%3Ccircle cx='42.3' cy='8.8' r='2.2' fill='%23ffffff'/%3E%3Ccircle cx='41.4' cy='11.5' r='2.2' fill='%23ffffff'/%3E%3Ccircle cx='38.6' cy='11.5' r='2.2' fill='%23ffffff'/%3E%3Ccircle cx='37.7' cy='8.8' r='2.2' fill='%23ffffff'/%3E%3Ccircle cx='40' cy='9.5' r='1.2' fill='%23ffd166'/%3E%3Ccircle cx='72' cy='4.1' r='2.2' fill='%23ffb0cf'/%3E%3Ccircle cx='74.3' cy='5.8' r='2.2' fill='%23ffb0cf'/%3E%3Ccircle cx='73.4' cy='8.5' r='2.2' fill='%23ffb0cf'/%3E%3Ccircle cx='70.6' cy='8.5' r='2.2' fill='%23ffb0cf'/%3E%3Ccircle cx='69.7' cy='5.8' r='2.2' fill='%23ffb0cf'/%3E%3Ccircle cx='72' cy='6.5' r='1.2' fill='%23ffd166'/%3E%3Ccircle cx='50' cy='12.5' r='1.8' fill='%23ffc3dc'/%3E%3C/svg%3E") 0 0 / 96px 20px repeat-x;
+}
+
+/* Autumn: a garland of leaves */
+.ss-leafline {
+  position: absolute;
+  top: -4px;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='24'%3E%3Cpath d='M0 5 C20 3 40 8 60 5 S80 3 90 5' fill='none' stroke='%235a3a24' stroke-width='1.6'/%3E%3Cpath transform='translate(12 4.4) rotate(14)' d='M0 0 C3.4 3 4.4 7.5 0 13 C-4.4 7.5 -3.4 3 0 0Z' fill='%23e8903a'/%3E%3Cpath transform='translate(12 4.4) rotate(14)' d='M0 1 L0 11' stroke='%23000' stroke-opacity='0.25' stroke-width='0.6'/%3E%3Cpath transform='translate(33 6) rotate(-10)' d='M0 0 C3.4 3 4.4 7.5 0 13 C-4.4 7.5 -3.4 3 0 0Z' fill='%23c0441e'/%3E%3Cpath transform='translate(33 6) rotate(-10)' d='M0 1 L0 11' stroke='%23000' stroke-opacity='0.25' stroke-width='0.6'/%3E%3Cpath transform='translate(55 5.4) rotate(18)' d='M0 0 C3.4 3 4.4 7.5 0 13 C-4.4 7.5 -3.4 3 0 0Z' fill='%23f2c14e'/%3E%3Cpath transform='translate(55 5.4) rotate(18)' d='M0 1 L0 11' stroke='%23000' stroke-opacity='0.25' stroke-width='0.6'/%3E%3Cpath transform='translate(76 4) rotate(-16)' d='M0 0 C3.4 3 4.4 7.5 0 13 C-4.4 7.5 -3.4 3 0 0Z' fill='%23d9692a'/%3E%3Cpath transform='translate(76 4) rotate(-16)' d='M0 1 L0 11' stroke='%23000' stroke-opacity='0.25' stroke-width='0.6'/%3E%3C/svg%3E") 0 0 / 90px 24px repeat-x;
+}
+
+/* Halloween: a spider letting itself down on its thread, and back up */
+.ss-spider {
+  position: absolute;
+  top: 0;
+  right: 17%;
+  width: 24px;
+}
+
+.ss-spider::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 11.5px;
+  width: 1px;
+  height: 110px;
+  background: linear-gradient(rgba(225, 225, 235, 0.55), rgba(225, 225, 235, 0.25));
+  transform: scaleY(0.4);
+  transform-origin: 50% 0;
+}
+
+.ss-spider i {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 30px;
+  margin-left: -4px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 10 L3 4 M12 11 L1.5 10 M12 12.5 L3 17 M12 13.5 L5 21 M12 10 L21 4 M12 11 L22.5 10 M12 12.5 L21 17 M12 13.5 L19 21' stroke='%23101012' stroke-width='1.3' stroke-linecap='round' fill='none'/%3E%3Cellipse cx='12' cy='13' rx='3.8' ry='4.8' fill='%230c0c0e'/%3E%3Ccircle cx='12' cy='7.6' r='2.5' fill='%230c0c0e'/%3E%3Ccircle cx='11.1' cy='7.2' r='0.5' fill='%23ff3b2f'/%3E%3Ccircle cx='12.9' cy='7.2' r='0.5' fill='%23ff3b2f'/%3E%3C/svg%3E") center / contain no-repeat;
+  filter: drop-shadow(0 0 1.5px rgba(255, 170, 90, 0.9)) drop-shadow(0 0 6px rgba(255, 120, 30, 0.6));
+  transform: translate3d(0, 40px, 0);
+}
+
+.season-play .ss-spider::before {
+  animation: ss-thread 11s ease-in-out infinite;
+}
+
+.season-play .ss-spider i {
+  animation: ss-spin 11s ease-in-out infinite;
+}
+
+@media (max-width: 700px) {
+  .ss-spider {
+    right: 30%;
+  }
+
+  .ss-fog {
+    filter: none;
+  }
+}
+
+/* ---- the movements ---- */
+@keyframes ss-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+  8%,
+  92% {
+    opacity: var(--o, 0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--dx), 108vh, 0);
+  }
+}
+
+@keyframes ss-turn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  8%,
+  92% {
+    opacity: var(--o, 0.7);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--dx), 108vh, 0) rotate(420deg);
+  }
+}
+
+@keyframes ss-rise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  12%,
+  70% {
+    opacity: var(--o, 0.7);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--dx), -90vh, 0) scale(0.4);
+  }
+}
+
+@keyframes ss-sway {
+  0% {
+    translate: calc(var(--sw) * -1) 0;
+  }
+  100% {
+    translate: var(--sw) 0;
+  }
+}
+
+@keyframes ss-drift {
+  0% {
+    transform: translate3d(-8%, 0, 0);
+  }
+  100% {
+    transform: translate3d(8%, 0, 0);
+  }
+}
+
+@keyframes ss-bat {
+  0%,
+  82% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+  83%,
+  98% {
+    opacity: 0.85;
+  }
+  90% {
+    transform: translate3d(50vw, -50px, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(100vw + 140px), 20px, 0);
+  }
+}
+
+@keyframes ss-flap {
+  0% {
+    transform: scaleY(1);
+  }
+  100% {
+    transform: scaleY(0.4);
+  }
+}
+
+@keyframes ss-blink {
+  0% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes ss-thread {
+  0%,
+  100% {
+    transform: scaleY(0.36);
+  }
+  45%,
+  62% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes ss-spin {
+  0%,
+  100% {
+    transform: translate3d(0, 36px, 0) rotate(0deg);
+  }
+  45% {
+    transform: translate3d(0, 106px, 0) rotate(-6deg);
+  }
+  53% {
+    transform: translate3d(0, 104px, 0) rotate(6deg);
+  }
+  62% {
+    transform: translate3d(0, 106px, 0) rotate(0deg);
+  }
+}
+
+/* still (reduce motion, or the owner's "Animated atmosphere" off): js/components/season.js leaves
+   html.season-play off; the colours and the decoration stay */

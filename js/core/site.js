@@ -58,7 +58,7 @@
       news: { on: true, minutes: 30 },
       itunes: { on: true, days: 30 },
     },
-    themes: { siteDefault: "dark", listThemes: true, animations: true, available: ["halloween", "christmas", "winter", "spring", "summer", "noir", "space"] },
+    themes: { siteDefault: "dark", listThemes: true, animations: true, season: "auto", available: ["halloween", "christmas", "winter", "spring", "summer", "noir", "space"] },
     notifications: { on: true, release: true, season: true, episode: true, recommendation: true, announcement: true },
   };
 

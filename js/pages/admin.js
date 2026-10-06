@@ -400,6 +400,22 @@
           ).join("")
         )}
         ${card("fa-circle-half-stroke", "Site theme", select("themes.siteDefault", "Theme for new visitors", draft.themes.siteDefault, [["dark", "Dark"], ["light", "Light"]]))}
+        ${card(
+          "fa-calendar-days",
+          "Seasonal look",
+          `${select("themes.season", "The whole site in the season's look, for everyone", draft.themes.season || "auto", [
+            ["auto", "By the date"],
+            ["off", "Off"],
+            ["halloween", "Halloween, all the time"],
+            ["christmas", "Christmas, all the time"],
+            ["easter", "Easter, all the time"],
+            ["winter", "Winter, all the time"],
+            ["autumn", "Autumn, all the time"],
+          ])}
+          <p class="sv-note"><i class="fa-solid fa-circle-info"></i> By the date: Halloween 1 Oct – 1 Nov, Christmas 1–26 Dec, Easter the week before Easter Sunday to Easter Monday, Winter 27 Dec – end of Feb, Autumn 22 Sep – 30 Nov; the rest of the year the site's own look.${
+            window.Season ? ` Today: <b>${window.Season.byDate(new Date()) ? esc(window.Season.SEASONS[window.Season.byDate(new Date())].label) : "none"}</b>.` : ""
+          } Pick one to see it now; "Animated atmosphere" (above) stops its movement too.</p>`
+        )}
       </div>`;
     },
     notifications() {

@@ -394,6 +394,17 @@ on title pages **Based on the book** (cover, writer, first published, rating, pa
 description; the book itself: the work with the most editions), only for a title TMDB says is adapted from one ("Novel: …" credit or "based on novel"
 keyword), asked for as soon as the page opens. Person pages: books **by** and **about** them.
 
+**Seasonal look** (`js/components/season.js`, every page): Halloween, Christmas, Easter, Winter and
+Autumn, its own look for a whole page: the navbar tinted with a line of the season's colours and one
+thing hanging from it (a spider on its thread, a string of lights, a vine of blossom, icicles, a
+garland of leaves), a faint light in the page's corners and a few things drifting behind the content
+(embers, snow, petals, leaves), plus fog and a bat now and then (Halloween), frost in the corners
+(Winter). By the date: Halloween 1 Oct – 1 Nov, Christmas 1–26 Dec, Easter the week before Easter
+Sunday to Easter Monday (worked out each year), Winter 27 Dec – end of Feb, Autumn 22 Sep – 30 Nov.
+Only the owner decides, for everyone (Admin → Themes → Seasonal look: by the date, off, or one season
+all the time); visitors have no switch. Only transform / opacity move, half on a phone, nothing in a
+hidden tab, still with reduce motion or "Animated atmosphere" off.
+
 **List atmospheres** (`js/components/list-themes.js`): Watchlist page → open one of your lists →
 **Appearance**. 24 of them: holidays (Halloween, Christmas, Easter, Valentine's Day, New Year's Eve,
 Thanksgiving), seasons & weather (Winter, Spring, Summer, Rainy day), moods (Cozy, Emotional, Romantic,
