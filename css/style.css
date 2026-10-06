@@ -24691,18 +24691,87 @@ html.app-ui.tabs-away .t-shared {
 }
 
 @media (max-width: 700px) {
+  /* (a phone: no card around the header, the title and its Live light on one line, a slim search) */
   .nw-hero {
-    margin-top: 14px;
-    padding: 20px 18px;
-    border-radius: 22px;
+    gap: 12px;
+    margin: 12px 0 12px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    overflow: visible;
+  }
+
+  .nw-hero-text {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .nw-hero .page-title {
+    order: -1;
+    margin: 0;
+    font-size: 28px;
+  }
+
+  .nw-hero .page-sub,
+  .nw-updated {
+    display: none;
+  }
+
+  .nw-live {
+    padding: 4px 10px;
+    font-size: 10.5px;
   }
 
   .nw-hero-tools {
     width: 100%;
+    gap: 8px;
+  }
+
+  .nw-search .input {
+    height: 42px;
+    font-size: 15px;
+  }
+
+  .nw-refresh {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 50%;
   }
 
   .nw-refresh span {
     display: none;
+  }
+
+  /* (the ticker: its label just the bolt) */
+  .nw-ticker {
+    margin-bottom: 12px;
+  }
+
+  .nw-ticker-label {
+    margin: 3px;
+    padding: 6px 9px;
+    font-size: 0;
+    letter-spacing: 0;
+  }
+
+  .nw-ticker-label i {
+    font-size: 12px;
+  }
+
+  .nw-ticker-run a {
+    padding: 0 16px;
+    font-size: 13px;
+  }
+
+  .nw-ticker-run a::after {
+    margin-left: 16px;
   }
 
   .nw-feature {
