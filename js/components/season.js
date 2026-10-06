@@ -5,7 +5,7 @@
  * colours with a line of them along its edge and one thing hanging from it (a spider on its
  * thread, a string of lights, a vine of blossom, icicles, a garland of leaves); behind the page, a
  * faint light in its corners and a few things drifting (embers, snow, petals, leaves), and now and
- * then something of the season's own (a bat crossing, fog low down, frost in the corners).
+ * then something of the season's own (a bat crossing, mist drifting across, frost in the corners).
  * Everything sits behind the page's content and lets the clicks through.
  *
  *  - When: Halloween 1 Oct - 1 Nov, Christmas 1-26 Dec, Easter the week before Easter Sunday to
@@ -72,7 +72,7 @@
   }
 
   const EXTRA = {
-    fog: '<b class="ss-fog"></b><b class="ss-fog two"></b>',
+    fog: '<b class="ss-fog"></b><b class="ss-fog two"></b><b class="ss-fog three"></b>',
     bat: '<b class="ss-bat"><i></i></b><b class="ss-bat two"><i></i></b>',
     frost: '<b class="ss-frost"></b>',
   };

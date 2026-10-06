@@ -29794,29 +29794,47 @@ html[data-season="autumn"] {
   animation-name: ss-turn, ss-sway;
 }
 
-/* Halloween: fog low on the page, and now and then a bat crossing it */
+/* Halloween: wisps of mist drifting across the page from one side to the other (like the mist on
+   a Halloween list), at different heights and speeds, and now and then a bat crossing */
 .ss-fog {
   position: absolute;
-  left: -20%;
-  right: -20%;
-  bottom: -70px;
-  height: 230px;
-  background: radial-gradient(50% 60% at 30% 60%, rgba(214, 204, 232, 0.2), transparent 70%), radial-gradient(40% 50% at 75% 50%, rgba(214, 204, 232, 0.15), transparent 70%);
-  filter: blur(10px);
+  top: 8%;
+  left: 0;
+  width: 60vw;
+  height: 42vh;
+  border-radius: 50%;
+  background:
+    radial-gradient(42% 38% at 35% 55%, rgba(228, 222, 242, 0.32), rgba(228, 222, 242, 0.12) 50%, transparent 75%),
+    radial-gradient(38% 30% at 68% 42%, rgba(214, 206, 236, 0.26), rgba(214, 206, 236, 0.08) 55%, transparent 78%);
+  filter: blur(14px);
+  opacity: 0;
+  transform: translate3d(-110%, 0, 0);
 }
 
 .ss-fog.two {
-  bottom: -40px;
-  opacity: 0.7;
+  top: 40%;
+  width: 48vw;
+  height: 34vh;
+}
+
+.ss-fog.three {
+  top: 64%;
+  width: 75vw;
+  height: 46vh;
 }
 
 .season-play .ss-fog {
-  animation: ss-drift 32s ease-in-out infinite alternate;
+  animation: ss-mist 40s linear infinite;
 }
 
 .season-play .ss-fog.two {
-  animation-duration: 44s;
-  animation-direction: alternate-reverse;
+  animation-duration: 52s;
+  animation-delay: -20s;
+}
+
+.season-play .ss-fog.three {
+  animation-duration: 64s;
+  animation-delay: -42s;
 }
 
 .ss-bat {
@@ -30060,12 +30078,23 @@ html[data-season] .site-nav::before {
   }
 }
 
-@keyframes ss-drift {
+@keyframes ss-mist {
   0% {
-    transform: translate3d(-8%, 0, 0);
+    opacity: 0;
+    transform: translate3d(-110%, 0, 0) scale(1);
+  }
+  12% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate3d(60%, -10%, 0) scale(1.15);
+  }
+  88% {
+    opacity: 1;
   }
   100% {
-    transform: translate3d(8%, 0, 0);
+    opacity: 0;
+    transform: translate3d(190%, 5%, 0) scale(1);
   }
 }
 

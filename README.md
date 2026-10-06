@@ -398,7 +398,7 @@ keyword), asked for as soon as the page opens. Person pages: books **by** and **
 Autumn, its own look for a whole page: the navbar tinted with a line of the season's colours and one
 thing hanging from it (a spider on its thread, a string of lights, a vine of blossom, icicles, a
 garland of leaves), a faint light in the page's corners and a few things drifting behind the content
-(embers, snow, petals, leaves), plus fog and a bat now and then (Halloween), frost in the corners
+(embers, snow, petals, leaves), plus wisps of mist drifting across and a bat now and then (Halloween), frost in the corners
 (Winter). By the date: Halloween 1 Oct – 1 Nov, Christmas 1–26 Dec, Easter the week before Easter
 Sunday to Easter Monday (worked out each year), Winter 27 Dec – end of Feb, Autumn 22 Sep – 30 Nov.
 Only the owner decides, for everyone (Admin → Themes → Seasonal look: by the date, off, or one season
