@@ -6,7 +6,9 @@
  * thread, a string of lights, a vine of blossom, icicles, a garland of leaves); behind the page, a
  * faint light in its corners and a few things drifting (embers, snow, petals, leaves), and now and
  * then something of the season's own (a bat crossing, mist drifting across, frost in the corners).
- * Everything sits behind the page's content and lets the clicks through.
+ * On a computer / tablet, the capsule holding the page links gets it too, drawn to its shape: blood
+ * hanging from its underside and dripping at Halloween, snow resting on top at Christmas and in winter.
+ * Everything sits behind the page's content (or over the capsule) and lets the clicks through.
  *
  *  - When: Halloween 1 Oct - 1 Nov, Christmas 1-26 Dec, Easter the week before Easter Sunday to
  *    Easter Monday (worked out each year), Winter 27 Dec - end of Feb, Autumn 22 Sep - 30 Nov
@@ -19,10 +21,10 @@
  */
 (function () {
   const SEASONS = {
-    halloween: { label: "Halloween", parts: "ember", count: 28, extras: ["fog", "bat"], nav: "spider" },
-    christmas: { label: "Christmas", parts: "snow", count: 56, extras: [], nav: "lights" },
+    halloween: { label: "Halloween", parts: "ember", count: 28, extras: ["fog", "bat"], nav: "spider", pill: "blood" },
+    christmas: { label: "Christmas", parts: "snow", count: 56, extras: [], nav: "lights", pill: "snow" },
     easter: { label: "Easter", parts: "petal", count: 26, extras: [], nav: "vine" },
-    winter: { label: "Winter", parts: "snow", count: 44, extras: ["frost"], nav: "icicles" },
+    winter: { label: "Winter", parts: "snow", count: 44, extras: ["frost"], nav: "icicles", pill: "snow" },
     autumn: { label: "Autumn", parts: "leaf", count: 24, extras: [], nav: "leaves" },
   };
 
@@ -77,12 +79,177 @@
     frost: '<b class="ss-frost"></b>',
   };
   const NAV = {
-    spider: '<b class="ss-blood"></b><b class="ss-blood-drop"></b><b class="ss-blood-drop"></b><b class="ss-blood-drop"></b><b class="ss-spider"><i></i></b>',
-    lights: '<b class="ss-snowedge"></b><b class="ss-snow-puff"></b><b class="ss-snow-puff"></b><b class="ss-snow-puff"></b><b class="ss-lights"></b>',
+    spider: '<b class="ss-spider"><i></i></b>',
+    lights: '<b class="ss-lights"></b>',
     vine: '<b class="ss-vine"></b>',
-    icicles: '<b class="ss-snowedge"></b><b class="ss-snow-puff"></b><b class="ss-snow-puff"></b><b class="ss-snow-puff"></b><b class="ss-icicles"></b>',
+    icicles: '<b class="ss-icicles"></b>',
     leaves: '<b class="ss-leafline"></b>',
   };
+
+  /* ---- the capsule of page links (computer / tablet): blood or snow drawn to its exact shape ---- */
+
+  const n1 = (v) => Math.round(v * 10) / 10;
+  const smax = (a, b, k) => (a + b + Math.sqrt((a - b) ** 2 + k * k)) / 2;
+  const smin = (a, b, k) => (a + b - Math.sqrt((a - b) ** 2 + k * k)) / 2;
+
+  // the capsule's top edge (y at x), its bottom edge, and how flat it is there (1 flat .. 0 upright)
+  function capsule(W, H) {
+    const r = H / 2;
+    const off = (x) => (x < r ? r - x : x > W - r ? x - (W - r) : 0);
+    const top = (x) => r - Math.sqrt(Math.max(0, r * r - off(x) ** 2));
+    const flat = (x) => Math.sqrt(Math.max(0, 1 - (off(x) / r) ** 2));
+    return { r, top, flat, bottom: (x) => H - top(x) };
+  }
+  // the spaces between the links' words (where blood can run down without covering them)
+  function gaps(ul) {
+    const box = ul.getBoundingClientRect();
+    const words = [...ul.querySelectorAll("li > a")]
+      .filter((a) => a.offsetWidth)
+      .map((a) => {
+        const rg = document.createRange();
+        rg.selectNodeContents(a);
+        const r = rg.getBoundingClientRect();
+        return [r.left - box.left, r.right - box.left];
+      });
+    const out = [];
+    for (let i = 1; i < words.length; i++) out.push({ x: (words[i - 1][1] + words[i][0]) / 2, w: words[i][0] - words[i - 1][1] });
+    return out;
+  }
+  const seeded = (seed) => () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+
+  function bloodSvg(W, H) {
+    const { r, top, bottom } = capsule(W, H);
+    const rnd = seeded(31);
+    const ph = [rnd() * 6.28, rnd() * 6.28];
+    const sags = Array.from({ length: Math.max(3, Math.round(W / 140)) }, () => [rnd() * W, 14 + rnd() * 24, 0.6 + rnd() * 1.2]);
+    // how far up the blood reaches from the bottom edge: a thin coat, heavier where it pools, climbing
+    // the rounded ends a little
+    const coat = (x) => {
+      let t = 2.6 + 0.5 * Math.sin(x / 37 + ph[0]) + 0.3 * Math.sin(x / 11 + ph[1]);
+      for (const [cx, hw, d] of sags) t += d * Math.exp(-(((x - cx) / hw) ** 2) * 2.2);
+      t += Math.max(0, r - x, x - (W - r)) * 0.35;
+      return smax(bottom(x) - t, top(x) + 3, 1.5);
+    };
+    // hanging under it: three long drips where the drops gather and fall, and shorter ones between
+    const drips = [0.17, 0.52, 0.84].map((f, i) => ({ x: W * f + (rnd() - 0.5) * 30, hw: 3.4 + rnd() * 0.8, len: [15, 11, 18][i], drop: true }));
+    for (let x = r * 0.5 + rnd() * 20; x < W - r * 0.4; x += 34 + rnd() * 46) {
+      if (drips.some((d) => Math.abs(d.x - x) < 16)) continue;
+      drips.push({ x, hw: 2.2 + rnd() * 1.6, len: 2.5 + rnd() * (rnd() < 0.35 ? 9 : 4) });
+    }
+    const edge = (x) => {
+      let y = bottom(x) + 0.8;
+      for (const d of drips) {
+        const t = Math.abs(x - d.x) / d.hw;
+        if (t >= 1.6) continue;
+        const body = t < 1 ? d.len * (1 - t ** 2.4) ** (1 / 2.4) : -3 * (t - 1);
+        y = smax(y, bottom(d.x) + body, 2.2);
+      }
+      return y;
+    };
+    const pts = [];
+    for (let x = 0; x <= W; x += 0.5) pts.push(`${n1(x)} ${n1(coat(x))}`);
+    for (let x = W; x >= 0; x -= 0.5) pts.push(`${n1(x)} ${n1(edge(x))}`);
+    let shine = "";
+    for (let x = r * 0.8; x <= W - r * 0.8; x += 4) shine += `${shine ? "L" : "M"}${n1(x)} ${n1(coat(x) + 1.1)}`;
+    let streaks = "";
+    drips
+      .filter((d) => d.len > 8)
+      .forEach((d) => {
+        const b = bottom(d.x);
+        const x0 = d.x - d.hw * 0.32;
+        streaks += `M${n1(x0)} ${n1(b)} C${n1(x0 + 0.2)} ${n1(b + d.len * 0.4)} ${n1(x0 + 0.6)} ${n1(b + d.len * 0.7)} ${n1(d.x - d.hw * 0.12)} ${n1(b + d.len - 2.4)}`;
+      });
+    const svg =
+      `<svg width="${W + 4}" height="${H + 40}" viewBox="-2 -4 ${W + 4} ${H + 40}" style="left:-2px;top:-4px">` +
+      `<defs><linearGradient id="ss-pb" gradientUnits="userSpaceOnUse" x1="0" y1="${H - 8}" x2="0" y2="${H + 20}">` +
+      '<stop offset="0" stop-color="#b8121d"/><stop offset="0.3" stop-color="#9a0a15"/><stop offset="0.75" stop-color="#830812"/><stop offset="1" stop-color="#70060e"/></linearGradient></defs>' +
+      `<path d="M${pts.join(" L")} Z" fill="url(#ss-pb)"/>` +
+      `<path d="${shine}" fill="none" stroke="#fff" stroke-opacity="0.18" stroke-width="0.9" stroke-linecap="round"/>` +
+      `<path d="${streaks}" fill="none" stroke="#fff" stroke-opacity="0.22" stroke-width="0.9" stroke-linecap="round"/></svg>`;
+    const drops = drips
+      .filter((d) => d.drop)
+      .map((d, i) => `<b class="ss-pill-drop" style="left:${n1(d.x)}px;top:${n1(bottom(d.x) + d.len - 6)}px;animation-delay:${-i * 3.1}s;animation-duration:${8 + i * 1.5}s"></b>`)
+      .join("");
+    return svg + drops;
+  }
+
+  function snowSvg(W, H, gs) {
+    const { r, top, flat } = capsule(W, H);
+    const rnd = seeded(53);
+    const ph = [rnd() * 6.28, rnd() * 6.28];
+    const heaps = [];
+    for (let x = rnd() * 30; x < W; x += 24 + rnd() * 34) heaps.push([x, 12 + rnd() * 22, 1 + rnd() * 2.6]);
+    const hangs = [];
+    for (let x = 10 + rnd() * 30; x < W; x += 30 + rnd() * 50) hangs.push([x, 7 + rnd() * 12, 1.5 + rnd() * 3]);
+    // how deep it lies on top (thinning where the ends curve away) and how far it droops over the edge
+    const deep = (x) => {
+      let h = 4.6 + 0.6 * Math.sin(x / 29 + ph[0]) + 0.3 * Math.sin(x / 9 + ph[1]);
+      for (const [cx, hw, d] of heaps) h += d * Math.exp(-(((x - cx) / hw) ** 2) * 2.4);
+      return h * flat(x) ** 1.6;
+    };
+    const droop = (x) => {
+      let o = 1.6;
+      for (const [cx, hw, d] of hangs) o = smax(o, 1.6 + d * Math.exp(-(((x - cx) / hw) ** 2) * 2.6), 1);
+      return o * flat(x) ** 1.2;
+    };
+    const up = [];
+    const down = [];
+    for (let x = 0; x <= W; x += 0.5) {
+      up.push(`${n1(x)} ${n1(top(x) - deep(x))}`);
+      down.push(`${n1(x)} ${n1(top(x) + droop(x))}`);
+    }
+    const svg =
+      `<svg width="${W + 4}" height="${H + 24}" viewBox="-2 -14 ${W + 4} ${H + 24}" style="left:-2px;top:-14px">` +
+      '<defs><linearGradient id="ss-ps" gradientUnits="userSpaceOnUse" x1="0" y1="-9" x2="0" y2="7">' +
+      '<stop offset="0" stop-color="#ffffff"/><stop offset="0.55" stop-color="#f2f6fc"/><stop offset="1" stop-color="#c4d3e8"/></linearGradient></defs>' +
+      `<path d="M${up.join(" L")} L${down.reverse().join(" L")} Z" fill="url(#ss-ps)"/></svg>`;
+    // clumps sliding off the two ends, and one dropping from a gap in the middle
+    const from = [r * 0.55, W - r * 0.5];
+    if (gs.length) from.push(gs[Math.floor(gs.length / 2)].x);
+    const puffs = from
+      .map((x, i) => `<b class="ss-pill-puff" style="left:${n1(x)}px;top:${n1(top(x) - 2)}px;animation-delay:${-i * 4.3}s;animation-duration:${12 + i * 2.5}s"></b>`)
+      .join("");
+    return svg + puffs;
+  }
+
+  let drawn = "";
+  function drawPill() {
+    const li = document.querySelector(".season-pill");
+    if (!li) return;
+    if (getComputedStyle(li).display === "none") {
+      drawn = "";
+      li.innerHTML = "";
+      return;
+    }
+    const ul = li.parentElement;
+    const W = ul.offsetWidth;
+    const H = ul.offsetHeight;
+    const gs = gaps(ul);
+    const sig = [li.dataset.k, W, H, gs.map((g) => Math.round(g.x)).join(",")].join("|");
+    if (sig === drawn || !W || !H) return;
+    drawn = sig;
+    Object.assign(li.style, { left: "-1px", top: "-1px", width: `${W}px`, height: `${H}px` });
+    li.innerHTML = li.dataset.k === "blood" ? bloodSvg(W, H) : snowSvg(W, H, gs);
+  }
+  let pillWatch = null;
+  function pill(kind) {
+    document.querySelectorAll(".season-pill").forEach((el) => el.remove());
+    drawn = "";
+    const ul = document.querySelector(".site-nav .nav-links");
+    if (!kind || !ul) return;
+    const li = document.createElement("li");
+    li.className = "season-pill";
+    li.dataset.k = kind;
+    li.setAttribute("aria-hidden", "true");
+    ul.append(li);
+    // drawn again when the capsule changes size (window resized, the font arrives)
+    if (!pillWatch && window.ResizeObserver) {
+      pillWatch = new ResizeObserver(drawPill);
+      pillWatch.observe(ul);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => ((drawn = ""), drawPill()));
+    }
+    drawPill();
+  }
 
   let shown = "";
   function apply() {
@@ -91,6 +258,7 @@
     if (id === shown && (!id || document.querySelector(".season-bg"))) return play();
     shown = id;
     document.querySelectorAll(".season-bg, .season-nav").forEach((el) => el.remove());
+    pill(id && SEASONS[id].pill);
     if (!id) {
       delete html.dataset.season;
       html.classList.remove("season-play");
