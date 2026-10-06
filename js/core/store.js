@@ -399,6 +399,18 @@
       })
     );
   }
+  // a list's background photo: "" = Auto (a still from its newest title), "none" = no photo, or a
+  // TMDB image path ("/abc.jpg") picked in Appearance
+  function setListBg(listId, bg) {
+    saveLists(
+      lists().map((l) => {
+        if (l.id !== listId) return l;
+        const out = Object.assign({}, l, { bg: bg || undefined });
+        if (!out.bg) delete out.bg;
+        return out;
+      })
+    );
+  }
   function renameList(listId, name) {
     saveLists(lists().map((l) => (l.id === listId ? Object.assign({}, l, { name: String(name).trim().slice(0, 40) || l.name }) : l)));
   }
@@ -537,6 +549,7 @@
     renameList,
     deleteList,
     setListTheme,
+    setListBg,
     toggleInList,
     guest,
     exportBackup,

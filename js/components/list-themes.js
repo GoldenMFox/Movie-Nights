@@ -376,9 +376,11 @@
 
   // the photo behind it: a still (TMDB backdrop) from one of the titles in the list, the newest added
   // that has one; none: the colours alone
+  // (or the one picked in Appearance: list.bg, a TMDB image path, or "none")
   const photoOf = (list) => {
-    const hit = itemsOf(list).find((i) => i.backdrop);
-    return hit ? Store.img(hit.backdrop, phone() ? "w780" : "w1280") : "";
+    if (list && list.bg === "none") return "";
+    const path = list && list.bg ? list.bg : (itemsOf(list).find((i) => i.backdrop) || {}).backdrop;
+    return path ? Store.img(path, phone() ? "w780" : "w1280") : "";
   };
   function fxLayer(ids, photo) {
     const l = look(ids);
@@ -518,8 +520,26 @@
     const items = itemsOf(list);
     const startMode = list.themeMode || (list.theme ? "manual" : "auto");
     // what's being chosen (saved only with Save)
-    const pick = { mode: startMode, theme: list.theme || "", fx: list.fx !== false };
-    const draftList = () => Object.assign({}, list, { themeMode: pick.mode, theme: pick.theme || undefined, fx: pick.fx });
+    // (tab: "look" the atmosphere, "bg" the background photo)
+    const pick = { mode: startMode, theme: list.theme || "", fx: list.fx !== false, bg: list.bg || "", tab: "look" };
+    const draftList = () => Object.assign({}, list, { themeMode: pick.mode, theme: pick.theme || undefined, fx: pick.fx, bg: pick.bg || undefined });
+
+    // the stills to pick from: each title's own backdrop first, then more from TMDB (asked once,
+    // when the Background tab opens: up to 6 titles, 8 stills each)
+    const stills = [...new Set(items.map((i) => i.backdrop).filter(Boolean))];
+    if (pick.bg && pick.bg !== "none" && !stills.includes(pick.bg)) stills.unshift(pick.bg);
+    let asked = false;
+    let asking = false;
+    async function moreStills() {
+      if (asked || !window.TMDB || !TMDB.enabled()) return;
+      asked = true;
+      asking = true;
+      const withId = items.filter((i) => i.tmdbId && i.tmdbMedia).slice(0, 6);
+      const found = await Promise.all(withId.map((i) => TMDB.detailsById(i.tmdbMedia, i.tmdbId).catch(() => null)));
+      found.forEach((d) => d && (d.images || []).slice(0, 8).forEach((p) => !stills.includes(p) && stills.push(p)));
+      asking = false;
+      if (pick.tab === "bg" && overlay.classList.contains("active")) drawPanel();
+    }
     const posters = items
       .filter((i) => Cards.posterOf(i))
       .slice(0, 6)
@@ -559,30 +579,79 @@
           .join("")}</div>`;
       }).join("");
 
+    // Background: Auto, No photo, then every still found
+    const bgPanel = () => {
+      const auto = (items.find((i) => i.backdrop) || {}).backdrop;
+      const tile = (val, inner, label) =>
+        `<button type="button" class="lt-bg${pick.bg === val ? " on" : ""}" role="radio" aria-checked="${pick.bg === val}" data-bg="${UI.esc(val)}" aria-label="${UI.esc(label)}">${inner}${
+          val === "" || val === "none" ? `<span class="lt-bg-tag">${UI.esc(label)}</span>` : ""
+        }</button>`;
+      return `<p class="lt-note lt-bg-note">The photo behind the list, faded and tinted by its atmosphere. Stills from the titles in it.</p>
+        <div class="lt-bgs" role="radiogroup" aria-label="Background photo">
+          ${tile("", auto ? `<img src="${Store.img(auto, "w300")}" alt="" loading="lazy" />` : '<span class="lt-bg-blank"><i class="fa-solid fa-wand-magic-sparkles"></i></span>', "Auto")}
+          ${tile("none", '<span class="lt-bg-blank"><i class="fa-solid fa-ban"></i></span>', "No photo")}
+          ${stills.map((p, n) => tile(p, `<img src="${Store.img(p, "w300")}" alt="" loading="lazy" />`, `Still ${n + 1}`)).join("")}
+        </div>
+        ${asking ? '<p class="lt-note"><i class="fa-solid fa-spinner fa-spin"></i> Looking for more stills…</p>' : ""}
+        ${!items.length ? '<p class="lt-note">Add titles to the list to pick a still from them.</p>' : ""}`;
+    };
+    const lookPanel = () => (pick.mode === "auto" ? autoPanel() : pick.mode === "manual" ? manualPanel() : `<p class="lt-note lt-none-note"><i class="fa-solid fa-ban"></i> The site's own look. No atmosphere is put on this list until you switch back to Auto or pick one.</p>`);
+    // only the panel (the rest stays put: the grid's scroll too, when stills arrive)
+    function drawPanel() {
+      const p = overlay.querySelector(".lt-panel");
+      const top = p.scrollTop;
+      p.innerHTML = pick.tab === "bg" ? bgPanel() : lookPanel();
+      p.scrollTop = top;
+      apply(overlay.querySelector(".lt-preview"), draftList(), { preview: true });
+    }
     const draw = () => {
-      const panel = pick.mode === "auto" ? autoPanel() : pick.mode === "manual" ? manualPanel() : `<p class="lt-note lt-none-note"><i class="fa-solid fa-ban"></i> The site's own look. No atmosphere is put on this list until you switch back to Auto or pick one.</p>`;
       const hasLook = pick.mode !== "none" && (pick.mode === "auto" || pick.theme);
+      const tabBtn = (t, icon, text) => `<button type="button" class="lt-tab${pick.tab === t ? " on" : ""}" role="tab" aria-selected="${pick.tab === t}" data-lt-tab="${t}"><i class="fa-solid ${icon}"></i> ${text}</button>`;
       overlay.querySelector(".lt-in").innerHTML = `
         <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Appearance</h3>
         <section class="lt-preview">
           <div class="row-head"><h2><i class="fa-solid fa-list-ul"></i> ${UI.esc(list.name)}</h2></div>
           <div class="lt-pv-row">${posters || '<span class="lt-pv-empty">Add titles to see them here</span>'}</div>
         </section>
-        <div class="top10-switch lt-modes" role="radiogroup" aria-label="Atmosphere">
+        <div class="lt-tabs" role="tablist">${tabBtn("look", "fa-palette", "Atmosphere")}${tabBtn("bg", "fa-image", "Background")}</div>
+        ${
+          pick.tab === "look"
+            ? `<div class="top10-switch lt-modes" role="radiogroup" aria-label="Atmosphere">
           ${modeBtn("auto", "fa-wand-magic-sparkles", "Auto")}${modeBtn("manual", "fa-palette", "Choose")}${modeBtn("none", "fa-ban", "None")}
-        </div>
-        <div class="lt-panel">${panel}</div>
-        <label class="menu-switch lt-anim${hasLook ? "" : " off"}">
+        </div>`
+            : ""
+        }
+        <div class="lt-panel${pick.tab === "bg" ? " lt-panel-bg" : ""}">${pick.tab === "bg" ? bgPanel() : lookPanel()}</div>
+        ${
+          pick.tab === "look"
+            ? `<label class="menu-switch lt-anim${hasLook ? "" : " off"}">
           <i class="fa-solid fa-snowflake"></i><span>Animated atmosphere<small>${motionOk() ? "Plays only while the list is on screen" : "Off: reduce motion is on, or animations are off for the site"}</small></span>
           <input type="checkbox" class="lt-fx-switch"${pick.fx ? " checked" : ""}${!hasLook || !motionOk() ? " disabled" : ""} />
           <span class="switch-track"><span class="switch-thumb"></span></span>
-        </label>
+        </label>`
+            : ""
+        }
         <div class="lt-actions"><button type="button" class="btn lt-cancel">Cancel</button><button type="button" class="btn btn-primary lt-save">Save</button></div>`;
       // the preview, live (the panel scrolls; the preview stays put)
       apply(overlay.querySelector(".lt-preview"), draftList(), { preview: true });
     };
     draw();
     overlay.onclick = (e) => {
+      const tab = e.target.closest("[data-lt-tab]");
+      if (tab) {
+        pick.tab = tab.dataset.ltTab;
+        draw();
+        if (pick.tab === "bg") {
+          moreStills(); // (draws the panel again when they've come)
+          if (asking) drawPanel(); // ("Looking for more stills…" meanwhile)
+        }
+        return;
+      }
+      const bg = e.target.closest("[data-bg]");
+      if (bg) {
+        pick.bg = bg.dataset.bg;
+        return drawPanel();
+      }
       const m = e.target.closest("[data-lt-mode]");
       if (m) {
         pick.mode = m.dataset.ltMode;
@@ -603,6 +672,7 @@
       if (e.target.closest(".lt-save")) {
         const mode = pick.mode === "manual" && !pick.theme ? "auto" : pick.mode;
         Store.setListTheme(listId, mode === "manual" ? pick.theme : "", pick.fx, mode);
+        if ((list.bg || "") !== pick.bg) Store.setListBg(listId, pick.bg);
         Cards.closeModal(overlay);
         const now = resolve(Store.lists().find((l) => l.id === listId), items);
         UI.toast(

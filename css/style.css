@@ -25607,6 +25607,108 @@ html.no-list-fx .lt-over * {
   justify-content: center;
 }
 
+/* Atmosphere | Background */
+.lt-tabs {
+  display: flex;
+  gap: 18px;
+  margin: 0 0 12px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.lt-tab {
+  margin-bottom: -1px;
+  padding: 8px 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lt-tab i {
+  margin-right: 5px;
+}
+
+.lt-tab:hover {
+  color: var(--text);
+}
+
+.lt-tab.on {
+  border-bottom-color: var(--accent);
+  color: var(--text);
+}
+
+.lt-tab.on i {
+  color: var(--accent-hover);
+}
+
+/* the stills to pick from */
+.lt-panel-bg {
+  max-height: clamp(180px, calc(100vh - 420px), 460px);
+}
+
+.lt-bg-note {
+  margin: 0 0 10px;
+}
+
+.lt-bgs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.lt-bg {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--glass-bg);
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.lt-bg:hover {
+  transform: translateY(-1px);
+}
+
+.lt-bg.on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(229, 9, 20, 0.25);
+}
+
+.lt-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lt-bg-blank {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 20px;
+}
+
+.lt-bg-tag {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
 /* (the rest of the pop-up stays in view: the preview above, Save below) */
 .lt-panel {
   max-height: clamp(150px, calc(100vh - 480px), 420px);
