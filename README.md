@@ -417,7 +417,14 @@ Mystery & Noir, Western).
   when the list comes near the screen, a slow push-in while it plays. No backdrop: the colours alone.
   Appearance → **Background**: Auto, No photo, or any still of its titles (their own backdrops and up
   to 8 more each from TMDB); saved on the list as `bg`.
-- Christmas and Winter: snow caps on each poster (`caps`), some flakes falling in front of them (`front`).
+- Each one a scene of its own (`SCENE`, drawn once, the same on every visit): a city skyline (New Year's
+  Eve, Late night), ruins on fire (Apocalypse), hills (Thanksgiving, Road trip), snowy peaks under an
+  aurora (Winter), a meadow (Spring, Easter), the sea at sunset (Summer), desert mesas and saguaros
+  (Western), bare trees under a blood moon (Horror), a castle (Fantasy), a planet and shooting stars
+  (Sci-Fi), a warm window (Cozy), stage spotlights (Funny), a projector beam and film scratches
+  (Nostalgic), venetian-blind light (Noir), puddle ripples (Rainy day), a lens flare (Action).
+- Some particles in front of the posters (`front`); something on the posters (`caps`): snow (Christmas,
+  Winter), blossom (Spring, Easter), blood (Horror), raindrops (Rainy day). A third light (`colors.c`).
 - Light on the device: only transform / opacity move, only while the list is on screen (two at most, one
   on a phone, none in a hidden tab), half the particles on a phone, nothing moves with reduce motion or
   when the owner turns animations off (Admin → Themes, where each atmosphere can be switched off too:

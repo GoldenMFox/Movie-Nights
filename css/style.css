@@ -25271,7 +25271,525 @@ li[hidden] {
   animation: lt-road 1.6s linear infinite;
 }
 
+/* ---------------- scenes (js/components/list-themes.js: SCENE) ----------------
+   Silhouettes along the bottom or in the far corner: near-black, edged by the list's own light */
+.lt-sil {
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 160px;
+  overflow: visible;
+  /* (the sky lit low behind it, so the shapes stand out: dusk behind a skyline) */
+  background: linear-gradient(0deg, transparent 4%, var(--lt-a) 38%, transparent 85%);
+}
+
+.lt-sil .s {
+  fill: rgba(3, 3, 8, 0.86);
+}
+
+.lt-sil .far {
+  fill: rgba(8, 6, 14, 0.58);
+}
+
+/* city / ruins: lit windows (fire in the ruins) */
+.lt-l-city .w {
+  fill: var(--lt-dot);
+  opacity: 0.75;
+}
+
+.lt-l-ruins .s {
+  fill: rgba(8, 2, 0, 0.9);
+}
+
+.lt-l-ruins .w {
+  fill: var(--lt-dot2);
+  filter: drop-shadow(0 0 3px var(--lt-dot2));
+}
+
+.lt-play .lt-l-city .w,
+.lt-play .lt-l-ruins .w {
+  animation: lt-blink 4s ease-in-out infinite alternate;
+}
+
+/* mountains: snow on the peaks */
+.lt-l-mountains .cap {
+  fill: rgba(236, 244, 255, 0.85);
+}
+
+/* meadow: grass, small flowers */
+.lt-l-meadow {
+  height: 60px;
+}
+
+.lt-l-meadow .s {
+  fill: rgba(10, 30, 14, 0.85);
+}
+
+.lt-l-meadow .f1 {
+  fill: var(--lt-dot);
+}
+
+.lt-l-meadow .f2 {
+  fill: var(--lt-dot2);
+}
+
+.lt-l-meadow .f3 {
+  fill: #fff;
+  opacity: 0.85;
+}
+
+/* the sea: dark water, glints catching the low sun */
+.lt-l-sea .s {
+  fill: rgba(6, 10, 26, 0.75);
+}
+
+.lt-l-sea .g {
+  fill: var(--lt-dot);
+  opacity: 0.6;
+}
+
+.lt-play .lt-l-sea .g {
+  animation: lt-blink 2.4s ease-in-out infinite alternate;
+}
+
+/* the far corner: bare trees (Horror), a castle with lit windows (Fantasy) */
+.lt-l-trees,
+.lt-l-castle {
+  left: auto;
+  right: 14px;
+  width: 240px;
+  height: 180px;
+  background: radial-gradient(60% 55% at 65% 60%, var(--lt-a), transparent 72%);
+}
+
+.lt-l-trees .trunk,
+.lt-l-trees .br {
+  fill: none;
+  stroke: rgba(4, 0, 0, 0.9);
+  stroke-linecap: round;
+}
+
+.lt-l-trees .moon {
+  fill: #b3121c;
+  opacity: 0.55;
+}
+
+.lt-l-trees .halo {
+  fill: #ff2a36;
+  opacity: 0.14;
+}
+
+.lt-l-trees .trunk {
+  stroke-width: 7;
+}
+
+.lt-l-trees .br {
+  stroke-width: 2.6;
+}
+
+.lt-l-castle {
+  width: 230px;
+  height: 168px;
+}
+
+.lt-l-castle .s {
+  fill: rgba(6, 4, 18, 0.88);
+}
+
+.lt-l-castle .w {
+  fill: var(--lt-dot3, var(--lt-dot));
+  filter: drop-shadow(0 0 4px var(--lt-dot3, var(--lt-dot)));
+}
+
+.lt-play .lt-l-castle .w {
+  animation: lt-blink 3s ease-in-out infinite alternate;
+}
+
+/* ---------------- more effects ---------------- */
+
+/* an aurora (Winter): two bands of green and blue light rippling across the top */
+.lt-l-aurora {
+  top: -6%;
+  left: -10%;
+  right: -10%;
+  height: 70%;
+  background: radial-gradient(34% 22% at 58% 42%, rgba(80, 255, 180, 0.6), transparent 72%), radial-gradient(30% 20% at 82% 30%, rgba(90, 200, 255, 0.55), transparent 72%), radial-gradient(24% 18% at 70% 56%, rgba(170, 120, 255, 0.36), transparent 72%);
+  filter: blur(10px);
+}
+
+.lt-play .lt-l-aurora {
+  animation: lt-aurora 16s ease-in-out infinite alternate;
+}
+
+/* a warm window (Cozy): glowing panes, its light spilling out */
+.lt-l-window {
+  top: 54px;
+  right: 34px;
+  width: 150px;
+  height: 120px;
+  border-radius: 10px 10px 4px 4px;
+  background: radial-gradient(circle at 50% 62%, rgba(255, 196, 120, 0.6), rgba(255, 140, 60, 0.28) 60%, rgba(60, 30, 10, 0.5));
+  box-shadow: 0 0 70px rgba(255, 160, 80, 0.32), inset 0 0 0 6px rgba(26, 13, 5, 0.92);
+}
+
+.lt-l-window::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(26, 13, 5, 0.92), rgba(26, 13, 5, 0.92)) center / 6px 100% no-repeat, linear-gradient(rgba(26, 13, 5, 0.92), rgba(26, 13, 5, 0.92)) center / 100% 6px no-repeat;
+}
+
+.lt-l-window::after {
+  content: "";
+  position: absolute;
+  left: -10px;
+  right: -10px;
+  bottom: -8px;
+  height: 8px;
+  border-radius: 2px;
+  background: rgba(26, 13, 5, 0.92);
+}
+
+.lt-play .lt-l-window {
+  animation: lt-candle 5s ease-in-out infinite;
+}
+
+/* a planet in the corner (Sci-Fi): lit from one side, a thin ring */
+.lt-l-planet {
+  right: -90px;
+  bottom: -170px;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, var(--lt-dot2), rgba(40, 30, 110, 0.9) 42%, #06051a 72%);
+  box-shadow: 0 0 60px var(--lt-a), inset -30px -30px 60px rgba(0, 0, 0, 0.6);
+  opacity: 0.8;
+}
+
+.lt-l-planet::after {
+  content: "";
+  position: absolute;
+  inset: 38% -22%;
+  border: 2px solid rgba(200, 220, 255, 0.35);
+  border-radius: 50%;
+  transform: rotate(-14deg);
+}
+
+/* shooting stars (Sci-Fi), now and then */
+.lt-l-shoot {
+  top: 14%;
+  left: 62%;
+  width: 150px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #fff);
+  opacity: 0;
+  transform: rotate(-24deg);
+}
+
+.lt-l-shoot.two {
+  top: 30%;
+  left: 30%;
+  width: 110px;
+}
+
+.lt-play .lt-l-shoot {
+  animation: lt-shoot 9s ease-in infinite;
+}
+
+.lt-play .lt-l-shoot.two {
+  animation-duration: 13s;
+  animation-delay: -6s;
+}
+
+/* a crescent moon (Late night), glowing */
+.lt-l-moon {
+  top: 64px;
+  right: 120px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  box-shadow: inset -14px 8px 0 0 #eef0ff, 0 0 40px rgba(220, 226, 255, 0.28);
+  transform: rotate(-20deg);
+}
+
+/* stage spotlights (Funny): two beams from above, sweeping */
+.lt-l-spot {
+  top: -6%;
+  left: 18%;
+  width: 280px;
+  height: 120%;
+  background: linear-gradient(180deg, rgba(255, 244, 210, 0.3), rgba(255, 244, 210, 0.06) 70%, transparent);
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+  transform-origin: 50% 0;
+  transform: rotate(-12deg);
+  mix-blend-mode: screen;
+}
+
+.lt-l-spot.two {
+  left: 62%;
+  background: linear-gradient(180deg, rgba(160, 210, 255, 0.28), rgba(160, 210, 255, 0.05) 70%, transparent);
+  transform: rotate(12deg);
+}
+
+.lt-play .lt-l-spot {
+  animation: lt-swing 7s ease-in-out infinite alternate;
+}
+
+.lt-play .lt-l-spot.two {
+  animation-duration: 9s;
+  animation-direction: alternate-reverse;
+}
+
+/* a projector beam (Nostalgic) from the top right corner, across the open side, flickering; scratches jumping across */
+.lt-l-projector {
+  top: -10%;
+  right: -6%;
+  width: 75%;
+  height: 125%;
+  background: linear-gradient(118deg, rgba(255, 236, 196, 0.42), rgba(255, 236, 196, 0.1) 55%, transparent 78%);
+  clip-path: polygon(0 0, 16% 0, 100% 100%, 40% 100%);
+  filter: blur(2px);
+  transform: scaleX(-1);
+}
+
+.lt-play .lt-l-projector {
+  animation: lt-proj 3s steps(6) infinite;
+}
+
+.lt-l-scratches {
+  inset: 0;
+  background: linear-gradient(90deg, transparent 22%, rgba(255, 255, 255, 0.16) 22%, rgba(255, 255, 255, 0.16) 22.12%, transparent 22.12%, transparent 64%, rgba(255, 255, 255, 0.1) 64%, rgba(255, 255, 255, 0.1) 64.08%, transparent 64.08%);
+  opacity: 0;
+}
+
+.lt-play .lt-l-scratches {
+  animation: lt-scratch 1.1s steps(1) infinite;
+}
+
+/* puddle ripples (Rainy day) */
+.lt-l-ripple {
+  bottom: 10px;
+  left: var(--x);
+  width: 90px;
+  height: 14px;
+  border: 1.5px solid rgba(200, 222, 255, 0.5);
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.2);
+}
+
+.lt-play .lt-l-ripple {
+  animation: lt-ripple 2.8s ease-out var(--d) infinite;
+}
+
+/* a lens flare (Action) */
+.lt-l-flare {
+  top: 6%;
+  right: 10%;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 244, 214, 0.6), rgba(255, 170, 80, 0.22) 24%, transparent 60%);
+}
+
+.lt-l-flare::before,
+.lt-l-flare::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+}
+
+.lt-l-flare::before {
+  left: -120px;
+  top: 150px;
+  width: 34px;
+  height: 34px;
+  background: radial-gradient(circle, rgba(255, 140, 60, 0.3), transparent 70%);
+}
+
+.lt-l-flare::after {
+  left: -260px;
+  top: 260px;
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, rgba(120, 200, 255, 0.22), transparent 70%);
+}
+
+.lt-play .lt-l-flare {
+  animation: lt-glow 6s ease-in-out infinite;
+}
+
+/* light through venetian blinds (Noir), slanted across the box */
+.lt-l-blinds {
+  top: -12%;
+  right: -6%;
+  width: 62%;
+  height: 130%;
+  background: repeating-linear-gradient(180deg, rgba(220, 230, 255, 0.11) 0 12px, transparent 12px 30px);
+  transform: rotate(-16deg);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent);
+}
+
+.lt-play .lt-l-blinds {
+  animation: lt-blink 7s ease-in-out infinite alternate;
+}
+
+/* ---------------- on the posters: blossom, blood, raindrops ---------------- */
+
+/* a sprig of blossom on one top corner (Spring, Easter) */
+.lt[data-caps="blossom"] .movie-item::after {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: -10px;
+  z-index: 4;
+  width: 66px;
+  height: 40px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 66 40'%3E%3Cpath d='M4 30 C20 26 36 22 60 8' stroke='%235a3a2a' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Cpath d='M30 23 C32 16 40 14 44 16 C40 20 36 23 30 23Z M48 13 C52 8 58 8 60 10 C56 13 52 14 48 13Z' fill='%236fbf6a'/%3E%3Cg fill='%23ffc3dc'%3E%3Ccircle cx='14' cy='22' r='4'/%3E%3Ccircle cx='20' cy='24' r='4'/%3E%3Ccircle cx='18' cy='30' r='4'/%3E%3Ccircle cx='11' cy='30' r='4'/%3E%3Ccircle cx='9' cy='25' r='4'/%3E%3C/g%3E%3Ccircle cx='14.4' cy='26.4' r='2.2' fill='%23ffe08a'/%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='38' cy='9' r='3.2'/%3E%3Ccircle cx='43' cy='11' r='3.2'/%3E%3Ccircle cx='41' cy='16' r='3.2'/%3E%3Ccircle cx='35' cy='16' r='3.2'/%3E%3Ccircle cx='33.5' cy='11.5' r='3.2'/%3E%3C/g%3E%3Ccircle cx='38.2' cy='12.8' r='1.8' fill='%23ffd166'/%3E%3Ccircle cx='54' cy='4.5' r='2.6' fill='%23ffc3dc'/%3E%3C/svg%3E")
+    0 0 / contain no-repeat;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+}
+
+.lt[data-caps="blossom"] .movie-item:nth-child(even)::after {
+  left: auto;
+  right: -10px;
+  transform: scaleX(-1);
+}
+
+/* blood running over the top edge (Horror) */
+.lt[data-caps="blood"] .movie-item::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  height: 30px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 30' preserveAspectRatio='none'%3E%3Cpath d='M0 0 H200 V5 C196 6 194 6 192 8 C191 14 188 15 187.5 9 C186 6 178 7 170 6 C164 7 162 8 161 12 C160 24 155 24 154.5 12 C154 8 150 7 140 6 C120 7 110 6 100 7 C96 8 95 9 94.5 13 C94 17 90.5 17 90 12 C89.6 8 86 7 76 6 C62 6 52 7 46 8 C44 9 43 12 42.6 20 C42.2 28 36.8 28 36.6 19 C36.4 11 34 8 28 7 C18 6 8 7 0 6 Z' fill='%237a0008'/%3E%3Cpath d='M0 0 H200 V2 C150 3.5 60 3 0 2.5 Z' fill='%23b0101c'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+  border-radius: 16px 16px 0 0;
+  pointer-events: none;
+}
+
+.lt[data-caps="blood"] .movie-item:nth-child(even)::after {
+  transform: scaleX(-1);
+}
+
+/* raindrops clinging along the top edge (Rainy day) */
+.lt[data-caps="drops"] .movie-item::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 6px;
+  right: 6px;
+  z-index: 4;
+  height: 14px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14'%3E%3Cg fill='%23d6e6ff' fill-opacity='0.55'%3E%3Cellipse cx='14' cy='5' rx='2.4' ry='3.4'/%3E%3Cellipse cx='46' cy='4' rx='1.8' ry='2.6'/%3E%3Cellipse cx='78' cy='6' rx='2.8' ry='4.2'/%3E%3Cellipse cx='112' cy='4' rx='1.6' ry='2.4'/%3E%3Cellipse cx='140' cy='5.5' rx='2.4' ry='3.6'/%3E%3Cellipse cx='176' cy='4.5' rx='2' ry='3'/%3E%3C/g%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='13.2' cy='3.6' r='0.8'/%3E%3Ccircle cx='77' cy='4.4' r='0.9'/%3E%3Ccircle cx='139.2' cy='4' r='0.8'/%3E%3C/g%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
 /* ---------------- the movements ---------------- */
+@keyframes lt-aurora {
+  0% {
+    opacity: 0.7;
+    transform: translate3d(-6%, 0, 0) skewX(-8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(6%, 4%, 0) skewX(8deg);
+  }
+}
+
+@keyframes lt-candle {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  40% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 0.78;
+  }
+  70% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes lt-shoot {
+  0%,
+  86% {
+    opacity: 0;
+    transform: rotate(-24deg) translate3d(0, 0, 0);
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(-24deg) translate3d(-380px, 0, 0);
+  }
+}
+
+@keyframes lt-swing {
+  0% {
+    transform: rotate(-14deg);
+  }
+  100% {
+    transform: rotate(14deg);
+  }
+}
+
+@keyframes lt-proj {
+  0% {
+    opacity: 1;
+  }
+  33% {
+    opacity: 0.86;
+  }
+  50% {
+    opacity: 0.96;
+  }
+  83% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes lt-scratch {
+  0% {
+    opacity: 0.9;
+    transform: translate3d(0, 0, 0);
+  }
+  25% {
+    opacity: 0.3;
+    transform: translate3d(-180px, 0, 0);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translate3d(140px, 0, 0);
+  }
+  75% {
+    opacity: 0;
+    transform: translate3d(-40px, 0, 0);
+  }
+}
+
+@keyframes lt-ripple {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.15);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
 @keyframes lt-fall {
   0% {
     opacity: 0;
@@ -25537,6 +26055,32 @@ html.no-list-fx .lt-over * {
   .lt-l-pines {
     width: 100px;
     height: 72px;
+  }
+
+  .lt-l-trees,
+  .lt-l-castle {
+    width: 140px;
+    height: 100px;
+  }
+
+  .lt-l-window {
+    top: 60px;
+    right: 14px;
+    width: 90px;
+    height: 74px;
+  }
+
+  .lt-l-planet {
+    right: -120px;
+    bottom: -200px;
+  }
+
+  .lt-l-aurora {
+    filter: none;
+  }
+
+  .lt-sil {
+    height: 90px;
   }
 }
 
