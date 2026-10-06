@@ -26887,6 +26887,118 @@ html.no-list-fx .lt .poster-link::after {
   background: rgba(0, 0, 0, 0.04);
 }
 
+/* Overview: the welcome card's switches and the atmosphere lock as tiles (on the dark red card) */
+@media (min-width: 901px) {
+  .ad-dash > .ad-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(400px, 1.15fr);
+  }
+}
+
+.ad-hero-switches {
+  gap: 12px;
+  padding: 14px;
+}
+
+.ad-hero-tiles {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ad-hero .ad-lt-tile {
+  min-height: 64px;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.ad-hero .ad-lt-tile:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.ad-hero .ad-lt-swatch {
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+}
+
+.ad-hero .ad-lt-text small,
+.ad-hero .ad-opt-text small {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.ad-hero .ad-lt-text,
+.ad-hero .ad-opt {
+  color: #fff;
+}
+
+.ad-hero .ad-season-pick {
+  margin-top: 0;
+  padding: 12px 0 0;
+}
+
+/* the small option tiles: icon above the name, no line under it */
+.ad-opts-mini {
+  grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+  gap: 6px;
+}
+
+.ad-opts-mini .ad-opt {
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 6px 9px;
+  border-color: rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+  text-align: center;
+}
+
+.ad-opts-mini .ad-opt-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.ad-opts-mini .ad-opt-text strong {
+  font-size: 12px;
+}
+
+.ad-opts-mini .ad-opt-check {
+  top: 5px;
+  right: 5px;
+  font-size: 11px;
+}
+
+.ad-opts-mini .ad-opt.on {
+  background: color-mix(in srgb, var(--c) 22%, rgba(0, 0, 0, 0.3));
+}
+
+/* (the seven on the welcome card: four, then three) */
+.ad-hero .ad-opts-mini {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* the Site atmosphere panel's switches */
+.ad-season-switches {
+  padding-top: 12px;
+}
+
+@media (max-width: 640px) {
+  .ad-hero-tiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ad-hero .ad-opts-mini .ad-opt {
+    padding: 9px 2px 8px;
+  }
+
+  .ad-hero .ad-opts-mini .ad-opt-text strong {
+    overflow: visible;
+    font-size: 11px;
+    letter-spacing: -0.01em;
+  }
+}
+
 /* (one tile on its own fills its box) */
 .ad-lt-grid:has(> :only-child) {
   grid-template-columns: minmax(0, 1fr);
@@ -30702,55 +30814,6 @@ html.tablet[data-season] .nav-links > .season-pill {
   font-size: 12.5px;
 }
 
-.ad-season-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.ad-season-chips button {
-  --c: rgba(255, 255, 255, 0.85);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 11px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.82);
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
-}
-
-.ad-season-chips button i {
-  color: var(--c);
-  font-size: 12px;
-}
-
-.ad-season-chips button:hover {
-  transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.09);
-}
-
-.ad-season-chips button.on {
-  border-color: color-mix(in srgb, var(--c) 70%, transparent);
-  background: color-mix(in srgb, var(--c) 22%, transparent);
-  color: #fff;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 35%, transparent), 0 6px 18px color-mix(in srgb, var(--c) 22%, transparent);
-}
-
-.ad-season-chips button[data-season-set="auto"].on,
-.ad-season-chips button[data-season-set="off"].on {
-  --c: #fff;
-  border-color: rgba(255, 255, 255, 0.45);
-  background: rgba(255, 255, 255, 0.16);
-  box-shadow: none;
-}
-
 /* the count beside a panel's title */
 .ad-count {
   display: inline-grid;
@@ -31034,10 +31097,6 @@ html.tablet[data-season] .nav-links > .season-pill {
 .ad-action.purple i {
   background: rgba(175, 110, 255, 0.16);
   color: #c49bff;
-}
-
-:root[data-theme="light"] .ad-season-chips button {
-  color: rgba(255, 255, 255, 0.85);
 }
 
 @media (max-width: 640px) {

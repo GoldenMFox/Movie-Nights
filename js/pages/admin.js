@@ -265,10 +265,11 @@
           : now.id
             ? `By the date · ${esc(seasonName(now.id))} now`
             : "By the date · the site's own look now";
-    const chip = (v, icon, label, color) =>
-      `<button type="button" data-season-set="${v}" class="${set === v ? "on" : ""}"${color ? ` style="--c:${color}"` : ""} aria-pressed="${set === v}" title="${esc(label)}"><i class="fa-solid ${icon}"></i><span>${esc(label)}</span></button>`;
+    // (small option tiles, like Atmosphere & themes: the picked one lit in its colour)
     return `<div class="ad-season-head"><strong><i class="fa-solid ${now.how === "locked" ? "fa-lock" : now.how === "off" ? "fa-ban" : "fa-lock-open"}"></i> Site atmosphere</strong><small>${status}</small></div>
-      <div class="ad-season-chips" role="group" aria-label="Site atmosphere">${chip("auto", "fa-calendar-days", "By date")}${chip("off", "fa-ban", "Off")}${SEASON_IDS.map((id) => chip(id, SEASON_LOOK[id][0], seasonName(id), SEASON_LOOK[id][1])).join("")}</div>`;
+      <div class="ad-opts ad-opts-mini" role="group" aria-label="Site atmosphere">${opt("themes.season", "auto", set, "fa-calendar-days", "By date", "", "#9aa4b5")}${opt("themes.season", "off", set, "fa-ban", "Off", "", "#8a8a8a")}${SEASON_IDS.map((id) =>
+        opt("themes.season", id, set, SEASON_LOOK[id][0], seasonName(id), "", SEASON_LOOK[id][1])
+      ).join("")}</div>`;
   }
 
   // the atmosphere panel: now, the year at a glance (by the date), what comes next
@@ -498,8 +499,14 @@
             <div class="ad-hero-stats" data-hero-stats><span><b>–</b><small>members</small></span><span><b>–</b><small>titles in libraries</small></span><span><b>–</b><small>scores given</small></span></div>
           </div>
           <div class="ad-hero-switches">
-            ${sw("maintenance.on", "Maintenance mode", "Visitors see “back soon”", draft.maintenance.on)}
-            ${sw("notice.on", "Notice across the top", draft.notice.text ? esc(draft.notice.text) : "Write it under Website", draft.notice.on)}
+            <div class="ad-lt-grid ad-hero-tiles">${tileK("maintenance.on", "fa-screwdriver-wrench", "#f5c518", "Maintenance mode", "Visitors see “back soon”", draft.maintenance.on)}${tileK(
+              "notice.on",
+              "fa-bullhorn",
+              "#ff6b6f",
+              "Notice across the top",
+              draft.notice.text || "Write it under Website",
+              draft.notice.on
+            )}</div>
             <div class="ad-season-pick" data-season-pick>${seasonPick()}</div>
           </div>
           <i class="fa-solid fa-film ad-hero-art" aria-hidden="true"></i>
@@ -520,10 +527,10 @@
         <section class="ad-panel ad-season-panel" data-box="season">
           <div class="ad-panel-head"><div><h3>Site atmosphere</h3><small>The seasonal look through the year, by the date</small></div><a class="t-link" href="#themes" data-sec="themes">Settings <i class="fa-solid fa-chevron-right"></i></a></div>
           <div data-season-panel>${seasonPanel()}</div>
-          <div class="ad-season-switches">
-            ${sw("themes.animations", "Animated atmosphere", "Snow, embers, mist… on lists and pages", draft.themes.animations !== false)}
-            ${sw("themes.listThemes", "Atmospheres on people's lists", "Halloween, Christmas… on their own lists", draft.themes.listThemes !== false)}
-          </div>
+          <div class="ad-season-switches">${tiles(
+            tileK("themes.animations", "fa-snowflake", "#8fd3ff", "Animated atmosphere", "Snow, embers, mist… on lists and pages", draft.themes.animations !== false) +
+              tileK("themes.listThemes", "fa-list-ul", "#b98cff", "Atmospheres on people's lists", "Halloween, Christmas… on their own lists", draft.themes.listThemes !== false)
+          )}</div>
         </section>
 
         <section class="ad-panel" data-box="months">
@@ -1712,8 +1719,6 @@
     if (lts) return setOffer(ListThemes.THEMES.filter((t) => t.group === lts.dataset.ltSet).map((t) => t.id), lts.dataset.on === "1");
     const lta = e.target.closest("[data-lt-all]");
     if (lta) return setOffer(ListThemes.THEMES.map((t) => t.id), lta.dataset.ltAll === "1");
-    const ss = e.target.closest("[data-season-set]");
-    if (ss) return setPath("themes.season", ss.dataset.seasonSet);
     if (e.target.closest(".ad-save-now")) return save(root.querySelector(".ad-save"));
     const go = e.target.closest("[data-go]");
     if (go) {
