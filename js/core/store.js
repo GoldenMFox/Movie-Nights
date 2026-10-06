@@ -371,25 +371,28 @@
 
   /* ---------- your own lists ("Halloween marathon", "Date night"…), saved with your profile ---------- */
 
-  // [{ id, name, items: [library ids], theme?: "halloween" | …, fx?: false (no animation) }]
+  // [{ id, name, items: [library ids], themeMode?: "auto" | "manual" | "none", theme?: "halloween" | …
+  //    (the one picked, Manual), fx?: false (no animation) }]. No themeMode (made before it existed):
+  //    a theme = Manual, none = Auto (js/components/list-themes.js)
   const lists = () => (getProfile().lists || []).filter((l) => l && l.id);
   function saveLists(l) {
     setProfile({ lists: l });
     changed(null);
   }
-  function createList(name, theme) {
+  function createList(name) {
     const id = `l${Date.now().toString(36)}`;
-    const list = { id, name: String(name).trim().slice(0, 40) || "My list", items: [] };
-    if (theme) list.theme = theme;
+    const list = { id, name: String(name).trim().slice(0, 40) || "My list", items: [], themeMode: "auto" };
     saveLists(lists().concat(list));
     return id;
   }
-  // a list's look (js/components/list-themes.js): theme "" = none; fx false = no animation
-  function setListTheme(listId, theme, fx) {
+  // a list's look (js/components/list-themes.js): mode "auto" (worked out) | "manual" (theme) |
+  // "none"; fx false = no animation
+  function setListTheme(listId, theme, fx, mode) {
     saveLists(
       lists().map((l) => {
         if (l.id !== listId) return l;
-        const out = Object.assign({}, l, { theme: theme || undefined, fx: fx === false ? false : undefined });
+        const themeMode = mode || (theme ? "manual" : "none");
+        const out = Object.assign({}, l, { themeMode, theme: themeMode === "manual" && theme ? theme : undefined, fx: fx === false ? false : undefined });
         if (!out.theme) delete out.theme;
         if (out.fx === undefined) delete out.fx;
         return out;

@@ -394,11 +394,28 @@ on title pages **Based on the book** (cover, writer, first published, rating, pa
 description; the book itself: the work with the most editions), only for a title TMDB says is adapted from one ("Novel: …" credit or "based on novel"
 keyword), asked for as soon as the page opens. Person pages: books **by** and **about** them.
 
-**List themes** (`js/components/list-themes.js`): Watchlist page → open one of your lists → **Theme**:
-Halloween, Christmas, Winter, Spring, Summer, Film noir, Space. A tint, an emblem and a quiet atmosphere
-(embers and fog, snow, petals, sunlight, grain, stars), CSS only, playing only while the list is on screen
-(two at most), never with reduce motion, off per list or for everyone (Admin → Themes). A list named
-"Halloween marathon" or "Xmas movies" starts with its theme. New themes: add one to `THEMES` and a CSS block.
+**List atmospheres** (`js/components/list-themes.js`): Watchlist page → open one of your lists →
+**Appearance**. 24 of them: holidays (Halloween, Christmas, Easter, Valentine's Day, New Year's Eve,
+Thanksgiving), seasons & weather (Winter, Spring, Summer, Rainy day), moods (Cozy, Emotional, Romantic,
+Funny, Late night, Nostalgic, Road trip) and genres (Horror, Sci-Fi & Space, Fantasy, Apocalypse, Action,
+Mystery & Noir, Western).
+
+- **Auto** (every new list): worked out from the list's name (weighted words and phrases), the titles in
+  it and the share of them in each genre; the time of year only adds to what's there (October lifts
+  Halloween for a horror list; a sci-fi list in December stays sci-fi). Used only at 55% sure or more, and
+  two together when both are strong and go together (a holiday or season with a mood or genre:
+  "Christmas Horror Marathon" = Christmas + Horror). The pop-up shows what it found and how sure.
+- **Choose**: one you pick (it wins over Auto). **None**: the site's own look, never an automatic one.
+- Saved on the list: `themeMode` (`auto` / `manual` / `none`), `theme` (the one picked), `fx` (false: no
+  animation). A list made before this: its theme = Choose, no theme = Auto.
+- Each atmosphere is data: colours, one particle kind (snow, embers, ash, petals, leaves, rain, motes,
+  hearts, shapes, stars, sparks, dust) and up to a few layers (fog, smoke, flicker, lights, glow, sun,
+  frost, reflections, haze, vignette, grain, nebula, bokeh, light bursts, streaks, the road). The CSS draws
+  each kind once from the list's own `--lt-*` colours: **a new atmosphere is one entry in `ATMOS`**.
+- Light on the device: only transform / opacity move, only while the list is on screen (two at most, one
+  on a phone, none in a hidden tab), half the particles on a phone, nothing moves with reduce motion or
+  when the owner turns animations off (Admin → Themes, where each atmosphere can be switched off too:
+  `themes.off`). Anything going wrong: the list keeps the site's own look.
 
 **New for you + notifications** (`js/services/alerts.js`): when a movie on your Watchlist comes out, a show
 starts a season or a new episode airs, it's listed under **New for you** on the Watchlist page and counted

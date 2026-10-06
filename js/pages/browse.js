@@ -223,7 +223,7 @@
         </div>
         <div class="wl-list-tools" hidden>
           <button type="button" class="btn btn-primary wl-add-panel"><i class="fa-solid fa-plus"></i> Add titles</button>
-          <button type="button" class="btn wl-theme" data-feature="listThemes"><i class="fa-solid fa-wand-magic-sparkles"></i> Theme</button>
+          <button type="button" class="btn wl-theme" data-feature="listThemes"><i class="fa-solid fa-wand-magic-sparkles"></i> Appearance</button>
           <button type="button" class="btn wl-rename"><i class="fa-solid fa-pen"></i> Rename</button>
           <button type="button" class="btn wl-delete"><i class="fa-solid fa-trash-can"></i> Delete list</button>
         </div>
@@ -686,10 +686,10 @@
       e.preventDefault();
       const input = e.target.elements.name;
       if (!input.value.trim()) return input.focus();
-      // (a name that says it, "Halloween marathon", starts with that theme)
-      const theme = window.ListThemes ? ListThemes.suggest(input.value) : null;
-      const id = Store.createList(input.value, theme);
-      UI.toast(`List "${input.value.trim()}" made${theme ? ` · ${ListThemes.THEMES.find((t) => t.id === theme).label} theme on (change it with Theme)` : ""}`);
+      // (a new list is on Auto: a name that says it, "Halloween marathon", gets that atmosphere)
+      const look = window.ListThemes ? ListThemes.suggest(input.value) : null;
+      const id = Store.createList(input.value);
+      UI.toast(`List "${input.value.trim()}" made${look ? ` · ${look} atmosphere (change it with Appearance)` : ""}`);
       input.value = "";
       e.target.hidden = true;
       root.querySelector(".wl-new-btn").hidden = false;

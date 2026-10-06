@@ -24349,32 +24349,64 @@ li[hidden] {
   display: none !important;
 }
 
-/* ============================== List themes (js/components/list-themes.js) ============================== */
-/* a themed list: a tinted glass box around its row (or the full list), an emblem before its name,
-   and the atmosphere behind the posters (only .lt-play moves: on screen, two at most) */
-.wl-row.lt,
-.wl-panel.lt {
+/* ============================== List atmospheres (js/components/list-themes.js) ==============================
+   Every atmosphere is data in list-themes.js: its colours come in as --lt-a / --lt-b (two lights),
+   --lt-base (the dark under them), --lt-edge, --lt-dot / --lt-dot2 (particles, lights). Below: the
+   box, then each particle kind (data-k) and each layer (.lt-l-*) once. Only .lt-play moves (on
+   screen, two at most, one on a phone); only transform and opacity are animated. The box stays dark
+   in the light theme too (a cinema), with its own light text. */
+.lt.wl-row,
+.lt.wl-panel,
+.lt.lt-preview {
+  --text: #f4f4f6;
+  --text-muted: rgba(255, 255, 255, 0.68);
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-hover: rgba(255, 255, 255, 0.11);
+  --glass-border: rgba(255, 255, 255, 0.13);
   position: relative;
   isolation: isolate;
   overflow: hidden;
   margin-inline: -14px;
   padding: 14px 14px 12px;
-  border: 1px solid var(--lt-edge, var(--glass-border));
+  border: 1px solid var(--lt-edge);
   border-radius: 24px;
-  background: var(--lt-bg, var(--glass-bg));
+  background:
+    radial-gradient(95% 130% at 0% 0%, var(--lt-a), transparent 62%),
+    radial-gradient(85% 120% at 100% 100%, var(--lt-b), transparent 62%),
+    linear-gradient(180deg, var(--lt-base), rgba(0, 0, 0, 0.42)),
+    #0c0c0f;
+  box-shadow: 0 26px 60px -30px var(--lt-a), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  color: var(--text);
 }
 
-.wl-row.lt > :not(.lt-fx),
-.wl-panel.lt > :not(.lt-fx) {
+.lt > :not(.lt-fx) {
   position: relative;
   z-index: 1;
+}
+
+.wl-panel.lt {
+  --lt-h: 1100px;
+}
+
+/* the posters stay first: a lift of light around the one pointed at */
+.lt .movie-item .movie-poster {
+  transition: box-shadow 0.35s ease;
+}
+
+.lt .movie-item:hover .movie-poster {
+  box-shadow: 0 0 0 1px var(--lt-edge), 0 16px 36px -10px var(--lt-a);
 }
 
 .lt-emblem {
   display: inline-block;
   margin-right: 8px;
   font-size: 0.95em;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+/* a themed list: its emblem stands in for the list icon */
+.lt .row-head h2 > i.fa-list-ul {
+  display: none;
 }
 
 .lt-fx {
@@ -24386,31 +24418,465 @@ li[hidden] {
   pointer-events: none;
 }
 
+/* ---------------- particles ---------------- */
 .lt-parts i {
   position: absolute;
-  top: -12px;
+  top: -14px;
   left: var(--x);
   width: calc(6px * var(--s));
   height: calc(6px * var(--s));
   border-radius: 50%;
-  background: var(--lt-dot, #fff);
+  background: var(--lt-dot);
   opacity: 0;
   will-change: transform, opacity;
 }
 
-/* falling (snow, petals) */
 .lt-play .lt-parts i {
   animation: lt-fall var(--t) linear var(--d) infinite;
 }
 
+/* snow: soft flakes falling */
+.lt-parts[data-k="snow"] i {
+  --lt-o: 0.85;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.35);
+}
+
+/* ash: small grey flakes, slow, drifting */
+.lt-parts[data-k="ash"] i {
+  --lt-o: 0.55;
+  width: calc(4px * var(--s));
+  height: calc(3px * var(--s));
+  border-radius: 40%;
+}
+
+.lt-play .lt-parts[data-k="ash"] i {
+  animation-duration: calc(var(--t) * 1.4);
+}
+
+/* petals / leaves: turning as they fall */
+.lt-parts[data-k="petals"] i,
+.lt-parts[data-k="leaves"] i {
+  width: calc(10px * var(--s));
+  height: calc(7px * var(--s));
+  border-radius: 70% 0 70% 0;
+}
+
+.lt-parts[data-k="leaves"] i:nth-child(odd),
+.lt-parts[data-k="petals"] i:nth-child(3n) {
+  background: var(--lt-dot2);
+}
+
+.lt-play .lt-parts[data-k="petals"] i,
+.lt-play .lt-parts[data-k="leaves"] i {
+  animation-name: lt-petal;
+}
+
+/* rain: thin streaks, fast */
+.lt-parts[data-k="rain"] i {
+  --lt-o: 0.5;
+  width: 1.5px;
+  height: calc(24px * var(--s));
+  border-radius: 1px;
+  background: linear-gradient(180deg, transparent, var(--lt-dot));
+}
+
+.lt-play .lt-parts[data-k="rain"] i {
+  animation: lt-rain calc(var(--t) * 0.075) linear var(--d) infinite;
+}
+
+/* embers / motes: rising from the bottom, glowing */
+.lt-parts[data-k="embers"] i,
+.lt-parts[data-k="motes"] i,
+.lt-parts[data-k="hearts"] i,
+.lt-parts[data-k="shapes"] i {
+  top: auto;
+  bottom: 0;
+}
+
+.lt-parts[data-k="embers"] i {
+  --lt-o: 0.9;
+  width: calc(4px * var(--s));
+  height: calc(4px * var(--s));
+  box-shadow: 0 0 10px 2px var(--lt-dot);
+}
+
+.lt-parts[data-k="motes"] i {
+  --lt-o: 0.6;
+  width: calc(4px * var(--s));
+  height: calc(4px * var(--s));
+  box-shadow: 0 0 8px var(--lt-dot);
+}
+
+.lt-play .lt-parts[data-k="embers"] i,
+.lt-play .lt-parts[data-k="motes"] i {
+  animation-name: lt-rise;
+}
+
+/* hearts: a few, small, rising slowly */
+.lt-parts[data-k="hearts"] i {
+  --lt-o: 0.7;
+  width: auto;
+  height: auto;
+  background: none;
+  color: var(--lt-dot);
+  font-size: calc(12px * var(--s));
+  font-style: normal;
+  line-height: 1;
+  text-shadow: 0 0 10px var(--lt-dot);
+}
+
+.lt-parts[data-k="hearts"] i::before {
+  content: "\2665";
+}
+
+.lt-parts[data-k="hearts"] i:nth-child(even) {
+  color: var(--lt-dot2);
+}
+
+.lt-play .lt-parts[data-k="hearts"] i {
+  animation: lt-rise calc(var(--t) * 1.3) ease-in-out var(--d) infinite;
+}
+
+/* shapes (Funny): little rounds and squares floating up, turning */
+.lt-parts[data-k="shapes"] i {
+  --lt-o: 0.55;
+  width: calc(8px * var(--s));
+  height: calc(8px * var(--s));
+}
+
+.lt-parts[data-k="shapes"] i:nth-child(odd) {
+  border-radius: 3px;
+  background: var(--lt-dot2);
+}
+
+.lt-play .lt-parts[data-k="shapes"] i {
+  animation: lt-float calc(var(--t) * 1.2) ease-in-out var(--d) infinite;
+}
+
+/* stars / sparks: still, twinkling where they are (seen even when nothing moves) */
+.lt-parts[data-k="stars"] i,
+.lt-parts[data-k="sparks"] i {
+  top: var(--y);
+  width: calc(3px * var(--s));
+  height: calc(3px * var(--s));
+  opacity: 0.35;
+  box-shadow: 0 0 5px var(--lt-dot);
+}
+
+.lt-parts[data-k="sparks"] i {
+  opacity: 0.25;
+  box-shadow: 0 0 8px 1px var(--lt-dot);
+}
+
+.lt-parts[data-k="sparks"] i:nth-child(3n) {
+  background: var(--lt-dot2);
+  box-shadow: 0 0 8px 1px var(--lt-dot2);
+}
+
+.lt-play .lt-parts[data-k="stars"] i {
+  animation: lt-twinkle var(--t) ease-in-out var(--d) infinite;
+}
+
+.lt-play .lt-parts[data-k="sparks"] i {
+  animation: lt-twinkle calc(var(--t) * 0.35) ease-in-out var(--d) infinite;
+}
+
+/* dust: motes drifting across, low */
+.lt-parts[data-k="dust"] i {
+  --lt-o: 0.45;
+  top: calc(20% + var(--y) * 0.75);
+  left: -3%;
+  width: calc(3px * var(--s));
+  height: calc(3px * var(--s));
+}
+
+.lt-play .lt-parts[data-k="dust"] i {
+  animation: lt-dust calc(var(--t) * 2.2) linear var(--d) infinite;
+}
+
+/* ---------------- layers ---------------- */
+.lt-l {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* fog / smoke along the bottom, drifting */
+.lt-l-fog {
+  left: -25%;
+  right: -25%;
+  bottom: -40px;
+  height: 150px;
+  background: radial-gradient(50% 60% at 30% 60%, rgba(214, 204, 232, 0.24), transparent 70%), radial-gradient(40% 50% at 75% 50%, rgba(214, 204, 232, 0.18), transparent 70%);
+  filter: blur(8px);
+}
+
+.lt-l-fog.two {
+  bottom: -14px;
+  opacity: 0.75;
+}
+
+.lt-l-fog.smoke {
+  height: 200px;
+  background: radial-gradient(50% 60% at 30% 60%, rgba(70, 56, 48, 0.55), transparent 70%), radial-gradient(40% 50% at 75% 50%, rgba(140, 96, 70, 0.3), transparent 70%);
+}
+
+.lt-play .lt-l-fog {
+  animation: lt-drift 18s ease-in-out infinite alternate;
+}
+
+.lt-play .lt-l-fog.two {
+  animation-duration: 25s;
+  animation-direction: alternate-reverse;
+}
+
+/* a light that now and then fails for a moment */
+.lt-l-flicker {
+  inset: 0;
+  background: radial-gradient(55% 75% at 12% 0%, var(--lt-a), transparent 70%);
+  opacity: 0.8;
+}
+
+.lt-play .lt-l-flicker {
+  animation: lt-flicker 7s linear infinite;
+}
+
+/* a tiny ghost, far off, barely there */
+.lt-l-ghost {
+  top: 16%;
+  right: 7%;
+  color: rgba(255, 255, 255, 0.11);
+  font-size: 20px;
+}
+
+.lt-play .lt-l-ghost {
+  animation: lt-hover 9s ease-in-out infinite;
+}
+
+/* a string of warm lights along the top, twinkling in turns */
+.lt-l-lights {
+  top: 2px;
+  left: 0;
+  right: 0;
+  height: 16px;
+  background: radial-gradient(circle at 50% 60%, var(--lt-dot2) 0 2.5px, transparent 3.5px) 0 0 / 38px 16px repeat-x;
+  filter: drop-shadow(0 0 4px var(--lt-dot2));
+  opacity: 0.9;
+}
+
+.lt-l-lights::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 60%, #ff5a4f 0 2.5px, transparent 3.5px) 19px 0 / 38px 16px repeat-x;
+  opacity: 0.7;
+}
+
+.lt-play .lt-l-lights {
+  animation: lt-blink 3.2s ease-in-out infinite alternate;
+}
+
+.lt-play .lt-l-lights::after {
+  animation: lt-blink 3.2s ease-in-out -1.6s infinite alternate;
+}
+
+/* a warm glow from below (a fire, a lamp) */
+.lt-l-glow {
+  left: 10%;
+  right: 10%;
+  bottom: -45%;
+  height: 90%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--lt-dot2), transparent);
+  opacity: 0.2;
+}
+
+.lt-play .lt-l-glow {
+  animation: lt-glow 8s ease-in-out infinite;
+}
+
+/* a low sun in the corner */
+.lt-l-sun {
+  top: -140px;
+  right: -90px;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--lt-dot), transparent 65%);
+  opacity: 0.32;
+}
+
+.lt-play .lt-l-sun {
+  animation: lt-glow 7s ease-in-out infinite;
+}
+
+/* frost round the edges */
+.lt-l-frost {
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 44px rgba(200, 230, 255, 0.28);
+  background: linear-gradient(180deg, rgba(220, 240, 255, 0.1), transparent 30%);
+}
+
+/* wet street: a sheen along the bottom, a slow glint crossing it */
+.lt-l-reflect {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 45%;
+  overflow: hidden;
+  background: linear-gradient(0deg, rgba(190, 210, 255, 0.1), transparent);
+}
+
+.lt-l-reflect::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  transform: translateX(-120%);
+}
+
+.lt-play .lt-l-reflect::after {
+  animation: lt-glint 11s ease-in-out infinite;
+}
+
+/* a soft haze from below */
+.lt-l-haze {
+  inset: 0;
+  background: radial-gradient(75% 65% at 50% 115%, var(--lt-b), transparent 70%);
+}
+
+.lt-play .lt-l-haze {
+  animation: lt-glow 10s ease-in-out infinite;
+}
+
+/* dark corners */
+.lt-l-vignette {
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 90px 12px rgba(0, 0, 0, 0.6);
+}
+
+/* film grain */
+.lt-l-grain {
+  inset: 0;
+  opacity: 0.09;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* a nebula, drifting very slowly */
+.lt-l-nebula {
+  inset: -20%;
+  background: radial-gradient(32% 30% at 72% 28%, var(--lt-a), transparent 70%), radial-gradient(28% 26% at 24% 72%, var(--lt-b), transparent 70%);
+  filter: blur(12px);
+  opacity: 0.9;
+}
+
+.lt-play .lt-l-nebula {
+  animation: lt-drift 40s ease-in-out infinite alternate;
+}
+
+/* bokeh: big soft out-of-focus lights */
+.lt-l-bokeh {
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 28%, var(--lt-dot) 0 14px, transparent 30px),
+    radial-gradient(circle at 34% 78%, var(--lt-dot2) 0 20px, transparent 40px),
+    radial-gradient(circle at 58% 22%, var(--lt-dot) 0 10px, transparent 24px),
+    radial-gradient(circle at 80% 64%, var(--lt-dot2) 0 24px, transparent 46px),
+    radial-gradient(circle at 92% 18%, var(--lt-dot) 0 12px, transparent 26px);
+  filter: blur(4px);
+  opacity: 0.22;
+}
+
+.lt-play .lt-l-bokeh {
+  animation: lt-bokeh 14s ease-in-out infinite alternate;
+}
+
+/* light bursts (New Year's Eve): small rings of sparks, now and then */
+.lt-l-burst {
+  top: 14%;
+  left: 68%;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(var(--lt-dot) 0 5deg, transparent 5deg 30deg);
+  -webkit-mask: radial-gradient(circle, transparent 38%, #000 40%, #000 50%, transparent 54%);
+  mask: radial-gradient(circle, transparent 38%, #000 40%, #000 50%, transparent 54%);
+  opacity: 0;
+}
+
+.lt-l-burst.two {
+  top: 34%;
+  left: 22%;
+  width: 70px;
+  height: 70px;
+  background: repeating-conic-gradient(var(--lt-dot2) 0 5deg, transparent 5deg 30deg);
+}
+
+.lt-l-burst.three {
+  top: 8%;
+  left: 44%;
+  width: 56px;
+  height: 56px;
+}
+
+.lt-play .lt-l-burst {
+  animation: lt-burst 6.5s ease-out infinite;
+}
+
+.lt-play .lt-l-burst.two {
+  animation-delay: -2.2s;
+}
+
+.lt-play .lt-l-burst.three {
+  animation-delay: -4.4s;
+}
+
+/* light streaks (Action): a slanted beam sweeping across now and then */
+.lt-l-streak {
+  top: -30%;
+  left: 0;
+  width: 18%;
+  height: 160%;
+  background: linear-gradient(90deg, transparent, var(--lt-a), rgba(255, 255, 255, 0.08), var(--lt-a), transparent);
+  transform: translateX(-160%) rotate(16deg);
+  mix-blend-mode: screen;
+}
+
+.lt-l-streak.two {
+  width: 10%;
+}
+
+.lt-play .lt-l-streak {
+  animation: lt-streak 9s ease-in-out infinite;
+}
+
+.lt-play .lt-l-streak.two {
+  animation-delay: -4.5s;
+}
+
+/* the road (Road trip): lane marks passing along the bottom */
+.lt-l-road {
+  left: 0;
+  bottom: 6px;
+  width: calc(100% + 70px);
+  height: 3px;
+  background: repeating-linear-gradient(90deg, var(--lt-dot) 0 28px, transparent 28px 70px);
+  opacity: 0.3;
+}
+
+.lt-play .lt-l-road {
+  animation: lt-road 1.6s linear infinite;
+}
+
+/* ---------------- the movements ---------------- */
 @keyframes lt-fall {
   0% {
     opacity: 0;
     transform: translate3d(0, 0, 0);
   }
-  12% {
-    opacity: var(--lt-o, 0.75);
-  }
+  12%,
   88% {
     opacity: var(--lt-o, 0.75);
   }
@@ -24420,25 +24886,66 @@ li[hidden] {
   }
 }
 
-/* rising (embers, sunlit motes) */
+@keyframes lt-rain {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(8deg);
+  }
+  10%,
+  90% {
+    opacity: var(--lt-o, 0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-40px, var(--lt-h, 460px), 0) rotate(8deg);
+  }
+}
+
 @keyframes lt-rise {
   0% {
     opacity: 0;
-    transform: translate3d(0, var(--lt-h, 460px), 0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
-  15% {
-    opacity: var(--lt-o, 0.7);
-  }
-  80% {
+  15%,
+  75% {
     opacity: var(--lt-o, 0.7);
   }
   100% {
     opacity: 0;
-    transform: translate3d(var(--dx), 40px, 0) scale(0.4);
+    transform: translate3d(var(--dx), calc(var(--lt-h, 460px) * -0.85), 0) scale(0.5);
   }
 }
 
-/* twinkling (stars) */
+@keyframes lt-float {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  15%,
+  80% {
+    opacity: var(--lt-o, 0.55);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--dx), calc(var(--lt-h, 460px) * -0.8), 0) rotate(220deg);
+  }
+}
+
+@keyframes lt-petal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  12%,
+  88% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--dx), var(--lt-h, 460px), 0) rotate(300deg);
+  }
+}
+
 @keyframes lt-twinkle {
   0%,
   100% {
@@ -24446,17 +24953,32 @@ li[hidden] {
     transform: scale(0.7);
   }
   50% {
-    opacity: var(--lt-o, 0.9);
+    opacity: 0.95;
     transform: scale(1);
+  }
+}
+
+@keyframes lt-dust {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+  15%,
+  85% {
+    opacity: var(--lt-o, 0.45);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--lt-w, 1500px), var(--dx), 0);
   }
 }
 
 @keyframes lt-drift {
   0% {
-    transform: translate3d(-12%, 0, 0);
+    transform: translate3d(-10%, 0, 0);
   }
   100% {
-    transform: translate3d(12%, 0, 0);
+    transform: translate3d(10%, 0, 0);
   }
 }
 
@@ -24467,228 +24989,155 @@ li[hidden] {
     transform: scale(1);
   }
   50% {
-    opacity: 0.85;
+    opacity: 0.9;
     transform: scale(1.08);
   }
 }
 
-.wl-panel.lt {
-  --lt-h: 1100px;
+@keyframes lt-flicker {
+  0%,
+  41%,
+  47%,
+  77%,
+  81%,
+  100% {
+    opacity: 0.8;
+  }
+  42% {
+    opacity: 0.3;
+  }
+  44% {
+    opacity: 0.7;
+  }
+  45% {
+    opacity: 0.2;
+  }
+  79% {
+    opacity: 0.45;
+  }
 }
 
-/* ---- Halloween: embers rising, fog along the bottom, pumpkin and violet ---- */
-.lt[data-theme="halloween"] {
-  --lt-edge: rgba(255, 140, 40, 0.28);
-  --lt-bg: radial-gradient(110% 90% at 0% 0%, rgba(255, 120, 20, 0.17), transparent 60%), radial-gradient(100% 90% at 100% 100%, rgba(120, 40, 170, 0.2), transparent 60%), var(--glass-bg);
-  --lt-dot: #ffa04a;
-  --lt-o: 0.8;
+@keyframes lt-hover {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate3d(-8px, -10px, 0);
+  }
 }
 
-.lt[data-theme="halloween"] .lt-parts i {
-  top: auto;
-  bottom: 0;
-  box-shadow: 0 0 8px 2px rgba(255, 130, 30, 0.55);
+@keyframes lt-blink {
+  0% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
-.lt-play[data-theme="halloween"] .lt-parts i {
-  animation-name: lt-rise;
+@keyframes lt-glint {
+  0%,
+  55% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(420%);
+  }
 }
 
-.lt-fog {
-  position: absolute;
-  left: -20%;
-  right: -20%;
-  bottom: -30px;
-  height: 120px;
-  background: radial-gradient(50% 60% at 30% 60%, rgba(200, 190, 220, 0.16), transparent 70%), radial-gradient(40% 50% at 75% 50%, rgba(200, 190, 220, 0.12), transparent 70%);
-  filter: blur(6px);
+@keyframes lt-bokeh {
+  0% {
+    opacity: 0.16;
+    transform: translate3d(-12px, 6px, 0);
+  }
+  100% {
+    opacity: 0.3;
+    transform: translate3d(12px, -6px, 0);
+  }
 }
 
-.lt-fog.two {
-  bottom: -10px;
-  opacity: 0.7;
-}
-
-.lt-play .lt-fog {
-  animation: lt-drift 18s ease-in-out infinite alternate;
-}
-
-.lt-play .lt-fog.two {
-  animation-duration: 24s;
-  animation-direction: alternate-reverse;
-}
-
-/* ---- Christmas: snow, red and pine green ---- */
-.lt[data-theme="christmas"] {
-  --lt-edge: rgba(220, 50, 50, 0.3);
-  --lt-bg: radial-gradient(110% 90% at 0% 0%, rgba(210, 30, 40, 0.18), transparent 60%), radial-gradient(100% 90% at 100% 100%, rgba(20, 120, 70, 0.2), transparent 60%), var(--glass-bg);
-  --lt-dot: #fff;
-}
-
-/* ---- Winter: snow and frost ---- */
-.lt[data-theme="winter"] {
-  --lt-edge: rgba(150, 200, 255, 0.3);
-  --lt-bg: radial-gradient(120% 100% at 50% 0%, rgba(120, 170, 255, 0.18), transparent 65%), var(--glass-bg);
-  --lt-dot: #e8f3ff;
-}
-
-.lt-frost {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow: inset 0 0 28px rgba(200, 230, 255, 0.22);
-}
-
-/* ---- Spring: petals drifting down, blossom and leaf ---- */
-.lt[data-theme="spring"] {
-  --lt-edge: rgba(255, 160, 200, 0.3);
-  --lt-bg: radial-gradient(110% 90% at 0% 0%, rgba(255, 150, 200, 0.18), transparent 60%), radial-gradient(100% 90% at 100% 100%, rgba(120, 200, 120, 0.14), transparent 60%), var(--glass-bg);
-  --lt-dot: #ffb7d5;
-}
-
-.lt[data-theme="spring"] .lt-parts i {
-  width: calc(9px * var(--s));
-  height: calc(6px * var(--s));
-  border-radius: 70% 0 70% 0;
-}
-
-.lt-play[data-theme="spring"] .lt-parts i {
-  animation-name: lt-petal;
-}
-
-@keyframes lt-petal {
+@keyframes lt-burst {
   0% {
     opacity: 0;
-    transform: translate3d(0, 0, 0) rotate(0deg);
+    transform: scale(0.2);
   }
-  12% {
-    opacity: 0.85;
+  6% {
+    opacity: 0.9;
   }
-  88% {
-    opacity: 0.85;
+  30% {
+    opacity: 0;
+    transform: scale(1.15);
   }
   100% {
     opacity: 0;
-    transform: translate3d(var(--dx), var(--lt-h, 460px), 0) rotate(300deg);
+    transform: scale(1.15);
   }
 }
 
-/* ---- Summer: warm light from the corner, motes of sun ---- */
-.lt[data-theme="summer"] {
-  --lt-edge: rgba(255, 200, 80, 0.3);
-  --lt-bg: radial-gradient(90% 90% at 100% 0%, rgba(255, 190, 60, 0.2), transparent 60%), radial-gradient(100% 90% at 0% 100%, rgba(255, 110, 60, 0.12), transparent 60%), var(--glass-bg);
-  --lt-dot: #ffd77a;
-  --lt-o: 0.6;
+@keyframes lt-streak {
+  0%,
+  45% {
+    transform: translateX(-160%) rotate(16deg);
+  }
+  100% {
+    transform: translateX(700%) rotate(16deg);
+  }
 }
 
-.lt[data-theme="summer"] .lt-parts i {
-  top: auto;
-  bottom: 0;
-  box-shadow: 0 0 6px rgba(255, 210, 110, 0.6);
+@keyframes lt-road {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-70px, 0, 0);
+  }
 }
 
-.lt-play[data-theme="summer"] .lt-parts i {
-  animation-name: lt-rise;
-}
-
-.lt-sun {
-  position: absolute;
-  top: -120px;
-  right: -80px;
-  width: 300px;
-  height: 300px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 210, 110, 0.35), transparent 65%);
-  opacity: 0.6;
-}
-
-.lt-play .lt-sun {
-  animation: lt-glow 7s ease-in-out infinite;
-}
-
-/* ---- Film noir: black and white posters, a little grain, a vignette ---- */
-.lt[data-theme="noir"] {
-  --lt-edge: rgba(255, 255, 255, 0.18);
-  --lt-bg: radial-gradient(120% 120% at 50% 0%, rgba(255, 255, 255, 0.08), transparent 60%), var(--glass-bg);
-}
-
-.lt[data-theme="noir"] .movie-poster {
-  filter: grayscale(1) contrast(1.08);
-  transition: filter 0.3s;
-}
-
-.lt[data-theme="noir"] .movie-item:hover .movie-poster {
-  filter: none;
-}
-
-.lt-grain {
-  position: absolute;
-  inset: 0;
-  opacity: 0.08;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* ---- Space: a slow field of stars ---- */
-.lt[data-theme="space"] {
-  --lt-edge: rgba(130, 120, 255, 0.28);
-  --lt-bg: radial-gradient(120% 100% at 80% 0%, rgba(90, 70, 220, 0.22), transparent 60%), radial-gradient(90% 90% at 0% 100%, rgba(30, 140, 220, 0.14), transparent 60%), var(--glass-bg);
-  --lt-dot: #fff;
-}
-
-.lt[data-theme="space"] .lt-parts i {
-  top: calc((var(--s) - 0.6) * 110%);
-  width: calc(3px * var(--s));
-  height: calc(3px * var(--s));
-  opacity: 0.35;
-  box-shadow: 0 0 4px rgba(255, 255, 255, 0.7);
-}
-
-.lt-play[data-theme="space"] .lt-parts i {
-  animation: lt-twinkle var(--t) ease-in-out var(--d) infinite;
-}
-
-/* the light theme: softer tints */
-:root[data-theme="light"] .lt[data-theme="christmas"],
-:root[data-theme="light"] .lt[data-theme="winter"],
-:root[data-theme="light"] .lt[data-theme="spring"] {
-  --lt-dot: #9ab6d6;
-}
-
-:root[data-theme="light"] .lt[data-theme="spring"] {
-  --lt-dot: #f39bc0;
-}
-
-/* no motion: the tint and emblem stay, nothing moves (also the site-wide switch, Admin → Themes) */
+/* no motion (reduce motion, or the site-wide switch in Admin → Themes): the look stays, nothing moves */
 @media (prefers-reduced-motion: reduce) {
-  .lt-play .lt-parts i,
-  .lt-play .lt-fog,
-  .lt-play .lt-sun {
+  .lt-fx *,
+  .lt-fx *::before,
+  .lt-fx *::after {
     animation: none !important;
   }
 }
 
-html.no-list-fx .lt-parts i,
-html.no-list-fx .lt-fog,
-html.no-list-fx .lt-sun {
+html.no-list-fx .lt-fx *,
+html.no-list-fx .lt-fx *::before,
+html.no-list-fx .lt-fx *::after {
   animation: none !important;
 }
 
 @media (max-width: 700px) {
-  .wl-row.lt,
-  .wl-panel.lt {
+  .lt.wl-row,
+  .lt.wl-panel {
     margin-inline: -10px;
     padding: 12px 10px 10px;
     border-radius: 20px;
   }
+
+  /* (lighter on a phone: no blur on the big layers) */
+  .lt-l-nebula,
+  .lt-l-bokeh,
+  .lt-l-fog {
+    filter: none;
+  }
+
+  .lt-l-ghost {
+    display: none;
+  }
 }
 
-/* ---- the theme pop-up ---- */
+/* ---------------- the Appearance pop-up ---------------- */
 .lt-modal {
-  max-width: 620px;
+  max-width: 720px;
 }
 
 .lt-modal h3 {
-  margin: 0 0 16px;
+  margin: 0 0 14px;
   padding-right: 40px;
   text-align: left;
   font-size: 19px;
@@ -24699,9 +25148,211 @@ html.no-list-fx .lt-sun {
   color: var(--accent-hover);
 }
 
+/* the live preview: the list as it will look */
+.lt-preview {
+  margin: 0 0 16px;
+  padding: 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  background: var(--glass-bg);
+}
+
+.lt.lt-preview {
+  margin: 0 0 16px;
+  --lt-h: 200px;
+  --lt-w: 700px;
+}
+
+.lt-preview .row-head {
+  margin-bottom: 10px;
+}
+
+.lt-preview h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.lt-pv-row {
+  display: flex;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.lt-pv-row img {
+  flex: none;
+  width: 84px;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+}
+
+.lt-pv-empty {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 126px;
+  border: 1px dashed var(--glass-border);
+  border-radius: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.lt-modes {
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.lt-modes .top10-tab {
+  flex: 1;
+  justify-content: center;
+}
+
+/* (the rest of the pop-up stays in view: the preview above, Save below) */
+.lt-panel {
+  max-height: clamp(150px, calc(100vh - 480px), 420px);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+/* Auto: what was found, how sure */
+.lt-found {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  background: var(--glass-bg);
+}
+
+.lt-found-em {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 22px;
+}
+
+.lt-found.none .lt-found-em {
+  color: var(--text-muted);
+  font-size: 17px;
+}
+
+.lt-found > span:nth-child(2) {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.lt-found small {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.lt-found b {
+  font-size: 17px;
+}
+
+.lt-conf {
+  position: relative;
+  flex: none;
+  width: 90px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.lt-conf i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+}
+
+.lt-found em {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.lt-also {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+.lt-also > span {
+  color: var(--text-muted);
+}
+
+.lt-chip {
+  padding: 5px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 99px;
+  background: var(--glass-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.lt-chip:hover {
+  border-color: var(--accent);
+}
+
+.lt-chip em {
+  color: var(--text-muted);
+  font-style: normal;
+}
+
+.lt-note {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.lt-none-note i {
+  margin-right: 6px;
+}
+
+.lt-auto-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* Choose: the atmospheres, by kind */
+.lt-group {
+  margin: 14px 0 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lt-group:first-child {
+  margin-top: 0;
+}
+
 .lt-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 10px;
 }
 
@@ -24741,44 +25392,10 @@ html.no-list-fx .lt-sun {
 .lt-swatch {
   display: grid;
   place-items: center;
-  height: 54px;
+  height: 50px;
   margin-bottom: 4px;
   border-radius: 12px;
-  font-size: 24px;
-}
-
-.lt-swatch.none {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-muted);
-  font-size: 18px;
-}
-
-.lt-swatch[data-theme="halloween"] {
-  background: linear-gradient(135deg, #ff7a1a, #4b1a72);
-}
-
-.lt-swatch[data-theme="christmas"] {
-  background: linear-gradient(135deg, #c8202a, #146c45);
-}
-
-.lt-swatch[data-theme="winter"] {
-  background: linear-gradient(135deg, #a9d4ff, #3a5f9e);
-}
-
-.lt-swatch[data-theme="spring"] {
-  background: linear-gradient(135deg, #ffb3d1, #7cc47f);
-}
-
-.lt-swatch[data-theme="summer"] {
-  background: linear-gradient(135deg, #ffd25a, #ff7a45);
-}
-
-.lt-swatch[data-theme="noir"] {
-  background: linear-gradient(135deg, #e6e6e6, #1a1a1a);
-}
-
-.lt-swatch[data-theme="space"] {
-  background: radial-gradient(circle at 70% 30%, #6a5cff, #0b1030 70%);
+  font-size: 22px;
 }
 
 .lt-anim {
@@ -24803,9 +25420,14 @@ html.no-list-fx .lt-sun {
   margin-top: 16px;
 }
 
-/* a themed list: its emblem stands in for the list icon */
-.lt .row-head h2 > i.fa-list-ul {
-  display: none;
+/* Admin → Themes: the atmospheres by kind */
+.ad-lt-sub {
+  margin: 16px 0 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 /* ============================== Site-wide: the notice and maintenance (js/core/site.js) ============================== */

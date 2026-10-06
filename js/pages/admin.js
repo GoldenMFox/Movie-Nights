@@ -381,12 +381,24 @@
       </div>`;
     },
     themes() {
-      const avail = draft.themes.available || [];
+      // (the ones switched off; a new atmosphere is on until switched off)
+      const off = ListThemes.offOf(draft.themes);
       return `<div class="ad-grid">
-        ${card("fa-wand-magic-sparkles", "List themes", `${sw("themes.listThemes", "Themes on people's lists", "Off: every list in the site's own look", draft.themes.listThemes !== false)}
-          ${sw("themes.animations", "Animated atmosphere", "Snow, petals, embers… Off: the tints stay, nothing moves", draft.themes.animations !== false)}`)}
-        ${card("fa-swatchbook", "Themes on offer", ListThemes.THEMES.map((t) => `<div class="sv-row"><span class="sv-name"><strong>${t.emoji} ${esc(t.label)}</strong><small>${esc(t.hint)}</small></span>
-          <label class="sv-switch"><input type="checkbox" data-theme-avail="${t.id}"${avail.includes(t.id) ? " checked" : ""} aria-label="${esc(t.label)}" /><span class="switch-track"><span class="switch-thumb"></span></span></label></div>`).join(""))}
+        ${card("fa-wand-magic-sparkles", "List atmospheres", `${sw("themes.listThemes", "Atmospheres on people's lists", "Off: every list in the site's own look", draft.themes.listThemes !== false)}
+          ${sw("themes.animations", "Animated atmosphere", "Snow, rain, embers, fog… Off: the colours stay, nothing moves", draft.themes.animations !== false)}
+          <p class="sv-note"><i class="fa-solid fa-circle-info"></i> A list on Auto gets one when its name or its titles point clearly at it (${Math.round(ListThemes.THRESHOLD * 100)}% sure or more).</p>`)}
+        ${card(
+          "fa-swatchbook",
+          "Atmospheres on offer",
+          ListThemes.GROUPS.map(
+            ([g, title]) => `<h4 class="xr-sub ad-lt-sub">${title}</h4>${ListThemes.THEMES.filter((t) => t.group === g)
+              .map(
+                (t) => `<div class="sv-row"><span class="sv-name"><strong>${t.emoji} ${esc(t.label)}</strong><small>${esc(t.hint)}</small></span>
+          <label class="sv-switch"><input type="checkbox" data-theme-avail="${t.id}"${off.includes(t.id) ? "" : " checked"} aria-label="${esc(t.label)}" /><span class="switch-track"><span class="switch-thumb"></span></span></label></div>`
+              )
+              .join("")}`
+          ).join("")
+        )}
         ${card("fa-circle-half-stroke", "Site theme", select("themes.siteDefault", "Theme for new visitors", draft.themes.siteDefault, [["dark", "Dark"], ["light", "Light"]]))}
       </div>`;
     },
@@ -1088,9 +1100,9 @@
       return setPath("news.hiddenSources", [...hidden]);
     }
     if (el.dataset.themeAvail) {
-      const on = new Set(draft.themes.available || []);
-      el.checked ? on.add(el.dataset.themeAvail) : on.delete(el.dataset.themeAvail);
-      return setPath("themes.available", ListThemes.THEMES.map((t) => t.id).filter((id) => on.has(id)));
+      const off = new Set(ListThemes.offOf(draft.themes));
+      el.checked ? off.delete(el.dataset.themeAvail) : off.add(el.dataset.themeAvail);
+      return setPath("themes.off", ListThemes.THEMES.map((t) => t.id).filter((id) => off.has(id)));
     }
     if (el.classList.contains("ad-import")) {
       const f = el.files[0];
