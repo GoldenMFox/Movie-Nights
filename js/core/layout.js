@@ -613,15 +613,16 @@
 
   // In the installed app and on touch phones / tablets, only at phone / small tablet width (CSS):
   // the top bar keeps just the logo and your profile picture (with the full profile menu),
-  // and these five tabs sit at the bottom in a floating pill, like a native app.
+  // and these five tabs sit at the bottom in a floating pill, like a native app: Home, Library,
+  // Search, News, Watchlist (Explore lives inside Movies / TV Shows / Anime now).
   // Search and Library open panels that slide up from the bottom.
   if (appUi) {
     const LIBRARY_PAGES = ["movie", "tv", "anime", "tiers", "boxoffice"];
     const TABS = [
       { id: "home", href: "index.html", label: "Home", icon: "fa-house", on: ["home"] },
-      { id: "explore", href: "movies-explore.html", label: "Explore", icon: "fa-compass", on: [] },
-      { id: "search", label: "Search", icon: "fa-magnifying-glass", on: [] },
       { id: "library", label: "Library", icon: "fa-clapperboard", on: LIBRARY_PAGES },
+      { id: "search", label: "Search", icon: "fa-magnifying-glass", on: [] },
+      { id: "news", href: "news.html", label: "News", icon: "fa-newspaper", on: ["news"], nav: "news" },
       { id: "list", href: "watchlist.html", label: "Watchlist", icon: "fa-bookmark", on: ["watchlist"] },
     ];
 
@@ -629,10 +630,11 @@
     bar.className = "tab-bar";
     bar.setAttribute("aria-label", "Main");
     bar.innerHTML = TABS.map((t) => {
-      // (Explore: on any of the explore pages; Library: on your own lists, not their Explore)
+      // (Library: your lists and their Explore pages too)
       const exploring = !!document.body.dataset.explore || current === "anime-explore";
-      const on = t.id === "explore" ? exploring : t.on.includes(current) && !(t.id === "library" && exploring);
-      const attrs = `class="tab${on ? " on" : ""}"${on ? ' aria-current="page"' : ""}`;
+      const on = t.on.includes(current) || (t.id === "library" && exploring);
+      // (data-nav: the tab leaves with its page, when the owner hides it or switches News off)
+      const attrs = `class="tab${on ? " on" : ""}"${on ? ' aria-current="page"' : ""}${t.nav ? ` data-nav="${t.nav}"` : ""}`;
       const inner = `<i class="fa-solid ${t.icon}"></i><span>${t.label}</span>`;
       return t.href ? `<a href="${t.href}" ${attrs}>${inner}</a>` : `<button type="button" data-tab="${t.id}" ${attrs}>${inner}</button>`;
     }).join("");
@@ -828,7 +830,7 @@
       { href: "watchlist.html?list=fav", label: "Favorites", icon: "fa-heart", n: count((i) => i.favorite) },
       { href: "tier-list.html", label: "Tier List", icon: "fa-ranking-star", n: null },
       { href: "box-office.html", label: "Box Office", icon: "fa-sack-dollar", n: null, nav: "boxoffice" },
-      { href: "news.html", label: "Movie News", icon: "fa-newspaper", n: null, nav: "news" },
+      { href: "anime-explore.html", label: "Explore anime", icon: "fa-compass", n: null, nav: "animeExplore" },
     ];
     makeSheet(
       "library",
