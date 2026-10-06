@@ -617,14 +617,14 @@
           "fa-swatchbook",
           "Atmospheres on offer",
           ListThemes.GROUPS.map(
-            ([g, title]) => `<h4 class="xr-sub ad-lt-sub">${title}</h4>${ListThemes.THEMES.filter((t) => t.group === g)
+            ([g, title]) => `<h4 class="xr-sub ad-lt-sub">${title}</h4><div class="ad-lt-grid">${ListThemes.THEMES.filter((t) => t.group === g)
               .map(
                 (t) => `<div class="sv-row"><span class="sv-name"><strong>${t.emoji} ${esc(t.label)}</strong><small>${esc(t.hint)}</small></span>
           <label class="sv-switch"><input type="checkbox" data-theme-avail="${t.id}"${off.includes(t.id) ? "" : " checked"} aria-label="${esc(t.label)}" /><span class="switch-track"><span class="switch-thumb"></span></span></label></div>`
               )
-              .join("")}`
+              .join("")}</div>`
           ).join("")
-        )}
+        ).replace("<section ", '<section data-box="lt-offer" ')}
       </div>`;
     },
     notifications() {
@@ -1041,7 +1041,7 @@
   /* ---------------- Customize: move, size and hide the boxes of every section ---------------- */
 
   // the boxes: the dashboard's (data-box) or each section's cards (named after their title)
-  const WIDE = { hero: 3, tiles: 3, months: 3, season: 2 };
+  const WIDE = { hero: 3, tiles: 3, months: 3, season: 2, "lt-offer": 3 };
   const slug = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const gridOf = () => body.querySelector(".ad-dash, .ad-grid");
   function boxesOf(grid) {

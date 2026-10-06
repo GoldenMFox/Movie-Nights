@@ -26569,7 +26569,13 @@ html.no-list-fx .lt .poster-link::after {
   margin-top: 16px;
 }
 
-/* Admin → Themes: the atmospheres by kind */
+/* Admin → Themes: the atmospheres by kind, side by side across the whole row */
+.ad-lt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 6px 28px;
+}
+
 .ad-lt-sub {
   margin: 16px 0 6px;
   color: var(--text-muted);
