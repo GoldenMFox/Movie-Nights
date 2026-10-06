@@ -308,50 +308,74 @@
       ${nx ? `<p class="ad-season-next"><i class="fa-solid fa-forward"></i> Next by the date: <b style="color:${SEASON_LOOK[nx.id][1]}">${esc(seasonName(nx.id))}</b> from ${day(nx.at)} · in ${nx.days} day${nx.days === 1 ? "" : "s"}${now.how === "date" ? "" : " (when it's on By date)"}</p>` : ""}`;
   }
 
-  // the things that may need you, each with where to fix it
+  // the things that may need you, each with where to fix it; under them, what was checked and is fine
   function attention() {
     const out = [];
-    const add = (tone, icon, title, sub, go) => out.push({ tone, icon, title, sub, go });
-    if (dirty()) add("gold", "fa-pen", "Unsaved changes", "Save them to send them to everyone", "");
-    if (draft.maintenance.on) add("gold", "fa-screwdriver-wrench", "Maintenance mode is on", "Visitors see the “back soon” screen", "website");
-    if (Site.state() === "unpublished") add("red", "fa-triangle-exclamation", "Settings only on this device", "Publish the rules so they reach everyone", "users");
-    if (window.TMDB && !TMDB.keySource()) add("red", "fa-key", "No TMDB key", "Titles, posters and Explore need one", "apis");
+    const fine = [];
+    // check(problem?, then the issue: tone, icon, title, sub, where; else what's fine: icon, words)
+    const check = (bad, issue, ok) => (bad ? out.push(issue) : ok && fine.push(ok));
+    const issue = (tone, icon, title, sub, go) => ({ tone, icon, title, sub, go });
+    check(dirty(), issue("gold", "fa-pen", "Unsaved changes", "Save them to send them to everyone", ""), ["fa-floppy-disk", "Everything saved"]);
+    check(draft.maintenance.on, issue("gold", "fa-screwdriver-wrench", "Maintenance mode is on", "Visitors see the “back soon” screen", "website"), ["fa-globe", "The site is open"]);
+    check(Site.state() === "unpublished", issue("red", "fa-triangle-exclamation", "Settings only on this device", "Publish the rules so they reach everyone", "users"), ["fa-cloud", "Settings reach everyone"]);
+    check(window.TMDB && !TMDB.keySource(), issue("red", "fa-key", "No TMDB key", "Titles, posters and Explore need one", "apis"), ["fa-key", "TMDB key in place"]);
     const down = Object.values(Api.status()).filter((x) => x.health === "down");
-    if (down.length) add("red", "fa-plug-circle-xmark", `${down.length} service${down.length > 1 ? "s" : ""} not answering`, down.map((x) => x.label.replace(/ \(.*\)$/, "")).join(", "), "apis");
+    check(down.length, issue("red", "fa-plug-circle-xmark", `${down.length} service${down.length > 1 ? "s" : ""} not answering`, down.map((x) => x.label.replace(/ \(.*\)$/, "")).join(", "), "apis"), ["fa-plug-circle-check", "Services answering"]);
     const n = draft.notice;
     const todayStr = Store.today ? Store.today() : new Date().toISOString().slice(0, 10);
-    if (n.on && !String(n.text || "").trim()) add("gold", "fa-bullhorn", "The notice is on but empty", "Write its text, or switch it off", "website");
-    else if (n.on && n.until && n.until < todayStr) add("", "fa-bullhorn", "The notice has ended", `Its last day was ${n.until}: switch it off or give it new days`, "website");
+    const noticeEmpty = n.on && !String(n.text || "").trim();
+    const noticeOver = n.on && n.until && n.until < todayStr;
+    check(noticeEmpty, issue("gold", "fa-bullhorn", "The notice is on but empty", "Write its text, or switch it off", "website"));
+    check(!noticeEmpty && noticeOver, issue("", "fa-bullhorn", "The notice has ended", `Its last day was ${n.until}: switch it off or give it new days`, "website"), noticeEmpty ? null : ["fa-bullhorn", n.on ? "Notice up to date" : "No notice up"]);
     const sn = seasonNow();
-    if (sn.how === "locked" && !dateOf(sn.id)) add("", "fa-lock", `${esc(seasonName(sn.id))} is locked on`, "Outside its dates: set the atmosphere back to By date when you're done", "themes");
-    if (draft.announce && draft.announce.at && Date.now() - draft.announce.at > 30 * 86400000)
-      add("", "fa-paper-plane", "An old announcement is still up", `Sent ${ago(draft.announce.at)}: withdraw it or send a new one`, "notifications");
+    check(sn.how === "locked" && !dateOf(sn.id), issue("", "fa-lock", `${esc(seasonName(sn.id))} is locked on`, "Outside its dates: set the atmosphere back to By date when you're done", "themes"), ["fa-calendar-days", sn.how === "off" ? "Seasonal look off" : "Atmosphere in season"]);
+    check(
+      draft.announce && draft.announce.at && Date.now() - draft.announce.at > 30 * 86400000,
+      issue("", "fa-paper-plane", "An old announcement is still up", `Sent ${draft.announce && ago(draft.announce.at)}: withdraw it or send a new one`, "notifications"),
+      ["fa-paper-plane", draft.announce && draft.announce.title ? "Announcement is recent" : "No old announcement"]
+    );
     const off = FEATURES.filter(([k]) => draft.features[k] === false);
-    if (off.length) add("", "fa-toggle-off", `${off.length} feature${off.length > 1 ? "s" : ""} switched off`, off.map((f) => f[1]).join(", "), "pages");
+    check(off.length, issue("", "fa-toggle-off", `${off.length} feature${off.length > 1 ? "s" : ""} switched off`, off.map((f) => f[1]).join(", "), "pages"), ["fa-toggle-on", "Every feature on"]);
     const hiddenPages = (draft.nav.hidden || []).length;
-    if (hiddenPages) add("", "fa-eye-slash", `${hiddenPages} page${hiddenPages > 1 ? "s" : ""} left out of the navigation`, "They still open from a link", "pages");
+    check(hiddenPages, issue("", "fa-eye-slash", `${hiddenPages} page${hiddenPages > 1 ? "s" : ""} left out of the navigation`, "They still open from a link", "pages"), ["fa-bars", "Every page in the navigation"]);
     if (window.Ratings) {
       const r = Ratings.status();
-      if (r.enabled && (r.blocked || r.used >= r.limit)) add("", "fa-star-half-stroke", "IMDb lookups used up for today", "Cards show TMDB's score until tomorrow", "apis");
+      check(r.enabled && (r.blocked || r.used >= r.limit), issue("", "fa-star-half-stroke", "IMDb lookups used up for today", "Cards show TMDB's score until tomorrow", "apis"), r.enabled ? ["fa-star", "IMDb lookups left today"] : null);
     }
-    if (!out.length) return '<div class="ad-allgood"><i class="fa-solid fa-circle-check"></i><span><strong>All good</strong><small>Nothing needs you right now.</small></span></div>';
-    return `<ul class="ad-attn">${out
-      .map(
-        (a) => `<li class="${a.tone}"><span class="ad-attn-icon"><i class="fa-solid ${a.icon}"></i></span><span class="ad-attn-text"><strong>${a.title}</strong><small>${esc(a.sub)}</small></span>${
-          a.go
-            ? `<button type="button" class="ad-attn-go" data-go="${a.go}" title="${esc(sec(a.go)[2])}">Open <i class="fa-solid fa-chevron-right"></i></button>`
-            : '<button type="button" class="ad-attn-go ad-save-now">Save <i class="fa-solid fa-check"></i></button>'
-        }</li>`
-      )
-      .join("")}</ul>`;
+    const head = out.length
+      ? `<ul class="ad-attn">${out
+          .map(
+            (a) => `<li class="${a.tone}"><span class="ad-attn-icon"><i class="fa-solid ${a.icon}"></i></span><span class="ad-attn-text"><strong>${a.title}</strong><small>${esc(a.sub)}</small></span>${
+              a.go
+                ? `<button type="button" class="ad-attn-go" data-go="${a.go}" title="${esc(sec(a.go)[2])}">Open <i class="fa-solid fa-chevron-right"></i></button>`
+                : '<button type="button" class="ad-attn-go ad-save-now">Save <i class="fa-solid fa-check"></i></button>'
+            }</li>`
+          )
+          .join("")}</ul>`
+      : '<div class="ad-allgood"><i class="fa-solid fa-circle-check"></i><span><strong>All good</strong><small>Nothing needs you right now.</small></span></div>';
+    return `${head}${
+      fine.length ? `<div class="ad-fine"><span class="ad-fine-title">Checked and fine</span><ul>${fine.map(([icon, t]) => `<li><i class="fa-solid ${icon}"></i><span>${esc(t)}</span><b class="fa-solid fa-check"></b></li>`).join("")}</ul></div>` : ""
+    }`;
   }
 
-  // the latest saves (this browser)
+  // the latest saves (this browser): a tile each, the same thing saved again and again as one
+  const SAVE_ICON = { Branding: "fa-signature", Maintenance: "fa-screwdriver-wrench", Notice: "fa-bullhorn", Navigation: "fa-bars", Features: "fa-toggle-on", "Explore pages": "fa-compass", "Home picks": "fa-star", "Featured anime": "fa-dragon", "Hidden titles": "fa-eye-slash", News: "fa-newspaper", "API integrations": "fa-plug", Themes: "fa-palette", Notifications: "fa-bell", Announcement: "fa-paper-plane", "Title page rows": "fa-table-list", "Person page rows": "fa-id-card", "Home page rows": "fa-house", "Turned-away people": "fa-user-slash" };
   function recentSaves() {
-    const hist = changeLog().slice(0, 5);
-    return hist.length
-      ? `<ul class="ad-recent">${hist.map((h) => `<li><i></i><span><strong>${esc(h.what)}</strong><small>${ago(h.at)}</small></span></li>`).join("")}</ul>`
-      : '<p class="sv-note">Nothing saved from this browser yet.</p>';
+    const groups = [];
+    changeLog().forEach((h) => {
+      const last = groups[groups.length - 1];
+      if (last && last.what === h.what) last.n++;
+      else groups.push({ what: h.what, at: h.at, n: 1 });
+    });
+    if (!groups.length) return '<p class="sv-note">Nothing saved from this browser yet.</p>';
+    return `<div class="ad-saves">${groups
+      .slice(0, 5)
+      .map((g, i) => {
+        const first = g.what.split(", ")[0];
+        return `<div class="ad-lt-tile ad-info-tile"><span class="ad-lt-swatch ad-tile-icon2" style="--c:${PALETTE[i % PALETTE.length]}" aria-hidden="true"><i class="fa-solid ${SAVE_ICON[first] || "fa-floppy-disk"}"></i></span>
+          <span class="ad-lt-text"><strong>${esc(g.what)}</strong><small>${ago(g.at)} · ${new Date(g.at).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}${g.n > 1 ? ` · ${g.n} saves` : ""}</small></span></div>`;
+      })
+      .join("")}</div>`;
   }
 
   // the Overview's live parts, drawn again as the settings change (the charts stay)

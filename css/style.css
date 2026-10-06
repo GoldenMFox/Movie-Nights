@@ -26999,6 +26999,163 @@ html.no-list-fx .lt .poster-link::after {
   }
 }
 
+/* Overview: the stat tiles in the tile look (the icon a swatch in its colour, a soft tint) */
+.ad-tiles .ad-tile {
+  --c: #7ea4ff;
+  background: radial-gradient(90% 120% at 0% 0%, color-mix(in srgb, var(--c) 9%, transparent), transparent 60%), var(--glass-bg);
+}
+
+.ad-tile.red {
+  --c: #ff6b6f;
+}
+
+.ad-tile.gold {
+  --c: #f5c518;
+}
+
+.ad-tile.green {
+  --c: #4cd97b;
+}
+
+.ad-tiles .ad-tile .ad-tile-icon {
+  border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+  background: radial-gradient(80% 80% at 30% 25%, color-mix(in srgb, var(--c) 38%, transparent), transparent 75%), color-mix(in srgb, var(--c) 10%, #121214);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.35);
+  color: var(--c);
+}
+
+.ad-tiles .ad-tile:hover {
+  border-color: color-mix(in srgb, var(--c) 40%, transparent);
+}
+
+/* Needs attention: what was checked and is fine, under the issues */
+.ad-fine {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.ad-fine-title {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ad-fine ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ad-fine li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 6px 11px 6px 9px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 12.5px;
+}
+
+.ad-fine li > i {
+  width: 16px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.ad-fine li span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-fine li b {
+  color: #4cd97b;
+  font-size: 11px;
+}
+
+/* Quick actions: compact tiles, two across (an icon swatch, its name) */
+.ad-action {
+  --c: #9aa4b5;
+}
+
+.ad-action.red {
+  --c: #ff6b6f;
+}
+
+.ad-action.gold {
+  --c: #f5c518;
+}
+
+.ad-action.green {
+  --c: #4cd97b;
+}
+
+.ad-action.blue {
+  --c: #7ea4ff;
+}
+
+.ad-action.purple {
+  --c: #c49bff;
+}
+
+.ad-actions .ad-action-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ad-actions .ad-action {
+  display: flex;
+  align-items: center;
+  justify-items: start;
+  gap: 11px;
+  padding: 9px 11px;
+  border-radius: 14px;
+  text-align: left;
+  font-size: 13px;
+}
+
+.ad-actions .ad-action-grid .ad-action i {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+  border-radius: 11px;
+  background: radial-gradient(80% 80% at 30% 25%, color-mix(in srgb, var(--c) 38%, transparent), transparent 75%), color-mix(in srgb, var(--c) 10%, #121214);
+  color: var(--c);
+  font-size: 14px;
+}
+
+.ad-actions .ad-action:hover {
+  border-color: color-mix(in srgb, var(--c) 45%, transparent);
+}
+
+/* Latest saves: a tile each */
+.ad-saves {
+  display: grid;
+  gap: 8px;
+}
+
+.ad-saves .ad-lt-tile {
+  min-height: 60px;
+  padding: 8px 11px;
+}
+
+.ad-saves .ad-lt-swatch {
+  width: 40px;
+  height: 40px;
+  font-size: 15px;
+}
+
 /* (one tile on its own fills its box) */
 .ad-lt-grid:has(> :only-child) {
   grid-template-columns: minmax(0, 1fr);
@@ -31041,57 +31198,6 @@ html.tablet[data-season] .nav-links > .season-pill {
   width: 18px;
   color: var(--c);
   text-align: center;
-}
-
-/* Latest saves */
-.ad-recent {
-  display: grid;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.ad-recent li {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 8px 0;
-}
-
-.ad-recent li > i {
-  flex: none;
-  width: 9px;
-  height: 9px;
-  margin-top: 5px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.15);
-}
-
-.ad-recent li:not(:last-child)::before {
-  content: "";
-  position: absolute;
-  top: 22px;
-  bottom: -6px;
-  left: 4px;
-  width: 1px;
-  background: var(--glass-border);
-}
-
-.ad-recent span {
-  display: grid;
-  min-width: 0;
-}
-
-.ad-recent strong {
-  font-size: 13.5px;
-}
-
-.ad-recent small {
-  color: var(--text-muted);
-  font-size: 12px;
 }
 
 .ad-action.purple i {
