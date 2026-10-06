@@ -412,6 +412,10 @@ Mystery & Noir, Western).
   hearts, shapes, stars, sparks, dust) and up to a few layers (fog, smoke, flicker, lights, glow, sun,
   frost, reflections, haze, vignette, grain, nebula, bokeh, light bursts, streaks, the road). The CSS draws
   each kind once from the list's own `--lt-*` colours: **a new atmosphere is one entry in `ATMOS`**.
+- Behind it all, a faded photo: a still (TMDB backdrop) from one of the titles in the list, most of
+  its colour taken out and fading towards the edges, so the atmosphere's lights tint it; loaded only
+  when the list comes near the screen, a slow push-in while it plays. No backdrop: the colours alone.
+- Christmas and Winter: snow caps on each poster (`caps`), some flakes falling in front of them (`front`).
 - Light on the device: only transform / opacity move, only while the list is on screen (two at most, one
   on a phone, none in a hidden tab), half the particles on a phone, nothing moves with reduce motion or
   when the owner turns animations off (Admin → Themes, where each atmosphere can be switched off too:

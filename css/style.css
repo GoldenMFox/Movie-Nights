@@ -24571,6 +24571,37 @@ li[hidden] {
   pointer-events: none;
 }
 
+/* the photo: a still from one of its titles, faded: most of its colour taken out, darkened, thin,
+   and fading away towards the edges, so the atmosphere's coloured lights (the box's background)
+   show through it and tint it; fades in once loaded, a very slow push-in while the list plays */
+.lt-photo {
+  position: absolute;
+  inset: -3%;
+  background: center 30% / cover no-repeat;
+  opacity: 0;
+  filter: saturate(0.3) brightness(0.62) contrast(1.05);
+  -webkit-mask-image: radial-gradient(70% 90% at 64% 42%, #000 20%, rgba(0, 0, 0, 0.4) 58%, transparent 90%);
+  mask-image: radial-gradient(70% 90% at 64% 42%, #000 20%, rgba(0, 0, 0, 0.4) 58%, transparent 90%);
+  transition: opacity 1.4s ease;
+}
+
+.lt-photo.in {
+  opacity: 0.34;
+}
+
+.lt-play .lt-photo.in {
+  animation: lt-push 40s ease-in-out infinite alternate;
+}
+
+@keyframes lt-push {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.08);
+  }
+}
+
 /* ---------------- particles ---------------- */
 .lt-parts i {
   position: absolute;

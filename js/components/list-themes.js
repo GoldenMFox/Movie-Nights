@@ -374,10 +374,17 @@
     return { vars, parts, count, layers, front, caps };
   }
 
-  function fxLayer(ids) {
+  // the photo behind it: a still (TMDB backdrop) from one of the titles in the list, the newest added
+  // that has one; none: the colours alone
+  const photoOf = (list) => {
+    const hit = itemsOf(list).find((i) => i.backdrop);
+    return hit ? Store.img(hit.backdrop, phone() ? "w780" : "w1280") : "";
+  };
+  function fxLayer(ids, photo) {
     const l = look(ids);
     const n = Math.round(l.count * (phone() ? 0.5 : 1));
-    return `<span class="lt-fx" aria-hidden="true">${l.layers
+    // (the photo's address waits in data-src until the list comes near the screen)
+    return `<span class="lt-fx" aria-hidden="true">${photo ? `<b class="lt-photo" data-src="${UI.esc(photo)}"></b>` : ""}${l.layers
       .filter((x) => !OVER.includes(x))
       .map(layerHtml)
       .join("")}${l.parts && n ? `<span class="lt-parts" data-k="${l.parts}">${particles(n, seedOf(ids.join("+")))}</span>` : ""}</span>`;
@@ -405,6 +412,19 @@
       .slice(0, on ? max : 0);
     watched.forEach((el) => el.classList.toggle("lt-play", play.includes(el)));
   }
+  // the photo, once: faded in when it has arrived
+  function loadPhoto(sec) {
+    const ph = sec.querySelector(":scope > .lt-fx > .lt-photo[data-src]");
+    if (!ph) return;
+    const src = ph.dataset.src;
+    delete ph.dataset.src;
+    const im = new Image();
+    im.onload = () => {
+      ph.style.backgroundImage = `url("${src}")`;
+      ph.classList.add("in");
+    };
+    im.src = src;
+  }
   const io =
     "IntersectionObserver" in window
       ? new IntersectionObserver(
@@ -413,6 +433,19 @@
             replay();
           },
           { rootMargin: "40px" }
+        )
+      : null;
+  // (the photo a little sooner: it's there by the time the list is)
+  const photoIo =
+    "IntersectionObserver" in window
+      ? new IntersectionObserver(
+          (entries) =>
+            entries.forEach((en) => {
+              if (!en.isIntersecting) return;
+              photoIo.unobserve(en.target);
+              loadPhoto(en.target);
+            }),
+          { rootMargin: "400px 0px" }
         )
       : null;
   document.addEventListener("visibilitychange", replay);
@@ -424,7 +457,8 @@
       const r = resolve(list, itemsOf(list));
       const ids = r.ids.filter(byId);
       const fx = !!ids.length && list.fx !== false;
-      const sign = `${ids.join("+")}|${fx ? 1 : 0}|${phone() ? "p" : "d"}`;
+      const photo = ids.length ? photoOf(list) : "";
+      const sign = `${ids.join("+")}|${fx ? 1 : 0}|${phone() ? "p" : "d"}|${photo}`;
       if (sec.dataset.lt === sign) return r;
       sec.dataset.lt = sign;
       sec.dataset.theme = ids[0] || "";
@@ -438,12 +472,14 @@
       sec.classList.remove("lt-play");
       if (io && !(opts && opts.preview)) {
         io.unobserve(sec);
+        photoIo.unobserve(sec);
         shown.delete(sec);
         watched.delete(sec);
       }
       if (!ids.length) return replay(), r;
       Object.entries(look(ids).vars).forEach(([k, v]) => sec.style.setProperty(k, v));
-      sec.insertAdjacentHTML("afterbegin", fxLayer(ids));
+      sec.insertAdjacentHTML("afterbegin", fxLayer(ids, photo));
+      if (photo) photoIo && !(opts && opts.preview) ? photoIo.observe(sec) : loadPhoto(sec);
       sec.insertAdjacentHTML("beforeend", overLayer(ids));
       const h2 = sec.querySelector("h2, .wl-title");
       if (h2) h2.insertAdjacentHTML("afterbegin", `<span class="lt-emblem" aria-hidden="true" title="${UI.esc(nameOf(ids))}">${byId(ids[0]).emoji}</span>`);
